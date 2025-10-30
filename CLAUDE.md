@@ -230,7 +230,21 @@ The project is broken down into **6 sequential phases**, each with detailed spec
 - Show processing progress and results
 - Status: End-to-end working pipeline - this is where the magic happens
 
-**Total Estimated Time**: 11-17 days for complete MVP
+**Phase 6: Q&A Chatbot - Interactive AI Tutor (RAG Implementation)** _(3-4 days)_
+- Set up vector database (Pinecone/Weaviate/Milvus)
+- Implement RAG (Retrieval-Augmented Generation) for context-aware Q&A
+- Create transcript chunking and embedding generation
+- Build ChatBot component with conversation UI (Framer Motion animations)
+- Create POST /api/chatbot/ask endpoint (context retrieval + LLM response)
+- Integrate with prerequisite checker (users can "Learn with AI" for gaps)
+- Add Chatbot tab to materials view alongside flashcards/quizzes
+- Store conversation history and enable conversation export
+- Status: Post-MVP enhancement - personal AI tutor available 24/7
+- Key Feature: Answers grounded in video content, no hallucinations (RAG prevents it)
+
+**Total Estimated Time**:
+- **MVP (Phases 0-5)**: 11-17 days
+- **Full Product (Phases 0-6)**: 14-21 days
 
 See `/docs/phases/` directory for detailed specifications for each phase.
 See `/docs/PHASE_TRACKER.md` for tracking progress through all phases.
@@ -364,6 +378,10 @@ The platform is built on proven learning principles:
 | 3 | `/docs/phases/PHASE_3_DASHBOARD_SKELETON.md` | 1-2 days | Dashboard layout |
 | 4 | `/docs/phases/PHASE_4_DASHBOARD_FEATURES.md` | 3-4 days | Interactive components |
 | 5 | `/docs/phases/PHASE_5_VIDEO_PIPELINE.md` | 3-4 days | Full video processing |
+| **6** | **`/docs/phases/PHASE_6_QA_CHATBOT.md`** | **3-4 days** | **Q&A Chatbot (RAG)** |
+| — | — | — | — |
+| **0-5** | **All MVP phases** | **11-17 days** | **Production-ready MVP** |
+| **0-6** | **All phases** | **14-21 days** | **Full product with chatbot** |
 
 ### Common Tasks During Implementation
 
