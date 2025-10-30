@@ -1,48 +1,92 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/* Design Tokens - Clarity AI */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Mode Colors (Default) */
+  --background: #FFFFFF;
+  --foreground: #1F2937;
+  --secondary: #6B7280;
+  --accent: #06B6D4;
+  --accent-hover: #0891B2;
+  --border: #E5E7EB;
+  --card-bg: #FAFAF9;
+  --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode - both auto and manual */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #0F172A;
+    --foreground: #F9FAFB;
+    --secondary: #D1D5DB;
+    --accent: #06B6D4;
+    --accent-hover: #22D3EE;
+    --border: #374151;
+    --card-bg: #1E293B;
+    --shadow: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Manual dark mode class - highest priority */
+:root.dark {
+  --background: #0F172A !important;
+  --foreground: #F9FAFB !important;
+  --secondary: #D1D5DB !important;
+  --accent: #06B6D4 !important;
+  --accent-hover: #22D3EE !important;
+  --border: #374151 !important;
+  --card-bg: #1E293B !important;
+  --shadow: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Manual light mode class - override system preference */
+:root.light {
+  --background: #FFFFFF !important;
+  --foreground: #1F2937 !important;
+  --secondary: #6B7280 !important;
+  --accent: #06B6D4 !important;
+  --accent-hover: #0891B2 !important;
+  --border: #E5E7EB !important;
+  --card-bg: #FAFAF9 !important;
+  --shadow: rgba(0, 0, 0, 0.1) !important;
 }
 
 @theme inline {
+  /* Base Colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-border: var(--border);
+  --color-card-bg: var(--card-bg);
+
+  /* Fonts */
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-* {
-  box-sizing: border-box;
-}
-
-html {
-  scroll-behavior: smooth;
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 var(--shadow);
+  --shadow-md: 0 4px 6px -1px var(--shadow);
+  --shadow-lg: 0 10px 15px -3px var(--shadow);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #555;
+/* Focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
