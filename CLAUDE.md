@@ -14,7 +14,7 @@ Clarity AI is an AI-powered educational platform that transforms passive YouTube
 - **Styling**: Tailwind CSS v4 with PostCSS
 - **Database**: MongoDB (already configured, clarity-ai database)
 - **LLM Provider**: Groq (gpt-4o-120b model with structured outputs/function calling)
-- **Transcript API**: youtube-transcript library (public, no API key needed)
+- **Transcript API**: `youtube-transcript-plus` v1.1.1 (open source, no API key needed)
 - **React**: v19.2.0
 - **Authentication**: JWT-based with HTTP-only cookies (simple, no refresh tokens)
 - **Animations**: Framer Motion (for smooth micro-interactions)
@@ -312,7 +312,18 @@ NODE_ENV=development      # development, production
    - Response types: Flashcards, Quizzes, Timestamps, Prerequisites, ChatbotContext
    - Consistent, parseable output guaranteed
 
-6. **Q&A Chatbot**: ⏸️ Post-MVP (Phase 5+)
+6. **Transcript Extraction**: ✅ youtube-transcript-plus v1.1.1
+   - **Library**: `youtube-transcript-plus` (npm package already installed)
+   - **No API key required** - Uses YouTube's public caption API
+   - **Return format**: Array of segments with text, offset (start time), duration, language
+   - **Implementation location**: Phase 5 (Video Processing Pipeline)
+   - **Usage**: `fetchTranscript('https://youtu.be/VIDEO_ID')`
+   - **Error handling**: Handles unavailable videos, disabled transcripts, missing captions
+   - **Reference files**:
+     - Full transcript output: `/docs/transcript-output.json`
+     - Formatted timestamps: `/docs/transcript-timestamps.json`
+
+7. **Q&A Chatbot**: ⏸️ Post-MVP (Phase 5+)
    - Requires RAG with vector database
    - Integrate after core features stable
    - Pre-implement chatbot context in learning materials generation
@@ -417,3 +428,19 @@ The platform is built on proven learning principles:
 - **Next.js Docs**: https://nextjs.org/docs
 - **Tailwind CSS v4**: https://tailwindcss.com/docs
 - **Framer Motion**: https://www.framer.com/motion/
+
+
+## Your Senior Engineering Manager (SEM)
+Remember, you always have a senior engineering manager (Might be referred as SEM in conversations) that you can refer to for difficult descisions. You can talk to your SEM like this 
+
+```
+gemini -p "<Whatever you want to say>"
+```
+
+Remember, the SEM has no context of what you're going to ask so point relevant files using '@' so that it can see the files you want the SEM to see. Also, you need to mention explicitly that the SEM does not have to make any modifications. Just ask to provide their thoughts on whatever you ask or say. Additionally, you can't follow up in one session you might have to re-execute the command which may result in loss of context, which we don't want. So try to include all the things you need answers for in one prompt. But remember, the SEM is also a human and they may not always be right, you are only consult to the SEM for second opinions on stuff or just suggestions. Ultimately, you are the one who is making the decision.
+
+**Examples on when you might want to consult to your SEM**:
+1. When you find yourself looping through stuff and still can't find solutions
+2. Need second thoughts on an approach you plan to take which is complex. (This is always a good idea)
+
+These are just examples, you may decide when to consult your SEM.
