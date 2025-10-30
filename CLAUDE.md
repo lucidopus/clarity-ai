@@ -431,16 +431,53 @@ The platform is built on proven learning principles:
 
 
 ## Your Senior Engineering Manager (SEM)
-Remember, you always have a senior engineering manager (Might be referred as SEM in conversations) that you can refer to for difficult descisions. You can talk to your SEM like this 
 
+You have access to a Senior Engineering Manager (SEM) for guidance on complex technical decisions, architectural choices, and challenging problems. The SEM is a strategic resource—use intelligently, not for every question.
+
+### How to Consult the SEM
+
+Initiate a consultation using:
+```bash
+gemini -p "<Your question or concern>"
 ```
-gemini -p "<Whatever you want to say>"
-```
 
-Remember, the SEM has no context of what you're going to ask so point relevant files using '@' so that it can see the files you want the SEM to see. Also, you need to mention explicitly that the SEM does not have to make any modifications. Just ask to provide their thoughts on whatever you ask or say. Additionally, you can't follow up in one session you might have to re-execute the command which may result in loss of context, which we don't want. So try to include all the things you need answers for in one prompt. But remember, the SEM is also a human and they may not always be right, you are only consult to the SEM for second opinions on stuff or just suggestions. Ultimately, you are the one who is making the decision.
+**Key guidelines for effective SEM consultations**:
 
-**Examples on when you might want to consult to your SEM**:
-1. When you find yourself looping through stuff and still can't find solutions
-2. Need second thoughts on an approach you plan to take which is complex. (This is always a good idea)
+1. **Provide Context Efficiently**
+   - Reference relevant files using `@filename` syntax so the SEM can review them
+   - Explicitly state: "SEM, please provide thoughts/suggestions only—no code modifications needed"
+   - Include all related questions in a single prompt to avoid context loss (you cannot follow up in one session)
+   - Be specific about what you need: architectural advice, trade-offs analysis, validation, etc.
 
-These are just examples, you may decide when to consult your SEM.
+2. **Think Critically About SEM Suggestions**
+   - The SEM provides recommendations and perspectives, not final decisions
+   - Evaluate suggestions against your project context, constraints, and goals
+   - Question suggestions that don't align with your understanding or the CLAUDE.md principles
+   - You are the decision-maker—SEM input is advisory only
+
+3. **Report Back to the User**
+   - **Before implementing anything the SEM suggests, summarize their key points to the user**
+   - Explain your own analysis: What makes sense? What concerns do you have?
+   - Share what you've decided and why (even if disagreeing with SEM)
+   - Transparency helps build trust in your decision-making
+
+### When to Consult the SEM (Not Every Question!)
+
+**Definitely consult**:
+- Stuck in a loop trying to solve a problem (after exhausting obvious approaches)
+- Major architectural decisions with trade-offs (e.g., database design, auth strategy)
+- Complex feature design with multiple valid approaches
+- Performance or scaling concerns
+- Integration strategy for new technologies
+
+**Do NOT consult**:
+- Straightforward coding tasks or bug fixes
+- Questions answerable by reading documentation
+- Simple component implementation
+- Basic debugging (only escalate if truly stuck)
+
+**Examples**:
+- ✅ "Should we use RAG or fine-tuning for the chatbot? I'm seeing trade-offs in X, Y, Z dimensions. What are your thoughts? @PHASE_6_QA_CHATBOT.md @design-principles.md"
+- ❌ "How do I import a React component?" (Read docs instead)
+- ✅ "I've tried 3 approaches to optimize this query and none work well. Can you review my thinking? @code.ts"
+- ❌ "What's the syntax for useState?" (Straightforward—use docs)
