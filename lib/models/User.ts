@@ -8,7 +8,7 @@ export interface IUser extends Document {
   passwordHash: string;
   userType: 'Graduate' | 'Undergraduate' | 'Other';
   customUserType?: string;
-  email?: string;
+  email: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,12 +20,9 @@ const UserSchema: Schema = new Schema({
   passwordHash: { type: String, required: true },
   userType: { type: String, required: true, enum: ['Graduate', 'Undergraduate', 'Other'] },
   customUserType: { type: String, required: function(this: IUser) { return this.userType === 'Other'; } },
-  email: { type: String },
+  email: { type: String, required: true },
 }, {
   timestamps: true,
 });
-
-// Create indexes
-UserSchema.index({ username: 1 }, { unique: true });
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { useState } from 'react';
 import Button from './Button';
 import ThemeToggle from './ThemeToggle';
+import { useAuth } from '@/lib/auth-context';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout, loading } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -51,12 +53,27 @@ export default function Navbar() {
           {/* Desktop Right Side - Auth & Theme */}
           <div className="hidden md:flex items-center space-x-4">
             <ThemeToggle />
-            <Button href="/auth/signin" variant="ghost" size="sm">
-              Sign In
-            </Button>
-            <Button href="/auth/signup" variant="primary" size="sm">
-              Sign Up
-            </Button>
+            {loading ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : user ? (
+              <>
+                <Button href="/dashboard" variant="ghost" size="sm">
+                  Dashboard
+                </Button>
+                <Button onClick={logout} variant="ghost" size="sm">
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button href="/auth/signin" variant="ghost" size="sm">
+                  Sign In
+                </Button>
+                <Button href="/auth/signup" variant="primary" size="sm">
+                  Sign Up
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -130,14 +147,29 @@ export default function Navbar() {
               >
                 Pricing
               </Link>
-              <div className="px-4 pt-2 border-t border-border">
-                <Button href="/auth/signin" variant="ghost" size="sm" className="w-full mb-2">
-                  Sign In
-                </Button>
-                <Button href="/auth/signup" variant="primary" size="sm" className="w-full">
-                  Sign Up
-                </Button>
-              </div>
+               <div className="px-4 pt-2 border-t border-border">
+                 {loading ? (
+                   <div className="text-sm text-muted-foreground text-center py-2">Loading...</div>
+                 ) : user ? (
+                   <>
+                     <Button href="/dashboard" variant="ghost" size="sm" className="w-full mb-2">
+                       Dashboard
+                     </Button>
+                     <Button onClick={logout} variant="ghost" size="sm" className="w-full">
+                       Logout
+                     </Button>
+                   </>
+                 ) : (
+                   <>
+                     <Button href="/auth/signin" variant="ghost" size="sm" className="w-full mb-2">
+                       Sign In
+                     </Button>
+                     <Button href="/auth/signup" variant="primary" size="sm" className="w-full">
+                       Sign Up
+                     </Button>
+                   </>
+                 )}
+               </div>
             </div>
           </div>
         )}
