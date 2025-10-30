@@ -2,7 +2,7 @@
 
 /* Design Tokens - Clarity AI */
 :root {
-  /* Light Mode Colors */
+  /* Light Mode Colors (Default) */
   --background: #FFFFFF;
   --foreground: #1F2937;
   --secondary: #6B7280;
@@ -11,6 +11,44 @@
   --border: #E5E7EB;
   --card-bg: #FAFAF9;
   --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode - both auto and manual */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --background: #0F172A;
+    --foreground: #F9FAFB;
+    --secondary: #D1D5DB;
+    --accent: #06B6D4;
+    --accent-hover: #22D3EE;
+    --border: #374151;
+    --card-bg: #1E293B;
+    --shadow: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Manual dark mode class - highest priority */
+:root.dark {
+  --background: #0F172A !important;
+  --foreground: #F9FAFB !important;
+  --secondary: #D1D5DB !important;
+  --accent: #06B6D4 !important;
+  --accent-hover: #22D3EE !important;
+  --border: #374151 !important;
+  --card-bg: #1E293B !important;
+  --shadow: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Manual light mode class - override system preference */
+:root.light {
+  --background: #FFFFFF !important;
+  --foreground: #1F2937 !important;
+  --secondary: #6B7280 !important;
+  --accent: #06B6D4 !important;
+  --accent-hover: #0891B2 !important;
+  --border: #E5E7EB !important;
+  --card-bg: #FAFAF9 !important;
+  --shadow: rgba(0, 0, 0, 0.1) !important;
 }
 
 @theme inline {
@@ -31,32 +69,6 @@
   --shadow-sm: 0 1px 2px 0 var(--shadow);
   --shadow-md: 0 4px 6px -1px var(--shadow);
   --shadow-lg: 0 10px 15px -3px var(--shadow);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Dark Mode Colors */
-    --background: #0F172A;
-    --foreground: #F9FAFB;
-    --secondary: #D1D5DB;
-    --accent: #06B6D4;
-    --accent-hover: #22D3EE;
-    --border: #374151;
-    --card-bg: #1E293B;
-    --shadow: rgba(255, 255, 255, 0.1);
-  }
-}
-
-/* Manual dark mode class override */
-.dark {
-  --background: #0F172A;
-  --foreground: #F9FAFB;
-  --secondary: #D1D5DB;
-  --accent: #06B6D4;
-  --accent-hover: #22D3EE;
-  --border: #374151;
-  --card-bg: #1E293B;
-  --shadow: rgba(255, 255, 255, 0.1);
 }
 
 body {

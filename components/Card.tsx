@@ -8,7 +8,7 @@ export interface CardProps {
 
 export default function Card({ children, className = '', hover = false }: CardProps) {
   const hoverStyles = hover
-    ? 'hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer'
+    ? 'hover:shadow-xl hover:border-accent/50 transition-all duration-300 cursor-pointer'
     : '';
 
   return (
