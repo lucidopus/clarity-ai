@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ title, subtitle, onGenerateClick }: DashboardHeaderProps) {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">

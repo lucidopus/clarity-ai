@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
 import MaterialsTabs from './MaterialsTabs';
@@ -65,8 +66,7 @@ export default function VideoMaterialsView({
   const [activeTab, setActiveTab] = useState<TabType>('materials');
   const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<(number | string | null)[]>([]);
-  const [quizCompleted, setQuizCompleted] = useState(false);
-  const [quizScore, setQuizScore] = useState(0);
+  const [quizSummary, setQuizSummary] = useState<{ score: number; total: number } | null>(null);
 
   useEffect(() => {
     // Log page/materials view
@@ -93,8 +93,7 @@ export default function VideoMaterialsView({
   };
 
   const handleQuizComplete = (score: number, total: number) => {
-    setQuizScore(score);
-    setQuizCompleted(true);
+    setQuizSummary({ score, total });
   };
 
   const handlePrerequisiteQuizComplete = (score: number, total: number) => {
@@ -112,6 +111,8 @@ export default function VideoMaterialsView({
     }).format(dateObj);
   };
 
+  const quizCompleted = Boolean(quizSummary);
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
@@ -126,11 +127,14 @@ export default function VideoMaterialsView({
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Thumbnail */}
             {video.thumbnailUrl && (
-              <div className="shrink-0">
-                <img
+              <div className="relative shrink-0 w-48 h-28">
+                <Image
                   src={video.thumbnailUrl}
                   alt={video.title}
-                  className="w-48 h-28 object-cover rounded-xl"
+                  fill
+                  className="rounded-xl object-cover"
+                  sizes="192px"
+                  priority
                 />
               </div>
             )}
@@ -256,16 +260,15 @@ export default function VideoMaterialsView({
             {video.quizzes.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-6">Quiz</h2>
-                {quizCompleted ? (
+                {quizCompleted && quizSummary ? (
                   <QuizReview
                     questions={video.quizzes}
                     answers={quizAnswers}
-                    score={quizScore}
-                    total={video.quizzes.length}
+                    score={quizSummary.score}
+                    total={quizSummary.total}
                     onRetry={() => {
-                      setQuizCompleted(false);
+                      setQuizSummary(null);
                       setQuizAnswers([]);
-                      setQuizScore(0);
                     }}
                   />
                 ) : (

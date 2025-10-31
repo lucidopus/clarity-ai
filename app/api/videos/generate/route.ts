@@ -1,21 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import dbConnect from '@/lib/mongodb';
-import User from '@/lib/models/User';
-import Video from '@/lib/models/Video';
-import LearningMaterial from '@/lib/models/LearningMaterial';
-import Flashcard from '@/lib/models/Flashcard';
-import Quiz from '@/lib/models/Quiz';
 // Deprecated: mock pipeline removed. This endpoint is deprecated in favor of /api/videos/process
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    jwt.verify(token, process.env.JWT_SECRET!);
 
     const { youtubeUrl } = await request.json();
 

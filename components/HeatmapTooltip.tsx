@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface HeatmapTooltipState {
@@ -12,11 +13,14 @@ export interface HeatmapTooltipState {
 
 export default function HeatmapTooltip({ state }: { state: HeatmapTooltipState }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
   if (!mounted) return null;
   if (!state.visible) return null;
 
-  const style: React.CSSProperties = {
+  const style: CSSProperties = {
     position: 'fixed',
     top: state.y,
     left: state.x,

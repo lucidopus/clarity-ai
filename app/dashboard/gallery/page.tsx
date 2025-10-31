@@ -1,15 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import SearchBar from '@/components/SearchBar';
 import FilterDropdown from '@/components/FilterDropdown';
-import Button from '@/components/Button';
 import GenerateModal from '@/components/GenerateModal';
 import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
 import { Library } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 const filterOptions = [
   { label: 'All Materials', value: 'all' },
@@ -29,7 +27,6 @@ interface Video {
 }
 
 export default function GalleryPage() {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('all');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -57,15 +54,13 @@ export default function GalleryPage() {
     fetchVideos();
   }, []);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-    console.log('Searching for:', query);
-  };
+  }, []);
 
-  const handleFilterChange = (value: string) => {
+  const handleFilterChange = useCallback((value: string) => {
     setFilterValue(value);
-    console.log('Filter changed to:', value);
-  };
+  }, []);
 
   const handleGenerate = async (url: string) => {
     setIsGenerating(true);
@@ -86,9 +81,10 @@ export default function GalleryPage() {
       // Phase 5 not implemented: Just close modal and show info.
       setShowGenerateModal(false);
       alert('Video processing is not available yet. Phase 5 pipeline is being prepared.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Generation failed:', error);
-      alert(error.message); // Simple alert for now
+      const message = error instanceof Error ? error.message : 'Failed to generate materials';
+      alert(message); // Simple alert for now
     } finally {
       setIsGenerating(false);
     }
@@ -98,6 +94,31 @@ export default function GalleryPage() {
     // Open in new tab
     window.open(`/dashboard/generations/${videoId}`, '_blank');
   };
+
+  const filteredVideos = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const matchesSearch = (video: Video) =>
+      video.title.toLowerCase().includes(query) ||
+      video.channelName.toLowerCase().includes(query);
+
+    const sorted = [...videos].sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA;
+    });
+
+    const result = query ? sorted.filter(matchesSearch) : sorted;
+
+    if (filterValue === 'recent') {
+      return result;
+    }
+
+    if (filterValue === 'most-studied') {
+      return [...result].sort((a, b) => b.transcriptMinutes - a.transcriptMinutes);
+    }
+
+    return result;
+  }, [videos, searchQuery, filterValue]);
 
   return (
     <div>
@@ -149,9 +170,9 @@ export default function GalleryPage() {
       )}
 
       {/* Videos Grid */}
-      {!loading && videos.length > 0 && (
+      {!loading && filteredVideos.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos.map((video) => (
+          {filteredVideos.map((video) => (
             <VideoCard
               key={video.id}
               id={video.id}
