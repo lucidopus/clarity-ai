@@ -2,39 +2,90 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, XCircle, Brain, Trophy } from 'lucide-react';
 import Button from './Button';
-import { logActivity } from '@/lib/activityLogger';
 
 export type QuestionType = 'multiple-choice' | 'true-false' | 'fill-in-blank';
 
-export interface Question {
+export interface Quiz {
   id: string;
   questionText: string;
   type: QuestionType;
-  options?: string[]; // For MC and TF
-  correctAnswerIndex?: number; // For MC and TF
-  correctAnswer?: string; // For fill-in-blank
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswer?: string;
   explanation: string;
 }
 
 interface QuizInterfaceProps {
-  questions: Question[];
-  onSubmit: (answers: (number | string | null)[]) => void;
-  onComplete?: (score: number, total: number) => void;
+  quizzes: Quiz[];
+  videoId: string;
 }
 
-export default function QuizInterface({
-  questions,
-  onSubmit,
-  onComplete
-}: QuizInterfaceProps) {
+export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<(number | string | null)[]>(
-    new Array(questions.length).fill(null)
+    new Array(quizzes.length).fill(null)
   );
   const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [fillInAnswer, setFillInAnswer] = useState('');
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  const [submittedQuestions, setSubmittedQuestions] = useState<Set<number>>(new Set());
+
+  if (!quizzes || quizzes.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-4">
+            <Brain className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">No quizzes yet</h3>
+          <p className="text-muted-foreground">
+            Quizzes will appear here once generated.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (quizCompleted) {
+    const percentage = Math.round((finalScore / quizzes.length) * 100);
+    return (
+      <div className="max-w-2xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-12"
+        >
+          <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
+            <Trophy className="w-10 h-10 text-accent" />
+          </div>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Quiz Complete!</h2>
+          <p className="text-lg text-muted-foreground mb-6">
+            You scored {finalScore} out of {quizzes.length} ({percentage}%)
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setCurrentQuestionIndex(0);
+                setSelectedAnswers(new Array(quizzes.length).fill(null));
+                setSubmitted(false);
+                setShowFeedback(false);
+                setQuizCompleted(false);
+                setFinalScore(0);
+                setSubmittedQuestions(new Set());
+              }}
+            >
+              Retake Quiz
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   const handleOptionSelect = (optionIndex: number) => {
     if (submitted) return;
@@ -58,45 +109,51 @@ export default function QuizInterface({
 
     setSubmitted(true);
     setShowFeedback(true);
+    setSubmittedQuestions(prev => new Set([...prev, currentQuestionIndex]));
   };
 
-  const handleNext = async () => {
-    if (currentQuestionIndex < questions.length - 1) {
+  const handleNext = () => {
+    if (currentQuestionIndex < quizzes.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setSubmitted(false);
-      setShowFeedback(false);
+      const nextIndex = currentQuestionIndex + 1;
+      setSubmitted(submittedQuestions.has(nextIndex));
+      setShowFeedback(submittedQuestions.has(nextIndex));
+      setFillInAnswer('');
     } else {
       // Quiz complete
       const score = calculateScore();
-      onSubmit(selectedAnswers);
-      if (onComplete) {
-        onComplete(score, questions.length);
-      }
-      try { await logActivity('quiz_completed', undefined, { score, total: questions.length }); } catch {}
+      setFinalScore(score);
+      setQuizCompleted(true);
+      // TODO: API call to save quiz results
     }
   };
 
   const handlePrev = () => {
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(currentQuestionIndex - 1);
-      setSubmitted(false);
-      setShowFeedback(false);
+      const prevIndex = currentQuestionIndex - 1;
+      setSubmitted(submittedQuestions.has(prevIndex));
+      setShowFeedback(submittedQuestions.has(prevIndex));
+      setFillInAnswer('');
     }
   };
 
   const calculateScore = () => {
-    return questions.reduce((score, question, index) => {
+    return quizzes.reduce((score, quiz, index) => {
+      // Only count submitted questions
+      if (!submittedQuestions.has(index)) return score;
+
       const answer = selectedAnswers[index];
-      if (question.type === 'fill-in-blank') {
-        return answer === question.correctAnswer ? score + 1 : score;
+      if (quiz.type === 'fill-in-blank') {
+        return answer === quiz.correctAnswer ? score + 1 : score;
       } else {
-        return answer === question.correctAnswerIndex ? score + 1 : score;
+        return answer === quiz.correctAnswerIndex ? score + 1 : score;
       }
     }, 0);
   };
 
   // Get current question and answer
-  const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestion = quizzes[currentQuestionIndex];
   const currentAnswer = selectedAnswers[currentQuestionIndex];
 
   const isCorrect = () => {
@@ -107,7 +164,7 @@ export default function QuizInterface({
   };
 
   // Calculate progress percentage
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const progress = ((currentQuestionIndex + 1) / quizzes.length) * 100;
 
   const renderQuestion = () => {
     switch (currentQuestion.type) {
@@ -118,21 +175,21 @@ export default function QuizInterface({
               <motion.button
                 key={index}
                 onClick={() => handleOptionSelect(index)}
-                className={`w-full p-4 text-left border rounded-xl transition-all duration-200 ${
+                className={`w-full p-4 text-left border-2 rounded-xl transition-all duration-200 ${
                   currentAnswer === index
                     ? submitted
                       ? isCorrect()
                         ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
                         : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
                       : 'border-accent bg-accent/10 text-accent'
-                    : 'border-border hover:border-accent/50 bg-background'
+                    : 'border-border hover:border-accent/50 bg-card-bg hover:bg-accent/5'
                 }`}
                 disabled={submitted}
                 whileHover={!submitted ? { scale: 1.01 } : {}}
                 whileTap={!submitted ? { scale: 0.99 } : {}}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                     currentAnswer === index
                       ? submitted
                         ? isCorrect()
@@ -154,40 +211,25 @@ export default function QuizInterface({
 
       case 'true-false':
         return (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-4">
             {['True', 'False'].map((option, index) => (
               <motion.button
                 key={index}
                 onClick={() => handleOptionSelect(index)}
-                className={`w-full p-4 text-left border rounded-xl transition-all duration-200 ${
+                className={`p-6 text-center border-2 rounded-xl transition-all duration-200 ${
                   currentAnswer === index
                     ? submitted
                       ? isCorrect()
                         ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
                         : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
                       : 'border-accent bg-accent/10 text-accent'
-                    : 'border-border hover:border-accent/50 bg-background'
+                    : 'border-border hover:border-accent/50 bg-card-bg hover:bg-accent/5'
                 }`}
                 disabled={submitted}
-                whileHover={!submitted ? { scale: 1.01 } : {}}
-                whileTap={!submitted ? { scale: 0.99 } : {}}
+                whileHover={!submitted ? { scale: 1.02 } : {}}
+                whileTap={!submitted ? { scale: 0.98 } : {}}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    currentAnswer === index
-                      ? submitted
-                        ? isCorrect()
-                          ? 'border-green-500 bg-green-500'
-                          : 'border-red-500 bg-red-500'
-                        : 'border-accent bg-accent'
-                      : 'border-muted-foreground'
-                  }`}>
-                    {currentAnswer === index && (
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    )}
-                  </div>
-                  <span className="text-foreground">{option}</span>
-                </div>
+                <div className="text-2xl font-semibold text-foreground">{option}</div>
               </motion.button>
             ))}
           </div>
@@ -202,7 +244,7 @@ export default function QuizInterface({
                 value={fillInAnswer}
                 onChange={(e) => setFillInAnswer(e.target.value)}
                 placeholder="Type your answer..."
-                className="flex-1 px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
+                className="flex-1 px-4 py-3 bg-card-bg border-2 border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
                 disabled={submitted}
                 onKeyPress={(e) => e.key === 'Enter' && handleFillInSubmit()}
               />
@@ -217,24 +259,24 @@ export default function QuizInterface({
               )}
             </div>
             {submitted && (
-              <div className={`p-4 rounded-xl border ${
-                isCorrect()
-                  ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                  : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
-              }`}>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`p-4 rounded-xl border-2 ${
+                  isCorrect()
+                    ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
+                    : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
+                }`}
+              >
                 <div className="flex items-center gap-2 mb-2">
                   {isCorrect() ? (
                     <>
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
+                      <CheckCircle2 className="w-5 h-5" />
                       <span className="font-medium">Correct!</span>
                     </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
+                      <XCircle className="w-5 h-5" />
                       <span className="font-medium">Incorrect</span>
                     </>
                   )}
@@ -247,7 +289,7 @@ export default function QuizInterface({
                     <span className="font-medium">Correct answer:</span> {currentQuestion.correctAnswer}
                   </p>
                 )}
-              </div>
+              </motion.div>
             )}
           </div>
         );
@@ -258,35 +300,37 @@ export default function QuizInterface({
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Progress */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-muted-foreground">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            Score: {calculateScore()}/{currentQuestionIndex + (submitted ? 1 : 0)}
-          </span>
+    <div className="max-w-4xl mx-auto">
+      {/* Progress Bar */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-medium text-foreground">
+            Question {currentQuestionIndex + 1} of {quizzes.length}
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {calculateScore()} correct so far
+          </div>
         </div>
-        <div className="w-full bg-border rounded-full h-2">
-          <div
-            className="bg-accent h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-accent"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
           />
         </div>
       </div>
 
-      {/* Question */}
+      {/* Question Card */}
       <motion.div
         key={currentQuestionIndex}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
-        className="bg-card-bg border border-border rounded-2xl p-6 mb-6"
+        className="bg-card-bg border-2 border-border rounded-2xl p-8 mb-8"
       >
-        <h3 className="text-lg font-semibold text-foreground mb-4">
+        <h3 className="text-2xl font-semibold text-foreground mb-6">
           {currentQuestion.questionText}
         </h3>
 
@@ -312,16 +356,16 @@ export default function QuizInterface({
       </motion.div>
 
       {/* Navigation */}
-      <div className="flex justify-between">
+      <div className="flex items-center justify-between">
         <Button
+          variant="secondary"
           onClick={handlePrev}
-          variant="ghost"
           disabled={currentQuestionIndex === 0}
         >
           Previous
         </Button>
 
-        <div className="flex gap-2">
+        <div className="flex gap-4">
           {!submitted ? (
             <Button
               onClick={handleSubmitAnswer}
@@ -335,10 +379,15 @@ export default function QuizInterface({
             </Button>
           ) : (
             <Button onClick={handleNext} variant="primary">
-              {currentQuestionIndex === questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+              {currentQuestionIndex === quizzes.length - 1 ? 'Finish Quiz' : 'Next Question'}
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Keyboard shortcuts hint */}
+      <div className="mt-6 text-center text-sm text-muted-foreground">
+        Use <kbd className="px-2 py-1 bg-muted rounded text-xs">Tab</kbd> to navigate options
       </div>
     </div>
   );
