@@ -63,8 +63,12 @@ export default function GalleryPage() {
   }, []);
 
   const handleGenerate = async (url: string) => {
+    console.log('🎬 [FRONTEND] Starting video generation...');
+    console.log(`🎬 [FRONTEND] YouTube URL: ${url}`);
+
     setIsGenerating(true);
     try {
+      console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
       const response = await fetch('/api/videos/process', {
         method: 'POST',
         headers: {
@@ -73,26 +77,40 @@ export default function GalleryPage() {
         body: JSON.stringify({ youtubeUrl: url }),
       });
 
+      console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ [FRONTEND] API error response:', errorData);
         throw new Error(errorData.error || 'Failed to generate materials');
       }
 
-      // Phase 5 not implemented: Just close modal and show info.
+      const data = await response.json();
+      console.log('✅ [FRONTEND] Generation successful:', data);
+
+      // Close modal
       setShowGenerateModal(false);
-      alert('Video processing is not available yet. Phase 5 pipeline is being prepared.');
+
+      // Redirect to the generation page
+      if (data.videoId) {
+        console.log(`🎬 [FRONTEND] Redirecting to /generations/${data.videoId}`);
+        window.location.href = `/generations/${data.videoId}`;
+      } else {
+        console.error('❌ [FRONTEND] No videoId in response');
+      }
     } catch (error: unknown) {
-      console.error('Generation failed:', error);
+      console.error('❌ [FRONTEND] Generation failed:', error);
       const message = error instanceof Error ? error.message : 'Failed to generate materials';
       alert(message); // Simple alert for now
     } finally {
       setIsGenerating(false);
+      console.log('🎬 [FRONTEND] Generation flow completed');
     }
   };
 
   const handleVideoClick = (videoId: string) => {
     // Open in new tab
-    window.open(`/dashboard/generations/${videoId}`, '_blank');
+    window.open(`/generations/${videoId}`, '_blank');
   };
 
   const filteredVideos = useMemo(() => {

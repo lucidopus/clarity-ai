@@ -1,9 +1,11 @@
-// Unified SDK initialization placeholder for Phase 5
-// Do not implement actual clients yet.
+// Unified SDK initialization for Phase 5
+import Groq from 'groq-sdk';
 
-export const groq = {
-  // Placeholder client to avoid runtime usage before Phase 5 implementation
-  __uninitialized: true as const,
-};
+// Initialize Groq client
+export const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
+// Export other SDKs here as they're added
+// This makes it easy to switch providers later
 
