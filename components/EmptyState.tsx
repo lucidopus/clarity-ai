@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import Button from './Button';
 
 interface EmptyStateProps {
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   title: string;
   description: string;
   actionLabel?: string;
@@ -28,6 +29,16 @@ export default function EmptyState({
       )}
       <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-muted-foreground mb-6 max-w-md">{description}</p>
+      {actionLabel && (
+        <Button
+          variant="primary"
+          size="md"
+          href={actionHref}
+          onClick={!actionHref ? onAction : undefined}
+        >
+          {actionLabel}
+        </Button>
+      )}
     </div>
   );
 }
