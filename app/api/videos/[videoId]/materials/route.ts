@@ -48,38 +48,36 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Fetch video from database
-    const video = await Video.findById(videoId);
+    // Fetch video from database using YouTube videoId
+    const video = await Video.findOne({
+      videoId: videoId,
+      userId: decoded.userId
+    });
     if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // Check if video belongs to user
-    if (video.userId.toString() !== decoded.userId) {
-      return NextResponse.json({ error: 'Unauthorized access to video' }, { status: 403 });
-    }
-
     // Fetch learning materials (timestamps and prerequisites)
     const learningMaterial = await LearningMaterial.findOne({
-      videoId: video._id,
+      videoId: videoId, // YouTube video ID
       userId: decoded.userId
     });
 
     // Fetch flashcards
     const flashcards = await Flashcard.find({
-      videoId: video._id,
+      videoId: videoId, // YouTube video ID
       userId: decoded.userId
     });
 
     // Fetch quizzes
     const quizzes = await Quiz.find({
-      videoId: video._id,
+      videoId: videoId, // YouTube video ID
       userId: decoded.userId
     });
 
     // Fetch user progress
     const progress = await Progress.findOne({
-      videoId: video._id,
+      videoId: videoId, // YouTube video ID
       userId: decoded.userId
     });
 
@@ -87,6 +85,8 @@ export async function GET(
     const materials = {
       video: {
         id: video._id.toString(),
+        videoId: video.videoId,
+        youtubeUrl: video.youtubeUrl,
         title: video.title,
         channelName: video.channelName,
         thumbnailUrl: video.thumbnail,

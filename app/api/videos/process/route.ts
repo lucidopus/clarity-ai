@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingVideo) {
-      console.log(`♻️ [VIDEO PROCESS] Video already processed: ${existingVideo._id.toString()}`);
+      console.log(`♻️ [VIDEO PROCESS] Video already processed: ${existingVideo.videoId}`);
       return NextResponse.json(
         {
-          videoId: existingVideo._id.toString(),
+          videoId: existingVideo.videoId, // YouTube video ID
           message: 'Video already processed',
         },
         { status: 200 }
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     await Flashcard.insertMany(
       materials.flashcards.map((fc) => ({
         userId: decoded.userId,
-        videoId: videoDoc._id,
+        videoId: videoId, // YouTube video ID
         question: fc.question,
         answer: fc.answer,
         difficulty: fc.difficulty,
@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     await Quiz.insertMany(
       materials.quizzes.map((quiz) => ({
         userId: decoded.userId,
-        videoId: videoDoc._id,
+        videoId: videoId, // YouTube video ID
         questionText: quiz.questionText,
         options: quiz.options,
         correctAnswerIndex: quiz.correctAnswerIndex,
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     // Save timestamps and prerequisites in learning materials collection
     console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps and ${materials.prerequisites.length} prerequisites...`);
     await LearningMaterial.create({
-      videoId: videoDoc._id,
+      videoId: videoId, // YouTube video ID
       userId: decoded.userId,
       timestamps: materials.timestamps,
       prerequisites: materials.prerequisites,
@@ -212,11 +212,11 @@ export async function POST(request: NextRequest) {
     });
     console.log('✅ [VIDEO PROCESS] Video marked as completed');
 
-    // 9. Return success with videoId
-    console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! Video ID: ${videoDoc._id.toString()}`);
+    // 9. Return success with YouTube videoId
+    console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! YouTube Video ID: ${videoId}`);
     return NextResponse.json({
       success: true,
-      videoId: videoDoc._id.toString(),
+      videoId: videoId, // YouTube video ID (e.g., "dQw4w9WgXcQ")
       message: 'Video processed successfully',
     });
   } catch (error) {
