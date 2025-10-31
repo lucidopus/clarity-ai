@@ -1,13 +1,66 @@
 export const LEARNING_MATERIALS_SCHEMA = {
   type: 'object',
   properties: {
-    flashcards: { type: 'array' },
-    quizzes: { type: 'array' },
-    timestamps: { type: 'array' },
-    prerequisites: { type: 'array' },
+    flashcards: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          question: { type: 'string' },
+          answer: { type: 'string' },
+          difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
+        },
+        required: ['id', 'question', 'answer', 'difficulty'],
+        additionalProperties: false,
+      },
+    },
+    quizzes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          questionText: { type: 'string' },
+          options: { type: 'array', items: { type: 'string' } },
+          correctAnswerIndex: { type: 'integer' },
+          explanation: { type: 'string' },
+        },
+        required: ['id', 'questionText', 'options', 'correctAnswerIndex', 'explanation'],
+        additionalProperties: false,
+      },
+    },
+    timestamps: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          timeSeconds: { type: 'integer' },
+          topic: { type: 'string' },
+          description: { type: 'string' },
+        },
+        required: ['id', 'timeSeconds', 'topic', 'description'],
+        additionalProperties: false,
+      },
+    },
+    prerequisites: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          topic: { type: 'string' },
+          difficulty: { type: 'string', enum: ['beginner', 'intermediate', 'advanced'] },
+        },
+        required: ['id', 'topic', 'difficulty'],
+        additionalProperties: false,
+      },
+    },
     chatbotContext: { type: 'string' },
   },
   required: ['flashcards', 'quizzes', 'timestamps', 'prerequisites', 'chatbotContext'],
+  additionalProperties: false,
 } as const;
 
 export interface LearningMaterials {
