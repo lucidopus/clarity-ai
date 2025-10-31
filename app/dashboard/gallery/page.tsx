@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import SearchBar from '@/components/SearchBar';
 import FilterDropdown from '@/components/FilterDropdown';
 import Button from '@/components/Button';
+import GenerateModal from '@/components/GenerateModal';
+import EmptyState from '@/components/EmptyState';
+import VideoCard from '@/components/VideoCard';
+import { Library } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const filterOptions = [
   { label: 'All Materials', value: 'all' },
@@ -13,9 +18,44 @@ const filterOptions = [
   { label: 'By Subject', value: 'by-subject' },
 ];
 
+interface Video {
+  id: string;
+  title: string;
+  channelName: string;
+  thumbnailUrl?: string;
+  duration: number;
+  transcriptMinutes: number;
+  createdAt: Date | string;
+}
+
 export default function GalleryPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('all');
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch videos on mount
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const response = await fetch('/api/videos');
+        if (!response.ok) {
+          throw new Error('Failed to fetch videos');
+        }
+        const data = await response.json();
+        setVideos(data.videos);
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -27,12 +67,45 @@ export default function GalleryPage() {
     console.log('Filter changed to:', value);
   };
 
+  const handleGenerate = async (url: string) => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/videos/process', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ youtubeUrl: url }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate materials');
+      }
+
+      // Phase 5 not implemented: Just close modal and show info.
+      setShowGenerateModal(false);
+      alert('Video processing is not available yet. Phase 5 pipeline is being prepared.');
+    } catch (error: any) {
+      console.error('Generation failed:', error);
+      alert(error.message); // Simple alert for now
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleVideoClick = (videoId: string) => {
+    // Open in new tab
+    window.open(`/dashboard/generations/${videoId}`, '_blank');
+  };
+
   return (
     <div>
       {/* Page Header */}
       <DashboardHeader
         title="Library"
         subtitle="Access all your learning materials and generated content"
+        onGenerateClick={() => setShowGenerateModal(true)}
       />
 
       {/* Search & Filter Bar */}
@@ -52,34 +125,54 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      {/* Empty State */}
-      <div className="bg-card-bg rounded-2xl p-12 border border-border text-center min-h-[400px] flex items-center justify-center">
-        <div className="max-w-md">
-          <div className="w-20 h-20 bg-purple-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-10 h-10 text-purple-500"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
-              />
-            </svg>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your library...</p>
           </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">Your library is empty</h3>
-          <p className="text-muted-foreground mb-6">
-            Generate your first learning materials from a YouTube video. All your content will be saved here.
-          </p>
-          <Button href="/dashboard/generate" variant="primary">
-            Generate Materials
-          </Button>
         </div>
-      </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && videos.length === 0 && (
+        <div className="bg-card-bg rounded-2xl border border-border min-h-[400px] flex items-center justify-center">
+          <EmptyState
+            icon={<Library className="w-12 h-12" />}
+            title="Your Library is Empty"
+            description="Generate your first learning materials from a YouTube video to get started."
+            actionLabel="Generate Materials"
+            onAction={() => setShowGenerateModal(true)}
+          />
+        </div>
+      )}
+
+      {/* Videos Grid */}
+      {!loading && videos.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {videos.map((video) => (
+            <VideoCard
+              key={video.id}
+              id={video.id}
+              title={video.title}
+              channelName={video.channelName}
+              duration={`${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`}
+              transcriptMinutes={video.transcriptMinutes}
+              createdAt={video.createdAt}
+              onClick={handleVideoClick}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Generate Modal */}
+      <GenerateModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerate}
+        isLoading={isGenerating}
+      />
     </div>
   );
 }

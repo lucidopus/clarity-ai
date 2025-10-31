@@ -47,6 +47,7 @@ const VideoSchema: Schema = new Schema({
   processedAt: { type: Date },
 }, {
   timestamps: true,
+  collection: 'videos', // Explicit collection name
 });
 
 // Create indexes
