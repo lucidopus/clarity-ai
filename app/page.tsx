@@ -56,31 +56,24 @@ export default function Home() {
              </div>
 
              {/* Our Story */}
-             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-               <div className="space-y-6">
-                 <div className="flex items-center space-x-3 mb-6">
-                   <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
+             <div className="max-w-4xl mx-auto mb-16">
+               <div className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-accent/10">
+                 <div className="flex items-center justify-center space-x-3 mb-8">
+                   <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center">
+                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                      </svg>
                    </div>
-                   <h3 className="text-2xl md:text-3xl font-bold text-foreground">Our Story</h3>
+                   <h3 className="text-3xl md:text-4xl font-bold text-foreground">Our Story</h3>
                  </div>
-                 <div className="space-y-4 text-secondary leading-relaxed">
-                   <p className="text-lg">
+
+                 <div className="space-y-6 text-secondary leading-relaxed text-center">
+                   <p className="text-lg md:text-xl">
                      Clarity AI was born from a simple observation: YouTube contains an incredible wealth of educational content, but it&apos;s often difficult to extract structured learning materials from long-form videos.
                    </p>
-                   <p className="text-lg">
+                   <p className="text-lg md:text-xl">
                      Our founders, a team of educators and AI researchers, saw an opportunity to bridge this gap. By combining advanced natural language processing with educational best practices, we created a platform that transforms passive video watching into active, engaging learning experiences.
                    </p>
-                 </div>
-               </div>
-
-               <div className="flex items-center justify-center">
-                 <div className="w-80 h-80 bg-linear-to-br from-accent/10 to-accent/5 rounded-2xl flex items-center justify-center border border-accent/20">
-                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-20 h-20 text-accent">
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                   </svg>
                  </div>
                </div>
              </div>
@@ -222,6 +215,8 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Interactive Quizzes */}
+                <div className="group">
                   <div className="bg-background rounded-2xl p-6 border border-border hover:border-accent/60 transition-all duration-300 hover:shadow-lg relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-accent/0 via-accent/50 to-accent/0"></div>
                     <div className="flex items-start space-x-4">
