@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from './Button';
-import QuizInterface, { Question } from './QuizInterface';
+import QuizInterface from './QuizInterface';
 import QuizReview from './QuizReview';
 
 interface Prerequisite {
@@ -11,6 +11,16 @@ interface Prerequisite {
   title: string;
   description: string;
   required: boolean;
+}
+
+interface Question {
+  id: string;
+  questionText: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-in-blank';
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswer?: string;
+  explanation: string;
 }
 
 interface PrerequisiteCheckerProps {
@@ -26,7 +36,6 @@ type ViewState = 'overview' | 'quiz' | 'results';
 export default function PrerequisiteChecker({
   prerequisites,
   quizQuestions,
-  onQuizComplete,
   onLearnWithAI,
   onContinue
 }: PrerequisiteCheckerProps) {
@@ -36,18 +45,6 @@ export default function PrerequisiteChecker({
 
   const handleStartQuiz = () => {
     setViewState('quiz');
-  };
-
-  const handleQuizSubmit = (answers: (number | string | null)[]) => {
-    setQuizAnswers(answers);
-  };
-
-  const handleQuizComplete = (score: number, total: number) => {
-    setQuizScore(score);
-    setViewState('results');
-    if (onQuizComplete) {
-      onQuizComplete(score, total);
-    }
   };
 
   const handleRetryQuiz = () => {
@@ -88,9 +85,8 @@ export default function PrerequisiteChecker({
           </Button>
         </div>
         <QuizInterface
-          questions={quizQuestions}
-          onSubmit={handleQuizSubmit}
-          onComplete={handleQuizComplete}
+          quizzes={quizQuestions}
+          videoId=""
         />
       </div>
     );
@@ -101,7 +97,7 @@ export default function PrerequisiteChecker({
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Button onClick={handleBackToOverview} variant="ghost">
-            ← Back to Prerequisites
+           ← Back to Prerequisites
           </Button>
         </div>
         <QuizReview
@@ -224,27 +220,29 @@ export default function PrerequisiteChecker({
           </div>
         </div>
 
-        <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
-          <h3 className="font-medium text-foreground mb-2">
-            Take a Quick Readiness Quiz
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {quizQuestions.length} questions • 2-3 minutes
-          </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            This will help assess if you have the background knowledge needed for this video.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleStartQuiz} variant="primary">
-              Take Quiz
-            </Button>
-            {onContinue && (
-              <Button onClick={onContinue} variant="ghost">
-                Skip for Now
+        {quizQuestions.length > 0 && (
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+            <h3 className="font-medium text-foreground mb-2">
+              Take a Quick Readiness Quiz
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {quizQuestions.length} questions • 2-3 minutes
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              This will help assess if you have the background knowledge needed for this video.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={handleStartQuiz} variant="primary">
+                Take Quiz
               </Button>
-            )}
+              {onContinue && (
+                <Button onClick={onContinue} variant="ghost">
+                  Skip for Now
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   );

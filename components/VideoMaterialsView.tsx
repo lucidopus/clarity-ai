@@ -7,11 +7,21 @@ import Button from './Button';
 import MaterialsTabs from './MaterialsTabs';
 import FlashcardViewer from './FlashcardViewer';
 import FlashcardCreator from './FlashcardCreator';
-import QuizInterface, { Question } from './QuizInterface';
+import QuizInterface from './QuizInterface';
 import QuizReview from './QuizReview';
 import TranscriptViewer from './TranscriptViewer';
 import PrerequisiteChecker from './PrerequisiteChecker';
 import { logActivity } from '@/lib/activityLogger';
+
+interface Question {
+  id: string;
+  questionText: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-in-blank';
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswer?: string;
+  explanation: string;
+}
 
 interface VideoMaterials {
   id: string;
@@ -45,7 +55,6 @@ interface VideoMaterials {
 interface VideoMaterialsViewProps {
   video: VideoMaterials;
   onBack?: () => void;
-  onMarkFlashcardMastered?: (flashcardId: string) => void;
   onCreateUserFlashcard?: (question: string, answer: string) => void;
   onQuizSubmit?: (answers: (number | string | null)[]) => void;
   onPrerequisiteQuizComplete?: (score: number, total: number) => void;
@@ -57,9 +66,7 @@ type TabType = 'materials' | 'chatbot';
 export default function VideoMaterialsView({
   video,
   onBack,
-  onMarkFlashcardMastered,
   onCreateUserFlashcard,
-  onQuizSubmit,
   onPrerequisiteQuizComplete,
   onLearnWithAI
 }: VideoMaterialsViewProps) {
@@ -85,16 +92,7 @@ export default function VideoMaterialsView({
     setShowFlashcardCreator(false);
   };
 
-  const handleQuizSubmit = (answers: (number | string | null)[]) => {
-    setQuizAnswers(answers);
-    if (onQuizSubmit) {
-      onQuizSubmit(answers);
-    }
-  };
-
-  const handleQuizComplete = (score: number, total: number) => {
-    setQuizSummary({ score, total });
-  };
+  // Quiz handlers are handled within QuizInterface/QuizReview flows.
 
   const handlePrerequisiteQuizComplete = (score: number, total: number) => {
     if (onPrerequisiteQuizComplete) {
@@ -251,8 +249,7 @@ export default function VideoMaterialsView({
               </div>
               <FlashcardViewer
                 flashcards={video.flashcards}
-                onMarkMastered={onMarkFlashcardMastered}
-                onCreateNew={() => setShowFlashcardCreator(true)}
+                videoId={video.id}
               />
             </div>
 
@@ -272,10 +269,9 @@ export default function VideoMaterialsView({
                     }}
                   />
                 ) : (
-                  <QuizInterface
-                    questions={video.quizzes}
-                    onSubmit={handleQuizSubmit}
-                    onComplete={handleQuizComplete}
+                   <QuizInterface
+                    quizzes={video.quizzes}
+                    videoId={video.id}
                   />
                 )}
               </div>
@@ -285,7 +281,7 @@ export default function VideoMaterialsView({
             {video.transcript.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-6">Transcript</h2>
-                <TranscriptViewer segments={video.transcript} />
+                <TranscriptViewer transcript={video.transcript} videoId={video.id} />
               </div>
             )}
           </motion.div>
