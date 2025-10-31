@@ -55,7 +55,6 @@ interface VideoMaterials {
 interface VideoMaterialsViewProps {
   video: VideoMaterials;
   onBack?: () => void;
-  onMarkFlashcardMastered?: (flashcardId: string) => void;
   onCreateUserFlashcard?: (question: string, answer: string) => void;
   onQuizSubmit?: (answers: (number | string | null)[]) => void;
   onPrerequisiteQuizComplete?: (score: number, total: number) => void;
@@ -67,9 +66,7 @@ type TabType = 'materials' | 'chatbot';
 export default function VideoMaterialsView({
   video,
   onBack,
-  onMarkFlashcardMastered,
   onCreateUserFlashcard,
-  onQuizSubmit,
   onPrerequisiteQuizComplete,
   onLearnWithAI
 }: VideoMaterialsViewProps) {
@@ -95,16 +92,7 @@ export default function VideoMaterialsView({
     setShowFlashcardCreator(false);
   };
 
-  const handleQuizSubmit = (answers: (number | string | null)[]) => {
-    setQuizAnswers(answers);
-    if (onQuizSubmit) {
-      onQuizSubmit(answers);
-    }
-  };
-
-  const handleQuizComplete = (score: number, total: number) => {
-    setQuizSummary({ score, total });
-  };
+  // Quiz handlers are handled within QuizInterface/QuizReview flows.
 
   const handlePrerequisiteQuizComplete = (score: number, total: number) => {
     if (onPrerequisiteQuizComplete) {

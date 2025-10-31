@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, FileText, CheckCircle2, ArrowLeft, Sparkles } from 'lucide-react';
+import { BookOpen, Brain, FileText, CheckCircle2, Video } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import QuizInterface from '@/components/QuizInterface';
 import TranscriptViewer from '@/components/TranscriptViewer';
@@ -60,10 +60,10 @@ interface VideoMaterials {
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites';
 
 const tabs = [
+  { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
+  { id: 'transcript' as TabType, label: 'Transcript', icon: FileText },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
-  { id: 'transcript' as TabType, label: 'Transcript', icon: FileText },
-  { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
 ];
 
 export default function VideoMaterialsPage() {
@@ -145,17 +145,9 @@ export default function VideoMaterialsPage() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <Button
-                variant="ghost"
-                onClick={() => router.push('/dashboard/gallery')}
-                className="mb-4 -ml-2"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Gallery
-              </Button>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-accent" />
+                  <Video className="w-5 h-5 text-accent" />
                 </div>
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                   {materials.video.title}
@@ -177,7 +169,7 @@ export default function VideoMaterialsPage() {
       </motion.div>
 
       {/* Tab Navigation */}
-      <div className="bg-card-bg border-b border-border sticky top-0 z-40 backdrop-blur-sm bg-card-bg/95">
+      <div className="bg-card-bg border-b border-border sticky top-0 z-40 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex gap-1 overflow-x-auto">
             {tabs.map((tab) => {
@@ -187,7 +179,7 @@ export default function VideoMaterialsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative px-6 py-4 font-medium text-sm whitespace-nowrap transition-colors ${
+                  className={`relative cursor-pointer px-6 py-4 font-medium text-sm whitespace-nowrap transition-colors ${
                     isActive
                       ? 'text-accent'
                       : 'text-muted-foreground hover:text-foreground'

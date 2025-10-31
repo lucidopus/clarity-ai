@@ -36,7 +36,6 @@ type ViewState = 'overview' | 'quiz' | 'results';
 export default function PrerequisiteChecker({
   prerequisites,
   quizQuestions,
-  onQuizComplete,
   onLearnWithAI,
   onContinue
 }: PrerequisiteCheckerProps) {
@@ -46,18 +45,6 @@ export default function PrerequisiteChecker({
 
   const handleStartQuiz = () => {
     setViewState('quiz');
-  };
-
-  const handleQuizSubmit = (answers: (number | string | null)[]) => {
-    setQuizAnswers(answers);
-  };
-
-  const handleQuizComplete = (score: number, total: number) => {
-    setQuizScore(score);
-    setViewState('results');
-    if (onQuizComplete) {
-      onQuizComplete(score, total);
-    }
   };
 
   const handleRetryQuiz = () => {
@@ -110,7 +97,7 @@ export default function PrerequisiteChecker({
       <div className="max-w-4xl mx-auto">
         <div className="mb-6">
           <Button onClick={handleBackToOverview} variant="ghost">
-            ← Back to Prerequisites
+           ← Back to Prerequisites
           </Button>
         </div>
         <QuizReview
