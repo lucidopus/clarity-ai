@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       videos: videos.map(video => ({
-        id: video._id.toString(),
+        id: video.videoId, // YouTube video ID for routing to /generations/${videoId}
+        _id: video._id.toString(), // MongoDB ID (kept for backward compatibility if needed)
         title: video.title,
         channelName: video.channelName,
         thumbnailUrl: video.thumbnail, // Fixed: use 'thumbnail' field name

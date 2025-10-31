@@ -15,7 +15,7 @@ export interface IPrerequisite {
 
 export interface ILearningMaterial extends Document {
   _id: mongoose.Types.ObjectId;
-  videoId: mongoose.Types.ObjectId;
+  videoId: string; // YouTube video ID
   userId: mongoose.Types.ObjectId;
   timestamps: ITimestamp[];
   prerequisites: IPrerequisite[];
@@ -41,7 +41,7 @@ const PrerequisiteSchema: Schema = new Schema({
 }, { _id: false });
 
 const LearningMaterialSchema: Schema = new Schema({
-  videoId: { type: Schema.Types.ObjectId, ref: 'Video', required: true },
+  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   timestamps: [TimestampSchema],
   prerequisites: [PrerequisiteSchema],

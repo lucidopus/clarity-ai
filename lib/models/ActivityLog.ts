@@ -6,7 +6,7 @@ export interface IActivityLog extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   activityType: ActivityType;
-  videoId?: mongoose.Types.ObjectId;
+  videoId?: string; // YouTube video ID (optional)
   date: Date; // date-only (time zeroed out)
   timestamp: Date; // full timestamp
   metadata?: Record<string, unknown>;
@@ -17,7 +17,7 @@ export interface IActivityLog extends Document {
 const ActivityLogSchema: Schema<IActivityLog> = new Schema({
   userId: { type: Schema.Types.ObjectId, required: true, index: true, ref: 'User' },
   activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered'] },
-  videoId: { type: Schema.Types.ObjectId, ref: 'Video' },
+  videoId: { type: String }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   date: { type: Date, required: true },
   timestamp: { type: Date, required: true, default: () => new Date() },
   metadata: { type: Schema.Types.Mixed },

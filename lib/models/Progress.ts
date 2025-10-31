@@ -10,7 +10,7 @@ export interface IQuizAttempt {
 export interface IProgress extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  videoId: mongoose.Types.ObjectId;
+  videoId: string; // YouTube video ID
   masteredFlashcardIds: mongoose.Types.ObjectId[];
   masteredQuizIds: mongoose.Types.ObjectId[];
   quizAttempts: IQuizAttempt[];
@@ -29,7 +29,7 @@ const QuizAttemptSchema: Schema = new Schema({
 
 const ProgressSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: Schema.Types.ObjectId, ref: 'Video', required: true },
+  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   masteredFlashcardIds: [{ type: Schema.Types.ObjectId, ref: 'Flashcard' }],
   masteredQuizIds: [{ type: Schema.Types.ObjectId, ref: 'Quiz' }],
   quizAttempts: [QuizAttemptSchema],
