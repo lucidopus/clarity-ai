@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -10,6 +11,7 @@ import EmptyState from '@/components/EmptyState';
 
 export default function DashboardHomePage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [greeting, setGreeting] = useState('Welcome');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -26,21 +28,28 @@ export default function DashboardHomePage() {
     }
   }, []);
 
-  const handleGenerate = async (url: string) => {
+  const handleGenerate = async (youtubeUrl: string) => {
     setIsGenerating(true);
     try {
-      // TODO: Implement actual generation logic in Phase 5
-      console.log('Generating materials for URL:', url);
+      const response = await fetch('/api/videos/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ youtubeUrl }),
+      });
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate materials');
+      }
 
-      // Close modal and show success
+      const data = await response.json();
       setShowGenerateModal(false);
-      // TODO: Redirect to generated materials or show success message
-    } catch (error) {
-      console.error('Generation failed:', error);
-      // TODO: Show error message
+      router.push(`/dashboard/generations/${data.videoId}`);
+    } catch (error: any) {
+      console.error('Generation error:', error);
+      alert(error.message); // Simple alert for now
     } finally {
       setIsGenerating(false);
     }

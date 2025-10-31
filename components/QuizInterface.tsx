@@ -93,12 +93,19 @@ export default function QuizInterface({
     }, 0);
   };
 
+  // Get current question and answer
+  const currentQuestion = questions[currentQuestionIndex];
+  const currentAnswer = selectedAnswers[currentQuestionIndex];
+
   const isCorrect = () => {
     if (currentQuestion.type === 'fill-in-blank') {
       return currentAnswer === currentQuestion.correctAnswer;
     }
     return currentAnswer === currentQuestion.correctAnswerIndex;
   };
+
+  // Calculate progress percentage
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
   const renderQuestion = () => {
     switch (currentQuestion.type) {

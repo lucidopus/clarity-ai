@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
-import TabNavigation from './TabNavigation';
+import MaterialsTabs from './MaterialsTabs';
 import FlashcardViewer from './FlashcardViewer';
 import FlashcardCreator from './FlashcardCreator';
 import QuizInterface, { Question } from './QuizInterface';
@@ -17,7 +17,7 @@ interface VideoMaterials {
   channelName: string;
   thumbnailUrl?: string;
   duration?: string;
-  createdAt: Date;
+  createdAt: Date | string;
   flashcards: Array<{
     id: string;
     question: string;
@@ -97,12 +97,13 @@ export default function VideoMaterialsView({
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }).format(date);
+    }).format(dateObj);
   };
 
   return (
@@ -199,7 +200,7 @@ export default function VideoMaterialsView({
       </div>
 
       {/* Tabs */}
-      <TabNavigation
+      <MaterialsTabs
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(tabId) => setActiveTab(tabId as TabType)}

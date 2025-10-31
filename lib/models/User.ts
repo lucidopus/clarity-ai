@@ -23,6 +23,7 @@ const UserSchema: Schema = new Schema({
   email: { type: String, required: true },
 }, {
   timestamps: true,
+  collection: 'users', // Explicit collection name
 });
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
