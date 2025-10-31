@@ -15,25 +15,9 @@ interface TranscriptViewerProps {
   videoId: string;
 }
 
-export default function TranscriptViewer({ transcript, videoId }: TranscriptViewerProps) {
+export default function TranscriptViewer({ transcript }: TranscriptViewerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
-
-  if (!transcript || transcript.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">📝</span>
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">No transcript yet</h3>
-          <p className="text-muted-foreground">
-            Transcript will appear here once generated.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   const formatTimestamp = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -75,8 +59,23 @@ export default function TranscriptViewer({ transcript, videoId }: TranscriptView
     // TODO: Implement video seeking functionality
   };
 
+  const transcriptEmpty = !transcript || transcript.length === 0;
+
   return (
     <div className="max-w-4xl mx-auto">
+      {transcriptEmpty ? (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">📝</span>
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">No transcript yet</h3>
+            <p className="text-muted-foreground">
+              Transcript will appear here once generated.
+            </p>
+          </div>
+        </div>
+      ) : (<>
       {/* Search Bar */}
       <div className="mb-8">
         <div className="relative">
@@ -107,7 +106,7 @@ export default function TranscriptViewer({ transcript, videoId }: TranscriptView
         {searchQuery && (
           <div className="flex items-center justify-between mt-3">
             <p className="text-sm text-muted-foreground">
-              Found {filteredSegments.length} segment{filteredSegments.length !== 1 ? 's' : ''} containing "{searchQuery}"
+              Found {filteredSegments.length} segment{filteredSegments.length !== 1 ? 's' : ''} containing &quot;{searchQuery}&quot;
             </p>
             <Button onClick={clearSearch} variant="ghost" size="sm">
               Clear
@@ -201,6 +200,7 @@ export default function TranscriptViewer({ transcript, videoId }: TranscriptView
           )}
         </div>
       )}
+      </>)}
     </div>
   );
 }

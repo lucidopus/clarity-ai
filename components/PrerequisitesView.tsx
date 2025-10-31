@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { CheckCircle2, AlertCircle, BookOpen } from 'lucide-react';
 import Button from './Button';
 
@@ -28,7 +28,7 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
           </div>
           <h3 className="text-xl font-semibold text-foreground mb-2">No prerequisites</h3>
           <p className="text-muted-foreground">
-            This video doesn't have any prerequisites.
+            This video doesn&#39;t have any prerequisites.
           </p>
         </div>
       </div>
@@ -176,7 +176,7 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
             All Prerequisites Completed!
           </h3>
           <p className="text-muted-foreground">
-            You're ready to dive into this video content.
+            You&#39;re ready to dive into this video content.
           </p>
         </motion.div>
       )}

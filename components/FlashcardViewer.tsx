@@ -18,7 +18,7 @@ interface FlashcardViewerProps {
   videoId: string;
 }
 
-export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewerProps) {
+export default function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [masteredCards, setMasteredCards] = useState<Set<string>>(

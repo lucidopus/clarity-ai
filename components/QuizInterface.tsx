@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Brain, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw } from 'lucide-react';
 import Button from './Button';
 
 export type QuestionType = 'multiple-choice' | 'true-false' | 'fill-in-blank';
@@ -22,7 +22,7 @@ interface QuizInterfaceProps {
   videoId: string;
 }
 
-export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) {
+export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<(number | string | null)[]>(
     new Array(quizzes.length).fill(null)
@@ -51,37 +51,208 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
   }
 
   if (quizCompleted) {
-    const percentage = Math.round((finalScore / quizzes.length) * 100);
+    const correctCount = finalScore;
+
+    const getAnswerText = (quiz: Quiz, answer: number | string | null) => {
+      if (answer === null) return 'No answer';
+      if (quiz.type === 'fill-in-blank') return answer as string;
+      return quiz.options?.[answer as number] || 'Unknown';
+    };
+
+    const isAnswerCorrect = (quiz: Quiz, answer: number | string | null) => {
+      if (quiz.type === 'fill-in-blank') {
+        return answer === quiz.correctAnswer;
+      }
+      return answer === quiz.correctAnswerIndex;
+    };
+
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="text-center py-12"
+          className="text-center mb-8"
         >
-          <div className="w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-6">
-            <Trophy className="w-10 h-10 text-accent" />
+          <div className="relative inline-block mb-6">
+            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-accent via-accent to-accent/70 flex items-center justify-center shadow-xl ring-4 ring-accent/20 dark:ring-accent/10">
+              <Trophy className="w-14 h-14 text-white drop-shadow-sm" />
+            </div>
           </div>
-          <h2 className="text-3xl font-bold text-foreground mb-2">Quiz Complete!</h2>
-          <p className="text-lg text-muted-foreground mb-6">
-            You scored {finalScore} out of {quizzes.length} ({percentage}%)
+          <h1 className="text-4xl font-bold text-foreground mb-2">Quiz Complete!</h1>
+          <p className="text-xl text-muted-foreground">
+            You got <span className="font-bold text-accent">{correctCount}</span> out of {quizzes.length} questions right
           </p>
-          <div className="flex gap-4 justify-center">
-            <Button
-              variant="primary"
-              onClick={() => {
-                setCurrentQuestionIndex(0);
-                setSelectedAnswers(new Array(quizzes.length).fill(null));
-                setSubmitted(false);
-                setShowFeedback(false);
-                setQuizCompleted(false);
-                setFinalScore(0);
-                setSubmittedQuestions(new Set());
-              }}
-            >
-              Retake Quiz
-            </Button>
+        </motion.div>
+
+        {/* Stats Overview
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+        >
+          <div className="bg-card-bg border-2 border-green-500 dark:border-green-800 rounded-2xl p-6 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-6 h-6 text-green-700 dark:text-green-400" />
+            </div>
+            <div className="text-2xl font-bold text-green-700 dark:text-green-400">{correctCount}</div>
+            <div className="text-sm text-muted-foreground">Correct</div>
           </div>
+
+          <div className="bg-card-bg border-2 border-red-500 dark:border-red-800 rounded-2xl p-6 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <XCircle className="w-6 h-6 text-red-700 dark:text-red-400" />
+            </div>
+            <div className="text-2xl font-bold text-red-700 dark:text-red-400">{incorrectCount}</div>
+            <div className="text-sm text-muted-foreground">Incorrect</div>
+          </div>
+
+          <div className="bg-card-bg border-2 border-accent/30 dark:border-accent/50 rounded-2xl p-6 text-center shadow-sm">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Brain className="w-6 h-6 text-accent" />
+            </div>
+            <div className="text-2xl font-bold text-accent">{percentage}%</div>
+            <div className="text-sm text-muted-foreground">Score</div>
+          </div>
+        </motion.div> */}
+
+        {/* Questions Review */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+          className="p-6"
+        >
+          <h2 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-2">
+            <FileText className="w-6 h-6" />
+            Review Your Answers
+          </h2>
+
+          <div className="space-y-4">
+            {quizzes.map((quiz, index) => {
+              const userAnswer = selectedAnswers[index];
+              const correct = isAnswerCorrect(quiz, userAnswer);
+
+              return (
+                <motion.div
+                  key={quiz.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: index * 0.08,
+                    ease: "easeOut"
+                  }}
+                  className={`border-2 rounded-xl p-4 transition-colors bg-card-bg dark:bg-muted/20 text-foreground ${
+                    correct
+                      ? 'border-green-500 dark:border-green-500'
+                      : 'border-red-500 dark:border-red-500'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-1 ${
+                      correct
+                        ? 'bg-card-bg border-2 border-green-500 text-green-700 dark:bg-muted/20 dark:text-green-400'
+                        : 'bg-card-bg border-2 border-red-500 text-red-700 dark:bg-muted/20 dark:text-red-400'
+                    }`}>
+                      {correct ? (
+                        <CheckCircle2 className="w-5 h-5" />
+                      ) : (
+                        <XCircle className="w-5 h-5" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-3">
+                        <h3 className="font-semibold text-foreground text-lg leading-tight">
+                          {quiz.questionText}
+                        </h3>
+                        <span className="text-sm text-muted-foreground font-medium flex-shrink-0">
+                          Q{index + 1}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div className="space-y-2">
+                          <div className="text-sm">
+                            <span className="font-medium text-muted-foreground">Your answer:</span>
+                            <div className={`mt-1 px-3 py-2 rounded-lg text-sm font-bold ${
+                              correct
+                                ? 'bg-card-bg text-green-700 border-2 border-green-500 dark:bg-muted/20 dark:text-green-400'
+                                : 'bg-card-bg text-red-700 border-2 border-red-500 dark:bg-muted/20 dark:text-red-400'
+                            }`}>
+                              {getAnswerText(quiz, userAnswer)}
+                            </div>
+                          </div>
+
+                          {!correct && (
+                            <div className="text-sm">
+                              <span className="font-medium text-muted-foreground">Correct answer:</span>
+                              <div className="mt-1 px-3 py-2 rounded-lg text-sm font-medium bg-card-bg text-green-700 border-2 border-green-500 dark:bg-muted/20 dark:text-green-400">
+                                {quiz.type === 'fill-in-blank'
+                                  ? quiz.correctAnswer
+                                  : quiz.options?.[quiz.correctAnswerIndex || 0] || 'Unknown'
+                                }
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className={`rounded-xl p-4 border-2 ${
+                          correct
+                            ? 'bg-card-bg border-green-500 text-green-700 dark:bg-muted/20 dark:text-green-400'
+                            : 'bg-card-bg border-red-500 text-red-700 dark:bg-muted/20 dark:text-red-400'
+                        }`}>
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <Brain className="w-4 h-4" />
+                            Explanation
+                          </h4>
+                          <p className="text-sm leading-relaxed">
+                            {quiz.explanation}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.4, ease: "easeOut" }}
+          className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
+        >
+          <Button
+            variant="primary"
+            onClick={() => {
+              setCurrentQuestionIndex(0);
+              setSelectedAnswers(new Array(quizzes.length).fill(null));
+              setSubmitted(false);
+              setShowFeedback(false);
+              setQuizCompleted(false);
+              setFinalScore(0);
+              setSubmittedQuestions(new Set());
+            }}
+            className="px-8"
+          >
+            <RotateCw className="w-4 h-4 mr-2" />
+            Retake Quiz
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              window.history.back();
+            }}
+            className="px-8"
+          >
+            Back to Video
+          </Button>
         </motion.div>
       </div>
     );
@@ -166,6 +337,11 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
   // Calculate progress percentage
   const progress = ((currentQuestionIndex + 1) / quizzes.length) * 100;
 
+  const answeredCorrectly = isCorrect();
+  const explanationClasses = answeredCorrectly
+    ? 'bg-card-bg border-green-500 text-green-700 dark:text-green-400'
+    : 'bg-card-bg border-red-500 text-red-700 dark:text-red-400';
+
   const renderQuestion = () => {
     switch (currentQuestion.type) {
       case 'multiple-choice':
@@ -179,8 +355,8 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
                   currentAnswer === index
                     ? submitted
                       ? isCorrect()
-                        ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                        : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
+                        ? 'border-green-500 bg-card-bg text-green-700 dark:text-green-400'
+                        : 'border-red-500 bg-card-bg text-red-700 dark:text-red-400'
                       : 'border-accent bg-accent/10 text-accent'
                     : 'border-border hover:border-accent/50 bg-card-bg hover:bg-accent/5'
                 }`}
@@ -220,8 +396,8 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
                   currentAnswer === index
                     ? submitted
                       ? isCorrect()
-                        ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                        : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
+                        ? 'border-green-500 bg-card-bg text-green-700 dark:text-green-400'
+                        : 'border-red-500 bg-card-bg text-red-700 dark:text-red-400'
                       : 'border-accent bg-accent/10 text-accent'
                     : 'border-border hover:border-accent/50 bg-card-bg hover:bg-accent/5'
                 }`}
@@ -264,8 +440,8 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
                 animate={{ opacity: 1, y: 0 }}
                 className={`p-4 rounded-xl border-2 ${
                   isCorrect()
-                    ? 'border-green-500 bg-green-500/10 text-green-700 dark:text-green-400'
-                    : 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400'
+                    ? 'border-green-500 bg-card-bg text-green-700 dark:text-green-400'
+                    : 'border-red-500 bg-card-bg text-red-700 dark:text-red-400'
                 }`}
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -344,10 +520,17 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="mt-6 p-4 bg-muted/50 rounded-xl border border-border"
+              className={`mt-6 p-4 rounded-xl border-2 transition-colors ${explanationClasses}`}
             >
-              <h4 className="font-medium text-foreground mb-2">Explanation</h4>
-              <p className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 mb-2 font-semibold">
+                {answeredCorrectly ? (
+                  <CheckCircle2 className="w-5 h-5" />
+                ) : (
+                  <XCircle className="w-5 h-5" />
+                )}
+                <h4 className="text-base">Explanation</h4>
+              </div>
+              <p className="text-sm leading-relaxed">
                 {currentQuestion.explanation}
               </p>
             </motion.div>

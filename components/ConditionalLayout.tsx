@@ -9,9 +9,17 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   const isDashboard = pathname?.startsWith('/dashboard');
   const isGenerations = pathname?.startsWith('/generations');
 
-  if (isDashboard || isGenerations) {
-    // Dashboard and Generations have their own layouts, don't wrap with Navbar/Footer
+  if (isDashboard) {
+    // Dashboard has its own layout
     return <>{children}</>;
+  }
+
+  if (isGenerations) {
+    return (
+      <>
+        {children}
+      </>
+    );
   }
 
   return (

@@ -33,15 +33,15 @@ export default function QuizReview({
   const percentage = Math.round((score / total) * 100);
 
   const getScoreColor = () => {
-    if (percentage >= 80) return 'text-green-600 dark:text-green-400';
-    if (percentage >= 60) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
+    if (percentage >= 80) return 'text-green-900 dark:text-green-300';
+    if (percentage >= 60) return 'text-yellow-700 dark:text-yellow-300';
+    return 'text-red-900 dark:text-red-300';
   };
 
   const getScoreBg = () => {
-    if (percentage >= 80) return 'bg-green-500/10 border-green-500/20';
-    if (percentage >= 60) return 'bg-yellow-500/10 border-yellow-500/20';
-    return 'bg-red-500/10 border-red-500/20';
+    if (percentage >= 80) return 'border-green-600/60';
+    if (percentage >= 60) return 'border-yellow-600/60';
+    return 'border-red-600/60';
   };
 
   const getScoreIcon = () => {
@@ -78,10 +78,10 @@ export default function QuizReview({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`text-center p-8 rounded-2xl border mb-8 ${getScoreBg()}`}
+        className={`text-center p-8 rounded-2xl border-[3px] mb-8 ${getScoreBg()}`}
       >
         <div className="flex justify-center mb-4">
-          <div className={`p-3 rounded-full ${getScoreColor()}`}>
+          <div className={`p-3 rounded-full bg-muted/20 ${getScoreColor()}`}>
             {getScoreIcon()}
           </div>
         </div>
@@ -115,17 +115,17 @@ export default function QuizReview({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className={`p-4 rounded-xl border ${
+              className={`p-4 rounded-xl border-[3px] bg-card-bg dark:bg-muted/20 text-foreground ${
                 isCorrect
-                  ? 'border-green-500/20 bg-green-500/5'
-                  : 'border-red-500/20 bg-red-500/5'
+                  ? 'border-green-600 dark:border-green-500'
+                  : 'border-red-600 dark:border-red-500'
               }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${
                   isCorrect
-                    ? 'bg-green-500 text-white'
-                    : 'bg-red-500 text-white'
+                    ? 'bg-card-bg border-[3px] border-green-600 text-green-900 dark:bg-muted/20 dark:border-green-500 dark:text-green-200'
+                    : 'bg-card-bg border-[3px] border-red-600 text-red-900 dark:bg-muted/20 dark:border-red-500 dark:text-red-200'
                 }`}>
                   {isCorrect ? (
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -148,7 +148,7 @@ export default function QuizReview({
                   <div className="space-y-2 text-sm">
                     <div>
                       <span className="font-medium text-foreground">Your answer: </span>
-                      <span className={isCorrect ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                      <span className={isCorrect ? 'text-green-900 dark:text-green-200' : 'text-red-900 dark:text-red-200'}>
                         {question.type === 'fill-in-blank'
                           ? (userAnswer || 'No answer')
                           : question.options?.[userAnswer as number] || 'No answer'
@@ -159,7 +159,7 @@ export default function QuizReview({
                     {!isCorrect && (
                       <div>
                         <span className="font-medium text-foreground">Correct answer: </span>
-                        <span className="text-green-600 dark:text-green-400">
+                        <span className="text-green-900 dark:text-green-200">
                           {question.type === 'fill-in-blank'
                             ? question.correctAnswer
                             : question.options?.[question.correctAnswerIndex || 0]
