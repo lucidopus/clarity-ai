@@ -1,13 +1,18 @@
 'use client';
 
+import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
+import GenerateModal from '@/components/GenerateModal';
 import Button from '@/components/Button';
 import { useState, useEffect } from 'react';
+import EmptyState from '@/components/EmptyState';
 
 export default function DashboardHomePage() {
   const { user } = useAuth();
   const [greeting, setGreeting] = useState('Welcome');
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -21,6 +26,26 @@ export default function DashboardHomePage() {
     }
   }, []);
 
+  const handleGenerate = async (url: string) => {
+    setIsGenerating(true);
+    try {
+      // TODO: Implement actual generation logic in Phase 5
+      console.log('Generating materials for URL:', url);
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Close modal and show success
+      setShowGenerateModal(false);
+      // TODO: Redirect to generated materials or show success message
+    } catch (error) {
+      console.error('Generation failed:', error);
+      // TODO: Show error message
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -28,36 +53,25 @@ export default function DashboardHomePage() {
       {/* Page Header */}
       <DashboardHeader
         title={`${greeting}, ${user.firstName}`}
+        onGenerateClick={() => setShowGenerateModal(true)}
       />
 
       {/* Empty State */}
-      <div className="bg-card-bg rounded-2xl p-12 border border-border text-center">
-        <div className="max-w-md mx-auto">
-          <div className="w-20 h-20 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-10 h-10 text-accent"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">No learning materials yet</h3>
-          <p className="text-muted-foreground mb-6">
-            Your stats, progress, and recent activity will appear here once you start generating materials.
-          </p>
-          <Button href="/dashboard/generate" variant="primary">
-            Generate Your First Material
-          </Button>
-        </div>
+      <div className="bg-card-bg rounded-2xl border border-border min-h-[400px] flex items-center justify-center">
+        <EmptyState
+          icon={<BarChart3 className="w-12 h-12" />}
+          title="No learning materials yet"
+          description="Your stats, progress, and recent activity will appear here once you start generating materials."
+        />
       </div>
+
+      {/* Generate Modal */}
+      <GenerateModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerate}
+        isLoading={isGenerating}
+      />
     </div>
   );
 }

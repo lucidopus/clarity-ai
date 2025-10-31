@@ -1,12 +1,36 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
+import GenerateModal from '@/components/GenerateModal';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async (url: string) => {
+    setIsGenerating(true);
+    try {
+      // TODO: Implement actual generation logic in Phase 5
+      console.log('Generating materials for URL:', url);
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Close modal and show success
+      setShowGenerateModal(false);
+      // TODO: Redirect to generated materials or show success message
+    } catch (error) {
+      console.error('Generation failed:', error);
+      // TODO: Show error message
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -16,6 +40,7 @@ export default function SettingsPage() {
       <DashboardHeader
         title="Settings"
         subtitle="Manage your account preferences and settings"
+        onGenerateClick={() => setShowGenerateModal(true)}
       />
 
       {/* Account Information Section */}
@@ -141,6 +166,14 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Generate Modal */}
+      <GenerateModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerate}
+        isLoading={isGenerating}
+      />
     </div>
   );
 }
