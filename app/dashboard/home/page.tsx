@@ -93,9 +93,13 @@ export default function DashboardHomePage() {
   }, [user]);
 
   const handleGenerate = async (youtubeUrl: string) => {
+    console.log('🎬 [FRONTEND] Starting video generation from Home page...');
+    console.log(`🎬 [FRONTEND] YouTube URL: ${youtubeUrl}`);
+
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/videos/generate', {
+      console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
+      const response = await fetch('/api/videos/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,19 +107,31 @@ export default function DashboardHomePage() {
         body: JSON.stringify({ youtubeUrl }),
       });
 
+      console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ [FRONTEND] API error response:', errorData);
         throw new Error(errorData.error || 'Failed to generate materials');
       }
 
       const data = await response.json();
+      console.log('✅ [FRONTEND] Generation successful:', data);
       setShowGenerateModal(false);
-      router.push(`/dashboard/generations/${data.videoId}`);
+
+      // Redirect to the generation page
+      if (data.videoId) {
+        console.log(`🎬 [FRONTEND] Redirecting to /generations/${data.videoId}`);
+        window.location.href = `/generations/${data.videoId}`;
+      } else {
+        console.error('❌ [FRONTEND] No videoId in response');
+      }
     } catch (error: unknown) {
-      console.error('Generation error:', error);
+      console.error('❌ [FRONTEND] Generation error:', error);
       alert(error instanceof Error ? error.message : 'An error occurred'); // Simple alert for now
     } finally {
       setIsGenerating(false);
+      console.log('🎬 [FRONTEND] Generation flow completed');
     }
   };
 

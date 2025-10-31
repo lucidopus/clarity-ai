@@ -224,27 +224,29 @@ export default function PrerequisiteChecker({
           </div>
         </div>
 
-        <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
-          <h3 className="font-medium text-foreground mb-2">
-            Take a Quick Readiness Quiz
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {quizQuestions.length} questions • 2-3 minutes
-          </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            This will help assess if you have the background knowledge needed for this video.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={handleStartQuiz} variant="primary">
-              Take Quiz
-            </Button>
-            {onContinue && (
-              <Button onClick={onContinue} variant="ghost">
-                Skip for Now
+        {quizQuestions.length > 0 && (
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4">
+            <h3 className="font-medium text-foreground mb-2">
+              Take a Quick Readiness Quiz
+            </h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              {quizQuestions.length} questions • 2-3 minutes
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              This will help assess if you have the background knowledge needed for this video.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={handleStartQuiz} variant="primary">
+                Take Quiz
               </Button>
-            )}
+              {onContinue && (
+                <Button onClick={onContinue} variant="ghost">
+                  Skip for Now
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   );
