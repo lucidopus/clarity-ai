@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import Video from '@/lib/models/Video';
-import LearningMaterial from '@/lib/models/LearningMaterial';
+import Video, { type ITranscriptSegment } from '@/lib/models/Video';
+import LearningMaterial, { type IPrerequisite } from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import Progress from '@/lib/models/Progress';
@@ -108,12 +108,12 @@ export async function GET(
         correctAnswerIndex: quiz.correctAnswerIndex,
         explanation: quiz.explanation || ''
       })),
-      transcript: video.transcript.map((t: any) => ({
+      transcript: video.transcript.map((t: ITranscriptSegment) => ({
         text: t.text,
         start: t.offset,
         duration: t.duration
       })),
-      prerequisites: learningMaterial?.prerequisites.map(prereq => ({
+      prerequisites: learningMaterial?.prerequisites.map((prereq: IPrerequisite) => ({
         id: prereq.id,
         title: prereq.topic,
         description: `Understanding of ${prereq.topic} (${prereq.difficulty} level)`,

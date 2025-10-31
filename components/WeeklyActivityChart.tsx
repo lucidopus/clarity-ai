@@ -28,10 +28,13 @@ export default function WeeklyActivityChart() {
       try {
         const res = await fetch('/api/dashboard/activity');
         if (!res.ok) throw new Error('Failed to load weekly activity');
-        const json = await res.json();
+        const json = await res.json() as { weeklyActivity?: Weekly[] };
         if (mounted) setData(json.weeklyActivity || []);
-      } catch (e: any) {
-        if (mounted) setError(e.message || 'Error');
+      } catch (e: unknown) {
+        if (mounted) {
+          const message = e instanceof Error ? e.message : 'Error';
+          setError(message);
+        }
       } finally {
         if (mounted) setLoading(false);
       }

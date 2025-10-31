@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const token = request.cookies.get('jwt')?.value;
@@ -17,7 +8,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    jwt.verify(token, process.env.JWT_SECRET!);
 
     const { youtubeUrl } = await request.json();
     if (!youtubeUrl || typeof youtubeUrl !== 'string') {
@@ -43,11 +34,11 @@ export async function POST(request: NextRequest) {
       { status: 501 }
     );
   } catch (error) {
+    console.error('Video processing request failed', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
 

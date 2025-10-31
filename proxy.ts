@@ -50,7 +50,7 @@ export async function proxy(request: NextRequest) {
     // Token is valid and user exists, allow the request
     return NextResponse.next();
   } catch (error) {
-    // Token is invalid or expired, redirect to signin
+    console.warn('Proxy authentication redirect due to invalid token', error);
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 }

@@ -23,11 +23,16 @@ function formatActivities(count: number, dateISO: string) {
   return `${count} activities on ${dateLabel}`;
 }
 
+declare global {
+  interface Window {
+    __heatmapDailyInterval?: ReturnType<typeof setInterval>;
+  }
+}
+
 export default function StudyActivityHeatmap() {
   const [view, setView] = useState<View>('year');
   const [days, setDays] = useState<HeatmapDay[]>([]);
   const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0); // increments at midnight
@@ -38,11 +43,11 @@ export default function StudyActivityHeatmap() {
   useEffect(() => {
     const handler = () => setRefreshTick((t) => t + 1);
     if (typeof window !== 'undefined') {
-      window.addEventListener('activity:logged', handler as EventListener);
+      window.addEventListener('activity:logged', handler);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener('activity:logged', handler as EventListener);
+        window.removeEventListener('activity:logged', handler);
       }
     };
   }, []);
@@ -59,13 +64,15 @@ export default function StudyActivityHeatmap() {
     const firstTimeout = setTimeout(() => {
       setRefreshTick((t) => t + 1);
       const daily = setInterval(() => setRefreshTick((t) => t + 1), 24 * 60 * 60 * 1000);
-      (window as any).__heatmapDailyInterval = daily;
+      window.__heatmapDailyInterval = daily;
     }, msUntilNextMidnight());
 
     return () => {
       clearTimeout(firstTimeout);
-      const existing = (window as any).__heatmapDailyInterval as number | undefined;
-      if (existing) clearInterval(existing);
+      if (window.__heatmapDailyInterval) {
+        clearInterval(window.__heatmapDailyInterval);
+        window.__heatmapDailyInterval = undefined;
+      }
     };
   }, []);
 
@@ -77,14 +84,20 @@ export default function StudyActivityHeatmap() {
       try {
         const res = await fetch(`/api/dashboard/activity-heatmap?view=${view}`);
         if (!res.ok) throw new Error('Failed to load heatmap');
-        const data = await res.json();
+        const data = await res.json() as {
+          activities?: HeatmapDay[];
+          startDate?: string | null;
+          endDate?: string | null;
+        };
         if (mounted) {
           setDays(data.activities || []);
           setStartDate(data.startDate || null);
-          setEndDate(data.endDate || null);
         }
-      } catch (e: any) {
-        if (mounted) setError(e.message || 'Error');
+      } catch (e: unknown) {
+        if (mounted) {
+          const message = e instanceof Error ? e.message : 'Error';
+          setError(message);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -94,12 +107,12 @@ export default function StudyActivityHeatmap() {
   }, [view, refreshTick]);
 
   // Build padded grid like GitHub: weeks in columns, weekdays in rows (Sun..Sat)
-  const padded = useMemo(() => {
-    if (!startDate) return days.map(d => d);
+  const padded = useMemo<(HeatmapDay | null)[]>(() => {
+    if (!startDate) return [...days];
     const start = new Date(startDate);
     const leading = start.getDay(); // 0..6, Sun..Sat
     const blanks: Array<HeatmapDay | null> = Array.from({ length: leading }, () => null);
-    return blanks.concat(days as any);
+    return [...blanks, ...days];
   }, [days, startDate]);
 
   const weekColumns = useMemo(() => Math.ceil(padded.length / 7), [padded.length]);

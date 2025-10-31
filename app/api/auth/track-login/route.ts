@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, currentStreak: loginStreak, longestStreak });
   } catch (error) {
+    console.error('Failed to track login', error);
     return NextResponse.json({ error: 'Failed to track login' }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { X, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 interface GenerationCardProps {
@@ -107,10 +108,13 @@ export default function GenerationCard({
       {/* Thumbnail */}
       <div className="aspect-video bg-muted relative overflow-hidden">
         {thumbnailUrl ? (
-          <img
+          <Image
             src={thumbnailUrl}
             alt={title || 'Video thumbnail'}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 33vw"
+            priority={status !== 'completed'}
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
@@ -159,9 +163,26 @@ export default function GenerationCard({
 
         {/* Generating Animation */}
         {(status === 'processing' || status === 'queued') && (
-          <div className="mb-3 flex items-center gap-2 text-sm text-accent">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Generating...</span>
+          <div className="mb-3 space-y-2 text-sm text-accent">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{status === 'processing' ? 'Generating...' : 'Queued for processing'}</span>
+            </div>
+            {status === 'processing' && (
+              <div className="h-1.5 w-full rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-accent transition-all"
+                  style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {duration && (
+          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <Clock className="w-3 h-3" />
+            <span>{duration}</span>
           </div>
         )}
 

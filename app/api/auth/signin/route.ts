@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { z } from 'zod';
@@ -34,8 +34,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
     }
 
-    const expiresIn = rememberMe ? `${process.env.JWT_REMEMBER_DAYS}d` : `${process.env.JWT_EXPIRE_DAYS}d`;
-    const maxAge = (rememberMe ? parseInt(process.env.JWT_REMEMBER_DAYS!) : parseInt(process.env.JWT_EXPIRE_DAYS!)) * 24 * 60 * 60;
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
+    const jwtExpireDays = rememberMe ? process.env.JWT_REMEMBER_DAYS : process.env.JWT_EXPIRE_DAYS;
+    if (!jwtExpireDays) {
+      throw new Error('JWT expiration window is not configured');
+    }
+
+    const expireDays = parseInt(jwtExpireDays, 10);
+    const expiresInSeconds = expireDays * 24 * 60 * 60;
+    const maxAge = expiresInSeconds;
+
+    const signOptions: SignOptions = { expiresIn: expiresInSeconds };
 
     const token = jwt.sign(
       {
@@ -44,8 +57,8 @@ export async function POST(request: Request) {
         firstName: user.firstName,
         lastName: user.lastName,
       },
-      process.env.JWT_SECRET!,
-      { expiresIn }
+      jwtSecret,
+      signOptions
     );
 
     const response = NextResponse.json({
@@ -59,7 +72,7 @@ export async function POST(request: Request) {
       rememberMe,
     });
 
-    const cookieOptions: any = {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
       path: '/',

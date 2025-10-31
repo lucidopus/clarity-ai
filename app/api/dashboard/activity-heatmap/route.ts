@@ -70,7 +70,8 @@ export async function GET(request: NextRequest) {
       endDate: formatYmd(endDate),
       totalActivities,
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Failed to load activity heatmap', error);
     return NextResponse.json({ error: 'Failed to load activity heatmap' }, { status: 500 });
   }
 }

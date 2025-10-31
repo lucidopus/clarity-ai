@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    // This will catch expired tokens or invalid signatures
+    console.warn('Failed to verify user token', error);
     return NextResponse.json({ user: null });
   }
 }
