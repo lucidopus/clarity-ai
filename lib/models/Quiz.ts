@@ -25,6 +25,7 @@ const QuizSchema: Schema = new Schema({
   generationType: { type: String, required: true, enum: ['ai'] },
 }, {
   timestamps: true,
+  collection: 'quizzes', // Explicit collection name
 });
 
 // Create indexes

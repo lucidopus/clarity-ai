@@ -28,15 +28,6 @@ export default function EmptyState({
       )}
       <h3 className="text-xl font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-muted-foreground mb-6 max-w-md">{description}</p>
-      {(actionLabel && (actionHref || onAction)) && (
-        <Button
-          variant="primary"
-          href={actionHref}
-          onClick={onAction}
-        >
-          {actionLabel}
-        </Button>
-      )}
     </div>
   );
 }

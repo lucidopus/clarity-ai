@@ -37,6 +37,7 @@ const ProgressSchema: Schema = new Schema({
   totalStudyTimeSeconds: { type: Number, default: 0 },
 }, {
   timestamps: true,
+  collection: 'progress', // Explicitly set collection name to prevent auto-pluralization
 });
 
 // Create indexes

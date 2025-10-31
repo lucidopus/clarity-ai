@@ -51,6 +51,7 @@ const LearningMaterialSchema: Schema = new Schema({
   },
 }, {
   timestamps: true,
+  collection: 'learningmaterials', // Explicit collection name
 });
 
 // Create indexes

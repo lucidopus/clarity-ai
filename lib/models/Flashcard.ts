@@ -21,6 +21,7 @@ const FlashcardSchema: Schema = new Schema({
   generationType: { type: String, required: true, enum: ['ai', 'human'] },
 }, {
   timestamps: true,
+  collection: 'flashcards', // Explicit collection name
 });
 
 // Create indexes
