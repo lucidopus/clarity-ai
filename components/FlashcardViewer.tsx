@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, ChevronRight, RotateCw, Check } from 'lucide-react';
 import Button from './Button';
-import { logActivity } from '@/lib/activityLogger';
 
 interface Flashcard {
   id: string;
@@ -15,48 +15,35 @@ interface Flashcard {
 
 interface FlashcardViewerProps {
   flashcards: Flashcard[];
-  onMarkMastered?: (flashcardId: string) => void;
-  onResetMastery?: (flashcardId: string) => void;
-  onCreateNew?: () => void;
+  videoId: string;
 }
 
-export default function FlashcardViewer({
-  flashcards,
-  onMarkMastered,
-  onResetMastery,
-  onCreateNew
-}: FlashcardViewerProps) {
+export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
+  const [masteredCards, setMasteredCards] = useState<Set<string>>(
+    new Set(flashcards.filter((fc) => fc.isMastered).map((fc) => fc.id))
+  );
+
+  if (!flashcards || flashcards.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">📚</span>
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">No flashcards yet</h3>
+          <p className="text-muted-foreground">
+            Flashcards will appear here once generated.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const currentCard = flashcards[currentIndex];
   const progress = ((currentIndex + 1) / flashcards.length) * 100;
-  const masteredCount = masteredIds.size;
-
-  const handleFlip = async () => {
-    setIsFlipped(!isFlipped);
-    try { await logActivity('flashcard_viewed'); } catch {}
-  };
-
-  const handleMarkMastered = async () => {
-    if (currentCard && onMarkMastered) {
-      setMasteredIds(prev => new Set([...prev, currentCard.id]));
-      onMarkMastered(currentCard.id);
-    }
-    try { await logActivity('flashcard_mastered'); } catch {}
-  };
-
-  const handleResetMastery = () => {
-    if (currentCard && onResetMastery) {
-      setMasteredIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(currentCard.id);
-        return newSet;
-      });
-      onResetMastery(currentCard.id);
-    }
-  };
+  const masteredCount = masteredCards.size;
 
   const handleNext = () => {
     if (currentIndex < flashcards.length - 1) {
@@ -72,211 +59,149 @@ export default function FlashcardViewer({
     }
   };
 
-  const handleShuffle = () => {
-    // Simple shuffle - in a real app, you'd want a better algorithm
-    const shuffled = [...flashcards].sort(() => Math.random() - 0.5);
-    // Find the current card's new index
-    const newIndex = shuffled.findIndex(card => card.id === currentCard?.id);
-    setCurrentIndex(newIndex !== -1 ? newIndex : 0);
-    setIsFlipped(false);
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped);
   };
 
-  if (!currentCard) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">No flashcards available</p>
-        {onCreateNew && (
-          <Button onClick={onCreateNew} variant="primary" className="mt-4">
-            Create Your First Flashcard
-          </Button>
-        )}
-      </div>
-    );
-  }
+  const handleMastered = () => {
+    const newMastered = new Set(masteredCards);
+    if (masteredCards.has(currentCard.id)) {
+      newMastered.delete(currentCard.id);
+    } else {
+      newMastered.add(currentCard.id);
+    }
+    setMasteredCards(newMastered);
+    // TODO: API call to save mastered status
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') handlePrev();
+    if (e.key === 'ArrowRight') handleNext();
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      handleFlip();
+    }
+  };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto" onKeyDown={handleKeyDown} tabIndex={0}>
       {/* Progress Bar */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm text-muted-foreground">
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-sm font-medium text-foreground">
             Card {currentIndex + 1} of {flashcards.length}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            Mastered: {masteredCount}
-          </span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {masteredCount} mastered
+          </div>
         </div>
-        <div className="w-full bg-border rounded-full h-2">
-          <div
-            className="bg-accent h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-accent"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3 }}
           />
         </div>
       </div>
 
       {/* Flashcard */}
-      <div className="relative mb-6">
-        <motion.div
-          className="w-full h-64 cursor-pointer"
-          onClick={handleFlip}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          style={{ perspective: '1000px' }}
-        >
+      <div className="relative h-[400px] mb-8 perspective-1000">
+        <AnimatePresence mode="wait">
           <motion.div
-            className="relative w-full h-full"
-            initial={false}
-            animate={{ rotateY: isFlipped ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            key={currentIndex}
+            initial={{ opacity: 0, rotateY: -90 }}
+            animate={{ opacity: 1, rotateY: 0 }}
+            exit={{ opacity: 0, rotateY: 90 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0"
             style={{ transformStyle: 'preserve-3d' }}
           >
-            {/* Front of card */}
             <motion.div
-              className="absolute inset-0 w-full h-full bg-card-bg border border-border rounded-2xl shadow-lg flex items-center justify-center p-6 backface-hidden"
-              style={{ backfaceVisibility: 'hidden' }}
+              className="relative w-full h-full cursor-pointer"
+              onClick={handleFlip}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ duration: 0.6, type: 'spring', stiffness: 100 }}
+              style={{ transformStyle: 'preserve-3d' }}
             >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6 text-accent"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Question</h3>
-                <p className="text-foreground text-lg leading-relaxed">
+               {/* Front of card (Question) */}
+               <div
+                 className="absolute inset-0 bg-card-bg border-2 border-border rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer"
+                 style={{ backfaceVisibility: 'hidden' }}
+               >
+                <div className="text-sm font-medium text-accent mb-4">Question</div>
+                <p className="text-2xl font-semibold text-foreground text-center">
                   {currentCard.question}
                 </p>
-                <p className="text-sm text-muted-foreground mt-4">
+                <div className="mt-8 text-sm text-muted-foreground">
                   Click to reveal answer
-                </p>
-              </div>
-            </motion.div>
-
-            {/* Back of card */}
-            <motion.div
-              className="absolute inset-0 w-full h-full bg-card-bg border border-border rounded-2xl shadow-lg flex items-center justify-center p-6 backface-hidden"
-              style={{
-                backfaceVisibility: 'hidden',
-                transform: 'rotateY(180deg)'
-              }}
-            >
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-6 h-6 text-green-500"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">Answer</h3>
-                <p className="text-foreground text-lg leading-relaxed">
+              </div>
+
+               {/* Back of card (Answer) */}
+               <div
+                 className="absolute inset-0 bg-accent/5 border-2 border-accent rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer"
+                 style={{
+                   backfaceVisibility: 'hidden',
+                   transform: 'rotateY(180deg)',
+                 }}
+               >
+                <div className="text-sm font-medium text-accent mb-4">Answer</div>
+                <p className="text-2xl font-semibold text-foreground text-center">
                   {currentCard.answer}
                 </p>
-                <p className="text-sm text-muted-foreground mt-4">
-                  Click to flip back
-                </p>
+                <div className="mt-8 text-sm text-muted-foreground">
+                  Click to see question
+                </div>
               </div>
             </motion.div>
           </motion.div>
-        </motion.div>
-
-        {/* Mastery indicator */}
-        {masteredIds.has(currentCard.id) && (
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="white"
-              className="w-4 h-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-        )}
+        </AnimatePresence>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <div className="flex gap-2">
-          <Button
-            onClick={handlePrev}
-            variant="ghost"
-            disabled={currentIndex === 0}
-            className="px-4"
-          >
-            Previous
-          </Button>
-          <Button
-            onClick={handleNext}
-            variant="ghost"
-            disabled={currentIndex === flashcards.length - 1}
-            className="px-4"
-          >
-            Next
-          </Button>
-        </div>
+      <div className="flex items-center justify-between gap-4">
+        <Button
+          variant="secondary"
+          onClick={handlePrev}
+          disabled={currentIndex === 0}
+          className="flex-1"
+        >
+          <ChevronLeft className="w-5 h-5 mr-2" />
+          Previous
+        </Button>
 
-        <div className="flex gap-2">
-          {masteredIds.has(currentCard.id) ? (
-            <Button
-              onClick={handleResetMastery}
-              variant="outline"
-              className="px-4"
-            >
-              Reset
-            </Button>
-          ) : (
-            <Button
-              onClick={handleMarkMastered}
-              variant="primary"
-              className="px-4"
-            >
-              Mark as Learned
-            </Button>
-          )}
-          <Button
-            onClick={handleShuffle}
-            variant="ghost"
-            className="px-4"
+        <Button
+          variant={masteredCards.has(currentCard.id) ? 'primary' : 'secondary'}
+          onClick={handleMastered}
+          className="px-4 min-w-[120px]"
+        >
+          <motion.div
+            className="flex items-center justify-center"
+            animate={{
+              scale: masteredCards.has(currentCard.id) ? 1.05 : 1,
+            }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            Shuffle
-          </Button>
-        </div>
+            <Check className={`w-4 h-4 mr-2 ${masteredCards.has(currentCard.id) ? '' : 'opacity-60'}`} />
+            <span className="font-medium">Mastered</span>
+          </motion.div>
+        </Button>
+
+        <Button variant="secondary" onClick={handleFlip} className="px-6">
+          <RotateCw className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="primary"
+          onClick={handleNext}
+          disabled={currentIndex === flashcards.length - 1}
+          className="flex-1"
+        >
+          Next
+          <ChevronRight className="w-5 h-5 ml-2" />
+        </Button>
       </div>
-
-      {/* Create new card button */}
-      {onCreateNew && (
-        <div className="text-center mt-6">
-          <Button onClick={onCreateNew} variant="outline">
-            + Create New Card
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from './Button';
-import QuizInterface, { Question } from './QuizInterface';
+import QuizInterface from './QuizInterface';
 import QuizReview from './QuizReview';
 
 interface Prerequisite {
@@ -11,6 +11,16 @@ interface Prerequisite {
   title: string;
   description: string;
   required: boolean;
+}
+
+interface Question {
+  id: string;
+  questionText: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-in-blank';
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswer?: string;
+  explanation: string;
 }
 
 interface PrerequisiteCheckerProps {
@@ -88,9 +98,8 @@ export default function PrerequisiteChecker({
           </Button>
         </div>
         <QuizInterface
-          questions={quizQuestions}
-          onSubmit={handleQuizSubmit}
-          onComplete={handleQuizComplete}
+          quizzes={quizQuestions}
+          videoId=""
         />
       </div>
     );

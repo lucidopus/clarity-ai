@@ -2,7 +2,16 @@
 
 import { motion } from 'framer-motion';
 import Button from './Button';
-import { Question } from './QuizInterface';
+
+interface Question {
+  id: string;
+  questionText: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-in-blank';
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswer?: string;
+  explanation: string;
+}
 
 interface QuizReviewProps {
   questions: Question[];

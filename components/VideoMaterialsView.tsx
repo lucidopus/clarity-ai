@@ -7,11 +7,21 @@ import Button from './Button';
 import MaterialsTabs from './MaterialsTabs';
 import FlashcardViewer from './FlashcardViewer';
 import FlashcardCreator from './FlashcardCreator';
-import QuizInterface, { Question } from './QuizInterface';
+import QuizInterface from './QuizInterface';
 import QuizReview from './QuizReview';
 import TranscriptViewer from './TranscriptViewer';
 import PrerequisiteChecker from './PrerequisiteChecker';
 import { logActivity } from '@/lib/activityLogger';
+
+interface Question {
+  id: string;
+  questionText: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-in-blank';
+  options?: string[];
+  correctAnswerIndex?: number;
+  correctAnswer?: string;
+  explanation: string;
+}
 
 interface VideoMaterials {
   id: string;
@@ -251,8 +261,7 @@ export default function VideoMaterialsView({
               </div>
               <FlashcardViewer
                 flashcards={video.flashcards}
-                onMarkMastered={onMarkFlashcardMastered}
-                onCreateNew={() => setShowFlashcardCreator(true)}
+                videoId={video.id}
               />
             </div>
 
@@ -272,10 +281,9 @@ export default function VideoMaterialsView({
                     }}
                   />
                 ) : (
-                  <QuizInterface
-                    questions={video.quizzes}
-                    onSubmit={handleQuizSubmit}
-                    onComplete={handleQuizComplete}
+                   <QuizInterface
+                    quizzes={video.quizzes}
+                    videoId={video.id}
                   />
                 )}
               </div>
@@ -285,7 +293,7 @@ export default function VideoMaterialsView({
             {video.transcript.length > 0 && (
               <div>
                 <h2 className="text-xl font-semibold text-foreground mb-6">Transcript</h2>
-                <TranscriptViewer segments={video.transcript} />
+                <TranscriptViewer transcript={video.transcript} videoId={video.id} />
               </div>
             )}
           </motion.div>

@@ -11,16 +11,29 @@ interface TranscriptSegment {
 }
 
 interface TranscriptViewerProps {
-  segments: TranscriptSegment[];
-  onTimestampClick?: (timestamp: number) => void;
+  transcript: TranscriptSegment[];
+  videoId: string;
 }
 
-export default function TranscriptViewer({
-  segments,
-  onTimestampClick
-}: TranscriptViewerProps) {
+export default function TranscriptViewer({ transcript, videoId }: TranscriptViewerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
+
+  if (!transcript || transcript.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">📝</span>
+          </div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">No transcript yet</h3>
+          <p className="text-muted-foreground">
+            Transcript will appear here once generated.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const formatTimestamp = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -46,12 +59,12 @@ export default function TranscriptViewer({
   };
 
   const filteredSegments = useMemo(() => {
-    if (!searchQuery.trim()) return segments;
+    if (!searchQuery.trim()) return transcript;
 
-    return segments.filter(segment =>
+    return transcript.filter(segment =>
       segment.text.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [segments, searchQuery]);
+  }, [transcript, searchQuery]);
 
   const clearSearch = () => {
     setSearchQuery('');
@@ -59,56 +72,52 @@ export default function TranscriptViewer({
 
   const handleTimestampClick = (timestamp: number, index: number) => {
     setSelectedSegment(index);
-    if (onTimestampClick) {
-      onTimestampClick(timestamp);
-    }
+    // TODO: Implement video seeking functionality
   };
 
   return (
     <div className="max-w-4xl mx-auto">
       {/* Search Bar */}
-      <div className="mb-6">
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search in transcript..."
-              className="w-full px-4 py-3 pl-12 bg-background border border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
-            />
-            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
-            </div>
+      <div className="mb-8">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search in transcript..."
+            className="w-full px-4 py-3 pl-12 bg-card-bg border-2 border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all duration-200"
+          />
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+              />
+            </svg>
           </div>
-          {searchQuery && (
-            <Button onClick={clearSearch} variant="ghost">
-              Clear
-            </Button>
-          )}
         </div>
         {searchQuery && (
-          <p className="text-sm text-muted-foreground mt-2">
-            Found {filteredSegments.length} segment{filteredSegments.length !== 1 ? 's' : ''} containing &quot;{searchQuery}&quot;
-          </p>
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-sm text-muted-foreground">
+              Found {filteredSegments.length} segment{filteredSegments.length !== 1 ? 's' : ''} containing "{searchQuery}"
+            </p>
+            <Button onClick={clearSearch} variant="ghost" size="sm">
+              Clear
+            </Button>
+          </div>
         )}
       </div>
 
       {/* Transcript */}
-      <div className="bg-card-bg border border-border rounded-2xl p-6 max-h-96 overflow-y-auto">
+      <div className="bg-card-bg border-2 border-border rounded-2xl p-6 max-h-[600px] overflow-y-auto">
         <AnimatePresence mode="wait">
           {filteredSegments.length === 0 ? (
             <motion.div
@@ -116,9 +125,9 @@ export default function TranscriptViewer({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center py-8"
+              className="text-center py-12"
             >
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-lg">
                 {searchQuery ? 'No segments found matching your search.' : 'No transcript available.'}
               </p>
             </motion.div>
@@ -131,7 +140,7 @@ export default function TranscriptViewer({
               className="space-y-4"
             >
               {filteredSegments.map((segment, index) => {
-                const originalIndex = segments.indexOf(segment);
+                const originalIndex = transcript.indexOf(segment);
                 const isSelected = selectedSegment === originalIndex;
 
                 return (
@@ -140,7 +149,7 @@ export default function TranscriptViewer({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                    className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
                       isSelected
                         ? 'border-accent bg-accent/5'
                         : 'border-border hover:border-accent/50 bg-background/50'
@@ -153,10 +162,10 @@ export default function TranscriptViewer({
                           e.stopPropagation();
                           handleTimestampClick(segment.start, originalIndex);
                         }}
-                        className={`flex-shrink-0 px-2 py-1 text-xs font-mono rounded border transition-colors ${
+                        className={`flex-shrink-0 px-3 py-1 text-xs font-mono rounded-lg border transition-colors ${
                           isSelected
                             ? 'border-accent bg-accent text-white'
-                            : 'border-border bg-background text-muted-foreground hover:border-accent hover:text-accent'
+                            : 'border-border bg-card-bg text-muted-foreground hover:border-accent hover:text-accent'
                         }`}
                       >
                         {formatTimestamp(segment.start)}
@@ -174,21 +183,21 @@ export default function TranscriptViewer({
       </div>
 
       {/* Stats */}
-      {segments.length > 0 && (
-        <div className="mt-4 text-sm text-muted-foreground text-center">
-          {filteredSegments.length === segments.length ? (
+      {transcript.length > 0 && (
+        <div className="mt-6 text-sm text-muted-foreground text-center">
+          {filteredSegments.length === transcript.length ? (
             <>
-              Showing all {segments.length} segments
-              {segments.length > 0 && (
+              Showing all {transcript.length} segments
+              {transcript.length > 0 && (
                 <span className="ml-2">
                   • Total duration: {formatTimestamp(
-                    segments.reduce((total, seg) => total + seg.duration, 0)
+                    transcript.reduce((total, seg) => total + seg.duration, 0)
                   )}
                 </span>
               )}
             </>
           ) : (
-            `Showing ${filteredSegments.length} of ${segments.length} segments`
+            `Showing ${filteredSegments.length} of ${transcript.length} segments`
           )}
         </div>
       )}
