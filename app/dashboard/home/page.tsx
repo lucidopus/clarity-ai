@@ -5,14 +5,11 @@ import { BarChart3, Flame, Library, Layers, ListChecks } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import GenerateModal from '@/components/GenerateModal';
-import Button from '@/components/Button';
 import { useState, useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
 import StatCard from '@/components/StatCard';
 import StudyActivityHeatmap from '@/components/StudyActivityHeatmap';
 import WeeklyActivityChart from '@/components/WeeklyActivityChart';
-import ProgressBarCard from '@/components/ProgressBarCard';
-import MotivationBanner from '@/components/MotivationBanner';
 import RecentVideoCard from '@/components/RecentVideoCard';
 
 interface StatsResponse {

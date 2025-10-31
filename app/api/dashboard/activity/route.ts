@@ -69,7 +69,8 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ weeklyActivity, recentVideos });
-  } catch (err) {
+  } catch (error) {
+    console.error('Failed to load dashboard activity', error);
     return NextResponse.json({ error: 'Failed to load activity' }, { status: 500 });
   }
 }

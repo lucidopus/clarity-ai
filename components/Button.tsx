@@ -3,8 +3,8 @@ import Link from 'next/link';
 
 export interface ButtonProps {
   children: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   href?: string;
   onClick?: () => void;
   className?: string;
@@ -28,12 +28,14 @@ export default function Button({
     primary: 'bg-accent text-white hover:bg-accent-hover hover:shadow-lg active:bg-accent-hover/90 shadow-md transition-all duration-200',
     secondary: 'bg-card-bg text-foreground border border-border hover:border-accent hover:bg-accent/10 hover:shadow-md active:bg-accent/5 transition-all duration-200',
     ghost: 'text-foreground hover:bg-card-bg hover:shadow-sm active:bg-card-bg/80 transition-all duration-200',
+    outline: 'bg-transparent text-foreground border border-border hover:border-accent hover:bg-accent/5 transition-all duration-200',
   };
 
   const sizeStyles = {
     sm: 'px-4 py-2 text-sm',
     md: 'px-6 py-3 text-base',
     lg: 'px-8 py-4 text-lg',
+    icon: 'p-2 rounded-full h-10 w-10',
   };
 
   const disabledStyles = 'opacity-50 cursor-not-allowed';

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
-import { processVideoForTesting, processVideoWithScenario } from '@/lib/test-pipeline';
+import { processVideoWithScenario } from '@/lib/test-pipeline';
 
 interface DecodedToken {
   userId: string;
@@ -24,10 +24,11 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    const body = await request.json();
-    const { youtubeUrl, scenario = 'success' }: { youtubeUrl: string; scenario?: string } = body;
+    const body = await request.json() as { youtubeUrl?: unknown; scenario?: unknown };
+    const youtubeUrl = typeof body.youtubeUrl === 'string' ? body.youtubeUrl : '';
+    const scenario = typeof body.scenario === 'string' ? body.scenario : 'success';
 
-    if (!youtubeUrl || typeof youtubeUrl !== 'string') {
+    if (!youtubeUrl) {
       return NextResponse.json(
         { error: 'YouTube URL is required' },
         { status: 400 }
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process video using test pipeline
-    const testData = await processVideoWithScenario(youtubeUrl.trim(), scenario as any);
+    const testData = await processVideoWithScenario(youtubeUrl.trim(), scenario);
 
     // Create video document
     const video = new Video({

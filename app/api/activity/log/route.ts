@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, id: doc._id });
   } catch (error) {
+    console.error('Failed to log activity', error);
     return NextResponse.json({ error: 'Failed to log activity' }, { status: 500 });
   }
 }

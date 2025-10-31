@@ -21,14 +21,15 @@ export default function GenerateModal({
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
 
-  // Effect to clear state when modal opens - this is a legitimate use of useEffect
-  // for synchronizing component state with external prop changes (modal open/close)
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
       setUrl('');
       setError('');
-    }
+    });
+    return () => cancelAnimationFrame(frame);
   }, [isOpen]);
 
   const isValidUrl = (() => {
@@ -78,7 +79,7 @@ export default function GenerateModal({
                   <h2 className="text-xl font-bold text-foreground">Generate Materials</h2>
                   <p className="text-sm text-muted-foreground">Paste a YouTube link to get started.</p>
                 </div>
-<Button
+                <Button
                   type="button"
                   variant="ghost"
                   size="icon"

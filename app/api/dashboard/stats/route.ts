@@ -52,9 +52,13 @@ export async function GET(request: NextRequest) {
     const averageQuizScore = totalQuizAttempts > 0 ? Math.round(totalQuizScore / totalQuizAttempts) : 0;
 
     // Streaks
-    const user = await User.findById(userId).lean();
-    const currentStreak = user?.loginStreak || 0;
-    const longestStreak = user?.longestStreak || 0;
+    interface UserStreak {
+      loginStreak?: number;
+      longestStreak?: number;
+    }
+    const user = await User.findById(userId).lean<UserStreak | null>();
+    const currentStreak = user?.loginStreak ?? 0;
+    const longestStreak = user?.longestStreak ?? 0;
 
     // Weekly counts
     const weekStart = startOfWeek();
@@ -80,7 +84,8 @@ export async function GET(request: NextRequest) {
       videosThisWeek,
       flashcardsStudiedThisWeek,
     });
-  } catch (err) {
+  } catch (error) {
+    console.error('Failed to load dashboard stats', error);
     return NextResponse.json({ error: 'Failed to load stats' }, { status: 500 });
   }
 }
