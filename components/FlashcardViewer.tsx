@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from './Button';
+import { logActivity } from '@/lib/activityLogger';
 
 interface Flashcard {
   id: string;
@@ -33,15 +34,17 @@ export default function FlashcardViewer({
   const progress = ((currentIndex + 1) / flashcards.length) * 100;
   const masteredCount = masteredIds.size;
 
-  const handleFlip = () => {
+  const handleFlip = async () => {
     setIsFlipped(!isFlipped);
+    try { await logActivity('flashcard_viewed'); } catch {}
   };
 
-  const handleMarkMastered = () => {
+  const handleMarkMastered = async () => {
     if (currentCard && onMarkMastered) {
       setMasteredIds(prev => new Set([...prev, currentCard.id]));
       onMarkMastered(currentCard.id);
     }
+    try { await logActivity('flashcard_mastered'); } catch {}
   };
 
   const handleResetMastery = () => {

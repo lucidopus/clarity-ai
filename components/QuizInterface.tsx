@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
+import { logActivity } from '@/lib/activityLogger';
 
 export type QuestionType = 'multiple-choice' | 'true-false' | 'fill-in-blank';
 
@@ -59,7 +60,7 @@ export default function QuizInterface({
     setShowFeedback(true);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setSubmitted(false);
@@ -71,6 +72,7 @@ export default function QuizInterface({
       if (onComplete) {
         onComplete(score, questions.length);
       }
+      try { await logActivity('quiz_completed', undefined, { score, total: questions.length }); } catch {}
     }
   };
 

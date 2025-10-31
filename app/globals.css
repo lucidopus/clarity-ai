@@ -101,3 +101,37 @@ html {
 .animate-shake {
   animation: shake 0.5s ease-in-out;
 }
+
+/* Themed thin scrollbar for heatmap */
+.heatmap-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent; /* slate-400 */
+  padding-bottom: 10px; /* space above scrollbar */
+  margin-top: 6px; /* space before scrollbar area */
+  margin-bottom: 8px; /* space after scrollbar area */
+  scrollbar-gutter: stable both-edges;
+  overscroll-behavior-x: contain;
+}
+.dark .heatmap-scroll {
+  scrollbar-color: #475569 transparent; /* slate-600 */
+}
+.heatmap-scroll::-webkit-scrollbar {
+  height: 8px; /* horizontal */
+}
+.heatmap-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.heatmap-scroll::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+  border-radius: 9999px;
+}
+.dark .heatmap-scroll::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
+/* Heatmap sizing variables and containment */
+.heatmap-grid-container {
+  --cell-size: 14px; /* matches w-3.5 */
+  --cell-gap: 6px;   /* matches gap-1.5 */
+  contain: layout paint;
+}

@@ -11,6 +11,10 @@ export interface IUser extends Document {
   email: string;
   createdAt: Date;
   updatedAt: Date;
+  // Streak tracking fields
+  lastLoginDate?: Date;
+  loginStreak: number;
+  longestStreak: number;
 }
 
 const UserSchema: Schema = new Schema({
@@ -21,6 +25,10 @@ const UserSchema: Schema = new Schema({
   userType: { type: String, required: true, enum: ['Graduate', 'Undergraduate', 'Other'] },
   customUserType: { type: String, required: function(this: IUser) { return this.userType === 'Other'; } },
   email: { type: String, required: true },
+  // Streak tracking fields with defaults
+  lastLoginDate: { type: Date, default: null },
+  loginStreak: { type: Number, default: 0 },
+  longestStreak: { type: Number, default: 0 },
 }, {
   timestamps: true,
   collection: 'users', // Explicit collection name
