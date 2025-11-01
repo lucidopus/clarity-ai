@@ -117,7 +117,7 @@ export default function GenerationCard({
             priority={status !== 'completed'}
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br from-accent/20 to-accent/5 flex items-center justify-center">
             <div className="text-center">
               {getStatusIcon()}
               <p className="text-xs text-muted-foreground mt-2">Processing...</p>

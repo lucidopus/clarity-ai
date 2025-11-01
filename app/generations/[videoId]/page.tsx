@@ -63,8 +63,8 @@ interface VideoMaterials {
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites';
 
 const tabs = [
+  { id: 'transcript' as TabType, label: 'Learn', icon: Video },
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
-  { id: 'transcript' as TabType, label: 'Video & Transcript', icon: Video },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
 ];
@@ -77,7 +77,7 @@ export default function VideoMaterialsPage() {
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('flashcards');
+  const [activeTab, setActiveTab] = useState<TabType>('transcript');
 
   const handleLogout = async () => {
     try {
@@ -157,11 +157,11 @@ export default function VideoMaterialsPage() {
         <div className="max-w-full mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-6">
             {/* Left Side: Logo + Video Title */}
-            <div className="flex items-center gap-4 min-w-0 flex-shrink">
+            <div className="flex items-center gap-4 min-w-0 shrink">
                 {/* Logo */}
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
                 >
                   <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-lg">C</span>
@@ -169,7 +169,7 @@ export default function VideoMaterialsPage() {
                 </button>
 
               {/* Divider */}
-              <div className="w-px h-6 bg-border flex-shrink-0" />
+              <div className="w-px h-6 bg-border shrink-0" />
 
               {/* Video Title */}
               <div className="flex items-center gap-2 min-w-0">
@@ -180,7 +180,7 @@ export default function VideoMaterialsPage() {
             </div>
 
             {/* Center: Tab Navigation */}
-            <div className="flex gap-1 overflow-x-auto flex-shrink-0">
+            <div className="flex gap-1 overflow-x-auto shrink-0">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -204,7 +204,7 @@ export default function VideoMaterialsPage() {
             </div>
 
             {/* Right Side: Theme Toggle + Logout */}
-            <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="flex items-center gap-3 shrink-0">
               <ThemeToggle />
               <button
                 onClick={handleLogout}
