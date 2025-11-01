@@ -9,6 +9,7 @@ interface User {
   email: string;
   firstName: string;
   lastName: string;
+  preferences?: import('./models/User').IUserPreferences;
 }
 
 interface AuthContextType {
@@ -92,8 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.message || 'Signup failed');
     }
 
-    await checkAuth();
-    router.push('/dashboard');
+    const result = await response.json();
+    const newUser = result.user;
+
+    // Update local state
+    setUser(newUser);
+
+    // Redirect to onboarding if user has no role set (first step), otherwise to dashboard
+    if (!newUser.preferences?.role) {
+      router.push('/onboarding');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const logout = async () => {
