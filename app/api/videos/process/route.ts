@@ -5,6 +5,7 @@ import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
+import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
 
@@ -15,6 +16,12 @@ interface DecodedToken {
   lastName: string;
   iat: number;
   exp: number;
+}
+
+function startOfDay(date: Date): Date {
+  // Use UTC to avoid timezone issues
+  const d = new Date(date);
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0));
 }
 
 export async function POST(request: NextRequest) {
@@ -70,10 +77,10 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingVideo) {
-      console.log(`♻️ [VIDEO PROCESS] Video already processed: ${existingVideo._id.toString()}`);
+      console.log(`♻️ [VIDEO PROCESS] Video already processed: ${existingVideo.videoId}`);
       return NextResponse.json(
         {
-          videoId: existingVideo._id.toString(),
+          videoId: existingVideo.videoId, // YouTube video ID
           message: 'Video already processed',
         },
         { status: 200 }
@@ -101,6 +108,12 @@ export async function POST(request: NextRequest) {
       transcriptResult = await getYouTubeTranscript(youtubeUrl);
       console.log(`✅ [VIDEO PROCESS] Transcript extracted successfully: ${transcriptResult.segments.length} segments, ${transcriptResult.text.length} characters`);
 
+      // Calculate total video duration from transcript segments
+      const totalDuration = transcriptResult.segments.length > 0
+        ? Math.max(...transcriptResult.segments.map(s => s.offset + s.duration))
+        : 0;
+      console.log(`📊 [VIDEO PROCESS] Calculated video duration: ${totalDuration} seconds`);
+
       // Update video with transcript and metadata
       console.log('💾 [VIDEO PROCESS] Saving transcript to database...');
       await Video.findByIdAndUpdate(videoDoc._id, {
@@ -110,9 +123,12 @@ export async function POST(request: NextRequest) {
           duration: seg.duration,
           lang: 'en',
         })),
-        title: `Video ${videoId}`, // Basic title, can be enhanced with YouTube API
+        duration: totalDuration,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        channelName: 'YouTube',
+        title: `Video ${videoId}`, // Temporary title, will be updated with LLM-generated title
       });
-      console.log('✅ [VIDEO PROCESS] Transcript saved to database');
+      console.log('✅ [VIDEO PROCESS] Transcript and metadata saved to database');
     } catch (error) {
       console.error('❌ [VIDEO PROCESS] Transcript extraction failed:', error);
       await Video.findByIdAndUpdate(videoDoc._id, {
@@ -165,7 +181,7 @@ export async function POST(request: NextRequest) {
     await Flashcard.insertMany(
       materials.flashcards.map((fc) => ({
         userId: decoded.userId,
-        videoId: videoDoc._id,
+        videoId: videoId, // YouTube video ID
         question: fc.question,
         answer: fc.answer,
         difficulty: fc.difficulty,
@@ -179,7 +195,7 @@ export async function POST(request: NextRequest) {
     await Quiz.insertMany(
       materials.quizzes.map((quiz) => ({
         userId: decoded.userId,
-        videoId: videoDoc._id,
+        videoId: videoId, // YouTube video ID
         questionText: quiz.questionText,
         options: quiz.options,
         correctAnswerIndex: quiz.correctAnswerIndex,
@@ -193,7 +209,7 @@ export async function POST(request: NextRequest) {
     // Save timestamps and prerequisites in learning materials collection
     console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps and ${materials.prerequisites.length} prerequisites...`);
     await LearningMaterial.create({
-      videoId: videoDoc._id,
+      videoId: videoId, // YouTube video ID
       userId: decoded.userId,
       timestamps: materials.timestamps,
       prerequisites: materials.prerequisites,
@@ -204,19 +220,43 @@ export async function POST(request: NextRequest) {
     });
     console.log('✅ [VIDEO PROCESS] Learning materials saved');
 
-    // 8. Update video status: completed
-    console.log('✅ [VIDEO PROCESS] Step 9: Marking video as completed...');
+    // 8. Update video with generated title and status: completed
+    console.log('✅ [VIDEO PROCESS] Step 9: Updating video with generated title and marking as completed...');
     await Video.findByIdAndUpdate(videoDoc._id, {
+      title: materials.title,
       processingStatus: 'completed',
       processedAt: new Date(),
     });
     console.log('✅ [VIDEO PROCESS] Video marked as completed');
 
-    // 9. Return success with videoId
-    console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! Video ID: ${videoDoc._id.toString()}`);
+    // 9. Log video generation activity
+    console.log('📊 [VIDEO PROCESS] Step 10: Logging video generation activity...');
+    try {
+      const now = new Date();
+      await ActivityLog.create({
+        userId: decoded.userId,
+        activityType: 'video_generated',
+        videoId: videoId,
+        date: startOfDay(now),
+        timestamp: now,
+        metadata: {
+          flashcardsGenerated: materials.flashcards.length,
+          quizzesGenerated: materials.quizzes.length,
+          timestampsGenerated: materials.timestamps.length,
+          prerequisitesGenerated: materials.prerequisites.length,
+        },
+      });
+      console.log('✅ [VIDEO PROCESS] Activity logged successfully');
+    } catch (activityError) {
+      console.error('⚠️ [VIDEO PROCESS] Failed to log activity (non-critical):', activityError);
+      // Don't fail the entire request if activity logging fails
+    }
+
+    // 10. Return success with YouTube videoId
+    console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! YouTube Video ID: ${videoId}`);
     return NextResponse.json({
       success: true,
-      videoId: videoDoc._id.toString(),
+      videoId: videoId, // YouTube video ID (e.g., "dQw4w9WgXcQ")
       message: 'Video processed successfully',
     });
   } catch (error) {

@@ -186,7 +186,7 @@ export default function PrerequisiteChecker({
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
+                  <div className={`shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 ${
                     prereq.required
                       ? 'bg-accent text-white'
                       : 'bg-muted-foreground/20 text-muted-foreground'

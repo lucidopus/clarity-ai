@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw } from 'lucide-react';
 import Button from './Button';
+import { logActivity } from '@/lib/activityLogger';
 
 export type QuestionType = 'multiple-choice' | 'true-false' | 'fill-in-blank';
 
@@ -22,7 +23,7 @@ interface QuizInterfaceProps {
   videoId: string;
 }
 
-export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
+export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<(number | string | null)[]>(
     new Array(quizzes.length).fill(null)
@@ -75,7 +76,7 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
           className="text-center mb-8"
         >
           <div className="relative inline-block mb-6">
-            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-accent via-accent to-accent/70 flex items-center justify-center shadow-xl ring-4 ring-accent/20 dark:ring-accent/10">
+            <div className="w-28 h-28 rounded-full bg-linear-to-br from-accent via-accent to-accent/70 flex items-center justify-center shadow-xl ring-4 ring-accent/20 dark:ring-accent/10">
               <Trophy className="w-14 h-14 text-white drop-shadow-sm" />
             </div>
           </div>
@@ -151,7 +152,7 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
                   }`}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-1 ${
+                    <div className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-1 ${
                       correct
                         ? 'bg-card-bg border-2 border-green-500 text-green-700 dark:bg-muted/20 dark:text-green-400'
                         : 'bg-card-bg border-2 border-red-500 text-red-700 dark:bg-muted/20 dark:text-red-400'
@@ -168,7 +169,7 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
                         <h3 className="font-semibold text-foreground text-lg leading-tight">
                           {quiz.questionText}
                         </h3>
-                        <span className="text-sm text-muted-foreground font-medium flex-shrink-0">
+                        <span className="text-sm text-muted-foreground font-medium shrink-0">
                           Q{index + 1}
                         </span>
                       </div>
@@ -244,15 +245,6 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
             <RotateCw className="w-4 h-4 mr-2" />
             Retake Quiz
           </Button>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              window.history.back();
-            }}
-            className="px-8"
-          >
-            Back to Video
-          </Button>
         </motion.div>
       </div>
     );
@@ -293,8 +285,18 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
     } else {
       // Quiz complete
       const score = calculateScore();
+      const percentage = Math.round((score / quizzes.length) * 100);
+
       setFinalScore(score);
       setQuizCompleted(true);
+
+      // Log quiz completion activity
+      logActivity('quiz_completed', videoId, {
+        score: percentage,
+        totalQuestions: quizzes.length,
+        correctAnswers: score,
+      });
+
       // TODO: API call to save quiz results
     }
   };
@@ -351,7 +353,7 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
               <motion.button
                 key={index}
                 onClick={() => handleOptionSelect(index)}
-                className={`w-full p-4 text-left border-2 rounded-xl transition-all duration-200 ${
+                className={`w-full p-4 text-left border-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   currentAnswer === index
                     ? submitted
                       ? isCorrect()
@@ -392,7 +394,7 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
               <motion.button
                 key={index}
                 onClick={() => handleOptionSelect(index)}
-                className={`p-6 text-center border-2 rounded-xl transition-all duration-200 ${
+                className={`p-6 text-center border-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   currentAnswer === index
                     ? submitted
                       ? isCorrect()
@@ -566,11 +568,6 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Keyboard shortcuts hint */}
-      <div className="mt-6 text-center text-sm text-muted-foreground">
-        Use <kbd className="px-2 py-1 bg-muted rounded text-xs">Tab</kbd> to navigate options
       </div>
     </div>
   );

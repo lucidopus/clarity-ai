@@ -50,6 +50,7 @@ export default function DashboardHomePage() {
   const [recentVideos, setRecentVideos] = useState<RecentVideo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -61,6 +62,44 @@ export default function DashboardHomePage() {
     } else {
       setGreeting('Good Evening');
     }
+  }, []);
+
+  // Listen for activity events to refresh immediately
+  useEffect(() => {
+    const handler = () => setRefreshTick((t) => t + 1);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('activity:logged', handler);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('activity:logged', handler);
+      }
+    };
+  }, []);
+
+  // Refresh when page becomes visible (tab switching, returning to browser)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshTick((t) => t + 1);
+      }
+    };
+
+    const handleFocus = () => {
+      setRefreshTick((t) => t + 1);
+    };
+
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -90,7 +129,7 @@ export default function DashboardHomePage() {
     }
     load();
     return () => { mounted = false; };
-  }, [user]);
+  }, [user, refreshTick]);
 
   const handleGenerate = async (youtubeUrl: string) => {
     console.log('🎬 [FRONTEND] Starting video generation from Home page...');

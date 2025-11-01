@@ -9,9 +9,10 @@ interface DecodedToken { userId: string }
 type View = 'month' | 'year';
 
 function formatYmd(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  // Use UTC methods to ensure consistent date formatting
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
@@ -31,10 +32,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const view = (searchParams.get('view') as View) || 'month';
 
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(endDate.getDate() - (view === 'year' ? 364 : 29));
-    startDate.setHours(0, 0, 0, 0);
+    // Normalize to start of today in UTC (to match how we store activity dates)
+    const now = new Date();
+
+    // Extend endDate to the last day of the current month
+    // This ensures the entire current month is visible as soon as it starts
+    const endDate = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 0, 0, 0, 0)); // Last day of current month
+
+    const startDate = new Date(endDate);
+    startDate.setUTCDate(endDate.getUTCDate() - (view === 'year' ? 364 : 29));
 
     await dbConnect();
 
@@ -45,7 +51,7 @@ export async function GET(request: NextRequest) {
           date: { $gte: startDate, $lte: endDate },
         },
       },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: 'UTC' } }, count: { $sum: 1 } } },
       { $project: { _id: 0, date: '$_id', count: 1 } },
       { $sort: { date: 1 } },
     ]);
@@ -59,7 +65,7 @@ export async function GET(request: NextRequest) {
       const key = formatYmd(cursor);
       const count = map.get(key) || 0;
       activities.push({ date: key, count, level: calcLevel(count) });
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     const totalActivities = activities.reduce((acc, a) => acc + a.count, 0);
@@ -69,6 +75,12 @@ export async function GET(request: NextRequest) {
       startDate: formatYmd(startDate),
       endDate: formatYmd(endDate),
       totalActivities,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
     });
   } catch (error) {
     console.error('Failed to load activity heatmap', error);
