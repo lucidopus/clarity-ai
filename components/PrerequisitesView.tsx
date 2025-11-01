@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, AlertCircle, BookOpen } from 'lucide-react';
 import Button from './Button';
@@ -18,6 +18,19 @@ interface PrerequisitesViewProps {
 
 export default function PrerequisitesView({ prerequisites }: PrerequisitesViewProps) {
   const [completedPrerequisites, setCompletedPrerequisites] = useState<Set<string>>(new Set());
+
+  const togglePrerequisite = useCallback((id: string) => {
+    setCompletedPrerequisites(prev => {
+      const newCompleted = new Set(prev);
+      if (newCompleted.has(id)) {
+        newCompleted.delete(id);
+      } else {
+        newCompleted.add(id);
+      }
+      return newCompleted;
+    });
+    // TODO: API call to save progress
+  }, []);
 
   if (!prerequisites || prerequisites.length === 0) {
     return (
@@ -42,18 +55,7 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
   const totalCount = prerequisites.length;
   const progress = (completedCount / totalCount) * 100;
 
-  const togglePrerequisite = (id: string) => {
-    const newCompleted = new Set(completedPrerequisites);
-    if (newCompleted.has(id)) {
-      newCompleted.delete(id);
-    } else {
-      newCompleted.add(id);
-    }
-    setCompletedPrerequisites(newCompleted);
-    // TODO: API call to save progress
-  };
-
-  const PrerequisiteCard = ({ prerequisite, index }: { prerequisite: Prerequisite; index: number }) => {
+  const PrerequisiteCard = memo(({ prerequisite, index }: { prerequisite: Prerequisite; index: number }) => {
     const isCompleted = completedPrerequisites.has(prerequisite.id);
 
     return (
@@ -61,6 +63,7 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.1 }}
+        onClick={() => togglePrerequisite(prerequisite.id)}
         className={`p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
           isCompleted
             ? 'border-green-500 bg-green-500/5'
@@ -69,7 +72,10 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
       >
         <div className="flex items-start gap-4">
           <button
-            onClick={() => togglePrerequisite(prerequisite.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePrerequisite(prerequisite.id);
+            }}
             className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
               isCompleted
                 ? 'border-green-500 bg-green-500'
@@ -100,7 +106,8 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
         </div>
       </motion.div>
     );
-  };
+  });
+  PrerequisiteCard.displayName = 'PrerequisiteCard';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -189,11 +196,6 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
         >
           Reset Progress
         </Button>
-        {completedCount === totalCount && (
-          <Button variant="primary">
-            Start Learning
-          </Button>
-        )}
       </div>
     </div>
   );

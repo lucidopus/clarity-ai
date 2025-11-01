@@ -190,7 +190,6 @@ export default function StudyActivityHeatmap() {
   }, [padded]);
 
   const railWidthPx = 28;
-  const monthSpacerPx = railWidthPx + 8; // account for weekday rail's mr-2 (8px)
 
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-6 heatmap-grid-container">

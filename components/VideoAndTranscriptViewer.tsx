@@ -18,10 +18,22 @@ interface VideoAndTranscriptViewerProps {
 }
 
 // Extend Window interface for YouTube IFrame API
+interface YTPlayer {
+  getCurrentTime(): number;
+  seekTo(time: number, allowSeekAhead: boolean): void;
+  playVideo(): void;
+}
+
 declare global {
   interface Window {
-    YT: any;
-    onYouTubeIframeAPIReady: () => void;
+    YT: {
+      Player: new (element: HTMLElement, options: {
+        events?: {
+          onReady?: () => void;
+        };
+      }) => YTPlayer;
+    };
+    onYouTubeIframeAPIReady?: () => void;
   }
 }
 
@@ -34,9 +46,10 @@ export default function VideoAndTranscriptViewer({
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
   const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isManualClick = useRef(false);
+  const prevSelectedRef = useRef<number | null>(null);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -59,12 +72,12 @@ export default function VideoAndTranscriptViewer({
               // Start tracking video time
               const interval = setInterval(() => {
                 if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-                  try {
-                    const time = playerRef.current.getCurrentTime();
-                    setCurrentTime(time);
-                  } catch (e) {
-                    // Ignore errors when player is not ready
-                  }
+                   try {
+                     const time = playerRef.current.getCurrentTime();
+                     setCurrentTime(time);
+                   } catch {
+                     // Ignore errors when player is not ready
+                   }
                 }
               }, 500); // Update every 500ms
 
@@ -97,7 +110,9 @@ export default function VideoAndTranscriptViewer({
       return currentTime >= segment.start && currentTime < segmentEnd;
     });
 
-    if (activeIndex !== -1 && activeIndex !== selectedSegment) {
+    if (activeIndex !== -1 && activeIndex !== prevSelectedRef.current) {
+      prevSelectedRef.current = activeIndex;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSegment(activeIndex);
 
       // Scroll to active segment with smooth animation
@@ -109,7 +124,7 @@ export default function VideoAndTranscriptViewer({
         });
       }
     }
-  }, [currentTime, transcript, selectedSegment]);
+  }, [currentTime, transcript]);
 
   const formatTimestamp = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);

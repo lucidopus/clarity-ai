@@ -87,13 +87,6 @@ export default function VideoCard({
             </div>
           )}
 
-          {transcriptMinutes && transcriptMinutes > 0 && (
-            <div className="inline-flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{transcriptMinutes} min read</span>
-            </div>
-          )}
-
           {flashcardCount && flashcardCount > 0 && (
             <div className="inline-flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" aria-hidden="true" />
