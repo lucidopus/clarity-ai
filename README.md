@@ -2,16 +2,6 @@
 
 An AI-powered educational platform that transforms passive YouTube video watching into active, engaging learning experiences. Clarity AI automatically generates personalized study materials from any educational video, helping students at the undergraduate and graduate level truly understand and retain what they learn.
 
-## What It Does
-
-Clarity AI addresses a critical problem in online learning: passive video consumption leads to poor retention. The platform automatically generates evidence-based study materials from YouTube videos, including:
-
-- **Flash Cards**: AI-generated and user-created question-answer pairs for active recall practice
-- **Quizzes**: Multiple-choice, true/false, and fill-in-blank questions with immediate feedback
-- **Interactive Transcripts**: Clickable timestamps to jump to any moment in the video
-- **Pre-requisite Checker**: Identify required background knowledge with readiness quizzes
-- **Q&A Chatbot**: Context-aware AI tutor for personalized explanations (future feature)
-
 ## The Core Problem
 
 Educational videos are everywhere, but watching them passively leads to poor retention. Students face:
@@ -21,11 +11,30 @@ Educational videos are everywhere, but watching them passively leads to poor ret
 - No personalized or adaptive learning path
 - Scattered progress across multiple videos
 
+Clarity AI solves this by turning video content into an interactive learning hub.
+
+## Key Features
+
+Clarity AI is packed with features designed to enhance learning, all generated automatically from a single YouTube link:
+
+- **AI-Generated Study Materials**:
+    - **Flashcards**: Reinforce key concepts with AI-generated and user-created flashcards.
+    - **Quizzes**: Test your knowledge with multiple-choice, true/false, and fill-in-the-blank questions.
+    - **Notes**: A rich text editor to capture your thoughts and insights, synced with the video.
+- **Interactive Video Experience**:
+    - **Interactive Transcripts**: A full, searchable transcript with clickable timestamps to navigate the video.
+    - **Prerequisite Checker**: Identifies concepts you need to know before watching and provides resources to get you up to speed.
+- **Personalized Learning Dashboard**:
+    - **Activity Tracking**: Visualize your study habits with an activity heatmap and weekly charts.
+    - **Progress Overview**: See your performance on quizzes and flashcards at a glance.
+    - **Video Gallery**: A central place for all your processed videos, with search and filtering.
+
 ## Tech Stack
 
-- **Frontend**: Next.js with TypeScript
+- **Frontend**: Next.js with TypeScript and Tailwind CSS
 - **Database**: MongoDB
 - **LLM Provider**: Gemini API or Groq
+- **Authentication**: NextAuth.js
 - **Transcript API**: Public YouTube Transcript API
 
 ## Getting Started
@@ -65,51 +74,34 @@ npm run dev
 
 5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Project Structure
+## Project Status
 
-The application is organized into three main tabs:
+The project has a solid foundation with most core features implemented.
 
-- **Home Tab**: Quick analytics, learning progress overview, and recent activity
-- **Generate Tab**: Input YouTube URL to generate study materials
-- **Gallery Tab**: Visual collection of all processed videos with search and filter
+### Implemented Features:
+- **User Authentication**: Secure sign-up and sign-in.
+- **Video Processing Pipeline**: Enter a YouTube URL and generate a full suite of learning materials.
+- **Interactive Learning Materials**: View and interact with AI-generated flashcards, quizzes, notes, and the video transcript.
+- **Dashboard & Analytics**: A comprehensive dashboard with activity heatmaps, progress tracking, and video gallery.
+- **Search & Filtering**: Easily find videos in your gallery.
 
-## Features by Stage
-
-### Stage 1: MVP Foundation (Current)
-- Authentication system
-- Dashboard skeleton (Home, Generate, Gallery tabs)
-- Video processing pipeline
-- Basic material display
-
-### Stage 2: Core Features
-- Interactive flashcards (AI-generated and user-created)
-- Quiz system with feedback
-- Interactive transcript with timestamps
-- Pre-requisite checker with readiness quiz
-
-### Stage 3: Polish & Optimization
-- Improved UI/UX
-- Better analytics
-- Search and filter in gallery
-- Performance optimization
-
-### Stage 4: Advanced Features
-- Q&A Chatbot with RAG implementation
-- Spaced repetition algorithm
-- Social features and sharing
+### Future Roadmap:
+- **Q&A Chatbot**: A context-aware AI tutor (using RAG) for asking questions about the video content.
+- **Spaced Repetition System (SRS)**: Integrate an SRS algorithm for flashcard review to optimize long-term retention.
+- **Social Features**: Options to share generated content with others.
+- **Enhanced Analytics**: Deeper insights into learning patterns and performance.
 
 ## Educational Foundation
 
 This project is grounded in learning science research:
-- Active recall strengthens memory through retrieval practice
-- Quizzes invoke the "testing effect" for long-term retention
-- Spaced repetition optimizes review timing
-- Interactive materials boost engagement and motivation
+- **Active Recall**: Strengthens memory through retrieval practice (flashcards, quizzes).
+- **The Testing Effect**: The act of retrieving information improves long-term retention.
+- **Elaboration**: Taking notes and connecting ideas enhances understanding.
+- **Interactivity**: Engaging with materials boosts motivation and focus.
 
 ## Documentation
 
-For detailed project planning and architecture decisions, see:
-- [Project Plan](docs/PROJECT_PLAN.md) - Complete vision and technical specifications
+For detailed project planning and architecture decisions, see the `/docs` directory.
 
 ## Contributing
 
