@@ -40,7 +40,8 @@ export default function SettingsPage() {
       <DashboardHeader
         title="Settings"
         subtitle="Manage your account preferences and settings"
-        onGenerateClick={() => setShowGenerateModal(true)}
+        onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
+        isGenerateModalOpen={showGenerateModal}
       />
 
       {/* Account Information Section */}
