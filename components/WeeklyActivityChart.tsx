@@ -112,7 +112,7 @@ export default function WeeklyActivityChart() {
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Activity</h3>
-      <div className="flex-grow h-[180px]">
+      <div className="grow h-[180px]">
         <Bar
           data={{
             labels,

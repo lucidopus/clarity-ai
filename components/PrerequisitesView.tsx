@@ -61,7 +61,7 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: index * 0.1 }}
-        className={`p-6 rounded-xl border-2 transition-all duration-200 ${
+        className={`p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
           isCompleted
             ? 'border-green-500 bg-green-500/5'
             : 'border-border bg-card-bg hover:border-accent/50'
@@ -70,7 +70,7 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
         <div className="flex items-start gap-4">
           <button
             onClick={() => togglePrerequisite(prerequisite.id)}
-            className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+            className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
               isCompleted
                 ? 'border-green-500 bg-green-500'
                 : 'border-muted-foreground hover:border-accent'

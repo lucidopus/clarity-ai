@@ -473,7 +473,7 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="min-h-[10rem] px-4 py-3 bg-background border-2 border-border rounded-xl"
+            className="min-h-40 px-4 py-3 bg-background border-2 border-border rounded-xl"
           >
             {content.trim() ? (
               <div className="markdown-preview text-foreground text-sm leading-relaxed">
