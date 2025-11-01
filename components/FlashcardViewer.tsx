@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, RotateCw, Check } from 'lucide-react';
 import Button from './Button';
+import { logActivity } from '@/lib/activityLogger';
 
 interface Flashcard {
   id: string;
@@ -18,7 +19,7 @@ interface FlashcardViewerProps {
   videoId: string;
 }
 
-export default function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
+export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [masteredCards, setMasteredCards] = useState<Set<string>>(
@@ -61,16 +62,32 @@ export default function FlashcardViewer({ flashcards }: FlashcardViewerProps) {
 
   const handleFlip = () => {
     setIsFlipped(!isFlipped);
+    // Log activity when user views/flips flashcard
+    if (!isFlipped) {
+      logActivity('flashcard_viewed', videoId, {
+        flashcardId: currentCard.id,
+      });
+    }
   };
 
   const handleMastered = () => {
     const newMastered = new Set(masteredCards);
+    const wasNotMastered = !masteredCards.has(currentCard.id);
+
     if (masteredCards.has(currentCard.id)) {
       newMastered.delete(currentCard.id);
     } else {
       newMastered.add(currentCard.id);
     }
     setMasteredCards(newMastered);
+
+    // Log activity when user marks card as mastered (not when unmarking)
+    if (wasNotMastered) {
+      logActivity('flashcard_mastered', videoId, {
+        flashcardId: currentCard.id,
+      });
+    }
+
     // TODO: API call to save mastered status
   };
 

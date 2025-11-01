@@ -5,6 +5,7 @@ import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
+import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
 
@@ -15,6 +16,12 @@ interface DecodedToken {
   lastName: string;
   iat: number;
   exp: number;
+}
+
+function startOfDay(date: Date): Date {
+  // Use UTC to avoid timezone issues
+  const d = new Date(date);
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0));
 }
 
 export async function POST(request: NextRequest) {
@@ -212,7 +219,30 @@ export async function POST(request: NextRequest) {
     });
     console.log('✅ [VIDEO PROCESS] Video marked as completed');
 
-    // 9. Return success with YouTube videoId
+    // 9. Log video generation activity
+    console.log('📊 [VIDEO PROCESS] Step 10: Logging video generation activity...');
+    try {
+      const now = new Date();
+      await ActivityLog.create({
+        userId: decoded.userId,
+        activityType: 'video_generated',
+        videoId: videoId,
+        date: startOfDay(now),
+        timestamp: now,
+        metadata: {
+          flashcardsGenerated: materials.flashcards.length,
+          quizzesGenerated: materials.quizzes.length,
+          timestampsGenerated: materials.timestamps.length,
+          prerequisitesGenerated: materials.prerequisites.length,
+        },
+      });
+      console.log('✅ [VIDEO PROCESS] Activity logged successfully');
+    } catch (activityError) {
+      console.error('⚠️ [VIDEO PROCESS] Failed to log activity (non-critical):', activityError);
+      // Don't fail the entire request if activity logging fails
+    }
+
+    // 10. Return success with YouTube videoId
     console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! YouTube Video ID: ${videoId}`);
     return NextResponse.json({
       success: true,

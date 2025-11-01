@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw } from 'lucide-react';
 import Button from './Button';
+import { logActivity } from '@/lib/activityLogger';
 
 export type QuestionType = 'multiple-choice' | 'true-false' | 'fill-in-blank';
 
@@ -22,7 +23,7 @@ interface QuizInterfaceProps {
   videoId: string;
 }
 
-export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
+export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<(number | string | null)[]>(
     new Array(quizzes.length).fill(null)
@@ -293,8 +294,18 @@ export default function QuizInterface({ quizzes }: QuizInterfaceProps) {
     } else {
       // Quiz complete
       const score = calculateScore();
+      const percentage = Math.round((score / quizzes.length) * 100);
+
       setFinalScore(score);
       setQuizCompleted(true);
+
+      // Log quiz completion activity
+      logActivity('quiz_completed', videoId, {
+        score: percentage,
+        totalQuestions: quizzes.length,
+        correctAnswers: score,
+      });
+
       // TODO: API call to save quiz results
     }
   };

@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered';
+export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated';
 
 export interface IActivityLog extends Document {
   _id: mongoose.Types.ObjectId;
@@ -16,7 +16,7 @@ export interface IActivityLog extends Document {
 
 const ActivityLogSchema: Schema<IActivityLog> = new Schema({
   userId: { type: Schema.Types.ObjectId, required: true, index: true, ref: 'User' },
-  activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered'] },
+  activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created', 'video_generated'] },
   videoId: { type: String }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   date: { type: Date, required: true },
   timestamp: { type: Date, required: true, default: () => new Date() },

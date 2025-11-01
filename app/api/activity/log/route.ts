@@ -8,9 +8,9 @@ interface DecodedToken {
 }
 
 function startOfDay(date: Date): Date {
+  // Use UTC to avoid timezone issues
   const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0));
 }
 
 export async function POST(request: NextRequest) {
@@ -32,11 +32,17 @@ export async function POST(request: NextRequest) {
     await dbConnect();
 
     const now = new Date();
+    const dateForStorage = startOfDay(now);
+
+    console.log(`[ACTIVITY LOG] Logging activity: ${activityType}`);
+    console.log(`[ACTIVITY LOG] Current time: ${now.toISOString()}`);
+    console.log(`[ACTIVITY LOG] Date for storage: ${dateForStorage.toISOString()}`);
+
     const doc = await ActivityLog.create({
       userId: decoded.userId,
       activityType,
       videoId: videoId || undefined,
-      date: startOfDay(now),
+      date: dateForStorage,
       timestamp: now,
       metadata: metadata || undefined,
     });
