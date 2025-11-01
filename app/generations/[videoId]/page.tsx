@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, ArrowLeft } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
@@ -161,7 +161,7 @@ export default function VideoMaterialsPage() {
                 {/* Logo */}
                 <button
                   onClick={() => router.push('/dashboard')}
-                  className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
                 >
                   <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
                     <span className="text-white font-bold text-lg">C</span>
@@ -203,16 +203,15 @@ export default function VideoMaterialsPage() {
               })}
             </div>
 
-            {/* Right Side: Theme Toggle + Logout */}
+            {/* Right Side: Back + Theme Toggle + Logout */}
             <div className="flex items-center gap-3 shrink-0">
               <ThemeToggle />
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-background border border-border rounded-lg hover:border-accent transition-all duration-200"
+                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-background border border-border rounded-lg hover:border-accent transition-all duration-200 cursor-pointer"
                 title="Logout"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>

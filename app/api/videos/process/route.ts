@@ -108,6 +108,12 @@ export async function POST(request: NextRequest) {
       transcriptResult = await getYouTubeTranscript(youtubeUrl);
       console.log(`✅ [VIDEO PROCESS] Transcript extracted successfully: ${transcriptResult.segments.length} segments, ${transcriptResult.text.length} characters`);
 
+      // Calculate total video duration from transcript segments
+      const totalDuration = transcriptResult.segments.length > 0
+        ? Math.max(...transcriptResult.segments.map(s => s.offset + s.duration))
+        : 0;
+      console.log(`📊 [VIDEO PROCESS] Calculated video duration: ${totalDuration} seconds`);
+
       // Update video with transcript and metadata
       console.log('💾 [VIDEO PROCESS] Saving transcript to database...');
       await Video.findByIdAndUpdate(videoDoc._id, {
@@ -117,9 +123,12 @@ export async function POST(request: NextRequest) {
           duration: seg.duration,
           lang: 'en',
         })),
+        duration: totalDuration,
+        thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+        channelName: 'YouTube',
         title: `Video ${videoId}`, // Temporary title, will be updated with LLM-generated title
       });
-      console.log('✅ [VIDEO PROCESS] Transcript saved to database');
+      console.log('✅ [VIDEO PROCESS] Transcript and metadata saved to database');
     } catch (error) {
       console.error('❌ [VIDEO PROCESS] Transcript extraction failed:', error);
       await Video.findByIdAndUpdate(videoDoc._id, {

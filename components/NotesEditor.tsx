@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -42,28 +42,7 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
     fetchNotes();
   }, [videoId]);
 
-  // Auto-save with debounce
-  useEffect(() => {
-    if (!isLoading) {
-      // Clear existing timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      // Set new timeout for auto-save (2 seconds after user stops typing)
-      saveTimeoutRef.current = setTimeout(() => {
-        saveNotes();
-      }, 2000);
-
-      return () => {
-        if (saveTimeoutRef.current) {
-          clearTimeout(saveTimeoutRef.current);
-        }
-      };
-    }
-  }, [content, isLoading]);
-
-  const saveNotes = async () => {
+  const saveNotes = useCallback(async () => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/notes', {
@@ -83,7 +62,28 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [videoId, content]);
+
+  // Auto-save with debounce
+  useEffect(() => {
+    if (!isLoading) {
+      // Clear existing timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout for auto-save (2 seconds after user stops typing)
+      saveTimeoutRef.current = setTimeout(() => {
+        saveNotes();
+      }, 2000);
+
+      return () => {
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+      };
+    }
+  }, [content, isLoading, saveNotes]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -202,7 +202,6 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
     } else {
       // Add bullet at current line
       const textBeforeCursor = content.substring(0, start);
-      const textAfterCursor = content.substring(start);
       const lastNewline = textBeforeCursor.lastIndexOf('\n');
       const lineStart = lastNewline >= 0 ? lastNewline + 1 : 0;
 
@@ -235,7 +234,6 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
     } else {
       // Add number at current line
       const textBeforeCursor = content.substring(0, start);
-      const textAfterCursor = content.substring(start);
       const lastNewline = textBeforeCursor.lastIndexOf('\n');
       const lineStart = lastNewline >= 0 ? lastNewline + 1 : 0;
 

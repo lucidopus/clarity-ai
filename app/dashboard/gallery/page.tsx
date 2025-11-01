@@ -91,13 +91,13 @@ export default function GalleryPage() {
       // Close modal
       setShowGenerateModal(false);
 
-      // Redirect to the generation page
-      if (data.videoId) {
-        console.log(`🎬 [FRONTEND] Redirecting to /generations/${data.videoId}`);
-        window.location.href = `/generations/${data.videoId}`;
-      } else {
-        console.error('❌ [FRONTEND] No videoId in response');
-      }
+       // Open generation page in new tab
+       if (data.videoId) {
+         console.log(`🎬 [FRONTEND] Opening /generations/${data.videoId} in new tab`);
+         window.open(`/generations/${data.videoId}`, '_blank');
+       } else {
+         console.error('❌ [FRONTEND] No videoId in response');
+       }
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation failed:', error);
       const message = error instanceof Error ? error.message : 'Failed to generate materials';
@@ -196,7 +196,7 @@ export default function GalleryPage() {
               id={video.id}
               title={video.title}
               channelName={video.channelName}
-              duration={`${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`}
+              duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
               transcriptMinutes={video.transcriptMinutes}
               createdAt={video.createdAt}
               onClick={handleVideoClick}

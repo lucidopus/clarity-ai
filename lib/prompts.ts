@@ -3,7 +3,7 @@ export const LEARNING_MATERIALS_PROMPT = `You are an educational expert creating
 Generate 5 learning components based on this transcript:
 
 ## Instructions:
-1. Generate a short, relevant title for the video
+1. Generate a very short, relevant title for the video
 2. Extract 5-8 key flashcards (important concepts)
 3. Create 4-5 quiz questions (multiple choice)
 4. Identify 3-5 key moments (timestamps + summaries)
