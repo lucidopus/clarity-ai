@@ -123,9 +123,6 @@ export default function Sidebar() {
 
       {/* Footer - User Section */}
       <div className="p-4 border-t border-border space-y-4">
-        <div className="flex items-center justify-center">
-          <ThemeToggle />
-        </div>
         <div className="text-xs text-muted-foreground text-center">
           <p>{user?.email}</p>
         </div>
