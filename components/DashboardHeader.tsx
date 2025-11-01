@@ -50,7 +50,7 @@ export default function DashboardHeader({ title, subtitle, onGenerateClick, isGe
         )}
         <ThemeToggle />
         <Button onClick={logout} variant="ghost" size="icon" aria-label="Logout">
-          <LogOut className="w-5 h-5 transform -scale-x-100" />
+          <LogOut className="w-5 h-5" />
         </Button>
       </div>
     </div>
