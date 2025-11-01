@@ -1,6 +1,7 @@
 export const LEARNING_MATERIALS_SCHEMA = {
   type: 'object',
   properties: {
+    title: { type: 'string' },
     flashcards: {
       type: 'array',
       items: {
@@ -59,11 +60,12 @@ export const LEARNING_MATERIALS_SCHEMA = {
     },
     chatbotContext: { type: 'string' },
   },
-  required: ['flashcards', 'quizzes', 'timestamps', 'prerequisites', 'chatbotContext'],
+  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'chatbotContext'],
   additionalProperties: false,
 } as const;
 
 export interface LearningMaterials {
+  title: string;
   flashcards: Array<{
     id: string;
     question: string;
