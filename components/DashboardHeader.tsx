@@ -10,9 +10,10 @@ interface DashboardHeaderProps {
   title: string;
   subtitle?: string;
   onGenerateClick?: () => void;
+  isGenerateModalOpen?: boolean;
 }
 
-export default function DashboardHeader({ title, subtitle, onGenerateClick }: DashboardHeaderProps) {
+export default function DashboardHeader({ title, subtitle, onGenerateClick, isGenerateModalOpen }: DashboardHeaderProps) {
   const { logout } = useAuth();
 
   // Add keyboard shortcut for generate button (Cmd+K)
@@ -39,7 +40,7 @@ export default function DashboardHeader({ title, subtitle, onGenerateClick }: Da
       </div>
       <div className="flex items-center space-x-4">
         {onGenerateClick && (
-          <div title="Generate materials (⌘K)">
+          <div title={`${isGenerateModalOpen ? 'Close' : 'Open'} generate modal (⌘K)`}>
             <Button onClick={onGenerateClick} variant="primary" size="sm">
               <Sparkles className="w-4 h-4 mr-2" />
               Generate

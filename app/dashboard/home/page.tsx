@@ -181,7 +181,8 @@ export default function DashboardHomePage() {
       {/* Page Header */}
       <DashboardHeader
         title={`${greeting}, ${user.firstName}`}
-        onGenerateClick={() => setShowGenerateModal(true)}
+        onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
+        isGenerateModalOpen={showGenerateModal}
       />
 
       {/* Loading/Error */}

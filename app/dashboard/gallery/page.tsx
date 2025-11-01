@@ -144,7 +144,8 @@ export default function GalleryPage() {
       <DashboardHeader
         title="Library"
         subtitle="Access all your learning materials and generated content"
-        onGenerateClick={() => setShowGenerateModal(true)}
+        onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
+        isGenerateModalOpen={showGenerateModal}
       />
 
       {/* Search & Filter Bar */}
