@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
           duration: seg.duration,
           lang: 'en',
         })),
-        title: `Video ${videoId}`, // Basic title, can be enhanced with YouTube API
+        title: `Video ${videoId}`, // Temporary title, will be updated with LLM-generated title
       });
       console.log('✅ [VIDEO PROCESS] Transcript saved to database');
     } catch (error) {
@@ -211,9 +211,10 @@ export async function POST(request: NextRequest) {
     });
     console.log('✅ [VIDEO PROCESS] Learning materials saved');
 
-    // 8. Update video status: completed
-    console.log('✅ [VIDEO PROCESS] Step 9: Marking video as completed...');
+    // 8. Update video with generated title and status: completed
+    console.log('✅ [VIDEO PROCESS] Step 9: Updating video with generated title and marking as completed...');
     await Video.findByIdAndUpdate(videoDoc._id, {
+      title: materials.title,
       processingStatus: 'completed',
       processedAt: new Date(),
     });
