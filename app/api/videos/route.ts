@@ -31,11 +31,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       videos: videos.map(video => ({
-        id: video._id.toString(),
+        id: video.videoId, // YouTube video ID for routing to /generations/${videoId}
+        _id: video._id.toString(), // MongoDB ID (kept for backward compatibility if needed)
         title: video.title,
-        channelName: video.channelName,
-        thumbnailUrl: video.thumbnail, // Fixed: use 'thumbnail' field name
-        duration: video.duration,
+        channelName: video.channelName || 'YouTube',
+        thumbnailUrl: video.thumbnail || `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`,
+        duration: video.duration || 0,
         transcriptMinutes: Math.round((video.transcript?.reduce((total: number, seg: { duration: number }) => total + seg.duration, 0) || 0) / 60),
         createdAt: video.createdAt
       }))

@@ -122,7 +122,7 @@ export default function QuizReview({
               }`}
             >
               <div className="flex items-start gap-3">
-                <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${
+                <div className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${
                   isCorrect
                     ? 'bg-card-bg border-[3px] border-green-600 text-green-900 dark:bg-muted/20 dark:border-green-500 dark:text-green-200'
                     : 'bg-card-bg border-[3px] border-red-600 text-red-900 dark:bg-muted/20 dark:border-red-500 dark:text-red-200'

@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IFlashcard extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  videoId: mongoose.Types.ObjectId;
+  videoId: string; // YouTube video ID
   question: string;
   answer: string;
   difficulty: 'easy' | 'medium' | 'hard';
@@ -14,7 +14,7 @@ export interface IFlashcard extends Document {
 
 const FlashcardSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: Schema.Types.ObjectId, ref: 'Video', required: true },
+  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   question: { type: String, required: true },
   answer: { type: String, required: true },
   difficulty: { type: String, required: true, enum: ['easy', 'medium', 'hard'] },

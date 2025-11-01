@@ -11,8 +11,15 @@ function monthShort(date: Date) {
   return date.toLocaleString(undefined, { month: 'short' });
 }
 
+// Parse YYYY-MM-DD string as a local calendar date (not UTC)
+function parseDateStringAsLocal(dateString: string): Date {
+  const [year, month, day] = dateString.split('-').map(Number);
+  // new Date(year, monthIndex, day) creates a date at midnight in the local timezone
+  return new Date(year, month - 1, day);
+}
+
 function formatFriendlyDate(isoLike: string) {
-  const d = new Date(isoLike);
+  const d = parseDateStringAsLocal(isoLike);
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -48,6 +55,31 @@ export default function StudyActivityHeatmap() {
     return () => {
       if (typeof window !== 'undefined') {
         window.removeEventListener('activity:logged', handler);
+      }
+    };
+  }, []);
+
+  // Refresh when page becomes visible (tab switching, returning to browser)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshTick((t) => t + 1);
+      }
+    };
+
+    const handleFocus = () => {
+      setRefreshTick((t) => t + 1);
+    };
+
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
       }
     };
   }, []);
@@ -109,7 +141,7 @@ export default function StudyActivityHeatmap() {
   // Build padded grid like GitHub: weeks in columns, weekdays in rows (Sun..Sat)
   const padded = useMemo<(HeatmapDay | null)[]>(() => {
     if (!startDate) return [...days];
-    const start = new Date(startDate);
+    const start = parseDateStringAsLocal(startDate);
     const leading = start.getDay(); // 0..6, Sun..Sat
     const blanks: Array<HeatmapDay | null> = Array.from({ length: leading }, () => null);
     return [...blanks, ...days];
@@ -137,23 +169,27 @@ export default function StudyActivityHeatmap() {
 
   const monthMarkers = useMemo(() => {
     const markers: Array<{ label: string; week: number }> = [];
+    let lastMonth = -1;
+
     for (let i = 0; i < padded.length; i++) {
       const entry = padded[i];
       if (!entry) continue;
-      const d = new Date(entry.date);
-      if (d.getDate() === 1 || i === 0) {
+
+      const d = parseDateStringAsLocal(entry.date);
+      const currentMonth = d.getMonth();
+
+      // Add marker when month changes (works for any date range)
+      if (currentMonth !== lastMonth) {
         const label = monthShort(d);
         const week = Math.floor(i / 7);
-        if (markers.length === 0 || markers[markers.length - 1].label !== label) {
-          markers.push({ label, week });
-        }
+        markers.push({ label, week });
+        lastMonth = currentMonth;
       }
     }
     return markers;
   }, [padded]);
 
   const railWidthPx = 28;
-  const monthSpacerPx = railWidthPx + 8; // account for weekday rail's mr-2 (8px)
 
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-6 heatmap-grid-container">
@@ -178,17 +214,21 @@ export default function StudyActivityHeatmap() {
       {!loading && !error && (
         <>
           <div ref={scrollRef} className="overflow-x-auto overflow-y-hidden relative heatmap-scroll">
-            {/* Month labels aligned with grid using CSS variables */}
-            <div className="flex font-semibold ml-18 text-xs bold text-muted-foreground mb-2 select-none" style={{ columnGap: 'var(--cell-gap)' }}>
-              <div style={{ width: monthSpacerPx }} />
-              {Array.from({ length: weekColumns }).map((_, col) => {
-                const marker = monthMarkers.find(m => m.week === col);
-                return (
-                  <div key={col} className="text-center" style={{ width: 'var(--cell-size)', flex: '0 0 var(--cell-size)' }}>
-                    {marker ? marker.label : ''}
-                  </div>
-                );
-              })}
+            {/* Month labels - match grid structure exactly */}
+            <div className="flex mb-2">
+              <div className="mr-2" style={{ width: railWidthPx }} />
+              <div className="pr-8">
+                <div className="flex ml-15 font-semibold text-xs text-muted-foreground select-none" style={{ columnGap: 'var(--cell-gap)' }}>
+                  {Array.from({ length: weekColumns }).map((_, col) => {
+                    const marker = monthMarkers.find(m => m.week === col);
+                    return (
+                      <div key={col} className="text-center" style={{ width: 'var(--cell-size)', minWidth: 'var(--cell-size)', flex: '0 0 var(--cell-size)' }}>
+                        {marker ? marker.label : ''}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
             <div className="flex pt-3">

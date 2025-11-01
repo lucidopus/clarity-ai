@@ -19,6 +19,45 @@ export default function WeeklyActivityChart() {
   const [data, setData] = useState<Weekly[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  // Listen for activity events to refresh immediately
+  useEffect(() => {
+    const handler = () => setRefreshTick((t) => t + 1);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('activity:logged', handler);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('activity:logged', handler);
+      }
+    };
+  }, []);
+
+  // Refresh when page becomes visible (tab switching, returning to browser)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setRefreshTick((t) => t + 1);
+      }
+    };
+
+    const handleFocus = () => {
+      setRefreshTick((t) => t + 1);
+    };
+
+    if (typeof window !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      window.addEventListener('focus', handleFocus);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+        window.removeEventListener('focus', handleFocus);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -41,7 +80,7 @@ export default function WeeklyActivityChart() {
     }
     load();
     return () => { mounted = false; };
-  }, []);
+  }, [refreshTick]);
 
   if (loading) return <div className="text-sm text-muted-foreground">Loading chart…</div>;
   if (error) return <div className="text-sm text-red-500">{error}</div>;
@@ -73,7 +112,7 @@ export default function WeeklyActivityChart() {
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Activity</h3>
-      <div className="flex-grow h-[180px]">
+      <div className="grow h-[180px]">
         <Bar
           data={{
             labels,

@@ -6,9 +6,10 @@ import { ActivityLog, Video } from '@/lib/models';
 interface DecodedToken { userId: string }
 
 function formatYmd(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  // Use UTC methods to ensure consistent date formatting
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
@@ -20,15 +21,15 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Last 7 days activity counts
-    const end = new Date();
-    const start = new Date();
-    start.setDate(end.getDate() - 6);
-    start.setHours(0, 0, 0, 0);
+    // Last 7 days activity counts (use UTC to match stored dates)
+    const now = new Date();
+    const end = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0));
+    const start = new Date(end);
+    start.setUTCDate(end.getUTCDate() - 6);
 
     const agg = await ActivityLog.aggregate([
       { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), date: { $gte: start, $lte: end } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: 'UTC' } }, count: { $sum: 1 } } },
       { $project: { _id: 0, date: '$_id', count: 1 } },
       { $sort: { date: 1 } },
     ]);
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
     const weeklyActivity: Array<{ date: string; count: number }> = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(start);
-      d.setDate(start.getDate() + i);
+      d.setUTCDate(start.getUTCDate() + i);
       const key = formatYmd(d);
       weeklyActivity.push({ date: key, count: map.get(key) || 0 });
     }
@@ -68,7 +69,13 @@ export async function GET(request: NextRequest) {
       };
     }));
 
-    return NextResponse.json({ weeklyActivity, recentVideos });
+    return NextResponse.json({ weeklyActivity, recentVideos }, {
+      headers: {
+        'Cache-Control': 'no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (error) {
     console.error('Failed to load dashboard activity', error);
     return NextResponse.json({ error: 'Failed to load activity' }, { status: 500 });

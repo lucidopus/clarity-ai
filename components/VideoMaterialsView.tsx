@@ -89,6 +89,12 @@ export default function VideoMaterialsView({
     if (onCreateUserFlashcard) {
       onCreateUserFlashcard(question, answer);
     }
+
+    // Log activity when user creates a custom flashcard
+    logActivity('flashcard_created', video.id, {
+      generationType: 'human',
+    });
+
     setShowFlashcardCreator(false);
   };
 

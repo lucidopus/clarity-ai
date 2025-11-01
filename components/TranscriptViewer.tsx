@@ -161,7 +161,7 @@ export default function TranscriptViewer({ transcript }: TranscriptViewerProps) 
                           e.stopPropagation();
                           handleTimestampClick(segment.start, originalIndex);
                         }}
-                        className={`flex-shrink-0 px-3 py-1 text-xs font-mono rounded-lg border transition-colors ${
+                        className={`shrink-0 px-3 py-1 text-xs font-mono rounded-lg border transition-colors ${
                           isSelected
                             ? 'border-accent bg-accent text-white'
                             : 'border-border bg-card-bg text-muted-foreground hover:border-accent hover:text-accent'

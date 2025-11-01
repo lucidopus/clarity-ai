@@ -3,16 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, FileText, CheckCircle2, Video } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, ArrowLeft } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import QuizInterface from '@/components/QuizInterface';
-import TranscriptViewer from '@/components/TranscriptViewer';
+import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
+import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 
 interface VideoMaterials {
   video: {
     id: string;
+    videoId: string;
+    youtubeUrl: string;
     title: string;
     channelName?: string;
     thumbnailUrl?: string;
@@ -60,8 +63,8 @@ interface VideoMaterials {
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites';
 
 const tabs = [
+  { id: 'transcript' as TabType, label: 'Learn', icon: Video },
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
-  { id: 'transcript' as TabType, label: 'Transcript', icon: FileText },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
 ];
@@ -74,7 +77,16 @@ export default function VideoMaterialsPage() {
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('flashcards');
+  const [activeTab, setActiveTab] = useState<TabType>('transcript');
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/auth/signin');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchMaterials = async () => {
@@ -136,72 +148,75 @@ export default function VideoMaterialsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <motion.div
+      {/* Unified Navigation Bar */}
+      <motion.nav
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card-bg border-b border-border"
+        className="bg-card-bg border-b border-border sticky top-0 z-50 backdrop-blur-sm"
       >
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Video className="w-5 h-5 text-accent" />
-                </div>
-                <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+        <div className="max-w-full mx-auto px-6 py-4">
+          <div className="flex items-center justify-between gap-6">
+            {/* Left Side: Logo + Video Title */}
+            <div className="flex items-center gap-4 min-w-0 shrink">
+                {/* Logo */}
+                <button
+                  onClick={() => router.push('/dashboard')}
+                  className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+                >
+                  <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold text-lg">C</span>
+                  </div>
+                </button>
+
+              {/* Divider */}
+              <div className="w-px h-6 bg-border shrink-0" />
+
+              {/* Video Title */}
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-sm md:text-base font-semibold text-foreground truncate">
                   {materials.video.title}
                 </h1>
               </div>
-              {materials.video.channelName && (
-                <p className="text-muted-foreground">by {materials.video.channelName}</p>
-              )}
-              <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
-                <span>{materials.flashcards.length} Flashcards</span>
-                <span>•</span>
-                <span>{materials.quizzes.length} Quizzes</span>
-                <span>•</span>
-                <span>{materials.transcript.length} Segments</span>
-              </div>
+            </div>
+
+            {/* Center: Tab Navigation */}
+            <div className="flex gap-1 overflow-x-auto shrink-0">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`relative cursor-pointer px-4 py-2 font-medium text-sm whitespace-nowrap transition-colors rounded-lg ${
+                      isActive
+                        ? 'text-accent bg-accent/10'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Icon className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">{tab.label}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Right Side: Back + Theme Toggle + Logout */}
+            <div className="flex items-center gap-3 shrink-0">
+              <ThemeToggle />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-background border border-border rounded-lg hover:border-accent transition-all duration-200 cursor-pointer"
+                title="Logout"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
-      </motion.div>
-
-      {/* Tab Navigation */}
-      <div className="bg-card-bg border-b border-border sticky top-0 z-40 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-1 overflow-x-auto">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative cursor-pointer px-6 py-4 font-medium text-sm whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'text-accent'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                  </div>
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      </motion.nav>
 
       {/* Content Area */}
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -220,9 +235,10 @@ export default function VideoMaterialsPage() {
               <QuizInterface quizzes={materials.quizzes} videoId={videoId} />
             )}
             {activeTab === 'transcript' && (
-              <TranscriptViewer
+              <VideoAndTranscriptViewer
                 transcript={materials.transcript}
-                videoId={materials.video.id}
+                videoId={materials.video.videoId}
+                youtubeUrl={materials.video.youtubeUrl}
               />
             )}
             {activeTab === 'prerequisites' && (

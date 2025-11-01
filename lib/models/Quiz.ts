@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IQuiz extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  videoId: mongoose.Types.ObjectId;
+  videoId: string; // YouTube video ID
   questionText: string;
   options: string[];
   correctAnswerIndex: number;
@@ -16,7 +16,7 @@ export interface IQuiz extends Document {
 
 const QuizSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: Schema.Types.ObjectId, ref: 'Video', required: true },
+  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   questionText: { type: String, required: true },
   options: [{ type: String, required: true }],
   correctAnswerIndex: { type: Number, required: true },
