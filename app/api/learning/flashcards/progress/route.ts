@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     // Update mastered flashcards array
     const flashcardObjectId = new mongoose.Types.ObjectId(flashcardId);
     const index = progress.masteredFlashcardIds.findIndex(
-      id => id.toString() === flashcardId
+      (id: mongoose.Types.ObjectId) => id.toString() === flashcardId
     );
 
     if (isMastered && index === -1) {
