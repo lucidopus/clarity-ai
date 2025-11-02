@@ -13,6 +13,7 @@ import PrerequisitesView from '@/components/PrerequisitesView';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import { ToastContainer, type ToastType } from '@/components/Toast';
+import { useAuth } from '@/lib/auth-context';
 
 interface VideoMaterials {
   video: {
@@ -76,6 +77,7 @@ export default function VideoMaterialsPage() {
   const params = useParams();
   const router = useRouter();
   const videoId = params.videoId as string;
+  const { logout } = useAuth();
 
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,15 +101,6 @@ export default function VideoMaterialsPage() {
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/auth/signin');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
   };
 
   const refreshMaterials = async () => {
@@ -323,7 +316,7 @@ export default function VideoMaterialsPage() {
             <div className="flex items-center gap-3 shrink-0">
               <ThemeToggle />
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-background border border-border rounded-lg hover:border-accent transition-all duration-200 cursor-pointer"
                 title="Logout"
               >

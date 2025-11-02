@@ -12,7 +12,7 @@ interface WelcomeStepProps {
   loading: boolean;
 }
 
-export default function WelcomeStep({ preferences, onNext, isFirst, loading }: WelcomeStepProps) {
+export default function WelcomeStep({ preferences, onNext, loading }: WelcomeStepProps) {
   const [selectedRole, setSelectedRole] = useState<IUserPreferences['role']>(preferences.role || 'Student');
 
   const roles = [
