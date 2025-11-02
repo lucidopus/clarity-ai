@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, RotateCw, Check, Edit, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCw, Check, Edit, Trash2, User } from 'lucide-react';
 import Button from './Button';
 import Dialog from './Dialog';
 import { logActivity } from '@/lib/activityLogger';
@@ -195,20 +195,6 @@ export default function FlashcardViewer({
         </div>
       </div>
 
-      {/* User-Created Indicator */}
-      {currentCard.isUserCreated && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center mb-4"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full">
-            <div className="w-2 h-2 rounded-full bg-accent" />
-            <span className="text-xs font-medium text-accent">Your Card</span>
-          </div>
-        </motion.div>
-      )}
-
       {/* Flashcard */}
       <div className="relative h-[400px] mb-8 perspective-1000">
         <AnimatePresence mode="wait">
@@ -233,6 +219,14 @@ export default function FlashcardViewer({
                  className="absolute inset-0 bg-card-bg border-2 border-border rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer"
                  style={{ backfaceVisibility: 'hidden' }}
                >
+                {/* User-Created Badge */}
+                {currentCard.isUserCreated && (
+                  <div className="absolute top-4 right-4 inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent/10 border border-accent/20 rounded-md backdrop-blur-sm">
+                    <User className="w-3.5 h-3.5 text-accent" />
+                    <span className="text-xs font-medium text-accent">Created by You</span>
+                  </div>
+                )}
+
                 <div className="text-sm font-medium text-accent mb-4">Question</div>
                 <p className="text-2xl font-semibold text-foreground text-center">
                   {currentCard.question}
