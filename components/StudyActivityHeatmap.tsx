@@ -200,7 +200,7 @@ export default function StudyActivityHeatmap() {
           <button
             className={`px-3 py-1 cursor-pointer text-sm ${view==='month' ? 'bg-accent text-white' : 'bg-transparent text-foreground hover:bg-accent/10'}`}
             onClick={() => setView('month')}
-          >Last 30 Days</button>
+          >This month</button>
           <button
             className={`px-3 py-1 cursor-pointer text-sm ${view==='year' ? 'bg-accent text-white' : 'bg-transparent text-foreground hover:bg-accent/10'}`}
             onClick={() => setView('year')}
