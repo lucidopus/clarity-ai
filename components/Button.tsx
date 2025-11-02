@@ -10,6 +10,8 @@ export interface ButtonProps {
   className?: string;
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
+  form?: string;
+  title?: string;
 }
 
 export default function Button({
@@ -21,6 +23,8 @@ export default function Button({
   className = '',
   disabled = false,
   type = 'button',
+  form,
+  title,
 }: ButtonProps) {
   const baseStyles = 'inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 cursor-pointer';
 
@@ -53,8 +57,10 @@ export default function Button({
   return (
     <button
       type={type}
+      form={form}
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className={combinedClassName}
     >
       {children}

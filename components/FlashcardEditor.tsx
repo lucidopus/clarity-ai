@@ -80,9 +80,9 @@ export default function FlashcardEditor({
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="bg-card-bg border border-border rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-card-bg border border-border rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-8 py-6 border-b border-border bg-gradient-to-r from-accent/5 to-transparent">
+              <div className="flex items-center justify-between px-8 py-6 border-b border-border">
                 <div>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
@@ -108,10 +108,10 @@ export default function FlashcardEditor({
               </div>
 
               {/* Content */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 max-h-[calc(90vh-180px)] overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-8 max-h-[calc(90vh-180px)] overflow-y-auto">
                 {/* Left Side: Form */}
                 <div className="space-y-6">
-                  <form onSubmit={handleSubmit} className="space-y-6">
+                  <form id="flashcard-editor-form" onSubmit={handleSubmit} className="space-y-6">
                     {/* Question Input */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -174,7 +174,7 @@ export default function FlashcardEditor({
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-accent/5 border border-accent/20 rounded-xl p-4"
+                      className="bg-muted/20 border border-border rounded-xl p-4"
                     >
                       <div className="flex items-start gap-3">
                         <Lightbulb className="w-5 h-5 text-accent shrink-0 mt-0.5" />
@@ -188,18 +188,6 @@ export default function FlashcardEditor({
                         </div>
                       </div>
                     </motion.div>
-
-                    {/* Change Indicator */}
-                    {hasChanges && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex items-center gap-2 text-sm text-accent"
-                      >
-                        <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                        Unsaved changes
-                      </motion.div>
-                    )}
                   </form>
                 </div>
 
@@ -248,13 +236,13 @@ export default function FlashcardEditor({
 
                         {/* Back of card (Answer) */}
                         <div
-                          className="absolute inset-0 bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden"
+                          className="absolute inset-0 bg-accent/5 border-2 border-accent rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden"
                           style={{
                             backfaceVisibility: 'hidden',
                             transform: 'rotateY(180deg)',
                           }}
                         >
-                          <div className="text-xs font-semibold text-accent mb-4 px-3 py-1 bg-accent/20 rounded-full">
+                          <div className="text-xs font-semibold text-accent mb-4 px-3 py-1 bg-accent/10 rounded-full">
                             Answer
                           </div>
                           <p className="text-xl font-semibold text-foreground text-center leading-relaxed">
@@ -283,18 +271,7 @@ export default function FlashcardEditor({
               </div>
 
               {/* Footer Actions */}
-              <div className="flex items-center justify-between gap-4 px-8 py-6 border-t border-border bg-muted/5">
-                <div className="text-sm text-muted-foreground">
-                  {hasChanges ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                      Ready to save changes
-                    </span>
-                  ) : (
-                    <span>No changes made</span>
-                  )}
-                </div>
-                <div className="flex gap-3">
+              <div className="flex items-center justify-end gap-3 px-8 py-8 border-t border-border">
                   <Button
                     type="button"
                     onClick={handleClose}
@@ -306,8 +283,8 @@ export default function FlashcardEditor({
                   </Button>
                   <Button
                     type="submit"
+                    form="flashcard-editor-form"
                     variant="primary"
-                    onClick={handleSubmit}
                     disabled={!question.trim() || !answer.trim() || !hasChanges || isLoading}
                     className="px-8"
                   >
@@ -320,7 +297,6 @@ export default function FlashcardEditor({
                       'Save Changes'
                     )}
                   </Button>
-                </div>
               </div>
             </div>
           </motion.div>
