@@ -13,7 +13,7 @@ Educational videos are everywhere, but watching them passively leads to poor ret
 
 Clarity AI solves this by turning video content into an interactive learning hub.
 
-## Key Features
+## Features
 
 Clarity AI is packed with features designed to enhance learning, all generated automatically from a single YouTube link:
 
