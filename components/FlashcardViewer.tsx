@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, RotateCw, Check, Edit, Trash2 } from 'lucide-react';
 import Button from './Button';
+import Dialog from './Dialog';
 import { logActivity } from '@/lib/activityLogger';
 
 interface Flashcard {
@@ -36,6 +37,7 @@ export default function FlashcardViewer({
   );
   const [isUpdatingMastery, setIsUpdatingMastery] = useState(false);
   const [isDeletingCard, setIsDeletingCard] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   if (!flashcards || flashcards.length === 0) {
     return (
@@ -136,13 +138,13 @@ export default function FlashcardViewer({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
     if (!onDelete || !currentCard.isUserCreated) return;
+    setShowDeleteDialog(true);
+  };
 
-    // Confirm deletion
-    if (!confirm('Are you sure you want to delete this flashcard? This action cannot be undone.')) {
-      return;
-    }
+  const handleDeleteConfirm = async () => {
+    if (!onDelete) return;
 
     setIsDeletingCard(true);
     try {
@@ -158,6 +160,7 @@ export default function FlashcardViewer({
       onShowToast?.('Failed to delete flashcard. Please try again.', 'error');
     } finally {
       setIsDeletingCard(false);
+      setShowDeleteDialog(false);
     }
   };
 
@@ -310,7 +313,7 @@ export default function FlashcardViewer({
         {currentCard.isUserCreated && onDelete && (
           <Button
             variant="secondary"
-            onClick={handleDelete}
+            onClick={handleDeleteClick}
             disabled={isDeletingCard}
             className="px-4 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500"
             title="Delete this flashcard"
@@ -329,6 +332,20 @@ export default function FlashcardViewer({
           <ChevronRight className="w-5 h-5 ml-2" />
         </Button>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDeleteConfirm}
+        type="confirm"
+        variant="error"
+        title="Delete Flashcard"
+        message="Are you sure you want to delete this flashcard? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeletingCard}
+      />
     </div>
   );
 }
