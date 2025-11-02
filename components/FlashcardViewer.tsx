@@ -19,13 +19,15 @@ interface FlashcardViewerProps {
   videoId: string;
   onEdit?: (flashcard: Flashcard) => void;
   onDelete?: (flashcardId: string) => void;
+  onShowToast?: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 export default function FlashcardViewer({
   flashcards,
   videoId,
   onEdit,
-  onDelete
+  onDelete,
+  onShowToast
 }: FlashcardViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -122,7 +124,7 @@ export default function FlashcardViewer({
       console.error('Error updating mastery:', error);
       // Revert optimistic update on error
       setMasteredCards(masteredCards);
-      alert('Failed to update mastery status. Please try again.');
+      onShowToast?.('Failed to update mastery status. Please try again.', 'error');
     } finally {
       setIsUpdatingMastery(false);
     }
@@ -153,7 +155,7 @@ export default function FlashcardViewer({
       setIsFlipped(false);
     } catch (error) {
       console.error('Error deleting flashcard:', error);
-      alert('Failed to delete flashcard. Please try again.');
+      onShowToast?.('Failed to delete flashcard. Please try again.', 'error');
     } finally {
       setIsDeletingCard(false);
     }

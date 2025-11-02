@@ -12,6 +12,7 @@ import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
+import { ToastContainer, type ToastType } from '@/components/Toast';
 
 interface VideoMaterials {
   video: {
@@ -88,6 +89,18 @@ export default function VideoMaterialsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Toast notification state
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
+
+  const showToast = (message: string, type: ToastType = 'info') => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -129,10 +142,10 @@ export default function VideoMaterialsPage() {
       // Refresh materials to show new flashcard
       await refreshMaterials();
       setIsCreatorOpen(false);
-      alert('Flashcard created successfully!');
+      showToast('Flashcard created successfully!', 'success');
     } catch (error) {
       console.error('Error creating flashcard:', error);
-      alert('Failed to create flashcard. Please try again.');
+      showToast('Failed to create flashcard. Please try again.', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -159,10 +172,10 @@ export default function VideoMaterialsPage() {
       await refreshMaterials();
       setIsEditorOpen(false);
       setEditingFlashcard(null);
-      alert('Flashcard updated successfully!');
+      showToast('Flashcard updated successfully!', 'success');
     } catch (error) {
       console.error('Error editing flashcard:', error);
-      alert('Failed to edit flashcard. Please try again.');
+      showToast('Failed to edit flashcard. Please try again.', 'error');
     } finally {
       setIsEditing(false);
     }
@@ -351,6 +364,7 @@ export default function VideoMaterialsPage() {
                   videoId={videoId}
                   onEdit={openEditor}
                   onDelete={handleDeleteFlashcard}
+                  onShowToast={showToast}
                 />
               </div>
             )}
@@ -390,6 +404,9 @@ export default function VideoMaterialsPage() {
         initialData={editingFlashcard}
         isLoading={isEditing}
       />
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 }
