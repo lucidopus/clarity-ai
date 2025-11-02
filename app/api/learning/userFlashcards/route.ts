@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
       videoId: videoId,
       question: question.trim(),
       answer: answer.trim(),
+      difficulty: null, // User-created cards have no difficulty rating
       generationType: 'human',
-      // No difficulty field for user-created cards
     });
 
     await newFlashcard.save();
