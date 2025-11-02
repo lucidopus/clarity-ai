@@ -5,6 +5,7 @@ import { BarChart3, Flame, Library, Layers, ListChecks } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import GenerateModal from '@/components/GenerateModal';
+import Dialog from '@/components/Dialog';
 import { useState, useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
 import StatCard from '@/components/StatCard';
@@ -51,6 +52,10 @@ export default function DashboardHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
+  const [errorDialog, setErrorDialog] = useState<{ show: boolean; message: string }>({
+    show: false,
+    message: '',
+  });
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -167,7 +172,8 @@ export default function DashboardHomePage() {
       }
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation error:', error);
-      alert(error instanceof Error ? error.message : 'An error occurred'); // Simple alert for now
+      const message = error instanceof Error ? error.message : 'An error occurred';
+      setErrorDialog({ show: true, message });
     } finally {
       setIsGenerating(false);
       console.log('🎬 [FRONTEND] Generation flow completed');
@@ -260,6 +266,17 @@ export default function DashboardHomePage() {
         onClose={() => setShowGenerateModal(false)}
         onGenerate={handleGenerate}
         isLoading={isGenerating}
+      />
+
+      {/* Error Dialog */}
+      <Dialog
+        isOpen={errorDialog.show}
+        onClose={() => setErrorDialog({ show: false, message: '' })}
+        type="alert"
+        variant="error"
+        title="Generation Failed"
+        message={errorDialog.message}
+        confirmText="OK"
       />
     </div>
   );

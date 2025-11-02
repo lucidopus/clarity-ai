@@ -1,34 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCw, Lightbulb } from 'lucide-react';
+import { X, RotateCw, Lightbulb, Edit3 } from 'lucide-react';
 import Button from './Button';
 
-interface FlashcardCreatorProps {
+interface FlashcardEditorProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (question: string, answer: string) => void;
+  onEdit: (flashcardId: string, question: string, answer: string) => void;
+  initialData: {
+    id: string;
+    question: string;
+    answer: string;
+  } | null;
   isLoading?: boolean;
 }
 
-export default function FlashcardCreator({
+export default function FlashcardEditor({
   isOpen,
   onClose,
-  onCreate,
+  onEdit,
+  initialData,
   isLoading = false
-}: FlashcardCreatorProps) {
+}: FlashcardEditorProps) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [isPreviewFlipped, setIsPreviewFlipped] = useState(false);
 
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setQuestion(initialData.question);
+      setAnswer(initialData.answer);
+      setIsPreviewFlipped(false);
+    }
+  }, [initialData]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (question.trim() && answer.trim()) {
-      onCreate(question.trim(), answer.trim());
-      setQuestion('');
-      setAnswer('');
-      setIsPreviewFlipped(false);
+    if (initialData && question.trim() && answer.trim()) {
+      onEdit(initialData.id, question.trim(), answer.trim());
     }
   };
 
@@ -42,6 +54,10 @@ export default function FlashcardCreator({
   const questionLength = question.length;
   const answerLength = answer.length;
   const hasContent = question.trim() || answer.trim();
+  const hasChanges = initialData && (
+    question.trim() !== initialData.question.trim() ||
+    answer.trim() !== initialData.answer.trim()
+  );
 
   return (
     <AnimatePresence>
@@ -68,12 +84,19 @@ export default function FlashcardCreator({
               {/* Header */}
               <div className="flex items-center justify-between px-8 py-6 border-b border-border">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground">
-                    Create Your Flashcard
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Design a custom flashcard to reinforce your learning
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                      <Edit3 className="w-5 h-5 text-accent" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">
+                        Edit Your Flashcard
+                      </h2>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Update your custom flashcard
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={handleClose}
@@ -88,12 +111,12 @@ export default function FlashcardCreator({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-8 max-h-[calc(90vh-180px)] overflow-y-auto">
                 {/* Left Side: Form */}
                 <div className="space-y-6">
-                  <form id="flashcard-creator-form" onSubmit={handleSubmit} className="space-y-6">
+                  <form id="flashcard-editor-form" onSubmit={handleSubmit} className="space-y-6">
                     {/* Question Input */}
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <label
-                          htmlFor="question"
+                          htmlFor="edit-question"
                           className="text-sm font-semibold text-foreground flex items-center gap-2"
                         >
                           <span className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold">
@@ -106,10 +129,10 @@ export default function FlashcardCreator({
                         </span>
                       </div>
                       <textarea
-                        id="question"
+                        id="edit-question"
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
-                        placeholder="What do you want to remember? (e.g., What is the capital of France?)"
+                        placeholder="What do you want to remember?"
                         className="w-full px-4 py-4 bg-background border-2 border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 resize-none"
                         rows={4}
                         maxLength={200}
@@ -122,7 +145,7 @@ export default function FlashcardCreator({
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <label
-                          htmlFor="answer"
+                          htmlFor="edit-answer"
                           className="text-sm font-semibold text-foreground flex items-center gap-2"
                         >
                           <span className="w-6 h-6 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold">
@@ -135,10 +158,10 @@ export default function FlashcardCreator({
                         </span>
                       </div>
                       <textarea
-                        id="answer"
+                        id="edit-answer"
                         value={answer}
                         onChange={(e) => setAnswer(e.target.value)}
-                        placeholder="The correct answer to your question... (e.g., Paris)"
+                        placeholder="The correct answer to your question..."
                         className="w-full px-4 py-4 bg-background border-2 border-border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent transition-all duration-200 resize-none"
                         rows={5}
                         maxLength={300}
@@ -156,11 +179,11 @@ export default function FlashcardCreator({
                       <div className="flex items-start gap-3">
                         <Lightbulb className="w-5 h-5 text-accent shrink-0 mt-0.5" />
                         <div className="space-y-2">
-                          <p className="text-sm font-medium text-foreground">Tips for great flashcards:</p>
+                          <p className="text-sm font-medium text-foreground">Editing tips:</p>
                           <ul className="text-xs text-muted-foreground space-y-1">
-                            <li>• Keep questions clear and focused</li>
-                            <li>• Use concise, specific answers</li>
-                            <li>• One concept per card works best</li>
+                            <li>• Refine for clarity and precision</li>
+                            <li>• Ensure the answer fully addresses the question</li>
+                            <li>• Keep it concise and memorable</li>
                           </ul>
                         </div>
                       </div>
@@ -204,7 +227,7 @@ export default function FlashcardCreator({
                             Question
                           </div>
                           <p className="text-xl font-semibold text-foreground text-center leading-relaxed">
-                            {question || 'Your question will appear here...'}
+                            {question}
                           </p>
                           <div className="mt-6 text-xs text-muted-foreground">
                             Click to flip
@@ -223,7 +246,7 @@ export default function FlashcardCreator({
                             Answer
                           </div>
                           <p className="text-xl font-semibold text-foreground text-center leading-relaxed">
-                            {answer || 'Your answer will appear here...'}
+                            {answer}
                           </p>
                           <div className="mt-6 text-xs text-muted-foreground">
                             Click to see question
@@ -233,13 +256,13 @@ export default function FlashcardCreator({
                     ) : (
                       <div className="w-full h-full border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center text-center p-8">
                         <div className="w-16 h-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                          <span className="text-3xl">📝</span>
+                          <span className="text-3xl">✏️</span>
                         </div>
                         <h4 className="text-lg font-semibold text-foreground mb-2">
-                          Start typing to see preview
+                          Preview your edits
                         </h4>
                         <p className="text-sm text-muted-foreground max-w-xs">
-                          Your flashcard will appear here as you create it
+                          Changes will appear here as you edit
                         </p>
                       </div>
                     )}
@@ -248,30 +271,30 @@ export default function FlashcardCreator({
               </div>
 
               {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-3 px-8 py-3 border-t border-border">
+              <div className="flex items-center justify-end gap-3 px-8 py-8 border-t border-border">
                   <Button
                     type="button"
                     onClick={handleClose}
                     variant="ghost"
                     disabled={isLoading}
-                    className="px-6 py-4"
+                    className="px-6"
                   >
                     Cancel
                   </Button>
                   <Button
                     type="submit"
-                    form="flashcard-creator-form"
+                    form="flashcard-editor-form"
                     variant="primary"
-                    disabled={!question.trim() || !answer.trim() || isLoading}
+                    disabled={!question.trim() || !answer.trim() || !hasChanges || isLoading}
                     className="px-8"
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Creating...
+                        Saving...
                       </div>
                     ) : (
-                      'Create Flashcard'
+                      'Save Changes'
                     )}
                   </Button>
               </div>
