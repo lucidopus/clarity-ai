@@ -171,23 +171,8 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Connected Feature Nodes */}
-            <div className="relative">
-              {/* Connecting Lines Background */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 800 600" fill="none">
-                <defs>
-                  <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="rgb(var(--accent))" stopOpacity="0.2" />
-                    <stop offset="50%" stopColor="rgb(var(--accent))" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="rgb(var(--accent))" stopOpacity="0.2" />
-                  </linearGradient>
-                </defs>
-                {/* Static connection lines */}
-                <path d="M400 200 L200 350" stroke="url(#lineGradient)" strokeWidth="2" />
-                <path d="M400 200 L600 350" stroke="url(#lineGradient)" strokeWidth="2" />
-                <path d="M400 200 L200 450" stroke="url(#lineGradient)" strokeWidth="2" />
-                <path d="M400 200 L600 450" stroke="url(#lineGradient)" strokeWidth="2" />
-              </svg>
+             {/* Connected Feature Nodes */}
+             <div className="relative">
 
               {/* Feature Nodes */}
               <div className="grid grid-cols-2 gap-8 relative z-10">

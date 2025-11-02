@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Button from './Button';
-import { FileText, Clock, Layers, HelpCircle, User } from 'lucide-react';
+import { Clock, Layers, HelpCircle, User } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -24,7 +24,6 @@ export default function VideoCard({
   duration,
   flashcardCount,
   quizCount,
-  transcriptMinutes,
   createdAt,
   onClick,
   onDelete
