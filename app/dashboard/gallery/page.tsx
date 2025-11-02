@@ -7,6 +7,7 @@ import FilterDropdown from '@/components/FilterDropdown';
 import GenerateModal from '@/components/GenerateModal';
 import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
+import Dialog from '@/components/Dialog';
 import { Library } from 'lucide-react';
 
 const filterOptions = [
@@ -33,6 +34,10 @@ export default function GalleryPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorDialog, setErrorDialog] = useState<{ show: boolean; message: string }>({
+    show: false,
+    message: '',
+  });
 
   // Fetch videos on mount
   useEffect(() => {
@@ -101,7 +106,7 @@ export default function GalleryPage() {
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation failed:', error);
       const message = error instanceof Error ? error.message : 'Failed to generate materials';
-      alert(message); // Simple alert for now
+      setErrorDialog({ show: true, message });
     } finally {
       setIsGenerating(false);
       console.log('🎬 [FRONTEND] Generation flow completed');
@@ -212,6 +217,17 @@ export default function GalleryPage() {
         onClose={() => setShowGenerateModal(false)}
         onGenerate={handleGenerate}
         isLoading={isGenerating}
+      />
+
+      {/* Error Dialog */}
+      <Dialog
+        isOpen={errorDialog.show}
+        onClose={() => setErrorDialog({ show: false, message: '' })}
+        type="alert"
+        variant="error"
+        title="Generation Failed"
+        message={errorDialog.message}
+        confirmText="OK"
       />
     </div>
   );
