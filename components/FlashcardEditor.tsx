@@ -197,15 +197,6 @@ export default function FlashcardEditor({
                     <h3 className="text-sm font-semibold text-foreground">
                       Live Preview
                     </h3>
-                    {hasContent && (
-                      <button
-                        onClick={() => setIsPreviewFlipped(!isPreviewFlipped)}
-                        className="text-xs text-accent hover:text-accent/80 flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 rounded-lg transition-colors"
-                      >
-                        <RotateCw className="w-3.5 h-3.5" />
-                        Flip Preview
-                      </button>
-                    )}
                   </div>
 
                   {/* Preview Card */}
@@ -271,13 +262,13 @@ export default function FlashcardEditor({
               </div>
 
               {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-3 px-8 py-8 border-t border-border">
+              <div className="flex items-center justify-end gap-3 px-8 py-3 border-t border-border">
                   <Button
                     type="button"
                     onClick={handleClose}
                     variant="ghost"
                     disabled={isLoading}
-                    className="px-6"
+                    className="px-6 py-4"
                   >
                     Cancel
                   </Button>
@@ -290,7 +281,7 @@ export default function FlashcardEditor({
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <div className="w-4 h-4  border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         Saving...
                       </div>
                     ) : (
