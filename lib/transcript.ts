@@ -21,7 +21,11 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
 
     // Fetch transcript using youtube-transcript-plus
     console.log('📜 [TRANSCRIPT] Fetching transcript from YouTube...');
-    const transcriptSegments = await fetchTranscript(youtubeUrl);
+    const transcriptSegments = await fetchTranscript(youtubeUrl, {
+      lang: 'en',
+      //@ts-ignore
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+    });
     console.log(`📜 [TRANSCRIPT] Received ${transcriptSegments.length} transcript segments`);
 
     // Combine into continuous text
