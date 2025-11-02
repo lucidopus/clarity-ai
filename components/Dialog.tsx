@@ -100,7 +100,7 @@ export default function Dialog({
           >
             <div className="bg-card-bg border border-border rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
               {/* Header */}
-              <div className="flex items-start gap-4 px-6 py-6 border-b border-border">
+              <div className="flex items-start gap-4 px-6 py-5 border-b border-border">
                 <div className={`w-12 h-12 rounded-full ${config.iconBg} flex items-center justify-center shrink-0`}>
                   <Icon className={`w-6 h-6 ${config.iconColor}`} />
                 </div>
@@ -123,14 +123,14 @@ export default function Dialog({
               </div>
 
               {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 bg-muted/5">
+              <div className="flex items-center justify-end gap-3 px-6 py-3 bg-muted/5">
                 {type === 'confirm' && (
                   <Button
                     type="button"
                     onClick={onClose}
                     variant="ghost"
                     disabled={isLoading}
-                    className="px-6"
+                    className="px-6 py-2"
                   >
                     {cancelText}
                   </Button>
