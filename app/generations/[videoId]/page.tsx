@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, ArrowLeft, Plus } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
@@ -333,7 +333,7 @@ export default function VideoMaterialsPage() {
           >
             {activeTab === 'flashcards' && (
               <div className="space-y-6">
-                {/* Add Card Button */}
+                {/* Add New Flashcard Button */}
                 <div className="flex justify-end">
                   <Button
                     variant="primary"
@@ -341,7 +341,7 @@ export default function VideoMaterialsPage() {
                     className="flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Card
+                    Create New Flashcard
                   </Button>
                 </div>
 
