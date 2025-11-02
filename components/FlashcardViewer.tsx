@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, RotateCw, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCw, Check, Edit, Trash2 } from 'lucide-react';
 import Button from './Button';
 import { logActivity } from '@/lib/activityLogger';
 
@@ -17,14 +17,23 @@ interface Flashcard {
 interface FlashcardViewerProps {
   flashcards: Flashcard[];
   videoId: string;
+  onEdit?: (flashcard: Flashcard) => void;
+  onDelete?: (flashcardId: string) => void;
 }
 
-export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewerProps) {
+export default function FlashcardViewer({
+  flashcards,
+  videoId,
+  onEdit,
+  onDelete
+}: FlashcardViewerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [masteredCards, setMasteredCards] = useState<Set<string>>(
     new Set(flashcards.filter((fc) => fc.isMastered).map((fc) => fc.id))
   );
+  const [isUpdatingMastery, setIsUpdatingMastery] = useState(false);
+  const [isDeletingCard, setIsDeletingCard] = useState(false);
 
   if (!flashcards || flashcards.length === 0) {
     return (
@@ -70,15 +79,18 @@ export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewer
     }
   };
 
-  const handleMastered = () => {
+  const handleMastered = async () => {
     const newMastered = new Set(masteredCards);
     const wasNotMastered = !masteredCards.has(currentCard.id);
+    const isMastered = !masteredCards.has(currentCard.id);
 
     if (masteredCards.has(currentCard.id)) {
       newMastered.delete(currentCard.id);
     } else {
       newMastered.add(currentCard.id);
     }
+
+    // Optimistically update UI
     setMasteredCards(newMastered);
 
     // Log activity when user marks card as mastered (not when unmarking)
@@ -88,7 +100,63 @@ export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewer
       });
     }
 
-    // TODO: API call to save mastered status
+    // Persist to backend
+    setIsUpdatingMastery(true);
+    try {
+      const response = await fetch('/api/learning/flashcards/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId: videoId,
+          flashcardId: currentCard.id,
+          isMastered: isMastered,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update mastery status');
+      }
+    } catch (error) {
+      console.error('Error updating mastery:', error);
+      // Revert optimistic update on error
+      setMasteredCards(masteredCards);
+      alert('Failed to update mastery status. Please try again.');
+    } finally {
+      setIsUpdatingMastery(false);
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit && currentCard.isUserCreated) {
+      onEdit(currentCard);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete || !currentCard.isUserCreated) return;
+
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this flashcard? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsDeletingCard(true);
+    try {
+      await onDelete(currentCard.id);
+
+      // Move to next card or previous if this was the last card
+      if (currentIndex === flashcards.length - 1 && currentIndex > 0) {
+        setCurrentIndex(currentIndex - 1);
+      }
+      setIsFlipped(false);
+    } catch (error) {
+      console.error('Error deleting flashcard:', error);
+      alert('Failed to delete flashcard. Please try again.');
+    } finally {
+      setIsDeletingCard(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -121,6 +189,20 @@ export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewer
           />
         </div>
       </div>
+
+      {/* User-Created Indicator */}
+      {currentCard.isUserCreated && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-center mb-4"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full">
+            <div className="w-2 h-2 rounded-full bg-accent" />
+            <span className="text-xs font-medium text-accent">Your Card</span>
+          </div>
+        </motion.div>
+      )}
 
       {/* Flashcard */}
       <div className="relative h-[400px] mb-8 perspective-1000">
@@ -191,6 +273,7 @@ export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewer
         <Button
           variant={masteredCards.has(currentCard.id) ? 'primary' : 'secondary'}
           onClick={handleMastered}
+          disabled={isUpdatingMastery}
           className="px-4 min-w-[120px]"
         >
           <motion.div
@@ -201,13 +284,38 @@ export default function FlashcardViewer({ flashcards, videoId }: FlashcardViewer
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             <Check className={`w-4 h-4 mr-2 ${masteredCards.has(currentCard.id) ? '' : 'opacity-60'}`} />
-            <span className="font-medium">Mastered</span>
+            <span className="font-medium">{isUpdatingMastery ? 'Saving...' : 'Mastered'}</span>
           </motion.div>
         </Button>
 
         <Button variant="secondary" onClick={handleFlip} className="px-6">
           <RotateCw className="w-5 h-5" />
         </Button>
+
+        {/* Edit Button (only for user-created cards) */}
+        {currentCard.isUserCreated && onEdit && (
+          <Button
+            variant="secondary"
+            onClick={handleEdit}
+            className="px-4"
+            title="Edit this flashcard"
+          >
+            <Edit className="w-5 h-5" />
+          </Button>
+        )}
+
+        {/* Delete Button (only for user-created cards) */}
+        {currentCard.isUserCreated && onDelete && (
+          <Button
+            variant="secondary"
+            onClick={handleDelete}
+            disabled={isDeletingCard}
+            className="px-4 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500"
+            title="Delete this flashcard"
+          >
+            <Trash2 className="w-5 h-5" />
+          </Button>
+        )}
 
         <Button
           variant="primary"

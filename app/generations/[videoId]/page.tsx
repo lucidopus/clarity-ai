@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, ArrowLeft } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, ArrowLeft, Plus } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
+import FlashcardCreator from '@/components/FlashcardCreator';
+import FlashcardEditor from '@/components/FlashcardEditor';
 import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
@@ -79,6 +81,13 @@ export default function VideoMaterialsPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
 
+  // Flashcard creator/editor state
+  const [isCreatorOpen, setIsCreatorOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingFlashcard, setEditingFlashcard] = useState<{ id: string; question: string; answer: string } | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -86,6 +95,100 @@ export default function VideoMaterialsPage() {
     } catch (error) {
       console.error('Logout error:', error);
     }
+  };
+
+  const refreshMaterials = async () => {
+    try {
+      const response = await fetch(`/api/videos/${videoId}/materials`);
+      if (response.ok) {
+        const data = await response.json();
+        setMaterials(data);
+      }
+    } catch (err) {
+      console.error('Error refreshing materials:', err);
+    }
+  };
+
+  const handleCreateFlashcard = async (question: string, answer: string) => {
+    setIsCreating(true);
+    try {
+      const response = await fetch('/api/learning/userFlashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: videoId,
+          question: question,
+          answer: answer
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create flashcard');
+      }
+
+      // Refresh materials to show new flashcard
+      await refreshMaterials();
+      setIsCreatorOpen(false);
+      alert('Flashcard created successfully!');
+    } catch (error) {
+      console.error('Error creating flashcard:', error);
+      alert('Failed to create flashcard. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleEditFlashcard = async (flashcardId: string, question: string, answer: string) => {
+    setIsEditing(true);
+    try {
+      const response = await fetch('/api/learning/userFlashcards', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          flashcardId: flashcardId,
+          question: question,
+          answer: answer
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to edit flashcard');
+      }
+
+      // Refresh materials to show updated flashcard
+      await refreshMaterials();
+      setIsEditorOpen(false);
+      setEditingFlashcard(null);
+      alert('Flashcard updated successfully!');
+    } catch (error) {
+      console.error('Error editing flashcard:', error);
+      alert('Failed to edit flashcard. Please try again.');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDeleteFlashcard = async (flashcardId: string) => {
+    try {
+      const response = await fetch(`/api/learning/userFlashcards?id=${flashcardId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete flashcard');
+      }
+
+      // Refresh materials to remove deleted flashcard
+      await refreshMaterials();
+    } catch (error) {
+      console.error('Error deleting flashcard:', error);
+      throw error; // Re-throw so FlashcardViewer can handle it
+    }
+  };
+
+  const openEditor = (flashcard: { id: string; question: string; answer: string }) => {
+    setEditingFlashcard(flashcard);
+    setIsEditorOpen(true);
   };
 
   useEffect(() => {
@@ -229,7 +332,27 @@ export default function VideoMaterialsPage() {
             transition={{ duration: 0.2 }}
           >
             {activeTab === 'flashcards' && (
-              <FlashcardViewer flashcards={materials.flashcards} videoId={videoId} />
+              <div className="space-y-6">
+                {/* Add Card Button */}
+                <div className="flex justify-end">
+                  <Button
+                    variant="primary"
+                    onClick={() => setIsCreatorOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Card
+                  </Button>
+                </div>
+
+                {/* Flashcard Viewer */}
+                <FlashcardViewer
+                  flashcards={materials.flashcards}
+                  videoId={videoId}
+                  onEdit={openEditor}
+                  onDelete={handleDeleteFlashcard}
+                />
+              </div>
             )}
             {activeTab === 'quizzes' && (
               <QuizInterface quizzes={materials.quizzes} videoId={videoId} />
@@ -247,6 +370,26 @@ export default function VideoMaterialsPage() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Flashcard Creator Modal */}
+      <FlashcardCreator
+        isOpen={isCreatorOpen}
+        onClose={() => setIsCreatorOpen(false)}
+        onCreate={handleCreateFlashcard}
+        isLoading={isCreating}
+      />
+
+      {/* Flashcard Editor Modal */}
+      <FlashcardEditor
+        isOpen={isEditorOpen}
+        onClose={() => {
+          setIsEditorOpen(false);
+          setEditingFlashcard(null);
+        }}
+        onEdit={handleEditFlashcard}
+        initialData={editingFlashcard}
+        isLoading={isEditing}
+      />
     </div>
   );
 }
