@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, RotateCw, Lightbulb, Edit3 } from 'lucide-react';
+import { X, Lightbulb, Edit3 } from 'lucide-react';
 import Button from './Button';
 
 interface FlashcardEditorProps {
@@ -28,14 +28,16 @@ export default function FlashcardEditor({
   const [answer, setAnswer] = useState('');
   const [isPreviewFlipped, setIsPreviewFlipped] = useState(false);
 
-  // Update form when initialData changes
+  // Sync form state when initialData changes (legitimate use case for editing)
   useEffect(() => {
-    if (initialData) {
+    if (initialData && isOpen) {
+      // Intentionally updating state from props when editing a different flashcard
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuestion(initialData.question);
       setAnswer(initialData.answer);
       setIsPreviewFlipped(false);
     }
-  }, [initialData]);
+  }, [initialData, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
