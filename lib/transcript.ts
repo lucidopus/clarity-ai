@@ -10,6 +10,49 @@ export interface TranscriptResult {
   }>;
 }
 
+// Custom fetch function to mimic browser behavior and bypass IP blocking
+const createCustomFetch = (userAgent: string, lang: string) => {
+  return async ({ url, method = 'GET', body, headers: customHeaders }: {
+    url: string;
+    method?: string;
+    body?: string;
+    headers?: Record<string, string>;
+    lang?: string;
+    userAgent?: string;
+  }) => {
+    // Enhanced headers to better mimic a real browser
+    const headers: Record<string, string> = {
+      'User-Agent': userAgent,
+      'Accept-Language': `${lang},en-US;q=0.9,en;q=0.8`,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
+      'Cache-Control': 'max-age=0',
+      ...customHeaders,
+    };
+
+    console.log(`📡 [CUSTOM FETCH] ${method} request to: ${url.substring(0, 100)}...`);
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body,
+    });
+
+    if (!response.ok) {
+      console.error(`❌ [CUSTOM FETCH] HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return response;
+  };
+};
+
 export async function getYouTubeTranscript(youtubeUrl: string): Promise<TranscriptResult> {
   console.log('📜 [TRANSCRIPT] Starting transcript extraction...');
   console.log(`📜 [TRANSCRIPT] URL: ${youtubeUrl}`);
@@ -19,12 +62,22 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     const videoId = extractVideoId(youtubeUrl);
     console.log(`📜 [TRANSCRIPT] Video ID extracted: ${videoId}`);
 
-    // Fetch transcript using youtube-transcript-plus
-    console.log('📜 [TRANSCRIPT] Fetching transcript from YouTube...');
+    // Use a modern Chrome user agent
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    const lang = 'en';
+
+    // Create custom fetch functions
+    const customFetch = createCustomFetch(userAgent, lang);
+
+    // Fetch transcript using youtube-transcript-plus with custom fetch functions
+    console.log('📜 [TRANSCRIPT] Fetching transcript from YouTube with custom fetch...');
     const transcriptSegments = await fetchTranscript(youtubeUrl, {
-      lang: 'en',
-      //@ts-ignore
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
+      lang,
+      userAgent,
+      // Inject custom fetch functions for all three request types
+      videoFetch: customFetch,
+      playerFetch: customFetch,
+      transcriptFetch: customFetch,
     });
     console.log(`📜 [TRANSCRIPT] Received ${transcriptSegments.length} transcript segments`);
 
@@ -46,6 +99,7 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     console.error('❌ [TRANSCRIPT] Extraction failed:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`❌ [TRANSCRIPT] Error details: ${errorMessage}`);
+    console.error(`❌ [TRANSCRIPT] This may be due to YouTube blocking cloud provider IPs. Consider using a proxy service if the issue persists.`);
     throw new Error(`Failed to extract transcript: ${errorMessage}`);
   }
 }
