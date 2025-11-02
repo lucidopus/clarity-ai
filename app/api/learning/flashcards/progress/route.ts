@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import Progress from '@/lib/models/Progress';
+import Flashcard from '@/lib/models/Flashcard';
 
 interface DecodedToken {
   userId: string;
@@ -12,6 +15,10 @@ interface DecodedToken {
   exp: number;
 }
 
+/**
+ * POST /api/learning/flashcards/progress
+ * Update flashcard mastery status in Progress collection
+ */
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
@@ -31,6 +38,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate flashcardId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(flashcardId)) {
+      return NextResponse.json(
+        { error: 'Invalid flashcard ID format' },
+        { status: 400 }
+      );
+    }
+
     await dbConnect();
 
     // Verify user exists
@@ -39,21 +54,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Update progress in user's document
-    // For now, we'll store progress in the user document
-    // In a real app, you might want a separate Progress collection
-    const progressUpdate = {
-      [`progress.${videoId}.flashcards.${flashcardId}`]: {
-        isMastered,
-        updatedAt: new Date()
-      }
-    };
+    // Verify flashcard exists and belongs to user
+    const flashcard = await Flashcard.findById(flashcardId);
+    if (!flashcard) {
+      return NextResponse.json({ error: 'Flashcard not found' }, { status: 404 });
+    }
 
-    await User.findByIdAndUpdate(decoded.userId, progressUpdate);
+    if (flashcard.userId.toString() !== decoded.userId) {
+      return NextResponse.json(
+        { error: 'You do not have permission to update this flashcard' },
+        { status: 403 }
+      );
+    }
+
+    // Find or create progress document for this user/video combination
+    let progress = await Progress.findOne({
+      userId: decoded.userId,
+      videoId: videoId
+    });
+
+    if (!progress) {
+      // Create new progress document
+      progress = new Progress({
+        userId: decoded.userId,
+        videoId: videoId,
+        masteredFlashcardIds: [],
+        masteredQuizIds: [],
+        quizAttempts: [],
+        lastAccessedAt: new Date(),
+        totalStudyTimeSeconds: 0
+      });
+    }
+
+    // Update mastered flashcards array
+    const flashcardObjectId = new mongoose.Types.ObjectId(flashcardId);
+    const index = progress.masteredFlashcardIds.findIndex(
+      (id: mongoose.Types.ObjectId) => id.toString() === flashcardId
+    );
+
+    if (isMastered && index === -1) {
+      // Add to mastered list
+      progress.masteredFlashcardIds.push(flashcardObjectId);
+    } else if (!isMastered && index !== -1) {
+      // Remove from mastered list
+      progress.masteredFlashcardIds.splice(index, 1);
+    }
+
+    // Update last accessed time
+    progress.lastAccessedAt = new Date();
+
+    // Save progress
+    await progress.save();
 
     return NextResponse.json({
       success: true,
-      message: `Flashcard ${isMastered ? 'marked as mastered' : 'reset'}`,
+      message: `Flashcard ${isMastered ? 'marked as mastered' : 'unmarked'}`,
       flashcardId,
       isMastered
     });
