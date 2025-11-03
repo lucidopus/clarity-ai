@@ -33,9 +33,10 @@ Clarity AI is packed with features designed to enhance learning, all generated a
 
 - **Frontend**: Next.js with TypeScript and Tailwind CSS
 - **Database**: MongoDB
-- **LLM Provider**: Gemini API or Groq
-- **Authentication**: NextAuth.js
-- **Transcript API**: Public YouTube Transcript API
+- **LLM Provider**: Groq (gpt-4o-120b model)
+- **Transcript Extraction**: youtube-transcript-plus v1.1.1 with Webshare residential proxies
+- **Authentication**: JWT-based with HTTP-only cookies
+- **Proxy Service**: Webshare residential proxies (bypasses YouTube IP blocking in production)
 
 ## Getting Started
 
