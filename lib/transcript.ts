@@ -23,9 +23,10 @@ export interface TranscriptResult {
  * @param userAgent - Browser user agent string
  * @param lang - Language code for Accept-Language header
  * @param proxyAgent - Optional HttpsProxyAgent instance (null for direct connection)
+ * @param proxyUrl - Optional proxy URL for logging (masked in output)
  * @returns Custom fetch function compatible with youtube-transcript-plus
  */
-const createCustomFetch = (userAgent: string, lang: string, proxyAgent?: any) => {
+const createCustomFetch = (userAgent: string, lang: string, proxyAgent?: any, proxyUrl?: string) => {
   return async ({ url, method = 'GET', body, headers: customHeaders }: {
     url: string;
     method?: string;
@@ -54,6 +55,10 @@ const createCustomFetch = (userAgent: string, lang: string, proxyAgent?: any) =>
     const connectionType = proxyAgent ? '🌐 PROXY ROUTED' : '📡 DIRECT CONNECTION';
     console.log(`${logPrefix} ${connectionType} - ${method} ${url.substring(0, 80)}...`);
 
+    if (proxyAgent && proxyUrl) {
+      console.log(`🌐 [PROXY FETCH] 🔗 Routing through: ${proxyUrl.replace(/:[^:]+@/, ':***@')}`);
+    }
+
     try {
       const response = await fetch(url, {
         method,
@@ -77,6 +82,14 @@ const createCustomFetch = (userAgent: string, lang: string, proxyAgent?: any) =>
       if (error.cause?.code === 'ETIMEDOUT' || error.code === 'ETIMEDOUT') {
         throw new Error(`Request timeout (proxy or destination): ${error.message}`);
       }
+
+      // Check for YouTube blocking proxy for transcripts
+      const errorMsg = error.message || '';
+      if (errorMsg.includes('No transcripts are available') && proxyAgent) {
+        console.warn('⚠️ [PROXY BLOCK] YouTube may be blocking proxy for transcript requests');
+        console.warn('⚠️ [PROXY BLOCK] Consider trying a different proxy endpoint or disabling proxy');
+      }
+
       throw new Error(`Request to ${url.substring(0, 80)} failed: ${error.message}`);
     }
   };
@@ -108,27 +121,30 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
   const videoId = extractVideoId(youtubeUrl);
   console.log(`📜 [TRANSCRIPT] Video ID extracted: ${videoId}`);
 
-  // Initialize proxy agent if enabled
+  // Initialize proxy agent - required when enabled
   const proxyEnabled = process.env.WEBSHARE_PROXY_ENABLED === 'true';
   const proxyUrl = process.env.WEBSHARE_PROXY_URL;
-  const proxyAgent = proxyEnabled && proxyUrl ? new (HttpsProxyAgent as any)(proxyUrl) : null;
 
-  // Log proxy status with explicit confirmation
-  if (proxyAgent) {
+  if (proxyEnabled) {
+    if (!proxyUrl) {
+      throw new Error('WEBSHARE_PROXY_URL is required when WEBSHARE_PROXY_ENABLED=true');
+    }
     console.log('🌐 [PROXY] ✅ PROXY ENABLED - All requests will route through Webshare residential proxy');
-    console.log(`🌐 [PROXY] 📍 Proxy endpoint: ${proxyUrl?.replace(/:[^:]+@/, ':***@')} (credentials masked)`);
+    console.log(`🌐 [PROXY] 📍 Proxy endpoint: ${proxyUrl.replace(/:[^:]+@/, ':***@')} (credentials masked)`);
     console.log('🌐 [PROXY] 🔄 Using rotating residential IPs - automatic IP rotation enabled');
   } else {
     console.log('📡 [DIRECT] ❌ PROXY DISABLED - Using direct connection (no proxy)');
     console.log('📡 [DIRECT] ⚠️  May fail in production environments due to IP blocking');
   }
 
+  const proxyAgent = proxyEnabled ? new (HttpsProxyAgent as any)(proxyUrl) : null;
+
   // Use a modern Chrome user agent
   const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
   const lang = 'en';
 
   // Create proxy-enabled fetch functions
-  const customFetch = createCustomFetch(userAgent, lang, proxyAgent);
+  const customFetch = createCustomFetch(userAgent, lang, proxyAgent, proxyUrl);
 
   // Retry logic with exponential backoff
   const maxRetries = 3;
@@ -147,7 +163,7 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
         transcriptFetch: customFetch,
       });
 
-      console.log(`✅ [TRANSCRIPT] Successfully extracted ${transcriptSegments.length} segments`);
+      console.log(`✅ [TRANSCRIPT] Successfully extracted ${transcriptSegments.length} segments via ${connectionType}`);
 
       const text = transcriptSegments.map((item) => item.text).join(' ');
       return {
@@ -170,6 +186,10 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
       // If last attempt or non-retryable error, throw
       if (attempt === maxRetries - 1 || !isRetryable) {
         console.error(`❌ [TRANSCRIPT] All ${maxRetries} attempts exhausted`);
+        if (proxyAgent) {
+          console.error('❌ [PROXY FAILURE] Proxy is enabled but transcript extraction failed');
+          console.error('❌ [PROXY FAILURE] Check proxy credentials or try disabling proxy');
+        }
         throw new Error(`Failed to extract transcript: ${errorMessage}`);
       }
 
