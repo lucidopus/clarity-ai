@@ -17,19 +17,19 @@ function MindMapNode({ data, selected, id }: NodeProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
 
-  // Style variants based on node type
+  // Style variants based on node type - ALL nodes use bg-card-bg for consistency in dark mode
   const nodeStyles: Record<string, string> = {
-    root: 'bg-accent text-white border-accent shadow-lg shadow-accent/30 w-60 h-24',
+    root: 'bg-accent text-white border-0 shadow-lg shadow-accent/30 w-60 h-24',
     concept: 'bg-card-bg text-foreground border-accent border-2 shadow-md w-52 h-20',
     subconcept: 'bg-card-bg text-foreground border-border border-2 shadow-sm w-48 h-18',
-    detail: 'bg-background text-muted-foreground border-border shadow-sm w-44 h-16',
+    detail: 'bg-card-bg text-foreground border-border border-1 shadow-sm w-44 h-16', // Changed from bg-background to bg-card-bg
   };
 
   const textStyles: Record<string, string> = {
     root: 'text-lg font-bold',
     concept: 'text-base font-semibold',
     subconcept: 'text-sm font-medium',
-    detail: 'text-xs font-normal',
+    detail: 'text-sm font-normal', // Changed from text-xs to text-sm for better readability
   };
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {

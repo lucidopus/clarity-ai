@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   ReactFlow,
   MiniMap,
@@ -19,8 +19,10 @@ import { motion } from 'framer-motion';
 import { RotateCw, Save, Plus } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import MindMapNode from './MindMapNode';
+import CustomEdge from './CustomEdge';
 import Button from './Button';
 import { getLayoutedElements } from '@/lib/mindMapLayout';
+import { ToastContainer, type ToastType } from './Toast';
 
 interface MindMapViewerProps {
   videoId: string;
@@ -45,10 +47,24 @@ const nodeTypes = {
   mindMapNode: MindMapNode,
 };
 
+const edgeTypes = {
+  custom: CustomEdge,
+};
+
 export default function MindMapViewer({ videoId, nodes: initialNodes, edges: initialEdges }: MindMapViewerProps) {
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
   const [isSaving, setIsSaving] = useState(false);
-  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: 'info' | 'success' | 'error' }>>([]);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
+
+  // Toast functions - defined early so they can be used in callbacks
+  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    setToasts((prev) => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
 
   // Convert to React Flow format
   const initialReactFlowNodes: Node[] = useMemo(() =>
@@ -66,13 +82,16 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
     [initialNodes]
   );
 
+  // Placeholder for delete handler (will be defined after hooks)
+  const deleteEdgeRef = React.useRef<((edgeId: string) => void) | null>(null);
+
   const initialReactFlowEdges: Edge[] = useMemo(() =>
     initialEdges.map((edge) => ({
       id: edge.id,
       source: edge.source,
       target: edge.target,
       label: edge.label,
-      type: 'bezier',
+      type: 'custom', // Changed from 'bezier' to 'custom' to use our CustomEdge component
       animated: edge.type === 'relation',
       style: {
         stroke: edge.type === 'hierarchy' ? 'var(--accent)' :
@@ -83,6 +102,9 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
       markerEnd: {
         type: MarkerType.ArrowClosed,
         color: edge.type === 'hierarchy' ? 'var(--accent)' : 'var(--muted-foreground)',
+      },
+      data: {
+        onDelete: (edgeId: string) => deleteEdgeRef.current?.(edgeId), // Use ref to avoid hook ordering issue
       },
     })),
     [initialEdges]
@@ -106,6 +128,15 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+
+  // Now define handleDeleteEdge AFTER setEdges is initialized
+  const handleDeleteEdge = useCallback((edgeId: string) => {
+    setEdges((eds) => eds.filter((e) => e.id !== edgeId));
+    showToast('Connection deleted', 'info');
+  }, [setEdges, showToast]);
+
+  // Update the ref with the actual handler
+  deleteEdgeRef.current = handleDeleteEdge;
 
   const handleNodeDataChange = useCallback((nodeId: string, newData: Partial<{ label: string; type: string; description?: string; level: number }>) => {
     setNodes((nds) =>
@@ -137,24 +168,16 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
     }
   }, [layoutDirection, initialReactFlowNodes, initialReactFlowEdges, initialNodes, setNodes, setEdges]);
 
-  const showToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
-    const id = `toast-${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { id, message, type }]);
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
-
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
       ...params,
-      type: 'bezier',
+      type: 'custom', // Use custom edge type for new connections
       animated: false,
       style: { stroke: 'var(--accent)', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent)' },
+      data: { onDelete: handleDeleteEdge },
     }, eds)),
-    [setEdges]
+    [setEdges, handleDeleteEdge]
   );
 
   const handleRelayout = () => {
@@ -208,6 +231,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
         type: 'detail',
         description: 'Click to edit',
         level: 3,
+        onDataChange: handleNodeDataChange, // Add the callback so new nodes can be edited
       },
       position: { x: 250, y: 250 },
     };
@@ -274,7 +298,48 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
       </div>
 
       {/* React Flow Canvas */}
-      <div className="h-[600px] bg-card-bg rounded-xl border border-border overflow-hidden">
+      <div className="h-[600px] bg-card-bg rounded-xl border border-border overflow-hidden relative">
+        {/* Custom CSS for React Flow controls - dark mode friendly */}
+        <style jsx global>{`
+          .react-flow__controls {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+          }
+
+          .react-flow__controls-button {
+            background: transparent !important;
+            border-bottom: 1px solid var(--border) !important;
+            color: var(--foreground) !important;
+            transition: all 0.2s ease !important;
+          }
+
+          .react-flow__controls-button:last-child {
+            border-bottom: none !important;
+          }
+
+          .react-flow__controls-button:hover {
+            background: var(--accent) !important;
+            color: white !important;
+          }
+
+          .react-flow__controls-button svg {
+            fill: currentColor !important;
+          }
+
+          .react-flow__minimap {
+            background: var(--card-bg) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+          }
+
+          .react-flow__minimap-mask {
+            fill: rgba(0, 0, 0, 0.1) !important;
+          }
+        `}</style>
+
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -282,12 +347,13 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           fitView
           fitViewOptions={{ padding: 0.2 }}
           minZoom={0.1}
           maxZoom={2}
           defaultEdgeOptions={{
-            type: 'bezier',
+            type: 'custom',
             animated: false,
           }}
         >
@@ -304,7 +370,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
               }
             }}
             maskColor="rgba(0, 0, 0, 0.1)"
-            className="bg-background border border-border rounded-lg"
+            className="border border-border rounded-lg"
           />
         </ReactFlow>
       </div>
@@ -312,28 +378,11 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
       {/* Instructions */}
       <div className="bg-muted/30 rounded-xl px-4 py-3 text-sm text-muted-foreground">
         <strong>Instructions:</strong> Drag nodes to reposition • Double-click nodes to edit • Click and drag between nodes to create connections •
-        Use mouse wheel to zoom • Drag canvas to pan
+        Hover over connections to delete them • Use mouse wheel to zoom • Drag canvas to pan
       </div>
 
       {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {toasts.map((toast) => (
-          <motion.div
-            key={toast.id}
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 300 }}
-            className={`px-4 py-2 rounded-lg shadow-lg max-w-sm ${
-              toast.type === 'success' ? 'bg-green-500 text-white' :
-              toast.type === 'error' ? 'bg-red-500 text-white' :
-              'bg-blue-500 text-white'
-            }`}
-            onClick={() => removeToast(toast.id)}
-          >
-            {toast.message}
-          </motion.div>
-        ))}
-      </div>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 }

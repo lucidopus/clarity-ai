@@ -49,7 +49,7 @@ export default function Toast({
   id,
   message,
   type = 'info',
-  duration = 4000,
+  duration = 5000, // Changed from 4000ms to 5000ms (5 seconds)
   onClose,
 }: ToastProps) {
   const config = toastConfig[type];
