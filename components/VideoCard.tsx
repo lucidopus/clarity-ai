@@ -122,10 +122,16 @@ export default function VideoCard({
               onClick={() => onClick?.(id)}
               variant="primary"
               size="sm"
-              className="font-semibold shadow-md hover:shadow-lg transition-shadow duration-200"
+              className="font-semibold shadow-md hover:shadow-lg transition-all duration-200 relative overflow-hidden group/btn"
             >
-              <Stars className="w-4 h-4 mr-2" />
-              Dive In
+              {/* Shimmer effect */}
+              <div className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 ease-out" />
+
+              {/* Subtle glow pulse */}
+              <div className="absolute inset-0 rounded-md bg-accent/10 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300 animate-pulse" />
+
+              <Stars className="w-4 h-4 mr-2 relative z-10" />
+              <span className="relative z-10">Dive In</span>
             </Button>
           </div>
         </div>
