@@ -130,7 +130,7 @@ export default function Dialog({
                     onClick={onClose}
                     variant="ghost"
                     disabled={isLoading}
-                    className="px-6 py-2"
+                    className="px-6 py-2 cursor-pointer"
                   >
                     {cancelText}
                   </Button>
@@ -140,7 +140,7 @@ export default function Dialog({
                   onClick={handleConfirm}
                   variant={config.confirmVariant}
                   disabled={isLoading}
-                  className="px-8"
+                  className="px-8 cursor-pointer"
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
