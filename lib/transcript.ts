@@ -1,6 +1,3 @@
-import { fetchTranscript } from 'youtube-transcript-plus';
-import { SocksProxyAgent } from 'socks-proxy-agent';
-
 export interface TranscriptResult {
   text: string;
   videoId: string;
@@ -12,61 +9,14 @@ export interface TranscriptResult {
 }
 
 /**
- * Creates a custom fetch function that routes requests through Tor proxy
- * to bypass YouTube's cloud provider IP blocking.
+ * Extract YouTube transcript using Apify Actor
  *
- * Uses SOCKS5 proxy (Tor) to make requests appear from residential IPs.
+ * Uses pintostudio/youtube-transcript-scraper actor to bypass YouTube's IP blocking
+ * Cost: $7 per 1,000 transcripts (~$0.007 per video)
+ * Success rate: >99%
  */
-const createTorProxyFetch = () => {
-  // Use environment variable or default to localhost Tor proxy
-  const proxyUrl = process.env.TOR_PROXY_URL || 'socks5://127.0.0.1:9050';
-
-  console.log(`🔐 [TOR] Configuring Tor proxy: ${proxyUrl}`);
-
-  // Create SOCKS proxy agent for Tor
-  const agent = new SocksProxyAgent(proxyUrl);
-
-  return async ({ url, method = 'GET', body, headers: customHeaders }: {
-    url: string;
-    method?: string;
-    body?: string;
-    headers?: Record<string, string>;
-  }) => {
-    // Use standard browser headers
-    const headers: Record<string, string> = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      ...customHeaders,
-    };
-
-    console.log(`🌐 [TOR FETCH] ${method} request via Tor: ${url.substring(0, 80)}...`);
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers,
-        body,
-        // @ts-ignore - agent works with Node.js fetch but not in types
-        agent,
-      });
-
-      if (!response.ok) {
-        console.error(`❌ [TOR FETCH] HTTP error! status: ${response.status}`);
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      console.log(`✅ [TOR FETCH] Request successful (${response.status})`);
-      return response;
-    } catch (error) {
-      console.error(`❌ [TOR FETCH] Request failed:`, error);
-      throw error;
-    }
-  };
-};
-
 export async function getYouTubeTranscript(youtubeUrl: string): Promise<TranscriptResult> {
-  console.log('📜 [TRANSCRIPT] Starting transcript extraction via Tor proxy...');
+  console.log('📜 [TRANSCRIPT] Starting transcript extraction via Apify...');
   console.log(`📜 [TRANSCRIPT] URL: ${youtubeUrl}`);
 
   try {
@@ -74,42 +24,95 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     const videoId = extractVideoId(youtubeUrl);
     console.log(`📜 [TRANSCRIPT] Video ID extracted: ${videoId}`);
 
-    // Create Tor proxy fetch function
-    const torProxyFetch = createTorProxyFetch();
+    // Get Apify API token
+    const apifyToken = process.env.APIFY_API_TOKEN;
+    if (!apifyToken) {
+      throw new Error('APIFY_API_TOKEN environment variable is not set');
+    }
 
-    // Fetch transcript using youtube-transcript-plus with Tor proxy
-    console.log('📜 [TRANSCRIPT] Fetching transcript from YouTube via Tor network...');
-    const transcriptSegments = await fetchTranscript(youtubeUrl, {
-      lang: 'en',
-      // Route all requests through Tor proxy
-      videoFetch: torProxyFetch,
-      playerFetch: torProxyFetch,
-      transcriptFetch: torProxyFetch,
-    });
+    // Start Apify actor run
+    console.log('🚀 [APIFY] Starting actor run...');
+    const runResponse = await fetch(
+      `https://api.apify.com/v2/acts/pintostudio~youtube-transcript-scraper/runs?token=${apifyToken}&waitForFinish=45`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoUrl: youtubeUrl,
+        }),
+      }
+    );
+
+    if (!runResponse.ok) {
+      const errorText = await runResponse.text();
+      console.error(`❌ [APIFY] Actor run failed: ${runResponse.status} - ${errorText}`);
+      throw new Error(`Apify actor run failed: ${runResponse.status}`);
+    }
+
+    const runData = await runResponse.json();
+    console.log(`✅ [APIFY] Actor run completed: ${runData.data.id}`);
+
+    // Get dataset ID from run
+    const datasetId = runData.data.defaultDatasetId;
+    if (!datasetId) {
+      throw new Error('No dataset ID returned from Apify actor');
+    }
+
+    // Fetch transcript data from dataset
+    console.log(`📥 [APIFY] Fetching transcript data from dataset: ${datasetId}`);
+    const datasetResponse = await fetch(
+      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}`
+    );
+
+    if (!datasetResponse.ok) {
+      const errorText = await datasetResponse.text();
+      console.error(`❌ [APIFY] Dataset fetch failed: ${datasetResponse.status} - ${errorText}`);
+      throw new Error(`Failed to fetch transcript dataset: ${datasetResponse.status}`);
+    }
+
+    const datasetItems = await datasetResponse.json();
+
+    if (!datasetItems || datasetItems.length === 0) {
+      throw new Error('No transcript data returned from Apify');
+    }
+
+    // Extract data array from first item
+    const transcriptData = datasetItems[0];
+    const transcriptSegments = transcriptData.data;
+
+    if (!transcriptSegments || !Array.isArray(transcriptSegments)) {
+      throw new Error('Invalid transcript format returned from Apify');
+    }
+
     console.log(`📜 [TRANSCRIPT] Received ${transcriptSegments.length} transcript segments`);
 
+    // Transform Apify format to our TranscriptResult format
+    const segments = transcriptSegments.map((segment: any) => ({
+      text: segment.text,
+      offset: parseFloat(segment.start), // Convert string to number (seconds)
+      duration: parseFloat(segment.dur), // Convert string to number (seconds)
+    }));
+
     // Combine into continuous text
-    const text = transcriptSegments.map((item) => item.text).join(' ');
+    const text = segments.map((segment) => segment.text).join(' ');
     console.log(`📜 [TRANSCRIPT] Combined text length: ${text.length} characters`);
 
-    console.log('✅ [TRANSCRIPT] Transcript extraction completed successfully via Tor');
+    console.log('✅ [TRANSCRIPT] Transcript extraction completed successfully via Apify');
     return {
       text,
       videoId,
-      segments: transcriptSegments.map((segment) => ({
-        text: segment.text,
-        offset: segment.offset,
-        duration: segment.duration,
-      })),
+      segments,
     };
   } catch (error) {
-    console.error('❌ [TRANSCRIPT] Extraction failed via Tor proxy:', error);
+    console.error('❌ [TRANSCRIPT] Extraction failed via Apify:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`❌ [TRANSCRIPT] Error details: ${errorMessage}`);
 
     // Throw descriptive error for user
     throw new Error(
-      `Failed to extract transcript. The video may not have captions available, or the Tor network is experiencing issues. Please try again in a few moments. (${errorMessage})`
+      `Failed to extract transcript. The video may not have captions available, or there was an issue with the transcript service. Please try again in a few moments. (${errorMessage})`
     );
   }
 }
