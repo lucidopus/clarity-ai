@@ -23,6 +23,7 @@
     "react-dom": "19.2.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
+    "socks-proxy-agent": "^8.0.5",
     "youtube-captions-scraper": "^2.0.3",
     "youtube-transcript": "^1.2.1",
     "youtube-transcript-plus": "^1.1.1",
