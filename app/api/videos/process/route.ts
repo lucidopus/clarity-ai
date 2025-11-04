@@ -229,6 +229,7 @@ export async function POST(request: NextRequest) {
       userId: decoded.userId,
       timestamps: materials.timestamps,
       prerequisites: materials.prerequisites,
+      videoSummary: materials.videoSummary,
       metadata: {
         generatedBy: 'llama-3.3-70b-versatile',
         generatedAt: new Date(),

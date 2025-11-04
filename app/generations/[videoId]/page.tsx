@@ -15,6 +15,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
+import { ChatBot } from '@/components/ChatBot';
 
 interface VideoMaterials {
   video: {
@@ -470,6 +471,9 @@ export default function VideoMaterialsPage() {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      {/* ChatBot */}
+      <ChatBot videoId={videoId} />
     </div>
   );
 }

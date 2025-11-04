@@ -8,7 +8,7 @@ Generate 6 learning components based on this transcript:
 3. Create 4-5 quiz questions (multiple choice)
 4. Identify 3-5 key moments (timestamps + summaries)
 5. List 2-3 prerequisite topics needed
-6. Summarize context for an AI tutor
+6. Generate a 200-300 word summary of the video for an AI tutor to use as context
 7. **Generate a hierarchical mind map showing concept relationships**
 
 ## Mind Map Requirements:
@@ -36,7 +36,7 @@ Generate 6 learning components based on this transcript:
 - Quizzes: Variety (multiple choice), medium difficulty, 4 options per question
 - Timestamps: Specific time codes from the video with topic summaries
 - Prerequisites: Real knowledge gaps needed to understand this content, not obvious basics
-- Context: Rich summary suitable for follow-up questions by an AI tutor
+- Video Summary: A 200-300 word summary of the video, written for an AI tutor to use as context
 - Mind Map: Clear hierarchical structure showing how concepts connect
 
 ## Transcript:

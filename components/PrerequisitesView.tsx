@@ -99,9 +99,21 @@ export default function PrerequisitesView({ prerequisites }: PrerequisitesViewPr
                 </div>
               )}
             </div>
-            <p className="text-muted-foreground text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed mb-3">
               {prerequisite.description}
             </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (window as any).dispatchEvent(new CustomEvent('chatbot:open', {
+                  detail: { question: `Explain the prerequisite: ${prerequisite.title}` }
+                }));
+              }}
+            >
+              Ask AI Tutor
+            </Button>
           </div>
         </div>
       </motion.div>
