@@ -16,7 +16,7 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import { motion } from 'framer-motion';
-import { RotateCw, Save, Plus, MousePointer, Edit3, Link, Trash2, ZoomIn, Move, HelpCircle } from 'lucide-react';
+import { RotateCw, Save, Plus, MousePointer, Edit3, Link, Trash2, ZoomIn, Move, Info } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import MindMapNode from './MindMapNode';
 import CustomEdge from './CustomEdge';
@@ -56,6 +56,8 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
   const [isSaving, setIsSaving] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
+  const instructionsRef = React.useRef<HTMLDivElement>(null);
+  const helpButtonRef = React.useRef<HTMLDivElement>(null);
 
   // Toast functions - defined early so they can be used in callbacks
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
@@ -168,6 +170,29 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
       setEdges(newEdges);
     }
   }, [layoutDirection, initialReactFlowNodes, initialReactFlowEdges, initialNodes, setNodes, setEdges]);
+
+  // Close instructions dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        instructionsRef.current &&
+        helpButtonRef.current &&
+        event.target instanceof Element &&
+        !instructionsRef.current.contains(event.target) &&
+        !helpButtonRef.current.contains(event.target)
+      ) {
+        setShowInstructions(false);
+      }
+    };
+
+    if (showInstructions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showInstructions]);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
@@ -329,54 +354,79 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
           </Button>
           
           <div className="relative">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowInstructions(!showInstructions)}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
-              title="How to use the mind map - click to show/hide instructions"
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span className="text-xs font-medium hidden sm:inline">Help</span>
-            </Button>
+            <div ref={helpButtonRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInstructions(!showInstructions)}
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+                title="View the mind map guide - click to show/hide"
+              >
+                <Info className="w-4 h-4" />
+                <span className="text-xs font-medium hidden sm:inline">Guide</span>
+              </Button>
+            </div>
 
             {/* Instructions Dropdown */}
             {showInstructions && (
               <motion.div
+                ref={instructionsRef}
                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="absolute right-0 top-full mt-2 w-80 bg-card-bg border border-border rounded-xl p-4 shadow-lg z-50"
+                className="absolute right-0 top-full mt-2 w-96 bg-card-bg border border-border rounded-xl p-5 shadow-lg z-50"
               >
-                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <MousePointer className="w-4 h-4 text-accent" />
-                  How to use the mind map
-                </h4>
-                <div className="grid grid-cols-1 gap-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <Move className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Drag nodes to reposition them</span>
+                <div className="space-y-4">
+                  {/* Node Actions */}
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">Node Actions</p>
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                      <div className="flex items-start gap-3">
+                        <Plus className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground"><b>Add:</b> Use the button in the top bar.</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Edit3 className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground"><b>Edit:</b> Double-click any node.</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Trash2 className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground">
+                          <b>Delete:</b> Select a node and press <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md">Delete</kbd>.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Edit3 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Double-click nodes to edit labels</span>
+
+                  {/* Connection Actions */}
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">Connection Actions</p>
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                      <div className="flex items-start gap-3">
+                        <Link className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground"><b>Connect:</b> Drag between nodes.</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Trash2 className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground"><b>Delete:</b> Hover on a connection line and click the 'x'.</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Link className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Click and drag between nodes to connect them</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Trash2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Hover over connections to delete them</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <ZoomIn className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Use mouse wheel to zoom in/out</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MousePointer className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground">Drag canvas to pan around</span>
+
+                  {/* Canvas Actions */}
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">Canvas Actions</p>
+                    <div className="grid grid-cols-1 gap-3 text-sm">
+                      <div className="flex items-start gap-3">
+                        <Move className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground"><b>Pan:</b> Click and drag the canvas.</p>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <ZoomIn className="w-4 h-4 text-accent mt-0.5 shrink-0" />
+                        <p className="text-muted-foreground"><b>Zoom:</b> Use your mouse wheel.</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
