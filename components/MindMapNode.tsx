@@ -3,6 +3,8 @@
 import { memo, useState, useCallback } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
+import { Info } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 interface MindMapNodeData {
   label: string;
@@ -58,7 +60,12 @@ function MindMapNode({ data, selected, id, sourcePosition, targetPosition }: Nod
     }
   }, [handleEditSubmit, handleEditCancel]);
 
-  return (
+
+
+  // Only show tooltips for generated nodes (not user-created nodes)
+  const shouldShowTooltip = description && description !== 'Click to edit';
+
+  const nodeContent = (
     <>
       {/* Handles for connections - dynamic position based on layout */}
       <Handle
@@ -75,12 +82,14 @@ function MindMapNode({ data, selected, id, sourcePosition, targetPosition }: Nod
           ${nodeStyles[type]}
           ${textStyles[type]}
           rounded-xl px-4 py-3 flex items-center justify-center text-center
-          transition-all duration-200 cursor-pointer
+          transition-all duration-200 cursor-pointer relative
           ${selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-105' : 'hover:scale-105'}
         `}
         onDoubleClick={handleDoubleClick}
-        title={description || label}
       >
+        {shouldShowTooltip && (
+          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent/60 hover:bg-accent transition-colors" />
+        )}
         {isEditing ? (
           <input
             type="text"
@@ -103,6 +112,27 @@ function MindMapNode({ data, selected, id, sourcePosition, targetPosition }: Nod
         className="w-3 h-3 bg-accent border-2 border-white"
       />
     </>
+  );
+
+  if (!shouldShowTooltip) {
+    return nodeContent;
+  }
+
+  return (
+    <Tooltip
+      title="Quick Overview"
+      icon={<Info className="w-4 h-4 text-accent" />}
+      position="top"
+      trigger={nodeContent}
+    >
+      <div className="text-sm">
+        {description ? (
+          <span className="text-foreground/80 leading-relaxed">{description}</span>
+        ) : (
+          <span className="text-foreground/60 italic">No description available</span>
+        )}
+      </div>
+    </Tooltip>
   );
 }
 
