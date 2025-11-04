@@ -3,6 +3,8 @@
 import { memo, useState, useCallback } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { motion } from 'framer-motion';
+import { Info } from 'lucide-react';
+import Tooltip from './Tooltip';
 
 interface MindMapNodeData {
   label: string;
@@ -59,50 +61,67 @@ function MindMapNode({ data, selected, id, sourcePosition, targetPosition }: Nod
   }, [handleEditSubmit, handleEditCancel]);
 
   return (
-    <>
-      {/* Handles for connections - dynamic position based on layout */}
-      <Handle
-        type="target"
-        position={targetPosition || Position.Top}
-        className="w-3 h-3 bg-accent border-2 border-white"
-      />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className={`
-          ${nodeStyles[type]}
-          ${textStyles[type]}
-          rounded-xl px-4 py-3 flex items-center justify-center text-center
-          transition-all duration-200 cursor-pointer
-          ${selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-105' : 'hover:scale-105'}
-        `}
-        onDoubleClick={handleDoubleClick}
-        title={description || label}
-      >
-        {isEditing ? (
-          <input
-            type="text"
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={handleEditSubmit}
-            onKeyDown={handleKeyDown}
-            className="w-full bg-transparent border-none outline-none text-center"
-            autoFocus
-            onClick={(e) => e.stopPropagation()}
+    <Tooltip
+      title="Quick Overview"
+      icon={<Info className="w-4 h-4 text-accent" />}
+      position="top"
+      trigger={
+        <>
+          {/* Handles for connections - dynamic position based on layout */}
+          <Handle
+            type="target"
+            position={targetPosition || Position.Top}
+            className="w-3 h-3 bg-accent border-2 border-white"
           />
-        ) : (
-          <div className="line-clamp-2">{label}</div>
-        )}
-      </motion.div>
 
-      <Handle
-        type="source"
-        position={sourcePosition || Position.Bottom}
-        className="w-3 h-3 bg-accent border-2 border-white"
-      />
-    </>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className={`
+              ${nodeStyles[type]}
+              ${textStyles[type]}
+              rounded-xl px-4 py-3 flex items-center justify-center text-center
+              transition-all duration-200 cursor-pointer relative
+              ${selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-105' : 'hover:scale-105'}
+            `}
+            onDoubleClick={handleDoubleClick}
+          >
+            {description && (
+              <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent/60 hover:bg-accent transition-colors" />
+            )}
+            {isEditing ? (
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onBlur={handleEditSubmit}
+                onKeyDown={handleKeyDown}
+                className="w-full bg-transparent border-none outline-none text-center"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div className="line-clamp-2">{label}</div>
+            )}
+          </motion.div>
+
+          <Handle
+            type="source"
+            position={sourcePosition || Position.Bottom}
+            className="w-3 h-3 bg-accent border-2 border-white"
+          />
+        </>
+      }
+    >
+      <div className="text-sm">
+        {description && (
+          <>
+            <span className="text-foreground/80 text-bold leading-relaxed">{description}</span>
+          </>
+        )}
+      </div>
+    </Tooltip>
   );
 }
 
