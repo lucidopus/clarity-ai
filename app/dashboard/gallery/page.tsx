@@ -202,6 +202,7 @@ export default function GalleryPage() {
               id={video.id}
               title={video.title}
               channelName={video.channelName}
+              thumbnailUrl={video.thumbnailUrl}
               duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
               transcriptMinutes={video.transcriptMinutes}
               createdAt={video.createdAt}
