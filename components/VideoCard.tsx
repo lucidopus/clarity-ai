@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import Button from './Button';
 import { Clock, Layers, HelpCircle, User, Stars } from 'lucide-react';
 
@@ -56,10 +57,11 @@ export default function VideoCard({
       {/* Thumbnail */}
       {thumbnailUrl && (
         <div className="aspect-video w-full bg-muted relative overflow-hidden">
-          <img
+          <Image
             src={thumbnailUrl}
             alt={`${title} thumbnail`}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
             loading="lazy"
           />
         </div>
