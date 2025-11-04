@@ -12,7 +12,7 @@ interface MindMapNodeData {
   onDataChange?: (id: string, newData: Partial<MindMapNodeData>) => void;
 }
 
-function MindMapNode({ data, selected, id }: NodeProps) {
+function MindMapNode({ data, selected, id, sourcePosition, targetPosition }: NodeProps) {
   const { label, type, description, onDataChange } = data as unknown as MindMapNodeData;
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(label);
@@ -60,8 +60,12 @@ function MindMapNode({ data, selected, id }: NodeProps) {
 
   return (
     <>
-      {/* Handles for connections */}
-      <Handle type="target" position={Position.Top} className="w-3 h-3 bg-accent border-2 border-white" />
+      {/* Handles for connections - dynamic position based on layout */}
+      <Handle
+        type="target"
+        position={targetPosition || Position.Top}
+        className="w-3 h-3 bg-accent border-2 border-white"
+      />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
@@ -93,7 +97,11 @@ function MindMapNode({ data, selected, id }: NodeProps) {
         )}
       </motion.div>
 
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-accent border-2 border-white" />
+      <Handle
+        type="source"
+        position={sourcePosition || Position.Bottom}
+        className="w-3 h-3 bg-accent border-2 border-white"
+      />
     </>
   );
 }
