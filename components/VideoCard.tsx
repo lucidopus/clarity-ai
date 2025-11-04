@@ -8,6 +8,7 @@ interface VideoCardProps {
   id: string;
   title: string;
   channelName: string;
+  thumbnailUrl?: string;
   duration?: string;
   flashcardCount?: number;
   quizCount?: number;
@@ -21,6 +22,7 @@ export default function VideoCard({
   id,
   title,
   channelName,
+  thumbnailUrl,
   duration,
   flashcardCount,
   quizCount,
@@ -52,7 +54,20 @@ export default function VideoCard({
       className="bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group relative"
       onClick={() => onClick?.(id)}
     >
-      {/* Content-only metadata header */}
+      {/* Thumbnail */}
+      {thumbnailUrl && (
+        <div className="aspect-video w-full bg-muted relative overflow-hidden">
+          <img
+            src={thumbnailUrl}
+            alt={`${title} thumbnail`}
+            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+        </div>
+      )}
+
+      {/* Content */}
       <div className="p-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="min-w-0">
@@ -109,7 +124,7 @@ export default function VideoCard({
             variant="primary"
             size="sm"
           >
-            Open Materials
+            Learn
           </Button>
         </div>
       </div>
