@@ -68,6 +68,28 @@ export function getLayoutedElements(
   // Calculate layout
   dagre.layout(dagreGraph);
 
+  // Manually center the root node based on its immediate children
+  const rootNode = nodes.find(n => n.data.type === 'root');
+  if (rootNode) {
+    const childEdges = edges.filter(e => e.source === rootNode.id);
+    const childNodeIds = childEdges.map(e => e.target);
+    const childNodesFromGraph = childNodeIds.map(id => dagreGraph.node(id)).filter(Boolean); // Filter out undefined nodes
+
+    if (childNodesFromGraph.length > 0) {
+      const rootNodeWithPosition = dagreGraph.node(rootNode.id);
+
+      if (isHorizontal) { // For LR layout, average the y-positions of children
+        const yPositions = childNodesFromGraph.map(n => n.y);
+        const avgY = yPositions.reduce((acc, y) => acc + y, 0) / yPositions.length;
+        rootNodeWithPosition.y = avgY;
+      } else { // For TB layout, average the x-positions of children
+        const xPositions = childNodesFromGraph.map(n => n.x);
+        const avgX = xPositions.reduce((acc, x) => acc + x, 0) / xPositions.length;
+        rootNodeWithPosition.x = avgX;
+      }
+    }
+  }
+
   // Map positions back to nodes
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
