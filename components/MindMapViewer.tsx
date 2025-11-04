@@ -16,7 +16,7 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import { motion } from 'framer-motion';
-import { RotateCw, Save, Plus } from 'lucide-react';
+import { RotateCw, Save, Plus, MousePointer, Edit3, Link, Trash2, ZoomIn, Move, HelpCircle } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import MindMapNode from './MindMapNode';
 import CustomEdge from './CustomEdge';
@@ -54,6 +54,7 @@ const edgeTypes = {
 export default function MindMapViewer({ videoId, nodes: initialNodes, edges: initialEdges }: MindMapViewerProps) {
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
   const [isSaving, setIsSaving] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
 
   // Toast functions - defined early so they can be used in callbacks
@@ -195,7 +196,6 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
     setNodes(newNodes);
     setEdges(newEdges);
     setLayoutDirection(newDirection);
-    showToast(`Layout changed to ${newDirection === 'TB' ? 'vertical' : 'horizontal'}`, 'info');
   };
 
   const handleResetLayout = () => {
@@ -283,7 +283,40 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
     <div className="space-y-4">
       {/* Controls Bar */}
       <div className="flex items-center justify-between bg-card-bg border border-border rounded-xl px-4 py-3">
+        {/* Primary Actions */}
         <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddNode}
+            className="flex items-center gap-2"
+            title="Add a new concept to the mind map"
+          >
+            <Plus className="w-4 h-4" />
+            Add Node
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2"
+            title="Save the current state of your mind map"
+          >
+            <Save className="w-4 h-4" />
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+
+        {/* Node & Edge Info */}
+        <div className="flex-1 text-center">
+          <span className="text-sm text-muted-foreground">
+            {nodes.length} nodes • {edges.length} connections
+          </span>
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -294,30 +327,61 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
             <RotateCw className="w-4 h-4" />
             {layoutDirection === 'TB' ? 'Horizontal' : 'Vertical'}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddNode}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Node
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            {nodes.length} nodes • {edges.length} connections
-          </span>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+          
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowInstructions(!showInstructions)}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 transition-colors"
+              title="How to use the mind map - click to show/hide instructions"
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span className="text-xs font-medium hidden sm:inline">Help</span>
+            </Button>
+
+            {/* Instructions Dropdown */}
+            {showInstructions && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="absolute right-0 top-full mt-2 w-80 bg-card-bg border border-border rounded-xl p-4 shadow-lg z-50"
+              >
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <MousePointer className="w-4 h-4 text-accent" />
+                  How to use the mind map
+                </h4>
+                <div className="grid grid-cols-1 gap-2 text-sm">
+                  <div className="flex items-start gap-2">
+                    <Move className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Drag nodes to reposition them</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Edit3 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Double-click nodes to edit labels</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Link className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Click and drag between nodes to connect them</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Trash2 className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Hover over connections to delete them</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <ZoomIn className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Use mouse wheel to zoom in/out</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MousePointer className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
+                    <span className="text-muted-foreground">Drag canvas to pan around</span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -400,11 +464,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
         </ReactFlow>
       </div>
 
-      {/* Instructions */}
-      <div className="bg-muted/30 rounded-xl px-4 py-3 text-sm text-muted-foreground">
-        <strong>Instructions:</strong> Drag nodes to reposition • Double-click nodes to edit • Click and drag between nodes to create connections •
-        Hover over connections to delete them • Use mouse wheel to zoom • Drag canvas to pan
-      </div>
+
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
