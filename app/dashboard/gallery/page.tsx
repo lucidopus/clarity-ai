@@ -175,7 +175,7 @@ export default function GalleryPage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your library...</p>
+            <p className="text-muted-foreground">Brewing some coffee while we load your brilliant creations...</p>
           </div>
         </div>
       )}
@@ -207,6 +207,7 @@ export default function GalleryPage() {
               transcriptMinutes={video.transcriptMinutes}
               createdAt={video.createdAt}
               onClick={handleVideoClick}
+              // TODO: Pass flashcardCount and quizCount from the video data to display on the card
             />
           ))}
         </div>

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Button from './Button';
-import { Clock, Layers, HelpCircle, User } from 'lucide-react';
+import { Clock, Layers, HelpCircle, User, Stars } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -49,9 +49,8 @@ export default function VideoCard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.005 }}
       transition={{ duration: 0.2 }}
-      className="bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer group relative"
+      className="bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-lg cursor-pointer group relative"
       onClick={() => onClick?.(id)}
     >
       {/* Thumbnail */}
@@ -60,10 +59,9 @@ export default function VideoCard({
           <img
             src={thumbnailUrl}
             alt={`${title} thumbnail`}
-            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+            className="w-full h-full object-cover"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-linear-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
         </div>
       )}
 
@@ -119,13 +117,17 @@ export default function VideoCard({
         {/* Footer with date and action */}
         <div className="flex items-center justify-between pt-5 border-t border-border">
           <span className="text-xs text-muted-foreground">{formatDate(createdAt)}</span>
-          <Button
-            onClick={() => onClick?.(id)}
-            variant="primary"
-            size="sm"
-          >
-            Learn
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <Button
+              onClick={() => onClick?.(id)}
+              variant="primary"
+              size="sm"
+              className="font-semibold shadow-md hover:shadow-lg transition-shadow duration-200"
+            >
+              <Stars className="w-4 h-4 mr-2" />
+              Dive In
+            </Button>
+          </div>
         </div>
       </div>
     </motion.div>
