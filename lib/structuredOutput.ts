@@ -59,8 +59,45 @@ export const LEARNING_MATERIALS_SCHEMA = {
       },
     },
     chatbotContext: { type: 'string' },
+    mindMap: {
+      type: 'object',
+      properties: {
+        nodes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              label: { type: 'string' },
+              type: { type: 'string', enum: ['root', 'concept', 'subconcept', 'detail'] },
+              description: { type: 'string' },
+              level: { type: 'integer' },
+            },
+            required: ['id', 'label', 'type', 'level'],
+            additionalProperties: false,
+          },
+        },
+        edges: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              source: { type: 'string' },
+              target: { type: 'string' },
+              label: { type: 'string' },
+              type: { type: 'string', enum: ['hierarchy', 'relation', 'dependency'] },
+            },
+            required: ['id', 'source', 'target', 'type'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['nodes', 'edges'],
+      additionalProperties: false,
+    },
   },
-  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'chatbotContext'],
+  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'chatbotContext', 'mindMap'],
   additionalProperties: false,
 } as const;
 
@@ -91,6 +128,22 @@ export interface LearningMaterials {
     difficulty: 'beginner' | 'intermediate' | 'advanced';
   }>;
   chatbotContext: string;
+  mindMap: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      type: 'root' | 'concept' | 'subconcept' | 'detail';
+      description?: string;
+      level: number;
+    }>;
+    edges: Array<{
+      id: string;
+      source: string;
+      target: string;
+      label?: string;
+      type: 'hierarchy' | 'relation' | 'dependency';
+    }>;
+  };
 }
 
 
