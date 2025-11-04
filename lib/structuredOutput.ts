@@ -73,7 +73,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
               description: { type: 'string' },
               level: { type: 'integer' },
             },
-            required: ['id', 'label', 'type', 'level'],
+            required: ['id', 'label', 'type', 'description', 'level'],
             additionalProperties: false,
           },
         },
@@ -88,7 +88,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
               label: { type: 'string' },
               type: { type: 'string', enum: ['hierarchy', 'relation', 'dependency'] },
             },
-            required: ['id', 'source', 'target', 'type'],
+            required: ['id', 'source', 'target', 'label', 'type'],
             additionalProperties: false,
           },
         },
@@ -133,14 +133,14 @@ export interface LearningMaterials {
       id: string;
       label: string;
       type: 'root' | 'concept' | 'subconcept' | 'detail';
-      description?: string;
+      description: string;
       level: number;
     }>;
     edges: Array<{
       id: string;
       source: string;
       target: string;
-      label?: string;
+      label: string;
       type: 'hierarchy' | 'relation' | 'dependency';
     }>;
   };
