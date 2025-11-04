@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
 import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
+import MindMapViewer from '@/components/MindMapViewer';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import { ToastContainer, type ToastType } from '@/components/Toast';
@@ -62,15 +63,33 @@ interface VideoMaterials {
     correctAnswer?: string;
     explanation: string;
   }>;
+  mindMap: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      type: 'root' | 'concept' | 'subconcept' | 'detail';
+      description?: string;
+      level: number;
+      position?: { x: number; y: number };
+    }>;
+    edges: Array<{
+      id: string;
+      source: string;
+      target: string;
+      label?: string;
+      type: 'hierarchy' | 'relation' | 'dependency';
+    }>;
+  };
 }
 
-type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites';
+type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap';
 
 const tabs = [
   { id: 'transcript' as TabType, label: 'Learn', icon: Video },
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
+  { id: 'mindmap' as TabType, label: 'Mind Map', icon: Network },
 ];
 
 export default function VideoMaterialsPage() {
@@ -373,6 +392,13 @@ export default function VideoMaterialsPage() {
             )}
             {activeTab === 'prerequisites' && (
               <PrerequisitesView prerequisites={materials.prerequisites} />
+            )}
+            {activeTab === 'mindmap' && (
+              <MindMapViewer
+                videoId={videoId}
+                nodes={materials.mindMap.nodes}
+                edges={materials.mindMap.edges}
+              />
             )}
           </motion.div>
         </AnimatePresence>
