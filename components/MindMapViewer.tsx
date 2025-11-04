@@ -181,8 +181,31 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
   );
 
   const handleRelayout = () => {
-    setLayoutDirection((prev) => (prev === 'TB' ? 'LR' : 'TB'));
-    showToast(`Layout changed to ${layoutDirection === 'TB' ? 'horizontal' : 'vertical'}`, 'info');
+    const newDirection = layoutDirection === 'TB' ? 'LR' : 'TB';
+
+    // Create clean node data without manual position adjustments for fresh layout calculation
+    const cleanNodes = nodes.map(node => ({
+      ...node,
+      position: { x: 0, y: 0 }, // Reset positions to let Dagre recalculate from scratch
+    }));
+
+    // Force re-layout by recalculating positions with Dagre
+    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(cleanNodes, edges, { direction: newDirection });
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+    setLayoutDirection(newDirection);
+    showToast(`Layout changed to ${newDirection === 'TB' ? 'vertical' : 'horizontal'}`, 'info');
+  };
+
+  const handleResetLayout = () => {
+    // Reset to clean vertical layout
+    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(nodes, edges, { direction: 'TB' });
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+    setLayoutDirection('TB');
+    showToast('Layout reset to vertical', 'info');
   };
 
   const handleSave = async () => {
@@ -266,9 +289,10 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
             size="sm"
             onClick={handleRelayout}
             className="flex items-center gap-2"
+            title={`Switch to ${layoutDirection === 'TB' ? 'horizontal' : 'vertical'} layout`}
           >
             <RotateCw className="w-4 h-4" />
-            Re-layout
+            {layoutDirection === 'TB' ? 'Horizontal' : 'Vertical'}
           </Button>
           <Button
             variant="outline"
@@ -356,6 +380,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
             type: 'custom',
             animated: false,
           }}
+          proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
           <Controls showInteractive={false} />
