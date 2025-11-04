@@ -22,11 +22,11 @@ Generate 6 learning components based on this transcript:
 - **Edges and Relationships**:
   - **Hierarchy**: Use standard parent-child edges for the main structure.
   - **Crucially, you must add at least 2-4 meaningful, non-hierarchical 'relation' edges.** These cross-branch connections are the most valuable part of the mind map as they reveal deeper insights.
-  - **Edge Labels**: Labels should be specific and descriptive. Instead of a generic "relates to," use labels like "causes," "is an example of," "is required for," "contributes to," or "contradicts."
+  - **Edge Labels**: ALL edges must have specific and descriptive labels. Instead of a generic "relates to," use labels like "causes," "is an example of," "is required for," "contributes to," or "contradicts."
 - **Example of a high-quality connection**:
   - A 'detail' node 'Base Pairing (A-T, C-G)' under a 'subconcept' of 'Nucleotides' could have a 'relation' edge to the 'concept' node 'Double Helix Structure' with the edge label "determines the shape of". This creates a valuable cross-connection that shows a deeper understanding.
 - **Final Polish**:
-  - Add brief descriptions to important nodes for context.
+  - ALL nodes must include a description field providing context and clarification.
   - Ensure the graph is connected and easy to understand.
   - Prioritize clarity and insight over completeness. Don't overwhelm the user.
 
