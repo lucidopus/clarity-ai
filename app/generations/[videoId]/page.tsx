@@ -80,6 +80,15 @@ interface VideoMaterials {
       type: 'hierarchy' | 'relation' | 'dependency';
     }>;
   };
+  notes: {
+    generalNote: string;
+    segmentNotes: Array<{
+      segmentId: string;
+      content: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
 }
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap';
@@ -102,6 +111,7 @@ export default function VideoMaterialsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
+  const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -216,15 +226,47 @@ export default function VideoMaterialsPage() {
     setIsEditorOpen(true);
   };
 
+  const saveNotes = async (updatedNotes: { generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }) => {
+    try {
+      const response = await fetch(`/api/notes/${videoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedNotes)
+      });
+
+      if (response.ok) {
+        setNotes(updatedNotes);
+      } else {
+        throw new Error('Failed to save notes');
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      throw error; // Re-throw so NotesEditor can handle it
+    }
+  };
+
   useEffect(() => {
-    const fetchMaterials = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/videos/${videoId}/materials`);
-        if (!response.ok) {
+        // Fetch materials and notes in parallel
+        const [materialsResponse, notesResponse] = await Promise.all([
+          fetch(`/api/videos/${videoId}/materials`),
+          fetch(`/api/notes/${videoId}`)
+        ]);
+
+        if (!materialsResponse.ok) {
           throw new Error('Failed to fetch materials');
         }
-        const data = await response.json();
-        setMaterials(data);
+
+        const materialsData = await materialsResponse.json();
+        setMaterials(materialsData);
+
+        if (notesResponse.ok) {
+          const notesData = await notesResponse.json();
+          setNotes(notesData);
+        } else {
+          setNotes({ generalNote: '', segmentNotes: [] });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -233,7 +275,7 @@ export default function VideoMaterialsPage() {
     };
 
     if (videoId) {
-      fetchMaterials();
+      fetchData();
     }
   }, [videoId]);
 
@@ -388,6 +430,8 @@ export default function VideoMaterialsPage() {
                 transcript={materials.transcript}
                 videoId={materials.video.videoId}
                 youtubeUrl={materials.video.youtubeUrl}
+                notes={notes}
+                onSaveNotes={saveNotes}
               />
             )}
             {activeTab === 'prerequisites' && (

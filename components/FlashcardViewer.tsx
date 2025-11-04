@@ -309,7 +309,7 @@ export default function FlashcardViewer({
             variant="secondary"
             onClick={handleDeleteClick}
             disabled={isDeletingCard}
-            className="px-4 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500"
+            className="px-4 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500 cursor-pointer"
             title="Delete this flashcard"
           >
             <Trash2 className="w-5 h-5" />
@@ -320,7 +320,7 @@ export default function FlashcardViewer({
           variant="primary"
           onClick={handleNext}
           disabled={currentIndex === flashcards.length - 1}
-          className="flex-1"
+          className="flex-1 cursor-pointer"
         >
           Next
           <ChevronRight className="w-5 h-5 ml-2" />
