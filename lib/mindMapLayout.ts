@@ -47,8 +47,8 @@ export function getLayoutedElements(
     ranksep: rankSep,
     marginx: 100,
     marginy: 100,
-    align: undefined,  // Let Dagre handle alignment automatically for better balance
-    ranker: 'tight-tree',  // Use tight-tree ranker for more compact, balanced layouts
+    align: undefined, // Let the ranker handle alignment for a more balanced layout
+    ranker: 'tight-tree', // Use longest-path for both horizontal and vertical for a more balanced layout
   });
 
   // Set node dimensions based on actual node type

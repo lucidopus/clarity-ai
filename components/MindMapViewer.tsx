@@ -209,14 +209,20 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
   const handleRelayout = () => {
     const newDirection = layoutDirection === 'TB' ? 'LR' : 'TB';
 
-    // Create clean node data without manual position adjustments for fresh layout calculation
-    const cleanNodes = nodes.map(node => ({
-      ...node,
-      position: { x: 0, y: 0 }, // Reset positions to let Dagre recalculate from scratch
-    }));
+    // Get the current dimensions of the nodes from the DOM
+    const nodesWithDimensions = nodes.map(node => {
+      const nodeElement = document.getElementById(`react-flow__node-${node.id}`);
+      if (nodeElement) {
+        return {
+          ...node,
+          width: nodeElement.offsetWidth,
+          height: nodeElement.offsetHeight,
+        };
+      }
+      return node;
+    });
 
-    // Force re-layout by recalculating positions with Dagre
-    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(cleanNodes, edges, { direction: newDirection });
+    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(nodesWithDimensions, edges, { direction: newDirection });
 
     setNodes(newNodes);
     setEdges(newEdges);
