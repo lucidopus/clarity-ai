@@ -5,6 +5,7 @@ import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
+import { MindMap } from '@/lib/models';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
@@ -206,6 +207,21 @@ export async function POST(request: NextRequest) {
     );
     console.log('✅ [VIDEO PROCESS] Quizzes saved');
 
+    // Save mind map to database
+    console.log('💾 [VIDEO PROCESS] Saving mind map...');
+    const mindMapDoc = new MindMap({
+      videoId: videoId,
+      userId: decoded.userId,
+      nodes: materials.mindMap.nodes,
+      edges: materials.mindMap.edges,
+      metadata: {
+        generatedBy: 'ai',
+        generatedAt: new Date(),
+      },
+    });
+    await mindMapDoc.save();
+    console.log(`✅ [VIDEO PROCESS] Mind map saved with ${materials.mindMap.nodes.length} nodes and ${materials.mindMap.edges.length} edges`);
+
     // Save timestamps and prerequisites in learning materials collection
     console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps and ${materials.prerequisites.length} prerequisites...`);
     await LearningMaterial.create({
@@ -244,6 +260,8 @@ export async function POST(request: NextRequest) {
           quizzesGenerated: materials.quizzes.length,
           timestampsGenerated: materials.timestamps.length,
           prerequisitesGenerated: materials.prerequisites.length,
+          mindMapNodesGenerated: materials.mindMap.nodes.length,
+          mindMapEdgesGenerated: materials.mindMap.edges.length,
         },
       });
       console.log('✅ [VIDEO PROCESS] Activity logged successfully');
