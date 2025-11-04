@@ -16,7 +16,7 @@ import {
   MarkerType,
 } from '@xyflow/react';
 import { motion } from 'framer-motion';
-import { RotateCw, Save, Plus, MousePointer, Edit3, Link, Trash2, ZoomIn, Move, Info } from 'lucide-react';
+import { RotateCw, Save, Plus, Edit3, Link, Trash2, ZoomIn, Move, Info } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import MindMapNode from './MindMapNode';
 import CustomEdge from './CustomEdge';
@@ -229,15 +229,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
     setLayoutDirection(newDirection);
   };
 
-  const handleResetLayout = () => {
-    // Reset to clean vertical layout
-    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(nodes, edges, { direction: 'TB' });
 
-    setNodes(newNodes);
-    setEdges(newEdges);
-    setLayoutDirection('TB');
-    showToast('Layout reset to vertical', 'info');
-  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -415,7 +407,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
                       </div>
                       <div className="flex items-start gap-3">
                         <Trash2 className="w-4 h-4 text-accent mt-0.5 shrink-0" />
-                        <p className="text-muted-foreground"><b>Delete:</b> Hover on a connection line and click the 'x'.</p>
+                        <p className="text-muted-foreground"><b>Delete:</b> Hover on a connection line and click the &apos;x&apos;.</p>
                       </div>
                     </div>
                   </div>

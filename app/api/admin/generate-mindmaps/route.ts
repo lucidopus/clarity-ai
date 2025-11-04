@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
         // Extract transcript text
         const transcriptText = video.transcript
-          .map((segment: any) => segment.text)
+          .map((segment: { text: string }) => segment.text)
           .join(' ')
           .trim();
 

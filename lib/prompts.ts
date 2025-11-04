@@ -15,15 +15,16 @@ Generate 6 learning components based on this transcript:
 - **Goal**: Generate a conceptual mind map that illuminates the underlying relationships between ideas. The goal is to create a knowledge graph, not just a simple outline.
 - **Core Task**: Your primary task is to identify not just the hierarchy, but the **non-obvious connections** between different parts of the transcript.
 - **Structure**:
-  - Create a hierarchical structure with ONE `root` node (the main video topic).
-  - Node types: `root` (level 0), `concept` (level 1), `subconcept` (level 2), `detail` (level 3).
+  - Create a hierarchical structure with ONE 'root' node (the main video topic).
+  // eslint-disable-next-line
+  - Node types: 'root' (level 0), 'concept' (level 1), 'subconcept' (level 2), 'detail' (level 3).
   - Node count should be proportional to content density (e.g., 10-15 nodes for a 10-min video). Prioritize clarity over count.
 - **Edges and Relationships**:
   - **Hierarchy**: Use standard parent-child edges for the main structure.
-  - **Crucially, you must add at least 2-4 meaningful, non-hierarchical `relation` edges.** These cross-branch connections are the most valuable part of the mind map as they reveal deeper insights.
+  - **Crucially, you must add at least 2-4 meaningful, non-hierarchical 'relation' edges.** These cross-branch connections are the most valuable part of the mind map as they reveal deeper insights.
   - **Edge Labels**: Labels should be specific and descriptive. Instead of a generic "relates to," use labels like "causes," "is an example of," "is required for," "contributes to," or "contradicts."
 - **Example of a high-quality connection**:
-  - A `detail` node 'Base Pairing (A-T, C-G)' under a `subconcept` of 'Nucleotides' could have a `relation` edge to the `concept` node 'Double Helix Structure' with the edge label "determines the shape of". This creates a valuable cross-connection that shows a deeper understanding.
+  - A 'detail' node 'Base Pairing (A-T, C-G)' under a 'subconcept' of 'Nucleotides' could have a 'relation' edge to the 'concept' node 'Double Helix Structure' with the edge label "determines the shape of". This creates a valuable cross-connection that shows a deeper understanding.
 - **Final Polish**:
   - Add brief descriptions to important nodes for context.
   - Ensure the graph is connected and easy to understand.
