@@ -14,6 +14,7 @@ import {
   Node,
   BackgroundVariant,
   MarkerType,
+  NodeChange,
 } from '@xyflow/react';
 import { motion } from 'framer-motion';
 import { RotateCw, Save, Plus, Edit3, Link, Trash2, ZoomIn, Move, Info } from 'lucide-react';
@@ -131,6 +132,18 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
 
   const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+
+  // Custom node change handler to detect deletions
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+    // Check for removed nodes
+    const removedNodes = changes.filter(change => change.type === 'remove');
+    if (removedNodes.length > 0) {
+      showToast(`Node${removedNodes.length > 1 ? 's' : ''} deleted`, 'info');
+    }
+
+    // Apply the changes
+    onNodesChange(changes);
+  }, [onNodesChange, showToast]);
 
   // Now define handleDeleteEdge AFTER setEdges is initialized
   const handleDeleteEdge = useCallback((edgeId: string) => {
@@ -479,7 +492,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          onNodesChange={onNodesChange}
+          onNodesChange={handleNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           nodeTypes={nodeTypes}
