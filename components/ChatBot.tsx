@@ -19,6 +19,12 @@ export function ChatBot({ videoId }: ChatBotProps) {
   const anchoredUserMessageRef = useRef<string | null>(null);
   const reservedSpaceRef = useRef(0);
   const spacerElementRef = useRef<HTMLDivElement | null>(null);
+  const computeTopBuffer = useCallback((anchor: HTMLElement, container: HTMLElement) => {
+    const anchorHeight = anchor.offsetHeight;
+    const maxBuffer = container.clientHeight * 0.5;
+    return Math.max(96, Math.min(maxBuffer, anchorHeight + 64));
+  }, []);
+
   const updateSpacer = useCallback((value: number, anchorElement?: HTMLElement | null) => {
     const container = messagesContainerRef.current;
     const spacer = spacerElementRef.current;
@@ -84,34 +90,19 @@ export function ChatBot({ videoId }: ChatBotProps) {
 
   // Anchor new user messages near the top, leaving room for the assistant to stream
   useEffect(() => {
-    const container = messagesContainerRef.current;
-
-    if (!isStreaming) {
+    if (messages.length === 0) {
       if (reservedSpaceRef.current !== 0) {
-        const anchorId = anchoredUserMessageRef.current;
-        const anchorElement = anchorId && container
-          ? container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`)
-          : null;
-        updateSpacer(0, anchorElement ?? undefined);
+        updateSpacer(0);
       }
       anchoredUserMessageRef.current = null;
-      previousMessageCountRef.current = messages.length;
+      previousMessageCountRef.current = 0;
       return;
     }
 
-    if (!container) {
-      previousMessageCountRef.current = messages.length;
-      return;
-    }
-
+    const container = messagesContainerRef.current;
     const previousCount = previousMessageCountRef.current;
-
-    if (!hasInitializedScrollRef.current && previousCount === 0) {
-      previousMessageCountRef.current = messages.length;
-      return;
-    }
-
     const hasNewMessages = messages.length > previousCount;
+
     let shouldScrollToAnchor = false;
 
     if (hasNewMessages) {
@@ -124,6 +115,19 @@ export function ChatBot({ videoId }: ChatBotProps) {
         anchoredUserMessageRef.current = latestUserMessage.id;
         shouldScrollToAnchor = true;
       }
+    } else if (!anchoredUserMessageRef.current) {
+      const latestUserMessage = [...messages]
+        .reverse()
+        .find(msg => msg.role === 'user');
+
+      if (latestUserMessage) {
+        anchoredUserMessageRef.current = latestUserMessage.id;
+      }
+    }
+
+    if (!container) {
+      previousMessageCountRef.current = messages.length;
+      return;
     }
 
     const anchorId = anchoredUserMessageRef.current;
@@ -138,18 +142,21 @@ export function ChatBot({ videoId }: ChatBotProps) {
       return;
     }
 
-    const streamingMessage = messages[messages.length - 1];
-    const streamingElement = streamingMessage && streamingMessage.role === 'assistant'
-      ? container.querySelector<HTMLElement>(`[data-message-id="${streamingMessage.id}"]`)
+    const latestAssistantMessage = [...messages]
+      .reverse()
+      .find(msg => msg.role === 'assistant');
+
+    const assistantElement = latestAssistantMessage
+      ? container.querySelector<HTMLElement>(`[data-message-id="${latestAssistantMessage.id}"]`)
       : null;
 
-    const streamingHeight = streamingElement ? streamingElement.offsetHeight : 0;
-    const topBuffer = 20;
+    const streamingHeight = assistantElement ? assistantElement.offsetHeight : 0;
+    const topBuffer = computeTopBuffer(anchorElement, container);
     const reservePadding = 24;
     const containerRect = container.getBoundingClientRect();
     const anchorRect = anchorElement.getBoundingClientRect();
     const anchorScrollTop = container.scrollTop + (anchorRect.top - containerRect.top);
-    const viewportReserve = container.clientHeight - anchorElement.offsetHeight - topBuffer;
+    const viewportReserve = Math.max(container.clientHeight - anchorElement.offsetHeight - topBuffer, 0);
     const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
 
     if (reservedSpaceRef.current !== desiredReserve) {
@@ -173,7 +180,7 @@ export function ChatBot({ videoId }: ChatBotProps) {
     }
 
     previousMessageCountRef.current = messages.length;
-  }, [messages, isStreaming, updateSpacer]);
+  }, [messages, isStreaming, updateSpacer, computeTopBuffer]);
 
   // Auto-scroll to bottom when chatbot opens
   useEffect(() => {
@@ -215,15 +222,17 @@ export function ChatBot({ videoId }: ChatBotProps) {
       const anchorElement = container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`);
       if (!anchorElement) return;
 
-      const streamingMessage = isStreaming ? messages[messages.length - 1] : null;
-      const streamingElement = streamingMessage && streamingMessage.role === 'assistant'
-        ? container.querySelector<HTMLElement>(`[data-message-id="${streamingMessage.id}"]`)
+      const latestAssistantMessage = [...messages]
+        .reverse()
+        .find(msg => msg.role === 'assistant');
+      const assistantElement = latestAssistantMessage
+        ? container.querySelector<HTMLElement>(`[data-message-id="${latestAssistantMessage.id}"]`)
         : null;
 
-      const streamingHeight = streamingElement ? streamingElement.offsetHeight : 0;
-      const topBuffer = 88;
+      const streamingHeight = assistantElement ? assistantElement.offsetHeight : 0;
+      const topBuffer = computeTopBuffer(anchorElement, container);
       const reservePadding = 24;
-      const viewportReserve = container.clientHeight - anchorElement.offsetHeight - topBuffer;
+      const viewportReserve = Math.max(container.clientHeight - anchorElement.offsetHeight - topBuffer, 0);
       const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
 
       if (reservedSpaceRef.current !== desiredReserve) {
@@ -235,7 +244,7 @@ export function ChatBot({ videoId }: ChatBotProps) {
     observer.observe(container);
 
     return () => observer.disconnect();
-  }, [messages, isStreaming, updateSpacer]);
+  }, [messages, isStreaming, updateSpacer, computeTopBuffer]);
   return (
     <>
       {/* Floating Action Button */}
