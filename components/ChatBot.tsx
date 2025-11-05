@@ -25,12 +25,16 @@ export function ChatBot({ videoId }: ChatBotProps) {
     return Math.max(96, Math.min(maxBuffer, anchorHeight + 64));
   }, []);
 
-  const updateSpacer = useCallback((value: number, anchorElement?: HTMLElement | null) => {
+  const updateSpacer = useCallback((
+    value: number,
+    anchorElement?: HTMLElement | null,
+    preserveAnchorOffset = true
+  ) => {
     const container = messagesContainerRef.current;
     const spacer = spacerElementRef.current;
 
     let anchorOffsetBefore: number | null = null;
-    if (container && anchorElement) {
+    if (preserveAnchorOffset && container && anchorElement) {
       const containerRect = container.getBoundingClientRect();
       const anchorRect = anchorElement.getBoundingClientRect();
       anchorOffsetBefore = anchorRect.top - containerRect.top;
@@ -48,7 +52,7 @@ export function ChatBot({ videoId }: ChatBotProps) {
       }
     }
 
-    if (container && anchorElement && anchorOffsetBefore !== null) {
+    if (preserveAnchorOffset && container && anchorElement && anchorOffsetBefore !== null) {
       requestAnimationFrame(() => {
         const containerRectAfter = container.getBoundingClientRect();
         const anchorRectAfter = anchorElement.getBoundingClientRect();
@@ -159,11 +163,14 @@ export function ChatBot({ videoId }: ChatBotProps) {
     const viewportReserve = Math.max(container.clientHeight - anchorElement.offsetHeight - topBuffer, 0);
     const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
 
+    const needsInitialAnchorScroll = !hasInitializedScrollRef.current && !shouldScrollToAnchor;
+    const shouldScrollNow = shouldScrollToAnchor || needsInitialAnchorScroll;
+
     if (reservedSpaceRef.current !== desiredReserve) {
-      updateSpacer(desiredReserve, anchorElement);
+      updateSpacer(desiredReserve, anchorElement, !shouldScrollNow);
     }
 
-    if (shouldScrollToAnchor) {
+    if (shouldScrollNow) {
       const desiredScrollTop = Math.max(anchorScrollTop - topBuffer, 0);
 
       if (!hasInitializedScrollRef.current) {
