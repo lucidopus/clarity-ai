@@ -18,8 +18,6 @@ export interface UseChatBotReturn {
   clearError: () => void;
 }
 
-const STORAGE_KEY_PREFIX = 'chatbot-messages-';
-
 export function useChatBot(videoId: string): UseChatBotReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,33 +26,33 @@ export function useChatBot(videoId: string): UseChatBotReturn {
   const [remainingMessages, setRemainingMessages] = useState(20);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load from LocalStorage on mount
+  // Load from database on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_PREFIX + videoId);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setMessages(parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })));
-      }
-    } catch (error) {
-      console.error('Failed to load chat messages:', error);
-    }
-  }, [videoId]);
-
-  // Save to LocalStorage on change
-  useEffect(() => {
-    if (messages.length > 0) {
+    async function loadMessages() {
       try {
-        localStorage.setItem(STORAGE_KEY_PREFIX + videoId, JSON.stringify(messages));
+        const response = await fetch(`/api/chatbot/history?videoId=${videoId}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.messages && data.messages.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const formattedMessages = data.messages.map((msg: any) => ({
+              id: msg.messageId || msg._id,
+              role: msg.role,
+              content: msg.content,
+              timestamp: new Date(msg.timestamp)
+            }));
+            setMessages(formattedMessages);
+          }
+        }
       } catch (error) {
-        console.error('Failed to save chat messages:', error);
+        console.error('Failed to load chat messages:', error);
+        // No fallback, messages remain empty
       }
     }
-  }, [messages, videoId]);
+
+    loadMessages();
+  }, [videoId]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading || isStreaming) return;
@@ -184,13 +182,17 @@ export function useChatBot(videoId: string): UseChatBotReturn {
     }
   }, [messages, isLoading, isStreaming, videoId]);
 
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback(async () => {
     setMessages([]);
     setError(null);
+
+    // Clear from database
     try {
-      localStorage.removeItem(STORAGE_KEY_PREFIX + videoId);
+      await fetch(`/api/chatbot/history?videoId=${videoId}`, {
+        method: 'DELETE'
+      });
     } catch (error) {
-      console.error('Failed to clear messages:', error);
+      console.error('Failed to clear database messages:', error);
     }
   }, [videoId]);
 
