@@ -24,7 +24,7 @@ Clarity AI is packed with features designed to enhance learning, all generated a
     - **Mind Maps**: Visual concept relationships showing how ideas connect and interrelate.
 - **Interactive Video Experience**:
     - **Interactive Transcripts**: A full, searchable transcript with clickable timestamps to navigate the video.
-    - **Clara - AI Tutor**: Ask questions about the video content and get structured, educational answers.
+    - **Clara Chatbot**: Ask questions about the video content and get structured, educational answers.
     - **Prerequisite Checker**: Identifies concepts you need to know before watching and provides resources to get you up to speed.
 - **Personalized Learning Dashboard**:
     - **Activity Tracking**: Visualize your study habits with an activity heatmap and weekly charts.
@@ -87,7 +87,7 @@ The project has a solid foundation with most core features implemented.
 - **User Authentication**: Secure JWT-based sign-up and sign-in with session management.
 - **Video Processing Pipeline**: Enter a YouTube URL and generate a full suite of learning materials using AI.
 - **Interactive Learning Materials**: View and interact with AI-generated flashcards, quizzes, notes, and the video transcript.
-- **Clara - AI Tutor**: Context-aware Q&A chatbot that answers questions about video content with structured, educational responses.
+- **Clara Chatbot**: Context-aware chatbot that answers questions about video content with structured, educational responses.
 - **Dashboard & Analytics**: A comprehensive dashboard with activity heatmaps, progress tracking, and video gallery.
 - **Search & Filtering**: Easily find videos in your gallery with advanced filtering options.
 - **Mind Maps**: Visual concept relationships and knowledge graphs generated from video content.
