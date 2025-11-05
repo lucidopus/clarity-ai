@@ -58,6 +58,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
 
   return (
     <motion.div
+      data-message-id={message.id}
       className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
       initial={{ opacity: 0, x: isUser ? 20 : -20 }}
       animate={{ opacity: 1, x: 0 }}

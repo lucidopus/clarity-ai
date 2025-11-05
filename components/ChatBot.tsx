@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Bot } from 'lucide-react';
 import { useChatBot } from '@/hooks/useChatBot';
@@ -14,7 +14,46 @@ export function ChatBot({ videoId }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { messages, isStreaming, sendMessage, clearMessages } = useChatBot(videoId);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(0);
+  const hasInitializedScrollRef = useRef(false);
+  const anchoredUserMessageRef = useRef<string | null>(null);
+  const reservedSpaceRef = useRef(0);
+  const spacerElementRef = useRef<HTMLDivElement | null>(null);
+  const updateSpacer = useCallback((value: number, anchorElement?: HTMLElement | null) => {
+    const container = messagesContainerRef.current;
+    const spacer = spacerElementRef.current;
+
+    let anchorOffsetBefore: number | null = null;
+    if (container && anchorElement) {
+      const containerRect = container.getBoundingClientRect();
+      const anchorRect = anchorElement.getBoundingClientRect();
+      anchorOffsetBefore = anchorRect.top - containerRect.top;
+    }
+
+    reservedSpaceRef.current = value;
+
+    if (spacer) {
+      if (value > 0) {
+        spacer.style.display = 'block';
+        spacer.style.height = `${value}px`;
+      } else {
+        spacer.style.display = 'none';
+        spacer.style.height = '0px';
+      }
+    }
+
+    if (container && anchorElement && anchorOffsetBefore !== null) {
+      requestAnimationFrame(() => {
+        const containerRectAfter = container.getBoundingClientRect();
+        const anchorRectAfter = anchorElement.getBoundingClientRect();
+        const anchorOffsetAfter = anchorRectAfter.top - containerRectAfter.top;
+        const diff = anchorOffsetAfter - anchorOffsetBefore;
+        if (Math.abs(diff) > 0.5) {
+          container.scrollTop += diff;
+        }
+      });
+    }
+  }, []);
 
   // Keyboard shortcut (⌘K / Ctrl+K)
   useEffect(() => {
@@ -43,13 +82,160 @@ export function ChatBot({ videoId }: ChatBotProps) {
     };
   }, [sendMessage]);
 
-  // Auto-scroll to bottom
+  // Anchor new user messages near the top, leaving room for the assistant to stream
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isStreaming]);
+    const container = messagesContainerRef.current;
 
+    if (!isStreaming) {
+      if (reservedSpaceRef.current !== 0) {
+        const anchorId = anchoredUserMessageRef.current;
+        const anchorElement = anchorId && container
+          ? container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`)
+          : null;
+        updateSpacer(0, anchorElement ?? undefined);
+      }
+      anchoredUserMessageRef.current = null;
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    if (!container) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const previousCount = previousMessageCountRef.current;
+
+    if (!hasInitializedScrollRef.current && previousCount === 0) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const hasNewMessages = messages.length > previousCount;
+    let shouldScrollToAnchor = false;
+
+    if (hasNewMessages) {
+      const newlyAddedMessages = messages.slice(previousCount);
+      const latestUserMessage = [...newlyAddedMessages]
+        .reverse()
+        .find(msg => msg.role === 'user');
+
+      if (latestUserMessage) {
+        anchoredUserMessageRef.current = latestUserMessage.id;
+        shouldScrollToAnchor = true;
+      }
+    }
+
+    const anchorId = anchoredUserMessageRef.current;
+    if (!anchorId) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const anchorElement = container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`);
+    if (!anchorElement) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const streamingMessage = messages[messages.length - 1];
+    const streamingElement = streamingMessage && streamingMessage.role === 'assistant'
+      ? container.querySelector<HTMLElement>(`[data-message-id="${streamingMessage.id}"]`)
+      : null;
+
+    const streamingHeight = streamingElement ? streamingElement.offsetHeight : 0;
+    const topBuffer = 20;
+    const reservePadding = 24;
+    const containerRect = container.getBoundingClientRect();
+    const anchorRect = anchorElement.getBoundingClientRect();
+    const anchorScrollTop = container.scrollTop + (anchorRect.top - containerRect.top);
+    const viewportReserve = container.clientHeight - anchorElement.offsetHeight - topBuffer;
+    const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
+
+    if (reservedSpaceRef.current !== desiredReserve) {
+      updateSpacer(desiredReserve, anchorElement);
+    }
+
+    if (shouldScrollToAnchor) {
+      const desiredScrollTop = Math.max(anchorScrollTop - topBuffer, 0);
+
+      if (!hasInitializedScrollRef.current) {
+        hasInitializedScrollRef.current = true;
+        container.scrollTop = desiredScrollTop;
+      } else {
+        requestAnimationFrame(() => {
+          container.scrollTo({
+            top: desiredScrollTop,
+            behavior: 'smooth'
+          });
+        });
+      }
+    }
+
+    previousMessageCountRef.current = messages.length;
+  }, [messages, isStreaming, updateSpacer]);
+
+  // Auto-scroll to bottom when chatbot opens
+  useEffect(() => {
+    if (isOpen && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const scrollTop = container.scrollHeight - container.clientHeight;
+      if (scrollTop > 0) {
+        container.scrollTop = scrollTop;
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || hasInitializedScrollRef.current) {
+      return;
+    }
+
+    if (messages.length > 0) {
+      const initialScrollTop = container.scrollHeight - container.clientHeight;
+      if (initialScrollTop > 0) {
+        container.scrollTop = initialScrollTop;
+      }
+      hasInitializedScrollRef.current = true;
+      previousMessageCountRef.current = messages.length;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+
+    const handleResize = () => {
+      if (reservedSpaceRef.current <= 0) return;
+
+      const anchorId = anchoredUserMessageRef.current;
+      if (!anchorId) return;
+
+      const anchorElement = container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`);
+      if (!anchorElement) return;
+
+      const streamingMessage = isStreaming ? messages[messages.length - 1] : null;
+      const streamingElement = streamingMessage && streamingMessage.role === 'assistant'
+        ? container.querySelector<HTMLElement>(`[data-message-id="${streamingMessage.id}"]`)
+        : null;
+
+      const streamingHeight = streamingElement ? streamingElement.offsetHeight : 0;
+      const topBuffer = 88;
+      const reservePadding = 24;
+      const viewportReserve = container.clientHeight - anchorElement.offsetHeight - topBuffer;
+      const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
+
+      if (reservedSpaceRef.current !== desiredReserve) {
+        updateSpacer(desiredReserve, anchorElement);
+      }
+    };
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [messages, isStreaming, updateSpacer]);
   return (
     <>
       {/* Floating Action Button */}
@@ -122,7 +308,12 @@ export function ChatBot({ videoId }: ChatBotProps) {
                     isStreaming={isStreaming && i === messages.length - 1}
                   />
                 ))}
-                <div ref={messagesEndRef} />
+                <div
+                  aria-hidden="true"
+                  ref={spacerElementRef}
+                  className="pointer-events-none shrink-0"
+                  style={{ display: 'none', height: 0 }}
+                />
               </div>
 
               {/* Input */}
