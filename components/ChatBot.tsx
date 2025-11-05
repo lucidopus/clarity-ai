@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Bot } from 'lucide-react';
 import { useChatBot } from '@/hooks/useChatBot';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CHATBOT_NAME } from '@/lib/config';
+import Dialog from './Dialog';
 
 interface ChatBotProps {
   videoId: string;
@@ -12,9 +13,59 @@ interface ChatBotProps {
 
 export function ChatBot({ videoId }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { messages, isStreaming, sendMessage, clearMessages } = useChatBot(videoId);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousMessageCountRef = useRef(0);
+  const hasInitializedScrollRef = useRef(false);
+  const anchoredUserMessageRef = useRef<string | null>(null);
+  const reservedSpaceRef = useRef(0);
+  const spacerElementRef = useRef<HTMLDivElement | null>(null);
+  const computeTopBuffer = useCallback((anchor: HTMLElement, container: HTMLElement) => {
+    const anchorHeight = anchor.offsetHeight;
+    const maxBuffer = container.clientHeight * 0.5;
+    return Math.max(96, Math.min(maxBuffer, anchorHeight + 64));
+  }, []);
+
+  const updateSpacer = useCallback((
+    value: number,
+    anchorElement?: HTMLElement | null,
+    preserveAnchorOffset = true
+  ) => {
+    const container = messagesContainerRef.current;
+    const spacer = spacerElementRef.current;
+
+    let anchorOffsetBefore: number | null = null;
+    if (preserveAnchorOffset && container && anchorElement) {
+      const containerRect = container.getBoundingClientRect();
+      const anchorRect = anchorElement.getBoundingClientRect();
+      anchorOffsetBefore = anchorRect.top - containerRect.top;
+    }
+
+    reservedSpaceRef.current = value;
+
+    if (spacer) {
+      if (value > 0) {
+        spacer.style.display = 'block';
+        spacer.style.height = `${value}px`;
+      } else {
+        spacer.style.display = 'none';
+        spacer.style.height = '0px';
+      }
+    }
+
+    if (preserveAnchorOffset && container && anchorElement && anchorOffsetBefore !== null) {
+      requestAnimationFrame(() => {
+        const containerRectAfter = container.getBoundingClientRect();
+        const anchorRectAfter = anchorElement.getBoundingClientRect();
+        const anchorOffsetAfter = anchorRectAfter.top - containerRectAfter.top;
+        const diff = anchorOffsetAfter - anchorOffsetBefore;
+        if (Math.abs(diff) > 0.5) {
+          container.scrollTop += diff;
+        }
+      });
+    }
+  }, []);
 
   // Keyboard shortcut (⌘K / Ctrl+K)
   useEffect(() => {
@@ -43,13 +94,166 @@ export function ChatBot({ videoId }: ChatBotProps) {
     };
   }, [sendMessage]);
 
-  // Auto-scroll to bottom
+  // Anchor new user messages near the top, leaving room for the assistant to stream
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length === 0) {
+      if (reservedSpaceRef.current !== 0) {
+        updateSpacer(0);
+      }
+      anchoredUserMessageRef.current = null;
+      previousMessageCountRef.current = 0;
+      return;
     }
-  }, [messages, isStreaming]);
 
+    const container = messagesContainerRef.current;
+    const previousCount = previousMessageCountRef.current;
+    const hasNewMessages = messages.length > previousCount;
+
+    let shouldScrollToAnchor = false;
+
+    if (hasNewMessages) {
+      const newlyAddedMessages = messages.slice(previousCount);
+      const latestUserMessage = [...newlyAddedMessages]
+        .reverse()
+        .find(msg => msg.role === 'user');
+
+      if (latestUserMessage) {
+        anchoredUserMessageRef.current = latestUserMessage.id;
+        shouldScrollToAnchor = true;
+      }
+    } else if (!anchoredUserMessageRef.current) {
+      const latestUserMessage = [...messages]
+        .reverse()
+        .find(msg => msg.role === 'user');
+
+      if (latestUserMessage) {
+        anchoredUserMessageRef.current = latestUserMessage.id;
+      }
+    }
+
+    if (!container) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const anchorId = anchoredUserMessageRef.current;
+    if (!anchorId) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const anchorElement = container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`);
+    if (!anchorElement) {
+      previousMessageCountRef.current = messages.length;
+      return;
+    }
+
+    const latestAssistantMessage = [...messages]
+      .reverse()
+      .find(msg => msg.role === 'assistant');
+
+    const assistantElement = latestAssistantMessage
+      ? container.querySelector<HTMLElement>(`[data-message-id="${latestAssistantMessage.id}"]`)
+      : null;
+
+    const streamingHeight = assistantElement ? assistantElement.offsetHeight : 0;
+    const topBuffer = computeTopBuffer(anchorElement, container);
+    const reservePadding = 24;
+    const containerRect = container.getBoundingClientRect();
+    const anchorRect = anchorElement.getBoundingClientRect();
+    const anchorScrollTop = container.scrollTop + (anchorRect.top - containerRect.top);
+    const viewportReserve = Math.max(container.clientHeight - anchorElement.offsetHeight - topBuffer, 0);
+    const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
+
+    const needsInitialAnchorScroll = !hasInitializedScrollRef.current && !shouldScrollToAnchor;
+    const shouldScrollNow = shouldScrollToAnchor || needsInitialAnchorScroll;
+
+    if (reservedSpaceRef.current !== desiredReserve) {
+      updateSpacer(desiredReserve, anchorElement, !shouldScrollNow);
+    }
+
+    if (shouldScrollNow) {
+      const desiredScrollTop = Math.max(anchorScrollTop - topBuffer, 0);
+
+      if (!hasInitializedScrollRef.current) {
+        hasInitializedScrollRef.current = true;
+        container.scrollTop = desiredScrollTop;
+      } else {
+        requestAnimationFrame(() => {
+          container.scrollTo({
+            top: desiredScrollTop,
+            behavior: 'smooth'
+          });
+        });
+      }
+    }
+
+    previousMessageCountRef.current = messages.length;
+  }, [messages, isStreaming, updateSpacer, computeTopBuffer]);
+
+  // Auto-scroll to bottom when chatbot opens
+  useEffect(() => {
+    if (isOpen && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      const scrollTop = container.scrollHeight - container.clientHeight;
+      if (scrollTop > 0) {
+        container.scrollTop = scrollTop;
+      }
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || hasInitializedScrollRef.current) {
+      return;
+    }
+
+    if (messages.length > 0) {
+      const initialScrollTop = container.scrollHeight - container.clientHeight;
+      if (initialScrollTop > 0) {
+        container.scrollTop = initialScrollTop;
+      }
+      hasInitializedScrollRef.current = true;
+      previousMessageCountRef.current = messages.length;
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') return;
+
+    const handleResize = () => {
+      if (reservedSpaceRef.current <= 0) return;
+
+      const anchorId = anchoredUserMessageRef.current;
+      if (!anchorId) return;
+
+      const anchorElement = container.querySelector<HTMLElement>(`[data-message-id="${anchorId}"]`);
+      if (!anchorElement) return;
+
+      const latestAssistantMessage = [...messages]
+        .reverse()
+        .find(msg => msg.role === 'assistant');
+      const assistantElement = latestAssistantMessage
+        ? container.querySelector<HTMLElement>(`[data-message-id="${latestAssistantMessage.id}"]`)
+        : null;
+
+      const streamingHeight = assistantElement ? assistantElement.offsetHeight : 0;
+      const topBuffer = computeTopBuffer(anchorElement, container);
+      const reservePadding = 24;
+      const viewportReserve = Math.max(container.clientHeight - anchorElement.offsetHeight - topBuffer, 0);
+      const desiredReserve = Math.max(viewportReserve - streamingHeight - reservePadding, 0);
+
+      if (reservedSpaceRef.current !== desiredReserve) {
+        updateSpacer(desiredReserve, anchorElement);
+      }
+    };
+
+    const observer = new ResizeObserver(handleResize);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [messages, isStreaming, updateSpacer, computeTopBuffer]);
   return (
     <>
       {/* Floating Action Button */}
@@ -122,25 +326,46 @@ export function ChatBot({ videoId }: ChatBotProps) {
                     isStreaming={isStreaming && i === messages.length - 1}
                   />
                 ))}
-                <div ref={messagesEndRef} />
+                <div
+                  aria-hidden="true"
+                  ref={spacerElementRef}
+                  className="pointer-events-none shrink-0"
+                  style={{ display: 'none', height: 0 }}
+                />
               </div>
 
               {/* Input */}
               <div className="border-t border-border p-4">
                 <ChatInput onSend={sendMessage} disabled={isStreaming} />
-                <div className="mt-2 flex items-center justify-between text-xs text-secondary">
-                  <button
-                    onClick={clearMessages}
-                    className="hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    Clear conversation
-                  </button>
-                </div>
+                 <div className="mt-2 flex items-center justify-between text-xs text-secondary">
+                   <button
+                     onClick={() => setShowClearConfirm(true)}
+                     className="hover:text-foreground transition-colors cursor-pointer"
+                   >
+                     Clear conversation
+                   </button>
+                 </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Clear Conversation Confirmation Dialog */}
+      <Dialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          clearMessages();
+          setShowClearConfirm(false);
+        }}
+        type="confirm"
+        variant="warning"
+        title="Clear Conversation"
+        message="Are you sure you want to clear this conversation? This action cannot be undone."
+        confirmText="Clear"
+        cancelText="Cancel"
+      />
     </>
   );
 }
