@@ -148,11 +148,11 @@ export default function TranscriptViewer({ transcript }: TranscriptViewerProps) 
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className={`p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                      isSelected
-                        ? 'border-accent bg-accent/5'
-                        : 'border-border hover:border-accent/50 bg-background/50'
-                    }`}
+                     className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer ${
+                       isSelected
+                         ? 'border-accent/20 bg-accent/5 dark:border-gray-600/30 dark:bg-gray-800/10'
+                         : 'border-border/30 hover:border-accent/40 bg-background/30 dark:border-gray-700/20 dark:bg-gray-800/5 dark:hover:border-gray-600/30'
+                     }`}
                     onClick={() => handleTimestampClick(segment.start, originalIndex)}
                   >
                     <div className="flex items-start gap-3">
