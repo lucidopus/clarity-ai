@@ -1,17 +1,17 @@
-<div align="center">
-  <img src="public/ai.svg" alt="Clarity AI Logo" width="120">
-  <h1>Clarity AI</h1>
-  <p>
-    <strong>Transform YouTube videos into interactive, personalized learning experiences.</strong>
-  </p>
-  <p>
-    <a href="#features">Features</a> •
-    <a href="#tech-stack">Tech Stack</a> •
-    <a href="#getting-started">Getting Started</a> •
-    <a href="#contributing">Contributing</a> •
-    <a href="#license">License</a>
-  </p>
-</div>
+ <p align="center">
+   <img src="public/ai.svg" alt="Clarity AI Logo" width="120">
+   <h1>Clarity AI</h1>
+   <p>
+     <strong>Transform YouTube videos into interactive, personalized learning experiences.</strong>
+   </p>
+   <p>
+     [Features](#features) •
+     [Tech Stack](#tech-stack) •
+     [Getting Started](#getting-started) •
+     [Contributing](#contributing) •
+     [License](#license)
+   </p>
+ </p>
 
 ---
 
