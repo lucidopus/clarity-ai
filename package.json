@@ -6,9 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "backfill:mindmaps": "ts-node --transpile-only --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/backfillMindMaps.ts",
-    "migrate:video-summaries": "ts-node --transpile-only --compiler-options '{\"module\":\"CommonJS\",\"moduleResolution\":\"node\"}' scripts/migrateVideoSummaries.ts"
+    "lint": "eslint"
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.8",
