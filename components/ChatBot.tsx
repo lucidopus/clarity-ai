@@ -80,7 +80,7 @@ export function ChatBot({ videoId }: ChatBotProps) {
 
             {/* Dialog */}
             <motion.div
-              className="relative z-10 flex h-[600px] w-full max-w-2xl flex-col rounded-2xl border border-border bg-background shadow-2xl"
+              className="relative z-10 flex h-[700px] w-full max-w-4xl flex-col rounded-2xl border border-border bg-background shadow-2xl"
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
