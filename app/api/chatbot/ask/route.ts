@@ -6,6 +6,8 @@ import { getChatbotContext } from '@/lib/chatbot-context';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
 import { CHATBOT_SYSTEM_PROMPT } from '@/lib/prompts';
 import ActivityLog from '@/lib/models/ActivityLog';
+import { saveChatMessage } from '@/lib/chat-db';
+import { generateSessionId, generateMessageId } from '@/lib/types/chat';
 
 interface DecodedToken {
   userId: string;
@@ -53,20 +55,42 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Fetch context
+    // 4. Generate session and message identifiers
+    const sessionId = generateSessionId(decoded.userId, videoId);
+    const userMessageId = generateMessageId('user');
+    const assistantMessageId = generateMessageId('assistant');
+
+    // 5. Save user message to database
+    try {
+      const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+      await saveChatMessage(
+        sessionId,
+        userMessageId,
+        'user',
+        message,
+        decoded.userId,
+        videoId,
+        clientIp
+      );
+    } catch (saveError) {
+      console.error('Failed to save user message:', saveError);
+      // Continue anyway - don't block the response
+    }
+
+    // 6. Fetch context
     const context = await getChatbotContext(decoded.userId, videoId);
 
-    // 5. Build system prompt
+    // 7. Build system prompt
     const systemPrompt = CHATBOT_SYSTEM_PROMPT(context);
 
-    // 6. Prepare conversation history (last 3 exchanges = 6 messages)
+    // 8. Prepare conversation history (last 3 exchanges = 6 messages)
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []).slice(-6),
       { role: 'user', content: message }
     ];
 
-    // 7. Call Groq with streaming
+    // 9. Call Groq with streaming
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',
       messages,
@@ -75,24 +99,42 @@ export async function POST(request: NextRequest) {
       stream: true,
     });
 
-    // 8. Create streaming response
+    // 10. Create streaming response and accumulate assistant response
+    let assistantResponse = '';
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of response) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
+              assistantResponse += content;
               controller.enqueue(new TextEncoder().encode(content));
             }
           }
           controller.close();
+
+          // Save assistant message after streaming completes
+          try {
+            const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+            await saveChatMessage(
+              sessionId,
+              assistantMessageId,
+              'assistant',
+              assistantResponse,
+              decoded.userId,
+              videoId,
+              clientIp
+            );
+          } catch (saveError) {
+            console.error('Failed to save assistant message:', saveError);
+          }
         } catch (error) {
           controller.error(error);
         }
       },
     });
 
-    // 9. Log activity
+    // 11. Log activity
     try {
       const now = new Date();
       await ActivityLog.create({
@@ -110,7 +152,7 @@ export async function POST(request: NextRequest) {
       console.error('Failed to log chatbot activity:', logError);
     }
 
-    // 10. Return streaming response
+    // 12. Return streaming response
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
