@@ -56,7 +56,7 @@ export async function generateLearningMaterials(transcript: string): Promise<Lea
     console.log(`   - Quizzes: ${materials.quizzes.length}`);
     console.log(`   - Timestamps: ${materials.timestamps.length}`);
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
-    console.log(`   - Chatbot context length: ${materials.chatbotContext.length} chars`);
+     console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
 
     return materials;
   } catch (error) {
