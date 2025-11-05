@@ -5,6 +5,7 @@ import { useChatBot } from '@/hooks/useChatBot';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { CHATBOT_NAME } from '@/lib/config';
+import Dialog from './Dialog';
 
 interface ChatBotProps {
   videoId: string;
@@ -12,6 +13,7 @@ interface ChatBotProps {
 
 export function ChatBot({ videoId }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { messages, isStreaming, sendMessage, clearMessages } = useChatBot(videoId);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
@@ -335,19 +337,35 @@ export function ChatBot({ videoId }: ChatBotProps) {
               {/* Input */}
               <div className="border-t border-border p-4">
                 <ChatInput onSend={sendMessage} disabled={isStreaming} />
-                <div className="mt-2 flex items-center justify-between text-xs text-secondary">
-                  <button
-                    onClick={clearMessages}
-                    className="hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    Clear conversation
-                  </button>
-                </div>
+                 <div className="mt-2 flex items-center justify-between text-xs text-secondary">
+                   <button
+                     onClick={() => setShowClearConfirm(true)}
+                     className="hover:text-foreground transition-colors cursor-pointer"
+                   >
+                     Clear conversation
+                   </button>
+                 </div>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Clear Conversation Confirmation Dialog */}
+      <Dialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={() => {
+          clearMessages();
+          setShowClearConfirm(false);
+        }}
+        type="confirm"
+        variant="warning"
+        title="Clear Conversation"
+        message="Are you sure you want to clear this conversation? This action cannot be undone."
+        confirmText="Clear"
+        cancelText="Cancel"
+      />
     </>
   );
 }
