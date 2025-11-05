@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Button from './Button';
 import QuizInterface from './QuizInterface';
 import QuizReview from './QuizReview';
+import { CHATBOT_NAME } from '@/lib/config';
 
 interface Prerequisite {
   id: string;
@@ -142,7 +143,7 @@ export default function PrerequisiteChecker({
           <div className="flex flex-col sm:flex-row gap-3">
             {onLearnWithAI && (
               <Button onClick={onLearnWithAI} variant="primary">
-                Learn with AI Tutor
+                Learn with {CHATBOT_NAME}
               </Button>
             )}
             {onContinue && (

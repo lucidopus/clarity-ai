@@ -4,6 +4,7 @@ import { MessageCircle, X, Bot } from 'lucide-react';
 import { useChatBot } from '@/hooks/useChatBot';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
+import { CHATBOT_NAME } from '@/lib/config';
 
 interface ChatBotProps {
   videoId: string;
@@ -92,10 +93,10 @@ export function ChatBot({ videoId }: ChatBotProps) {
                   <div className="rounded-full bg-accent/10 p-2">
                     <Bot className="h-5 w-5 text-accent" />
                   </div>
-                  <div>
-                    <h2 className="font-semibold">AI Learning Tutor</h2>
-                    <p className="text-xs text-secondary">Ask me anything about this video</p>
-                  </div>
+                   <div>
+                     <h2 className="font-semibold">{CHATBOT_NAME}</h2>
+                     <p className="text-xs text-secondary">Ask {CHATBOT_NAME} anything about this video</p>
+                   </div>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -107,12 +108,12 @@ export function ChatBot({ videoId }: ChatBotProps) {
 
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hidden" ref={messagesContainerRef}>
-                {messages.length === 0 && (
-                  <div className="text-center text-secondary py-8">
-                    <p className="mb-2">👋 Hi! I&apos;m your AI tutor.</p>
-                    <p className="text-sm">Ask me about prerequisites or anything in this video!</p>
-                  </div>
-                )}
+                 {messages.length === 0 && (
+                   <div className="text-center text-secondary py-8">
+                     <p className="mb-2">👋 Hi! I&apos;m {CHATBOT_NAME}.</p>
+                     <p className="text-sm">Ask {CHATBOT_NAME} about prerequisites or anything in this video!</p>
+                   </div>
+                 )}
 
                 {messages.map((msg, i) => (
                   <ChatMessage

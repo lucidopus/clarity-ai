@@ -19,10 +19,12 @@ Clarity AI is packed with features designed to enhance learning, all generated a
 
 - **AI-Generated Study Materials**:
     - **Flashcards**: Reinforce key concepts with AI-generated and user-created flashcards.
-    - **Quizzes**: Test your knowledge with multiple-choice, true/false, and fill-in-the-blank questions.
+    - **Quizzes**: Test your knowledge with multiple-choice questions and track performance.
     - **Notes**: A rich text editor to capture your thoughts and insights, synced with the video.
+    - **Mind Maps**: Visual concept relationships showing how ideas connect and interrelate.
 - **Interactive Video Experience**:
     - **Interactive Transcripts**: A full, searchable transcript with clickable timestamps to navigate the video.
+    - **Clara - AI Tutor**: Ask questions about the video content and get structured, educational answers.
     - **Prerequisite Checker**: Identifies concepts you need to know before watching and provides resources to get you up to speed.
 - **Personalized Learning Dashboard**:
     - **Activity Tracking**: Visualize your study habits with an activity heatmap and weekly charts.
@@ -32,10 +34,10 @@ Clarity AI is packed with features designed to enhance learning, all generated a
 ## Tech Stack
 
 - **Frontend**: Next.js with TypeScript and Tailwind CSS
-- **Database**: MongoDB
-- **LLM Provider**: Gemini API or Groq
-- **Authentication**: NextAuth.js
-- **Transcript API**: Public YouTube Transcript API
+- **Database**: MongoDB with Mongoose
+- **LLM Provider**: Groq API
+- **Authentication**: JWT-based custom authentication
+- **Transcript API**: YouTube Transcript API (multiple providers for reliability)
 
 ## Getting Started
 
@@ -43,7 +45,8 @@ Clarity AI is packed with features designed to enhance learning, all generated a
 
 - Node.js 18+ installed
 - MongoDB instance (local or cloud)
-- API keys for LLM provider (Gemini or Groq)
+- Groq API key for AI-powered features
+- Apify API token for enhanced transcript fetching (optional, improves reliability)
 
 ### Installation
 
@@ -62,9 +65,11 @@ npm install
 Create a `.env.local` file with:
 ```bash
 MONGODB_URI=your_mongodb_connection_string
-LLM_API_KEY=your_llm_api_key
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
+GROQ_API_KEY=your_groq_api_key
+JWT_SECRET=your_jwt_secret_key
+APIFY_API_TOKEN=your_apify_token_for_transcripts
+JWT_EXPIRE_DAYS=1
+JWT_REMEMBER_DAYS=30
 ```
 
 4. Run the development server:
@@ -79,17 +84,19 @@ npm run dev
 The project has a solid foundation with most core features implemented.
 
 ### Implemented Features:
-- **User Authentication**: Secure sign-up and sign-in.
-- **Video Processing Pipeline**: Enter a YouTube URL and generate a full suite of learning materials.
+- **User Authentication**: Secure JWT-based sign-up and sign-in with session management.
+- **Video Processing Pipeline**: Enter a YouTube URL and generate a full suite of learning materials using AI.
 - **Interactive Learning Materials**: View and interact with AI-generated flashcards, quizzes, notes, and the video transcript.
+- **Clara - AI Tutor**: Context-aware Q&A chatbot that answers questions about video content with structured, educational responses.
 - **Dashboard & Analytics**: A comprehensive dashboard with activity heatmaps, progress tracking, and video gallery.
-- **Search & Filtering**: Easily find videos in your gallery.
+- **Search & Filtering**: Easily find videos in your gallery with advanced filtering options.
+- **Mind Maps**: Visual concept relationships and knowledge graphs generated from video content.
 
 ### Future Roadmap:
-- **Q&A Chatbot**: A context-aware AI tutor (using RAG) for asking questions about the video content.
 - **Spaced Repetition System (SRS)**: Integrate an SRS algorithm for flashcard review to optimize long-term retention.
 - **Social Features**: Options to share generated content with others.
 - **Enhanced Analytics**: Deeper insights into learning patterns and performance.
+- **Mobile App**: Native mobile applications for iOS and Android.
 
 ## Educational Foundation
 

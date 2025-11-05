@@ -1,6 +1,8 @@
+import { CHATBOT_NAME } from './config';
+
 export const LEARNING_MATERIALS_SCHEMA = {
-  type: 'object',
-  properties: {
+   type: 'object',
+   properties: {
     title: { type: 'string' },
     flashcards: {
       type: 'array',
@@ -58,7 +60,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
         additionalProperties: false,
       },
     },
-    videoSummary: { type: 'string', description: 'A 200-300 word summary of the video, written for an AI tutor to use as context.' },
+    videoSummary: { type: 'string', description: `A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context.` },
     mindMap: {
       type: 'object',
       properties: {

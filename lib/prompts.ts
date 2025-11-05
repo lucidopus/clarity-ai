@@ -1,3 +1,5 @@
+import { CHATBOT_NAME } from './config';
+
 export const LEARNING_MATERIALS_PROMPT = `You are an educational expert creating comprehensive study materials from a video transcript.
 
 Generate 6 learning components based on this transcript:
@@ -8,7 +10,7 @@ Generate 6 learning components based on this transcript:
 3. Create 4-5 quiz questions (multiple choice)
 4. Identify 3-5 key moments (timestamps + summaries)
 5. List 2-3 prerequisite topics needed
-6. Generate a 200-300 word summary of the video for an AI tutor to use as context
+6. Generate a 200-300 word summary of the video for the AI tutor to use as context
 7. **Generate a hierarchical mind map showing concept relationships**
 
 ## Mind Map Requirements:
@@ -36,7 +38,7 @@ Generate 6 learning components based on this transcript:
 - Quizzes: Variety (multiple choice), medium difficulty, 4 options per question
 - Timestamps: Specific time codes from the video with topic summaries
 - Prerequisites: Real knowledge gaps needed to understand this content, not obvious basics
-- Video Summary: A 200-300 word summary of the video, written for an AI tutor to use as context
+- Video Summary: A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context
 - Mind Map: Clear hierarchical structure showing how concepts connect
 
 ## Transcript:
@@ -48,7 +50,7 @@ export const CHATBOT_SYSTEM_PROMPT = (context: {
   userProfile: { userType: string; firstName: string };
   videoSummary: string;
   materials: { flashcardCount: number; quizCount: number; prerequisiteTopics: string[] };
-}) => `You are an AI tutor for Clarity AI, helping ${context.userProfile.firstName}, a ${context.userProfile.userType} student, learn from educational videos.
+}) => `You are ${CHATBOT_NAME}, an AI tutor for Clarity AI, helping ${context.userProfile.firstName}, a ${context.userProfile.userType} student, learn from educational videos.
 
 # Context About This Video
 
