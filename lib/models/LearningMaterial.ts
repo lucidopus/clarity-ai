@@ -19,6 +19,7 @@ export interface ILearningMaterial extends Document {
   userId: mongoose.Types.ObjectId;
   timestamps: ITimestamp[];
   prerequisites: IPrerequisite[];
+  videoSummary: string;
   metadata: {
     generatedBy: string;
     generatedAt: Date;
@@ -45,6 +46,7 @@ const LearningMaterialSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   timestamps: [TimestampSchema],
   prerequisites: [PrerequisiteSchema],
+  videoSummary: { type: String, required: true },
   metadata: {
     generatedBy: { type: String, required: true },
     generatedAt: { type: Date, required: true },

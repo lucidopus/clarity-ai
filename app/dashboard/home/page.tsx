@@ -234,16 +234,16 @@ export default function DashboardHomePage() {
                 />
               </div>
             ) : (
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                 {recentVideos.map(v => (
-                   <RecentVideoCard
-                     key={v._id}
-                     title={v.title}
-                     createdAt={v.createdAt}
-                     onClick={() => router.push(`/dashboard/generations/${v._id}`)}
-                   />
-                 ))}
-               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {recentVideos.map((v) => (
+                  <RecentVideoCard
+                    key={v._id}
+                    title={v.title}
+                    createdAt={v.createdAt}
+                    onClick={() => router.push(`/generations/${v.videoId ?? v._id}`)}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>

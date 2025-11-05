@@ -134,3 +134,12 @@ html {
   --cell-gap: 6px;   /* matches gap-1.5 */
   contain: layout paint;
 }
+
+/* Hidden scrollbar for chat and other components */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Webkit */
+}
