@@ -4,7 +4,7 @@
 The Next.js application lives in `app/`, with `layout.tsx` defining shared chrome, `page.tsx` for the landing experience, and `globals.css` for Tailwind-backed global styles. Static assets belong in `public/`. Shared planning notes and research live under `docs/`. Configuration files (`next.config.ts`, `eslint.config.mjs`, `tailwind.config` via PostCSS) sit at the repository root; keep new cross-cutting utilities nearby for visibility.
 
 ## Build, Test, and Development Commands
-Run `npm install` once to pull dependencies. Use `npm run dev` for the local development server with hot reload. Ship-ready bundles come from `npm run build`, and `npm run start` serves that build for smoke tests. Lint with `npm run lint`; fix issues early and prefer `npx eslint . --fix` before opening a PR.
+Run `yarn install` once to pull dependencies. Use `yarn dev` for the local development server with hot reload. Ship-ready bundles come from `yarn build`, and `yarn start` serves that build for smoke tests. Lint with `yarn lint`; fix issues early and prefer `npx eslint . --fix` before opening a PR.
 
 ## Coding Style & Naming Conventions
 Write TypeScript-first React components using 2-space indentation and named exports. Components live in PascalCase files (e.g., `VideoSummaryCard.tsx`), hooks in camelCase prefixed with `use`, and utility modules end in `.utils.ts`. Favor functional components, React Server Components where possible, and keep JSX lean—extract helpers when rendering grows beyond ~20 lines. Tailwind classes belong inline; add custom tokens to `globals.css` sparingly. Always resolve lint warnings before commit.
