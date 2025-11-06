@@ -23,14 +23,14 @@ Clarity AI is an AI-powered educational platform that transforms passive YouTube
 
 ```bash
 # Development
-npm run dev          # Start Next.js dev server (http://localhost:3000)
+yarn dev          # Start Next.js dev server (http://localhost:3000)
 
 # Production
-npm run build        # Build for production
-npm start           # Start production server
+yarn build        # Build for production
+yarn start           # Start production server
 
 # Code Quality
-npm run lint        # Run ESLint (uses eslint-config-next)
+yarn lint        # Run ESLint (uses eslint-config-next)
 ```
 
 ## Project Architecture
