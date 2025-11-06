@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { BookOpen, Compass, Zap } from 'lucide-react';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import SectionTitle from '@/components/SectionTitle';
@@ -47,91 +48,198 @@ export default function Home() {
           </div>
         </section>
 
-       {/* About Section */}
-       <section id="about" className="py-20">
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-           <SectionTitle
-             subtitle="We&apos;re on a mission to make learning more accessible and effective through the power of AI."
-           >
-             About
-           </SectionTitle>
+        {/* About Section */}
+        <section id="about" className="py-20 bg-gradient-to-br from-background via-card-bg/20 to-background relative overflow-hidden">
+          {/* Background decorative elements */}
+          <div className="absolute top-20 left-10 w-32 h-32 bg-accent/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-10 w-40 h-40 bg-accent/10 rounded-full blur-3xl"></div>
 
-           <div className="max-w-6xl mx-auto">
-                                       <div className="text-center mb-16">
-                                         <p className="text-xl md:text-2xl text-secondary leading-relaxed max-w-3xl mx-auto">
-                                           Clarity AI was born from a simple observation: YouTube has a vast library of educational content, but it’s difficult to turn passive watching into active learning. We bridge that gap, transforming any video into an interactive, effective learning experience.
-                                         </p>
-                                       </div>
-                          
-                                        {/* Testimonial */}
-                                        <div className="max-w-4xl mx-auto mb-16">
-                                          <Card className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-accent/10 text-center">
-                                            <p className="text-2xl md:text-3xl text-foreground font-medium leading-tight mb-6">
-                                              “Clarity AI has been a game-changer for my studies. I’m learning faster and retaining more than ever before. It’s like having a personal tutor for any YouTube video.”
-                                            </p>
-                                            <div className="flex items-center justify-center">
-                                              <div className="w-12 h-12 rounded-full bg-accent/20 mr-4"></div>
-                                              <div>
-                                                <p className="text-lg font-semibold text-foreground">- Alex Smith</p>
-                                                <p className="text-secondary">Student at a Top University</p>
-                                              </div>
-                                            </div>
-                                          </Card>
-                                        </div>              {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">50,000+</div>
-                  <p className="text-secondary font-medium">Learners Empowered</p>
-                  <p className="text-sm text-secondary/70 mt-2">Join a growing community of students and professionals.</p>
-                </Card>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <SectionTitle
+              subtitle="Revolutionizing education through AI-powered learning tools"
+            >
+              About Clarity AI
+            </SectionTitle>
 
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-                    </svg>
+            <div className="max-w-6xl mx-auto">
+              {/* Story Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
+                <motion.div
+                  className="space-y-6"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6 }}
+                  viewport={{ once: true }}
+                >
+                  <div className="inline-flex items-center px-4 py-2 bg-accent/10 rounded-full text-accent font-medium text-sm">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Our Story
                   </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">1M+</div>
-                  <p className="text-secondary font-medium">AI Generations</p>
-                  <p className="text-sm text-secondary/70 mt-2">Millions of notes, quizzes, and mind maps created.</p>
-                </Card>
+                  <h3 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
+                    From Passive Watching to Active Learning
+                  </h3>
+                  <p className="text-lg text-secondary leading-relaxed">
+                    We identified a critical market gap: while educational video content proliferates, effective knowledge retention remains a significant challenge. Learners globally struggle with passive consumption and inefficient traditional study methods, leading to suboptimal outcomes.
+                  </p>
+                  <p className="text-lg text-secondary leading-relaxed">
+                    Clarity AI addresses this directly. Our proprietary AI engine transforms raw video into highly engaging, personalized learning assets—including interactive notes, quizzes, and mind maps. This innovation not only enhances retention but also positions us at the forefront of the EdTech revolution.
+                  </p>
+                </motion.div>
 
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">4.9/5</div>
-                  <p className="text-secondary font-medium">User Rating</p>
-                  <p className="text-sm text-secondary/70 mt-2">From thousands of happy learners worldwide.</p>
-                </Card>
-
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">95%</div>
-                  <p className="text-secondary font-medium">Better Understanding</p>
-                  <p className="text-sm text-secondary/70 mt-2">Reported by users after just one session.</p>
-                </Card>
+                <motion.div
+                  className="relative"
+                  initial={{ opacity: 0, x: 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  viewport={{ once: true }}
+                >
+                  <Card className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 border border-accent/10 shadow-xl">
+                    <div className="space-y-6">
+                      <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center">
+                        <Compass className="w-8 h-8 text-accent" />
+                      </div>
+                      <div>
+                        <h4 className="text-2xl font-bold text-foreground mb-3">Our Mission</h4>
+                        <p className="text-secondary leading-relaxed mb-4">
+                          To lead the transformation of global education by leveraging AI to make high-quality, personalized learning universally accessible. We are committed to scaling human potential through intelligent learning systems.
+                        </p>
+                        <p className="text-accent font-medium text-lg">
+                          &quot;Empowering millions to learn smarter, faster, and more effectively.&quot;
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
               </div>
-           </div>
-         </div>
-       </section>
+
+              {/* Values Section */}
+              <motion.div
+                className="mb-20"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+              >
+                <div className="text-center mb-12">
+                  <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                    Leading EdTech with Purpose and Innovation
+                  </h3>
+                  <p className="text-lg text-secondary max-w-2xl mx-auto">
+                    We&apos;re not just another AI tool—we&apos;re building the future of education
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                   <Card className="text-center p-8 group transition-all duration-300">
+                     <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-accent">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                       </svg>
+                     </div>
+                     <h4 className="text-xl font-bold text-foreground mb-3">AI-First Approach</h4>
+                    <p className="text-secondary leading-relaxed">
+                      Proprietary, cutting-edge AI models meticulously engineered for educational content, ensuring unparalleled accuracy, relevance, and scalability across diverse subjects.
+                    </p>
+                  </Card>
+
+                  <Card className="text-center p-8 group transition-all duration-300">
+                     <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-accent">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                       </svg>
+                     </div>
+                     <h4 className="text-xl font-bold text-foreground mb-3">Research-Backed</h4>
+                    <p className="text-secondary leading-relaxed">
+                      Our methodology is rigorously grounded in cognitive science and pedagogical research, integrating proven techniques like spaced repetition and active recall for superior learning outcomes.
+                    </p>
+                  </Card>
+
+                  <Card className="text-center p-8 group transition-all duration-300">
+                     <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-accent">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                       </svg>
+                     </div>
+                     <h4 className="text-xl font-bold text-foreground mb-3">Community Driven</h4>
+                    <p className="text-secondary leading-relaxed">
+                      A vibrant ecosystem co-created with educators and learners. Our agile development and continuous feedback loops ensure rapid innovation and market alignment.
+                    </p>
+                  </Card>
+                </div>
+              </motion.div>
+
+              {/* Impact Stats */}
+              <motion.div
+                className="mb-16"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                viewport={{ once: true }}
+              >
+                <div className="text-center mb-12">
+                  <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                    Making a Real Impact
+                  </h3>
+                  <p className="text-lg text-secondary max-w-2xl mx-auto">
+                    Driving Tangible Results: Key Metrics of Our Rapid Growth and Market Adoption
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <Card className="text-center p-6 group transition-all duration-300">
+                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                       </svg>
+                     </div>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">50K+</div>
+                     <p className="text-secondary font-semibold mb-1">Active Learners</p>
+                    <p className="text-sm text-secondary/70">Engaged users across 100+ countries</p>
+                  </Card>
+
+                  <Card className="text-center p-6 group transition-all duration-300">
+                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
+                       <Zap className="w-7 h-7 text-accent" />
+                     </div>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">2M+</div>
+                     <p className="text-secondary font-semibold mb-1">AI Generations</p>
+                    <p className="text-sm text-secondary/70">AI-powered learning assets generated</p>
+                  </Card>
+
+                  <Card className="text-center p-6 group transition-all duration-300">
+                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+                       </svg>
+                     </div>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">4.9★</div>
+                     <p className="text-secondary font-semibold mb-1">Average Rating</p>
+                    <p className="text-sm text-secondary/70">Consistently high user satisfaction</p>
+                  </Card>
+
+                  <Card className="text-center p-6 group transition-all duration-300">
+                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
+                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
+                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                       </svg>
+                     </div>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">3x</div>
+                     <p className="text-secondary font-semibold mb-1">Faster Learning</p>
+                    <p className="text-sm text-secondary/70">Proven efficiency gains for learners</p>
+                  </Card>
+                </div>
+              </motion.div>
+
+
+            </div>
+          </div>
+        </section>
 
       {/* Features Section */}
       <section id="features" className="py-20 bg-card-bg/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionTitle
-            subtitle="Everything you need to master educational content"
+            subtitle="Our Core Value Proposition: A Comprehensive AI-Powered Learning Ecosystem"
           >
             Powerful Learning Tools
           </SectionTitle>
@@ -157,7 +265,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                         <p className="text-secondary leading-relaxed mb-3">Turn video highlights into flashcards. Our AI uses spaced repetition to make sure you never forget what you&apos;ve learned.</p>
+                         <p className="text-secondary leading-relaxed mb-3">Leverage AI to automatically generate intelligent flashcards from video content. Our adaptive spaced repetition system optimizes retention, significantly boosting long-term memory recall.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">300% better retention</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -181,7 +289,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Interactive Quizzes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Test your knowledge with AI-generated quizzes. Get instant feedback and identify areas for improvement.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Engage with dynamically generated, AI-powered quizzes that provide immediate, actionable feedback. This feature precisely identifies knowledge gaps and customizes learning paths for accelerated mastery.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Personalized learning paths</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -205,8 +313,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">AI-Powered Notes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Go from video to structured notes in seconds. Our AI summarizes key concepts and links them to the video timeline.</p>
-                        <div className="flex items-center justify-between">
+                                                 <p className="text-secondary leading-relaxed mb-3">Instantly transform video content into meticulously structured, AI-generated notes. Our system intelligently extracts and summarizes key concepts, seamlessly linking them to precise video timestamps for efficient review and navigation.</p>                        <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Instant navigation</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
                         </div>
@@ -229,8 +336,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Personalized Learning</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Track your progress and get recommendations. Clarity AI adapts to your learning style and helps you stay motivated.</p>
-                        <div className="flex items-center justify-between">
+                                                 <p className="text-secondary leading-relaxed mb-3">Our adaptive learning engine continuously monitors user progress and performance, delivering tailored recommendations and dynamic content adjustments. This ensures an optimized, highly personalized learning journey that maximizes engagement and outcomes.</p>                        <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Data-driven insights</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
                         </div>
@@ -248,7 +354,7 @@ export default function Home() {
       <section id="how-it-works" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionTitle
-            subtitle="From YouTube video to mastery in 3 simple steps"
+            subtitle="Simple 3-step process"
           >
             How It Works
           </SectionTitle>
@@ -267,7 +373,7 @@ export default function Home() {
                 2
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Get Your Study Kit</h3>
-              <p className="text-secondary">AI generates notes, quizzes, and flashcards in seconds.</p>
+              <p className="text-secondary">AI generates notes, quizzes, and flashcards.</p>
             </div>
 
             <div className="text-center">
@@ -285,7 +391,7 @@ export default function Home() {
       <section id="pricing" className="py-20 bg-card-bg/30">
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
            <SectionTitle
-             subtitle="Choose the plan that fits your learning needs"
+             subtitle="Strategic Tiers: Scalable Solutions for Every Learner and Institution"
            >
              Simple, Transparent Pricing
            </SectionTitle>
@@ -364,7 +470,7 @@ export default function Home() {
                  </li>
                </ul>
                <Button variant="primary" size="lg" className="w-full">
-                 Start Pro Trial
+                 Get Pro Plan
                </Button>
              </Card>
 
@@ -422,18 +528,15 @@ export default function Home() {
          <div className="absolute top-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl opacity-30"></div>
          <div className="absolute bottom-10 left-10 w-24 h-24 bg-accent/15 rounded-full blur-xl opacity-40"></div>
 
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-           <div className="max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="max-w-4xl mx-auto">
              {/* Main CTA Card */}
              <div className="bg-background/80 backdrop-blur-sm rounded-3xl p-8 md:p-12 text-center border border-accent/20 shadow-2xl relative overflow-hidden">
                {/* Decorative gradient bar */}
                <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-accent/0 via-accent to-accent/0"></div>
 
 
-               <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
-               Stop Watching,{' '}
-                 <span className="text-accent">Start Learning.</span>{' '}
-               </h2>
+               <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight">What if learning just had...{' '}<span className="text-accent">More Clarity?</span></h2>
 
                <p className="text-xl text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
                  Transform your learning experience today. Join thousands of students who are mastering subjects faster with Clarity AI.
