@@ -438,8 +438,8 @@ export default function Home() {
 
 
                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
-                 Ready to Transform Your{' '}
-                 <span className="text-accent">Learning</span>?
+               Ready to Deliver{' '}
+                 <span className="text-accent">Clarity</span> at Scale?{' '}
                </h2>
 
                <p className="text-xl text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
