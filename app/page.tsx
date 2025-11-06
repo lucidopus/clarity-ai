@@ -555,10 +555,10 @@ export default function Home() {
                <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-accent/0 via-accent to-accent/0"></div>
 
 
-               <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight">Ready to learn <span className="text-accent">more effectively?</span></h2>
+               <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight">What if learning just had...{' '}<span className="text-accent">More Clarity?</span></h2>
 
                <p className="text-xl text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
-                 Start turning videos into knowledge today.
+                 Transform your learning experience today. Join thousands of students mastering subjects faster with Clarity AI.
                </p>
 
                {/* CTA Buttons */}
