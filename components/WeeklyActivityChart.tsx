@@ -120,7 +120,7 @@ export default function WeeklyActivityChart() {
               {
                 label: 'Activities',
                 data: counts,
-                backgroundColor: 'rgba(8, 145, 178, 0.7)',
+                 backgroundColor: 'rgba(8, 145, 178, 1)',
                 borderRadius: 6,
                 borderSkipped: false,
               },
