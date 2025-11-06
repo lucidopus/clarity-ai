@@ -4,9 +4,10 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Trash2 } from 'lucide-react';
+import { Trash2, FileText } from 'lucide-react';
 import Button from './Button';
 import NotesEditor from './NotesEditor';
+import Tooltip from './Tooltip';
 
 interface TranscriptSegment {
   text: string;
@@ -43,6 +44,7 @@ interface YTPlayer {
   getCurrentTime(): number;
   seekTo(time: number, allowSeekAhead: boolean): void;
   playVideo(): void;
+  pauseVideo(): void;
 }
 
 declare global {
@@ -67,11 +69,12 @@ export default function VideoAndTranscriptViewer({
 }: VideoAndTranscriptViewerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
   const [editingSegment, setEditingSegment] = useState<number | null>(null);
   const [activeSegmentNote, setActiveSegmentNote] = useState<string>('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -168,19 +171,19 @@ export default function VideoAndTranscriptViewer({
       prevSelectedRef.current = activeIndex;
       setSelectedSegment(activeIndex);
 
-      // Scroll to active segment with smooth animation
-      if (segmentRefs.current[activeIndex]) {
+      // Scroll to active segment with smooth animation (only if auto-scroll is enabled)
+      if (autoScrollEnabled && segmentRefs.current[activeIndex]) {
         segmentRefs.current[activeIndex]?.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
           inline: 'nearest'
         });
       }
-
-      // Get note for active segment
-      setActiveSegmentNote(getActiveSegmentNote(activeIndex));
     }
-  }, [currentTime, transcript, getActiveSegmentNote]);
+
+    // Get note for active segment
+    setActiveSegmentNote(getActiveSegmentNote(activeIndex));
+  }, [currentTime, transcript, getActiveSegmentNote, autoScrollEnabled]);
 
   const formatTimestamp = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -304,9 +307,10 @@ export default function VideoAndTranscriptViewer({
             </div>
           ) : (
             <>
-              {/* Search Bar */}
+              {/* Search Bar and Auto-scroll Toggle */}
               <div>
-                <div className="relative">
+                <div className="flex gap-3">
+                <div className="relative flex-1">
                   <input
                     type="text"
                     value={searchQuery}
@@ -330,6 +334,19 @@ export default function VideoAndTranscriptViewer({
                       />
                     </svg>
                   </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-background/50 rounded-lg">
+                  <span className="text-xs font-medium text-muted-foreground">Auto-scroll</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={autoScrollEnabled}
+                      onChange={() => setAutoScrollEnabled(!autoScrollEnabled)}
+                    />
+                    <div className="w-9 h-5 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-px after:left-px after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                  </label>
+                </div>
                 </div>
                 {searchQuery && (
                   <div className="flex items-center justify-between mt-3">
@@ -366,10 +383,11 @@ export default function VideoAndTranscriptViewer({
                       exit={{ opacity: 0 }}
                       className="space-y-3"
                     >
-                      {filteredSegments.map((segment, index) => {
-                        const originalIndex = transcript.indexOf(segment);
-                        const isSelected = selectedSegment === originalIndex;
-                        const isEditing = editingSegment === originalIndex;
+                       {filteredSegments.map((segment, index) => {
+                         const originalIndex = transcript.indexOf(segment);
+                         const isSelected = selectedSegment === originalIndex;
+                         const isEditing = editingSegment === originalIndex;
+                         const hasNotes = getActiveSegmentNote(originalIndex).trim().length > 0;
 
                         return (
                           <motion.div
@@ -386,41 +404,68 @@ export default function VideoAndTranscriptViewer({
                                  : 'border-border/30 hover:border-accent/40 bg-background/30 dark:border-gray-700/20 dark:bg-gray-800/5 dark:hover:border-gray-600/30'
                              }`}
                           >
-                             <div className="p-3 rounded-xl border cursor-pointer" onClick={() => handleTimestampClick(segment.start, originalIndex)}>
-                              <div className="flex items-start gap-3">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleTimestampClick(segment.start, originalIndex);
-                                  }}
-                                  className={`shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border transition-colors ${
-                                    isSelected
-                                      ? 'border-accent bg-accent text-white'
-                                      : 'border-border bg-card-bg text-muted-foreground hover:border-accent hover:text-accent'
-                                  }`}
-                                >
-                                  {formatTimestamp(segment.start)}
-                                </button>
-                                <div className="flex-1 leading-relaxed text-sm text-foreground">
-                                  {highlightText(segment.text, searchQuery)}
-                                </div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingSegment(isEditing ? null : originalIndex);
-                                  }}
-                                  className={`shrink-0 p-2 cursor-pointer rounded-lg transition-colors ${
-                                    isEditing
-                                      ? 'bg-accent text-white'
-                                      : 'hover:bg-background border border-border text-muted-foreground hover:text-accent'
-                                  }`}
-                                  title="Add notes for this segment"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                </button>
-                              </div>
+                              <div className="p-3 rounded-xl border cursor-pointer" onClick={() => handleTimestampClick(segment.start, originalIndex)}>
+                                <div className="flex items-start gap-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleTimestampClick(segment.start, originalIndex);
+                                    }}
+                                    className={`shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border transition-colors ${
+                                      isSelected
+                                        ? 'border-accent bg-accent text-white'
+                                        : 'border-border bg-card-bg text-muted-foreground hover:border-accent hover:text-accent'
+                                    }`}
+                                  >
+                                    {formatTimestamp(segment.start)}
+                                  </button>
+                                 <div className="flex-1 leading-relaxed text-sm text-foreground">
+                                   {highlightText(segment.text, searchQuery)}
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    {hasNotes && (
+                                      <Tooltip
+                                        title="You have a note on this section"
+                                        trigger={
+                                          <div className="shrink-0" aria-label="Note present">
+                                            <FileText className="w-4 h-4 text-accent hover:text-accent/80 transition-colors cursor-pointer" />
+                                          </div>
+                                        }
+                                        position="left"
+                                      >
+                                        Click the edit button to view or modify note.
+                                      </Tooltip>
+                                    )}
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       const willStartEditing = !isEditing;
+                                       if (willStartEditing && playerRef.current) {
+                                         playerRef.current.pauseVideo();
+                                       } else if (!willStartEditing && playerRef.current) {
+                                         playerRef.current.playVideo();
+                                       }
+                                       setEditingSegment(isEditing ? null : originalIndex);
+                                     }}
+                                   className={`shrink-0 p-2 cursor-pointer rounded-lg transition-colors ${
+                                     isEditing
+                                       ? 'bg-accent text-white'
+                                       : 'hover:bg-background border border-border text-muted-foreground hover:text-accent'
+                                   }`}
+                                   title={
+                                     isEditing
+                                       ? 'Close note editor'
+                                       : hasNotes
+                                       ? 'Edit your note'
+                                       : 'Add a note for this segment'
+                                   }
+                                 >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                   </button>
+                                 </div>
+                               </div>
                             </div>
                             {/* Inline Notes Editor */}
                             <AnimatePresence>
