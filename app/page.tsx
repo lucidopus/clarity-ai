@@ -1,6 +1,6 @@
 'use client';
 
-
+import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import SectionTitle from '@/components/SectionTitle';
@@ -15,7 +15,16 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-              The Smarter Way to <span className="text-accent">Learn</span> is Here.
+               The{' '}
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 1.5, ease: 'easeInOut' }}
+
+                >
+                 Smarter
+               </motion.span>{' '}
+               Way to <span className="text-accent">Learn</span> is Here.
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
               Clarity AI transforms YouTube tutorials into interactive learning materials. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
@@ -27,16 +36,16 @@ export default function Home() {
               <Button href="#about" variant="secondary" size="lg">
                 Learn More
               </Button>
-            </div>
-          </div>
-        </div>
+             </div>
+           </div>
 
-        {/* Decorative gradient */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl -z-10 opacity-30">
-          <div className="absolute top-20 left-1/4 w-72 h-72 bg-accent rounded-full filter blur-3xl"></div>
-          <div className="absolute top-40 right-1/4 w-96 h-96 bg-accent/50 rounded-full filter blur-3xl"></div>
-        </div>
-      </section>
+           {/* Decorative gradient */}
+           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl -z-10 opacity-10">
+             <div className="absolute top-20 left-1/4 w-72 h-72 bg-accent rounded-full filter blur-3xl"></div>
+             <div className="absolute top-40 right-1/4 w-96 h-96 bg-accent/50 rounded-full filter blur-3xl"></div>
+           </div>
+          </div>
+        </section>
 
        {/* About Section */}
        <section id="about" className="py-20">
@@ -148,7 +157,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Turn video highlights into flashcards. Our AI uses spaced repetition to make sure you never forget what you've learned.</p>
+                         <p className="text-secondary leading-relaxed mb-3">Turn video highlights into flashcards. Our AI uses spaced repetition to make sure you never forget what you&apos;ve learned.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">300% better retention</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
