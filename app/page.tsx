@@ -15,10 +15,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-              Don't Just Watch. <span className="text-accent">Understand.</span>
+              The Smarter Way to <span className="text-accent">Learn</span> is Here.
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              Clarity AI turns any YouTube video into an interactive learning experience. Get AI-generated notes, quizzes, and mind maps to help you master complex topics faster.
+              Clarity AI transforms YouTube tutorials into interactive learning materials. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
             </p>
             <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
               <Button href="/auth/signup" variant="primary" size="lg">
@@ -48,43 +48,27 @@ export default function Home() {
            </SectionTitle>
 
            <div className="max-w-6xl mx-auto">
-             {/* Mission Statement */}
-             <div className="text-center mb-16">
-               <p className="text-xl md:text-2xl text-secondary leading-relaxed max-w-3xl mx-auto">
-               </p>
-             </div>
-
-             {/* Our Story */}
-             <div className="max-w-4xl mx-auto mb-16">
-               <div className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-accent/10">
-                 <div className="flex items-center justify-center space-x-3 mb-8">
-                   <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                     </svg>
-                   </div>
-                   <h3 className="text-3xl md:text-4xl font-bold text-foreground">Our Story</h3>
-                 </div>
-
-                 <div className="space-y-6 text-secondary leading-relaxed text-center">
-                   <p className="text-lg md:text-xl">
-                     Clarity AI was born from a simple observation: YouTube contains an incredible wealth of educational content, but it&apos;s often difficult to extract structured learning materials from long-form videos.
-                   </p>
-                   <p className="text-lg md:text-xl">
-                     Our founders, a team of educators and AI researchers, saw an opportunity to bridge this gap. By combining advanced natural language processing with educational best practices, we created a platform that transforms passive video watching into active, engaging learning experiences.
-                   </p>
-                 </div>
-               </div>
-             </div>
-
-             {/* Closing Statement */}
-             <div className="text-center mb-16">
-               <p className="text-lg md:text-xl text-secondary leading-relaxed max-w-4xl mx-auto">
-                 Today, thousands of learners use Clarity AI to master complex topics, from programming tutorials to academic lectures, making education more accessible and effective for everyone.
-               </p>
-             </div>
-
-              {/* Stats */}
+                                       <div className="text-center mb-16">
+                                         <p className="text-xl md:text-2xl text-secondary leading-relaxed max-w-3xl mx-auto">
+                                           Clarity AI was born from a simple observation: YouTube has a vast library of educational content, but it’s difficult to turn passive watching into active learning. We bridge that gap, transforming any video into an interactive, effective learning experience.
+                                         </p>
+                                       </div>
+                          
+                                        {/* Testimonial */}
+                                        <div className="max-w-4xl mx-auto mb-16">
+                                          <Card className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-accent/10 text-center">
+                                            <p className="text-2xl md:text-3xl text-foreground font-medium leading-tight mb-6">
+                                              “Clarity AI has been a game-changer for my studies. I’m learning faster and retaining more than ever before. It’s like having a personal tutor for any YouTube video.”
+                                            </p>
+                                            <div className="flex items-center justify-center">
+                                              <div className="w-12 h-12 rounded-full bg-accent/20 mr-4"></div>
+                                              <div>
+                                                <p className="text-lg font-semibold text-foreground">- Alex Smith</p>
+                                                <p className="text-secondary">Student at a Top University</p>
+                                              </div>
+                                            </div>
+                                          </Card>
+                                        </div>              {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                  <Card className="text-center p-6">
                   <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
@@ -164,7 +148,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Lock in knowledge with AI-powered flashcards that use proven spaced repetition and active recall techniques. Learn smarter, not harder.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Turn video highlights into flashcards. Our AI uses spaced repetition to make sure you never forget what you've learned.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">300% better retention</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -188,7 +172,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Interactive Quizzes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Go beyond multiple choice. Our adaptive quizzes challenge you, provide instant feedback, and help you pinpoint exactly what you need to review.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Test your knowledge with AI-generated quizzes. Get instant feedback and identify areas for improvement.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Personalized learning paths</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -211,8 +195,8 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Timestamped Notes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Never lose your place. Your notes are automatically synced to the video, with AI-summarized sections and clickable timestamps.</p>
+                                                 <h3 className="text-xl font-semibold text-accent mb-2">AI-Powered Notes</h3>
+                        <p className="text-secondary leading-relaxed mb-3">Go from video to structured notes in seconds. Our AI summarizes key concepts and links them to the video timeline.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Instant navigation</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -235,8 +219,8 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Progress Tracking</h3>
-                        <p className="text-secondary leading-relaxed mb-3">See how far you've come. Track your progress, celebrate milestones, and get personalized recommendations on what to focus on next.</p>
+                                                 <h3 className="text-xl font-semibold text-accent mb-2">Personalized Learning</h3>
+                        <p className="text-secondary leading-relaxed mb-3">Track your progress and get recommendations. Clarity AI adapts to your learning style and helps you stay motivated.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Data-driven insights</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -265,24 +249,24 @@ export default function Home() {
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Paste YouTube URL</h3>
-              <p className="text-secondary">Copy any educational video link and paste it into Clarity AI.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Link Your Video</h3>
+              <p className="text-secondary">Paste any YouTube link.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">AI Generates Materials</h3>
-              <p className="text-secondary">Our AI instantly creates flashcards, quizzes, and timestamped notes.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Get Your Study Kit</h3>
+              <p className="text-secondary">AI generates notes, quizzes, and flashcards in seconds.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Practice & Master</h3>
-              <p className="text-secondary">Study with interactive materials and track your progress.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Master the Material</h3>
+              <p className="text-secondary">Learn faster with interactive tools.</p>
             </div>
           </div>
         </div>
@@ -438,12 +422,12 @@ export default function Home() {
 
 
                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
-               Ready to Deliver{' '}
-                 <span className="text-accent">Clarity</span> at Scale?{' '}
+               Stop Watching,{' '}
+                 <span className="text-accent">Start Learning.</span>{' '}
                </h2>
 
                <p className="text-xl text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
-                 Join thousands of students who are mastering content faster with AI-powered study materials.
+                 Transform your learning experience today. Join thousands of students who are mastering subjects faster with Clarity AI.
                </p>
 
                {/* CTA Buttons */}
