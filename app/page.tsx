@@ -16,19 +16,19 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-               The{' '}
+               Turn Any{' '}
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 1.5, ease: 'easeInOut' }}
 
                 >
-                 Smarter
+                 YouTube Video
                </motion.span>{' '}
-               Way to <span className="text-accent">Learn</span> is Here.
+               Into a <span className="text-accent">Study Session</span>
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              Clarity AI transforms YouTube tutorials into interactive learning materials. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
+              Stop rewatching the same videos over and over. Clarity AI instantly generates flashcards, quizzes, and interactive notes from any educational YouTube video—so you can actually remember what you learned.
             </p>
             <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
               <Button href="/auth/signup" variant="primary" size="lg">
@@ -58,9 +58,9 @@ export default function Home() {
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <SectionTitle
-              subtitle="Revolutionizing education through AI-powered learning tools"
+              subtitle="We built Clarity AI because learning from videos shouldn't be this hard"
             >
-              About Clarity AI
+              Why We Built This
             </SectionTitle>
 
             <div className="max-w-6xl mx-auto">
@@ -78,13 +78,13 @@ export default function Home() {
                     Our Story
                   </div>
                   <h3 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
-                    From Passive Watching to Active Learning
+                    The Problem: Watching ≠ Learning
                   </h3>
                   <p className="text-lg text-secondary leading-relaxed">
-                    We identified a critical market gap: while educational video content proliferates, effective knowledge retention remains a significant challenge. Learners globally struggle with passive consumption and inefficient traditional study methods, leading to suboptimal outcomes.
+                    You&apos;ve been there: you watch an entire lecture or tutorial, nod along the whole time, and then... blank. When it&apos;s time to actually use what you learned, you remember almost nothing. So you watch it again. And again.
                   </p>
                   <p className="text-lg text-secondary leading-relaxed">
-                    Clarity AI addresses this directly. Our proprietary AI engine transforms raw video into highly engaging, personalized learning assets—including interactive notes, quizzes, and mind maps. This innovation not only enhances retention but also positions us at the forefront of the EdTech revolution.
+                    The truth is, passive watching doesn&apos;t stick. Your brain needs active practice—flashcards, quizzes, and real engagement—to turn information into knowledge. That&apos;s why we built Clarity AI: to instantly transform any YouTube video into the study materials you actually need to remember what you learned.
                   </p>
                 </motion.div>
 
@@ -103,10 +103,10 @@ export default function Home() {
                       <div>
                         <h4 className="text-2xl font-bold text-foreground mb-3">Our Mission</h4>
                         <p className="text-secondary leading-relaxed mb-4">
-                          To lead the transformation of global education by leveraging AI to make high-quality, personalized learning universally accessible. We are committed to scaling human potential through intelligent learning systems.
+                          Make learning from videos actually work. Every student deserves to turn time spent watching educational content into real, lasting knowledge—without the frustration of forgetting everything a day later.
                         </p>
                         <p className="text-accent font-medium text-lg">
-                          &quot;Empowering millions to learn smarter, faster, and more effectively.&quot;
+                          &quot;Learn once. Remember forever.&quot;
                         </p>
                       </div>
                     </div>
@@ -124,10 +124,10 @@ export default function Home() {
               >
                 <div className="text-center mb-12">
                   <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    Leading EdTech with Purpose and Innovation
+                    What Makes Us Different
                   </h3>
                   <p className="text-lg text-secondary max-w-2xl mx-auto">
-                    We&apos;re not just another AI tool—we&apos;re building the future of education
+                    We&apos;re not just slapping AI on a problem—we&apos;re solving it the right way
                   </p>
                 </div>
 
@@ -138,9 +138,9 @@ export default function Home() {
                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                        </svg>
                      </div>
-                     <h4 className="text-xl font-bold text-foreground mb-3">AI-First Approach</h4>
+                     <h4 className="text-xl font-bold text-foreground mb-3">Built for Education</h4>
                     <p className="text-secondary leading-relaxed">
-                      Proprietary, cutting-edge AI models meticulously engineered for educational content, ensuring unparalleled accuracy, relevance, and scalability across diverse subjects.
+                      Our AI is specifically trained to understand educational content—not just generic text. It knows the difference between a key concept and a side comment, so you get study materials that actually matter.
                     </p>
                   </Card>
 
@@ -150,9 +150,9 @@ export default function Home() {
                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                        </svg>
                      </div>
-                     <h4 className="text-xl font-bold text-foreground mb-3">Research-Backed</h4>
+                     <h4 className="text-xl font-bold text-foreground mb-3">Science-Backed Methods</h4>
                     <p className="text-secondary leading-relaxed">
-                      Our methodology is rigorously grounded in cognitive science and pedagogical research, integrating proven techniques like spaced repetition and active recall for superior learning outcomes.
+                      We use proven learning techniques like spaced repetition and active recall—not because they&apos;re trendy, but because decades of research show they actually work. Your brain remembers better when it&apos;s tested, not just lectured.
                     </p>
                   </Card>
 
@@ -162,9 +162,9 @@ export default function Home() {
                          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                        </svg>
                      </div>
-                     <h4 className="text-xl font-bold text-foreground mb-3">Community Driven</h4>
+                     <h4 className="text-xl font-bold text-foreground mb-3">Made by Students, for Students</h4>
                     <p className="text-secondary leading-relaxed">
-                      A vibrant ecosystem co-created with educators and learners. Our agile development and continuous feedback loops ensure rapid innovation and market alignment.
+                      We&apos;re students and lifelong learners ourselves. We built Clarity AI because we were frustrated with the same problems you face. Every feature is designed around real student needs, not corporate buzzwords.
                     </p>
                   </Card>
                 </div>
@@ -180,10 +180,10 @@ export default function Home() {
               >
                 <div className="text-center mb-12">
                   <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    Making a Real Impact
+                    Designed to Actually Work
                   </h3>
                   <p className="text-lg text-secondary max-w-2xl mx-auto">
-                    Driving Tangible Results: Key Metrics of Our Rapid Growth and Market Adoption
+                    Every feature is built around helping you learn better, not just look impressive
                   </p>
                 </div>
 
@@ -194,18 +194,18 @@ export default function Home() {
                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                        </svg>
                      </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">50K+</div>
-                     <p className="text-secondary font-semibold mb-1">Active Learners</p>
-                    <p className="text-sm text-secondary/70">Engaged users across 100+ countries</p>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">&lt;60s</div>
+                     <p className="text-secondary font-semibold mb-1">Processing Time</p>
+                    <p className="text-sm text-secondary/70">From video to flashcards in under a minute</p>
                   </Card>
 
                   <Card className="text-center p-6 group transition-all duration-300">
                      <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
                        <Zap className="w-7 h-7 text-accent" />
                      </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">2M+</div>
-                     <p className="text-secondary font-semibold mb-1">AI Generations</p>
-                    <p className="text-sm text-secondary/70">AI-powered learning assets generated</p>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">100%</div>
+                     <p className="text-secondary font-semibold mb-1">Free to Start</p>
+                    <p className="text-sm text-secondary/70">No credit card required, ever</p>
                   </Card>
 
                   <Card className="text-center p-6 group transition-all duration-300">
@@ -214,9 +214,9 @@ export default function Home() {
                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                        </svg>
                      </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">4.9★</div>
-                     <p className="text-secondary font-semibold mb-1">Average Rating</p>
-                    <p className="text-sm text-secondary/70">Consistently high user satisfaction</p>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">5</div>
+                     <p className="text-secondary font-semibold mb-1">Learning Modes</p>
+                    <p className="text-sm text-secondary/70">Flashcards, quizzes, notes, timestamps, & AI chat</p>
                   </Card>
 
                   <Card className="text-center p-6 group transition-all duration-300">
@@ -225,9 +225,9 @@ export default function Home() {
                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
                        </svg>
                      </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">3x</div>
-                     <p className="text-secondary font-semibold mb-1">Faster Learning</p>
-                    <p className="text-sm text-secondary/70">Proven efficiency gains for learners</p>
+                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">Any</div>
+                     <p className="text-secondary font-semibold mb-1">YouTube Video</p>
+                    <p className="text-sm text-secondary/70">Works with lectures, tutorials, courses—anything educational</p>
                   </Card>
                 </div>
               </motion.div>
@@ -247,9 +247,9 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <SectionTitle
-            subtitle="Our Core Value Proposition: A Comprehensive AI-Powered Learning Ecosystem"
+            subtitle="Everything you need to turn watching into learning"
           >
-            Powerful Learning Tools
+            What You Get
           </SectionTitle>
 
           {/* Interactive Learning Ecosystem */}
@@ -273,9 +273,9 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                         <p className="text-secondary leading-relaxed mb-3">Leverage AI to automatically generate intelligent flashcards from video content. Our adaptive spaced repetition system optimizes retention, significantly boosting long-term memory recall.</p>
+                         <p className="text-secondary leading-relaxed mb-3">AI-generated flashcards pulled directly from the video. Study them with spaced repetition so you actually remember the material weeks and months later—not just until the next day.</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">300% better retention</span>
+                          <span className="text-sm font-medium text-accent">Remember it long-term</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
                         </div>
                       </div>
@@ -297,9 +297,9 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Interactive Quizzes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Engage with dynamically generated, AI-powered quizzes that provide immediate, actionable feedback. This feature precisely identifies knowledge gaps and customizes learning paths for accelerated mastery.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Test yourself with AI-generated quizzes based on the video content. Get instant feedback on what you know and what you need to review—no more guessing if you actually understood.</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">Personalized learning paths</span>
+                          <span className="text-sm font-medium text-accent">Know what you know</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
                         </div>
                       </div>
@@ -320,9 +320,9 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">AI-Powered Notes</h3>
-                                                 <p className="text-secondary leading-relaxed mb-3">Instantly transform video content into meticulously structured, AI-generated notes. Our system intelligently extracts and summarizes key concepts, seamlessly linking them to precise video timestamps for efficient review and navigation.</p>                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">Instant navigation</span>
+                                                 <h3 className="text-xl font-semibold text-accent mb-2">Timestamped Notes</h3>
+                                                 <p className="text-secondary leading-relaxed mb-3">Get clean, organized notes with timestamps linked to the exact moment in the video. Need to review a specific concept? Jump straight there instead of scrubbing through the entire video.</p>                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-accent">Jump to what matters</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
                         </div>
                       </div>
@@ -343,9 +343,9 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Personalized Learning</h3>
-                                                 <p className="text-secondary leading-relaxed mb-3">Our adaptive learning engine continuously monitors user progress and performance, delivering tailored recommendations and dynamic content adjustments. This ensures an optimized, highly personalized learning journey that maximizes engagement and outcomes.</p>                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">Data-driven insights</span>
+                                                 <h3 className="text-xl font-semibold text-accent mb-2">AI Tutor Chat</h3>
+                                                 <p className="text-secondary leading-relaxed mb-3">Stuck on something? Ask our AI tutor questions about the video content and get instant, helpful answers. It&apos;s like having a study partner available 24/7 who actually knows the material.</p>                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-accent">Get unstuck instantly</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
                         </div>
                       </div>
@@ -378,24 +378,24 @@ export default function Home() {
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Link Your Video</h3>
-              <p className="text-secondary">Paste any YouTube link.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Paste a YouTube Link</h3>
+              <p className="text-secondary">Any educational video—lectures, tutorials, explainers, you name it.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Get Your Study Kit</h3>
-              <p className="text-secondary">AI generates notes, quizzes, and flashcards.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Wait &lt;60 Seconds</h3>
+              <p className="text-secondary">Our AI generates flashcards, quizzes, notes, and more—automatically.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Master the Material</h3>
-              <p className="text-secondary">Learn faster with interactive tools.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Actually Learn It</h3>
+              <p className="text-secondary">Study with interactive tools designed to make information stick.</p>
             </div>
           </div>
         </div>
@@ -411,9 +411,9 @@ export default function Home() {
 
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
            <SectionTitle
-             subtitle="Strategic Tiers: Scalable Solutions for Every Learner and Institution"
+             subtitle="Start free. Upgrade when you&apos;re ready."
            >
-             Simple, Transparent Pricing
+             Pricing That Makes Sense
            </SectionTitle>
 
            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
