@@ -28,7 +28,7 @@ export default function Home() {
                Way to <span className="text-accent">Learn</span> is Here.
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              Clarity AI transforms YouTube tutorials into interactive learning materials. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
+              Clarity AI transforms YouTube tutorials into interactive study tools. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
             </p>
             <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
               <Button href="/auth/signup" variant="primary" size="lg">
@@ -84,7 +84,7 @@ export default function Home() {
                     Educational video content is everywhere, but retention remains low. Watching alone doesn&apos;t translate to learning.
                   </p>
                   <p className="text-lg text-secondary leading-relaxed">
-                    Clarity AI bridges this gap with active recall techniques. Transform any video into personalized study materials—automatically generated flashcards, quizzes, and structured notes that drive real comprehension.
+                    Clarity AI bridges this gap with active recall techniques. Transform any video into personalized study tools—automatically generated flashcards, quizzes, and structured notes that drive real comprehension.
                   </p>
                 </motion.div>
 
@@ -103,7 +103,7 @@ export default function Home() {
                       <div>
                         <h4 className="text-2xl font-bold text-foreground mb-3">Our Mission</h4>
                         <p className="text-secondary leading-relaxed mb-4">
-                          Turn passive video consumption into active learning experiences. We combine AI technology with proven cognitive science to help anyone master material faster.
+                          Turn passive video consumption into active learning experiences. We combine AI technology with proven cognitive science to help anyone master content faster.
                         </p>
                         <p className="text-accent font-medium text-lg">
                           &quot;Watch once. Master completely.&quot;
@@ -247,7 +247,7 @@ export default function Home() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <SectionTitle
-            subtitle="AI-generated study materials from video content"
+            subtitle="AI-generated study tools from video content"
           >
             Complete Learning Suite
           </SectionTitle>
@@ -387,7 +387,7 @@ export default function Home() {
                 2
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-2">AI Processing</h3>
-              <p className="text-secondary">Materials generated in under 60 seconds.</p>
+              <p className="text-secondary">Study tools generated in under 60 seconds.</p>
             </div>
 
             <div className="text-center">
