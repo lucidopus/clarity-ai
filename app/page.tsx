@@ -145,31 +145,6 @@ export default function Home() {
 
           {/* Interactive Learning Ecosystem */}
           <div className="relative max-w-6xl mx-auto">
-             {/* Central AI Processing Hub */}
-             <div className="flex justify-center mb-20">
-               <div className="relative group">
-                 <div
-                    className="w-40 h-40 bg-linear-to-br from-accent/30 via-accent/20 to-accent/10 rounded-full flex items-center justify-center border-4 border-accent/40"
-                   style={{
-                     cursor: `url("data:image/svg+xml,%3Csvg width='32px' height='32px' viewBox='0 0 512 512' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cg id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cg id='icon' fill='%2306B6D4' transform='translate(64.000000, 64.000000)'%3E%3Cpath d='M320,64 L320,320 L64,320 L64,64 L320,64 Z M171.749388,128 L146.817842,128 L99.4840387,256 L121.976629,256 L130.913039,230.977 L187.575039,230.977 L196.319607,256 L220.167172,256 L171.749388,128 Z M260.093778,128 L237.691519,128 L237.691519,256 L260.093778,256 L260.093778,128 Z M159.094727,149.47526 L181.409039,213.333 L137.135039,213.333 L159.094727,149.47526 Z M341.333333,256 L384,256 L384,298.666667 L341.333333,298.666667 L341.333333,256 Z M85.3333333,341.333333 L128,341.333333 L128,384 L85.3333333,384 L85.3333333,341.333333 Z M170.666667,341.333333 L213.333333,341.333333 L213.333333,384 L170.666667,384 L170.666667,341.333333 Z M85.3333333,0 L128,0 L128,42.6666667 L85.3333333,42.6666667 L85.3333333,0 Z M256,341.333333 L298.666667,341.333333 L298.666667,384 L256,384 L256,341.333333 Z M170.666667,0 L213.333333,0 L213.333333,42.6666667 L170.666667,42.6666667 L170.666667,0 Z M256,0 L298.666667,0 L298.6666667,42.6666667 L256,42.6666667 L256,0 Z M341.333333,170.666667 L384,170.666667 L384,213.333333 L341.333333,213.333333 L341.333333,170.666667 Z M0,256 L42.6666667,256 L42.6666667,298.666667 L0,298.666667 L0,256 Z M341.333333,85.3333333 L384,85.3333333 L384,128 L341.333333,128 L341.333333,85.3333333 Z M0,170.666667 L42.6666667,170.666667 L42.6666667,213.333333 L0,213.333333 L0,170.666667 Z M0,85.3333333 L42.6666667,85.3333333 L42.6666667,128 L0,128 L0,85.3333333 Z' id='Combined-Shape'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E%3E%3C/g%3E%3C/svg%3E") 16 16, auto`
-                   }}
-                 >
-                    <div className="w-24 h-24 bg-linear-to-br from-accent to-accent/80 rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">AI</span>
-                </div>
-                <div className="mt-4 text-center">
-                  <h3 className="text-lg font-semibold text-foreground">AI Learning Engine</h3>
-                  <p className="text-sm text-secondary">Powers all your learning tools</p>
-                </div>
-              </div>
-            </div>
-
              {/* Connected Feature Nodes */}
              <div className="relative">
 
