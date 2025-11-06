@@ -121,8 +121,8 @@ export default function SigninPage() {
                 <path d="M44.5 20H24v8h11.3c-1.6 5.2-6.4 9-11.3 9-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.2l6.4-6.4C34.6 4.1 29.6 2 24 2 11.8 2 2 11.8 2 24s9.8 22 22 22c6.6 0 12.2-2.2 16.2-5.9l-6.4-6.4c-2.2 1.5-5 2.4-8.2 2.4-6.4 0-11.8-4.3-13.7-10.2l-6.6 5.2C6.2 41.1 14.4 48 24 48z" fill="#1976D2"/>
                 <defs>
                   <linearGradient id="paint0_linear_103_2" x1="0" y1="0" x2="1" y2="1">
-                    <stop stop-color="#FFC107"/>
-                    <stop offset="1" stop-color="#FFC107" stop-opacity="0"/>
+                     <stop stopColor="#FFC107"/>
+                     <stop offset="1" stopColor="#FFC107" stopOpacity="0"/>
                   </linearGradient>
                 </defs>
               </svg>
