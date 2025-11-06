@@ -12,8 +12,8 @@ export default function Home() {
   return (
     <main className="min-h-screen">
         {/* Hero Section */}
-        <section className="relative overflow-hidden opacity-100 transition-opacity duration-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+        <section className="relative overflow-hidden opacity-100 transition-opacity duration-700 h-screen flex items-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
                The{' '}
