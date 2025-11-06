@@ -423,18 +423,19 @@ export default function VideoAndTranscriptViewer({
                                    {highlightText(segment.text, searchQuery)}
                                  </div>
                                  <div className="flex items-center gap-2">
-                                   {hasNotes && (
-                                     <Tooltip
-                                       title="You have a note on this section"
-                                       children="Click the edit button to view or modify note."
-                                       trigger={
-                                         <div className="shrink-0" aria-label="Note present">
-                                           <FileText className="w-4 h-4 text-accent hover:text-accent/80 transition-colors cursor-pointer" />
-                                         </div>
-                                       }
-                                       position="left"
-                                     />
-                                   )}
+                                    {hasNotes && (
+                                      <Tooltip
+                                        title="You have a note on this section"
+                                        trigger={
+                                          <div className="shrink-0" aria-label="Note present">
+                                            <FileText className="w-4 h-4 text-accent hover:text-accent/80 transition-colors cursor-pointer" />
+                                          </div>
+                                        }
+                                        position="left"
+                                      >
+                                        Click the edit button to view or modify note.
+                                      </Tooltip>
+                                    )}
                                    <button
                                      onClick={(e) => {
                                        e.stopPropagation();
