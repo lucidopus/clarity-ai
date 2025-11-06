@@ -1,6 +1,6 @@
 'use client';
 
-
+import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import SectionTitle from '@/components/SectionTitle';
@@ -15,30 +15,37 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-              Transform Passive Watching into{' '}
-              <span className="text-accent">Active Learning</span>
+               The{' '}
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 1.5, ease: 'easeInOut' }}
+
+                >
+                 Smarter
+               </motion.span>{' '}
+               Way to <span className="text-accent">Learn</span> is Here.
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              Turn any YouTube video into personalized study materials. Flashcards, quizzes, and interactive transcripts generated in seconds.
+              Clarity AI transforms YouTube tutorials into interactive learning materials. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
               <Button href="/auth/signup" variant="primary" size="lg">
                 Get Started Free
               </Button>
               <Button href="#about" variant="secondary" size="lg">
                 Learn More
               </Button>
-            </div>
-            <p className="text-sm text-secondary mt-6">No credit card required • Free to start</p>
-          </div>
-        </div>
+             </div>
+           </div>
 
-        {/* Decorative gradient */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl -z-10 opacity-30">
-          <div className="absolute top-20 left-1/4 w-72 h-72 bg-accent rounded-full filter blur-3xl"></div>
-          <div className="absolute top-40 right-1/4 w-96 h-96 bg-accent/50 rounded-full filter blur-3xl"></div>
-        </div>
-      </section>
+           {/* Decorative gradient */}
+           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl -z-10 opacity-10">
+             <div className="absolute top-20 left-1/4 w-72 h-72 bg-accent rounded-full filter blur-3xl"></div>
+             <div className="absolute top-40 right-1/4 w-96 h-96 bg-accent/50 rounded-full filter blur-3xl"></div>
+           </div>
+          </div>
+        </section>
 
        {/* About Section */}
        <section id="about" className="py-20">
@@ -50,75 +57,48 @@ export default function Home() {
            </SectionTitle>
 
            <div className="max-w-6xl mx-auto">
-             {/* Mission Statement */}
-             <div className="text-center mb-16">
-               <p className="text-xl md:text-2xl text-secondary leading-relaxed max-w-3xl mx-auto">
-               </p>
-             </div>
-
-             {/* Our Story */}
-             <div className="max-w-4xl mx-auto mb-16">
-               <div className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-accent/10">
-                 <div className="flex items-center justify-center space-x-3 mb-8">
-                   <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center">
-                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                     </svg>
-                   </div>
-                   <h3 className="text-3xl md:text-4xl font-bold text-foreground">Our Story</h3>
-                 </div>
-
-                 <div className="space-y-6 text-secondary leading-relaxed text-center">
-                   <p className="text-lg md:text-xl">
-                     Clarity AI was born from a simple observation: YouTube contains an incredible wealth of educational content, but it&apos;s often difficult to extract structured learning materials from long-form videos.
-                   </p>
-                   <p className="text-lg md:text-xl">
-                     Our founders, a team of educators and AI researchers, saw an opportunity to bridge this gap. By combining advanced natural language processing with educational best practices, we created a platform that transforms passive video watching into active, engaging learning experiences.
-                   </p>
-                 </div>
-               </div>
-             </div>
-
-             {/* Closing Statement */}
-             <div className="text-center mb-16">
-               <p className="text-lg md:text-xl text-secondary leading-relaxed max-w-4xl mx-auto">
-                 Today, thousands of learners use Clarity AI to master complex topics, from programming tutorials to academic lectures, making education more accessible and effective for everyone.
-               </p>
-             </div>
-
-              {/* Stats */}
+                                       <div className="text-center mb-16">
+                                         <p className="text-xl md:text-2xl text-secondary leading-relaxed max-w-3xl mx-auto">
+                                           Clarity AI was born from a simple observation: YouTube has a vast library of educational content, but it’s difficult to turn passive watching into active learning. We bridge that gap, transforming any video into an interactive, effective learning experience.
+                                         </p>
+                                       </div>
+                          
+                                        {/* Testimonial */}
+                                        <div className="max-w-4xl mx-auto mb-16">
+                                          <Card className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 md:p-12 border border-accent/10 text-center">
+                                            <p className="text-2xl md:text-3xl text-foreground font-medium leading-tight mb-6">
+                                              “Clarity AI has been a game-changer for my studies. I’m learning faster and retaining more than ever before. It’s like having a personal tutor for any YouTube video.”
+                                            </p>
+                                            <div className="flex items-center justify-center">
+                                              <div className="w-12 h-12 rounded-full bg-accent/20 mr-4"></div>
+                                              <div>
+                                                <p className="text-lg font-semibold text-foreground">- Alex Smith</p>
+                                                <p className="text-secondary">Student at a Top University</p>
+                                              </div>
+                                            </div>
+                                          </Card>
+                                        </div>              {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">2025</div>
-                  <p className="text-secondary font-medium">Founded</p>
-                  <p className="text-sm text-secondary/70 mt-2">Building the future of AI-powered learning</p>
-                </Card>
-
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">20%</div>
-                  <p className="text-secondary font-medium">Faster Mastery</p>
-                  <p className="text-sm text-secondary/70 mt-2">Accelerated skill acquisition with adaptive AI</p>
-                </Card>
-
                  <Card className="text-center p-6">
                   <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
                   </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">85%</div>
-                  <p className="text-secondary font-medium">User Retention</p>
-                  <p className="text-sm text-secondary/70 mt-2">Active learners after 30 days</p>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">50,000+</div>
+                  <p className="text-secondary font-medium">Learners Empowered</p>
+                  <p className="text-sm text-secondary/70 mt-2">Join a growing community of students and professionals.</p>
+                </Card>
+
+                 <Card className="text-center p-6">
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">1M+</div>
+                  <p className="text-secondary font-medium">AI Generations</p>
+                  <p className="text-sm text-secondary/70 mt-2">Millions of notes, quizzes, and mind maps created.</p>
                 </Card>
 
                  <Card className="text-center p-6">
@@ -127,9 +107,20 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                     </svg>
                   </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">90%</div>
-                  <p className="text-secondary font-medium">Skill Improvement</p>
-                  <p className="text-sm text-secondary/70 mt-2">Report measurable progress within 3 months</p>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">4.9/5</div>
+                  <p className="text-secondary font-medium">User Rating</p>
+                  <p className="text-sm text-secondary/70 mt-2">From thousands of happy learners worldwide.</p>
+                </Card>
+
+                 <Card className="text-center p-6">
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">95%</div>
+                  <p className="text-secondary font-medium">Better Understanding</p>
+                  <p className="text-sm text-secondary/70 mt-2">Reported by users after just one session.</p>
                 </Card>
               </div>
            </div>
@@ -147,31 +138,6 @@ export default function Home() {
 
           {/* Interactive Learning Ecosystem */}
           <div className="relative max-w-6xl mx-auto">
-             {/* Central AI Processing Hub */}
-             <div className="flex justify-center mb-20">
-               <div className="relative group">
-                 <div
-                    className="w-40 h-40 bg-linear-to-br from-accent/30 via-accent/20 to-accent/10 rounded-full flex items-center justify-center border-4 border-accent/40"
-                   style={{
-                     cursor: `url("data:image/svg+xml,%3Csvg width='32px' height='32px' viewBox='0 0 512 512' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cg id='Page-1' stroke='none' stroke-width='1' fill='none' fill-rule='evenodd'%3E%3Cg id='icon' fill='%2306B6D4' transform='translate(64.000000, 64.000000)'%3E%3Cpath d='M320,64 L320,320 L64,320 L64,64 L320,64 Z M171.749388,128 L146.817842,128 L99.4840387,256 L121.976629,256 L130.913039,230.977 L187.575039,230.977 L196.319607,256 L220.167172,256 L171.749388,128 Z M260.093778,128 L237.691519,128 L237.691519,256 L260.093778,256 L260.093778,128 Z M159.094727,149.47526 L181.409039,213.333 L137.135039,213.333 L159.094727,149.47526 Z M341.333333,256 L384,256 L384,298.666667 L341.333333,298.666667 L341.333333,256 Z M85.3333333,341.333333 L128,341.333333 L128,384 L85.3333333,384 L85.3333333,341.333333 Z M170.666667,341.333333 L213.333333,341.333333 L213.333333,384 L170.666667,384 L170.666667,341.333333 Z M85.3333333,0 L128,0 L128,42.6666667 L85.3333333,42.6666667 L85.3333333,0 Z M256,341.333333 L298.666667,341.333333 L298.666667,384 L256,384 L256,341.333333 Z M170.666667,0 L213.333333,0 L213.333333,42.6666667 L170.666667,42.6666667 L170.666667,0 Z M256,0 L298.666667,0 L298.6666667,42.6666667 L256,42.6666667 L256,0 Z M341.333333,170.666667 L384,170.666667 L384,213.333333 L341.333333,213.333333 L341.333333,170.666667 Z M0,256 L42.6666667,256 L42.6666667,298.666667 L0,298.666667 L0,256 Z M341.333333,85.3333333 L384,85.3333333 L384,128 L341.333333,128 L341.333333,85.3333333 Z M0,170.666667 L42.6666667,170.666667 L42.6666667,213.333333 L0,213.333333 L0,170.666667 Z M0,85.3333333 L42.6666667,85.3333333 L42.6666667,128 L0,128 L0,85.3333333 Z' id='Combined-Shape'%3E%3C/path%3E%3C/g%3E%3C/g%3E%3C/svg%3E%3E%3C/g%3E%3C/svg%3E") 16 16, auto`
-                   }}
-                 >
-                    <div className="w-24 h-24 bg-linear-to-br from-accent to-accent/80 rounded-full flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
-                    </svg>
-                  </div>
-                </div>
-                <div className="absolute -top-3 -right-3 w-12 h-12 bg-accent rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">AI</span>
-                </div>
-                <div className="mt-4 text-center">
-                  <h3 className="text-lg font-semibold text-foreground">AI Learning Engine</h3>
-                  <p className="text-sm text-secondary">Powers all your learning tools</p>
-                </div>
-              </div>
-            </div>
-
              {/* Connected Feature Nodes */}
              <div className="relative">
 
@@ -191,7 +157,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                        <p className="text-secondary leading-relaxed mb-3">AI-generated flashcards with active recall techniques for better retention and spaced repetition learning.</p>
+                         <p className="text-secondary leading-relaxed mb-3">Turn video highlights into flashcards. Our AI uses spaced repetition to make sure you never forget what you&apos;ve learned.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">300% better retention</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -215,7 +181,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Interactive Quizzes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Test your knowledge with instant feedback, detailed explanations, and adaptive difficulty levels.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Test your knowledge with AI-generated quizzes. Get instant feedback and identify areas for improvement.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Personalized learning paths</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -238,8 +204,8 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Timestamped Notes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Jump to any moment in the video with clickable timestamps and AI-generated summaries for each section.</p>
+                                                 <h3 className="text-xl font-semibold text-accent mb-2">AI-Powered Notes</h3>
+                        <p className="text-secondary leading-relaxed mb-3">Go from video to structured notes in seconds. Our AI summarizes key concepts and links them to the video timeline.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Instant navigation</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -262,8 +228,8 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Progress Tracking</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Monitor your learning journey with detailed analytics, milestones, and personalized recommendations.</p>
+                                                 <h3 className="text-xl font-semibold text-accent mb-2">Personalized Learning</h3>
+                        <p className="text-secondary leading-relaxed mb-3">Track your progress and get recommendations. Clarity AI adapts to your learning style and helps you stay motivated.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Data-driven insights</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -292,24 +258,24 @@ export default function Home() {
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Paste YouTube URL</h3>
-              <p className="text-secondary">Copy any educational video link and paste it into Clarity AI.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Link Your Video</h3>
+              <p className="text-secondary">Paste any YouTube link.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">AI Generates Materials</h3>
-              <p className="text-secondary">Our AI instantly creates flashcards, quizzes, and timestamped notes.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Get Your Study Kit</h3>
+              <p className="text-secondary">AI generates notes, quizzes, and flashcards in seconds.</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Practice & Master</h3>
-              <p className="text-secondary">Study with interactive materials and track your progress.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2">Master the Material</h3>
+              <p className="text-secondary">Learn faster with interactive tools.</p>
             </div>
           </div>
         </div>
@@ -465,12 +431,12 @@ export default function Home() {
 
 
                <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 leading-tight">
-                 Ready to Transform Your{' '}
-                 <span className="text-accent">Learning</span>?
+               Stop Watching,{' '}
+                 <span className="text-accent">Start Learning.</span>{' '}
                </h2>
 
                <p className="text-xl text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
-                 Join thousands of students who are mastering content faster with AI-powered study materials.
+                 Transform your learning experience today. Join thousands of students who are mastering subjects faster with Clarity AI.
                </p>
 
                {/* CTA Buttons */}
@@ -483,29 +449,9 @@ export default function Home() {
                  </Button>
                </div>
 
-               <p className="text-sm text-secondary/80">No credit card required • 14-day free trial</p>
+               <p className="text-sm text-secondary/80">No credit card required • Get started for free</p>
 
-               {/* Trust indicators */}
-               <div className="flex items-center justify-center space-x-6 mt-8 pt-6 border-t border-accent/10">
-                 <div className="flex items-center space-x-2 text-sm text-secondary/70">
-                   <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                   <span>99.9% Uptime</span>
-                 </div>
-                 <div className="flex items-center space-x-2 text-sm text-secondary/70">
-                   <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                   <span>GDPR Compliant</span>
-                 </div>
-                 <div className="flex items-center space-x-2 text-sm text-secondary/70">
-                   <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                   <span>24/7 Support</span>
-                 </div>
-               </div>
+               {/* Trust indicators removed for now */}
              </div>
            </div>
          </div>
