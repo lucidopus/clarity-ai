@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Bar } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  BarElement,
+  LineElement,
+  PointElement,
   Tooltip,
   Legend,
 } from 'chart.js';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Tooltip, Legend);
 
 type Weekly = { date: string; count: number };
 
@@ -113,16 +114,17 @@ export default function WeeklyActivityChart() {
     <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Activity</h3>
       <div className="grow h-[180px]">
-        <Bar
+        <Line
           data={{
             labels,
             datasets: [
               {
                 label: 'Activities',
                 data: counts,
-                backgroundColor: 'rgba(8, 145, 178, 0.7)',
-                borderRadius: 6,
-                borderSkipped: false,
+                borderColor: 'rgba(28, 195, 223, 1)',
+                backgroundColor: 'rgba(28, 195, 223, 0.1)',
+                borderWidth: 3,
+                fill: true,
               },
             ],
           }}
