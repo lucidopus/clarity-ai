@@ -5,11 +5,11 @@
      <strong>Transform YouTube videos into interactive, personalized learning experiences.</strong>
    </p>
    <p>
-     [Features](#features) •
-     [Tech Stack](#tech-stack) •
-     [Getting Started](#getting-started) •
-     [Contributing](#contributing) •
-     [License](#license)
+     <a href="#features">Features</a> •
+     <a href="#tech-stack">Tech Stack</a> •
+     <a href="#getting-started">Getting Started</a> •
+     <a href="#contributing">Contributing</a> •
+     <a href="#license">License</a>
    </p>
  </p>
 
@@ -19,7 +19,7 @@ Clarity AI is an AI-powered educational platform that turns passive YouTube vide
 
 ## 🚀 Live Demo
 
-**Experience Clarity AI in action: [clarityai.app](https://clarityai.app)** (placeholder)
+**Experience Clarity AI in action: [clarityml.vercel.app](https://clarityml.vercel.app/)**
 
 ## ✨ Features
 
@@ -48,7 +48,7 @@ Clarity AI is packed with features designed to enhance your learning, all genera
 - **AI/LLM**: [Groq API](https://groq.com/)
 - **Authentication**: JWT-based custom authentication
 - **Transcript API**: [youtube-transcript](https://www.npmjs.com/package/youtube-transcript) and other providers for reliability.
-- **Deployment**: Vercel (assumed)
+- **Deployment**: Vercel 
 
 ## 🏁 Getting Started
 
