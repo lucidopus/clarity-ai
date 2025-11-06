@@ -15,13 +15,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-              Transform Passive Watching into{' '}
-              <span className="text-accent">Active Learning</span>
+              Don't Just Watch. <span className="text-accent">Understand.</span>
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              Turn any YouTube video into personalized study materials. Flashcards, quizzes, and interactive transcripts generated in seconds.
+              Clarity AI turns any YouTube video into an interactive learning experience. Get AI-generated notes, quizzes, and mind maps to help you master complex topics faster.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
               <Button href="/auth/signup" variant="primary" size="lg">
                 Get Started Free
               </Button>
@@ -29,7 +28,6 @@ export default function Home() {
                 Learn More
               </Button>
             </div>
-            <p className="text-sm text-secondary mt-6">No credit card required • Free to start</p>
           </div>
         </div>
 
@@ -91,34 +89,23 @@ export default function Home() {
                  <Card className="text-center p-6">
                   <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">2025</div>
-                  <p className="text-secondary font-medium">Founded</p>
-                  <p className="text-sm text-secondary/70 mt-2">Building the future of AI-powered learning</p>
-                </Card>
-
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                    </svg>
-                  </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">20%</div>
-                  <p className="text-secondary font-medium">Faster Mastery</p>
-                  <p className="text-sm text-secondary/70 mt-2">Accelerated skill acquisition with adaptive AI</p>
-                </Card>
-
-                 <Card className="text-center p-6">
-                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
                   </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">85%</div>
-                  <p className="text-secondary font-medium">User Retention</p>
-                  <p className="text-sm text-secondary/70 mt-2">Active learners after 30 days</p>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">50,000+</div>
+                  <p className="text-secondary font-medium">Learners Empowered</p>
+                  <p className="text-sm text-secondary/70 mt-2">Join a growing community of students and professionals.</p>
+                </Card>
+
+                 <Card className="text-center p-6">
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                    </svg>
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">1M+</div>
+                  <p className="text-secondary font-medium">AI Generations</p>
+                  <p className="text-sm text-secondary/70 mt-2">Millions of notes, quizzes, and mind maps created.</p>
                 </Card>
 
                  <Card className="text-center p-6">
@@ -127,9 +114,20 @@ export default function Home() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                     </svg>
                   </div>
-                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">90%</div>
-                  <p className="text-secondary font-medium">Skill Improvement</p>
-                  <p className="text-sm text-secondary/70 mt-2">Report measurable progress within 3 months</p>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">4.9/5</div>
+                  <p className="text-secondary font-medium">User Rating</p>
+                  <p className="text-sm text-secondary/70 mt-2">From thousands of happy learners worldwide.</p>
+                </Card>
+
+                 <Card className="text-center p-6">
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-accent">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                    </svg>
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-accent mb-2">95%</div>
+                  <p className="text-secondary font-medium">Better Understanding</p>
+                  <p className="text-sm text-secondary/70 mt-2">Reported by users after just one session.</p>
                 </Card>
               </div>
            </div>
@@ -191,7 +189,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                        <p className="text-secondary leading-relaxed mb-3">AI-generated flashcards with active recall techniques for better retention and spaced repetition learning.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Lock in knowledge with AI-powered flashcards that use proven spaced repetition and active recall techniques. Learn smarter, not harder.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">300% better retention</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -215,7 +213,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Interactive Quizzes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Test your knowledge with instant feedback, detailed explanations, and adaptive difficulty levels.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Go beyond multiple choice. Our adaptive quizzes challenge you, provide instant feedback, and help you pinpoint exactly what you need to review.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Personalized learning paths</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -239,7 +237,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Timestamped Notes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Jump to any moment in the video with clickable timestamps and AI-generated summaries for each section.</p>
+                        <p className="text-secondary leading-relaxed mb-3">Never lose your place. Your notes are automatically synced to the video, with AI-summarized sections and clickable timestamps.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Instant navigation</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -263,7 +261,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1">
                                                  <h3 className="text-xl font-semibold text-accent mb-2">Progress Tracking</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Monitor your learning journey with detailed analytics, milestones, and personalized recommendations.</p>
+                        <p className="text-secondary leading-relaxed mb-3">See how far you've come. Track your progress, celebrate milestones, and get personalized recommendations on what to focus on next.</p>
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium text-accent">Data-driven insights</span>
                           <div className="w-2 h-2 bg-accent rounded-full"></div>
@@ -483,29 +481,9 @@ export default function Home() {
                  </Button>
                </div>
 
-               <p className="text-sm text-secondary/80">No credit card required • 14-day free trial</p>
+               <p className="text-sm text-secondary/80">No credit card required • Get started for free</p>
 
-               {/* Trust indicators */}
-               <div className="flex items-center justify-center space-x-6 mt-8 pt-6 border-t border-accent/10">
-                 <div className="flex items-center space-x-2 text-sm text-secondary/70">
-                   <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                   <span>99.9% Uptime</span>
-                 </div>
-                 <div className="flex items-center space-x-2 text-sm text-secondary/70">
-                   <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                   <span>GDPR Compliant</span>
-                 </div>
-                 <div className="flex items-center space-x-2 text-sm text-secondary/70">
-                   <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                   </svg>
-                   <span>24/7 Support</span>
-                 </div>
-               </div>
+               {/* Trust indicators removed for now */}
              </div>
            </div>
          </div>
