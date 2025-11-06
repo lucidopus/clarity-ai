@@ -16,18 +16,19 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-               Transform videos into{' '}
+               Turn Any{' '}
                 <motion.span
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 1.5, ease: 'easeInOut' }}
 
                 >
-                 <span className="text-accent">active learning</span>
-               </motion.span>
+                 YouTube Video
+               </motion.span>{' '}
+               Into a <span className="text-accent">Study Session</span>
             </h1>
             <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              AI-powered study materials from any YouTube video. Flashcards, quizzes, and notes generated in seconds.
+              Stop rewatching the same videos over and over. Clarity AI instantly generates flashcards, quizzes, and interactive notes from any educational YouTube video—so you can actually remember what you learned.
             </p>
             <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
               <Button href="/auth/signup" variant="primary" size="lg">
