@@ -77,8 +77,8 @@ export default function FlashcardDifficultyDonut() {
         Difficulty breakdown of your AI-generated flashcards
       </p>
 
-      <div className="flex items-center justify-center mb-6">
-        <div className="w-[200px] h-[200px]">
+      <div className="flex items-center justify-center mb-6 p-4">
+        <div className="w-[180px] h-[180px]">
           <Doughnut
             data={{
               labels,
@@ -87,13 +87,16 @@ export default function FlashcardDifficultyDonut() {
                   data,
                   backgroundColor: backgroundColors,
                   borderWidth: 0,
-                  hoverOffset: 8,
+                  hoverOffset: 4,
                 },
               ],
             }}
             options={{
               responsive: true,
               maintainAspectRatio: true,
+              layout: {
+                padding: 0,
+              },
               plugins: {
                 legend: {
                   display: false,
