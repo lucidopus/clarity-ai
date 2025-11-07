@@ -11,7 +11,7 @@ export default function FlashcardDifficultyDonut() {
 
   if (loading) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <div className="h-6 bg-secondary/20 rounded mb-4 animate-pulse w-32"></div>
         <div className="h-[240px] bg-secondary/10 rounded-full animate-pulse mx-auto max-w-[240px]"></div>
       </div>
@@ -20,7 +20,7 @@ export default function FlashcardDifficultyDonut() {
 
   if (error) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Flashcard Mix</h3>
         <div className="text-sm text-red-500">{error}</div>
       </div>
@@ -29,7 +29,7 @@ export default function FlashcardDifficultyDonut() {
 
   if (!insights) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Flashcard Mix</h3>
         <div className="text-sm text-muted-foreground text-center py-12">
           Loading flashcard data...
@@ -43,7 +43,7 @@ export default function FlashcardDifficultyDonut() {
 
   if (totalCards === 0) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Flashcard Mix</h3>
         <div className="text-sm text-muted-foreground text-center py-12">
           No flashcards yet. Generate materials to see your difficulty breakdown!
@@ -71,7 +71,7 @@ export default function FlashcardDifficultyDonut() {
   const dominant = sortedDifficulty[0];
 
   return (
-    <div className="bg-card-bg border border-border rounded-2xl p-6">
+    <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-2">Flashcard Mix</h3>
       <p className="text-sm text-muted-foreground mb-4">
         Difficulty breakdown of your AI-generated flashcards
@@ -133,16 +133,6 @@ export default function FlashcardDifficultyDonut() {
             </span>
           </div>
         ))}
-      </div>
-
-      {/* Quick ratio summary */}
-      <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
-        <p>
-          💡 <strong>Balance tip:</strong>{' '}
-          {dominant.percentage > 60
-            ? `Your deck is ${dominant.percentage}% ${dominant.difficulty} cards. Mix in more variety!`
-            : `Nice balance! Varied difficulty helps long-term retention.`}
-        </p>
       </div>
     </div>
   );

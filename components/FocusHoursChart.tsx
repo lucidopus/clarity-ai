@@ -18,7 +18,7 @@ export default function FocusHoursChart() {
 
   if (loading) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <div className="h-6 bg-secondary/20 rounded mb-4 animate-pulse w-32"></div>
         <div className="h-[300px] bg-secondary/10 rounded animate-pulse"></div>
       </div>
@@ -27,7 +27,7 @@ export default function FocusHoursChart() {
 
   if (error) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Focus Hours</h3>
         <div className="text-sm text-red-500">{error}</div>
       </div>
@@ -36,7 +36,7 @@ export default function FocusHoursChart() {
 
   if (!insights || insights.focusHours.length === 0) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Focus Hours</h3>
         <div className="text-sm text-muted-foreground text-center py-12">
           No activity data yet. Start learning to see your focus hours!
@@ -72,7 +72,7 @@ export default function FocusHoursChart() {
   const tickColor = 'rgba(148,163,184,0.8)';
 
   return (
-    <div className="bg-card-bg border border-border rounded-2xl p-6">
+    <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-2">Focus Hours</h3>
       <p className="text-sm text-muted-foreground mb-4">
         Your activity by hour of day (last 30 days) • Timezone: {insights.timezone}
