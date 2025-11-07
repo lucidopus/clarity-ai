@@ -18,16 +18,16 @@ export default function WeekdayConsistencyBars() {
 
   if (loading) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <div className="h-6 bg-secondary/20 rounded mb-4 animate-pulse w-32"></div>
-        <div className="h-[240px] bg-secondary/10 rounded animate-pulse"></div>
+        <div className="h-[140px] bg-secondary/10 rounded animate-pulse"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Rhythm</h3>
         <div className="text-sm text-red-500">{error}</div>
       </div>
@@ -36,7 +36,7 @@ export default function WeekdayConsistencyBars() {
 
   if (!insights || insights.weekdayConsistency.length === 0) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Weekly Rhythm</h3>
         <div className="text-sm text-muted-foreground text-center py-12">
           No activity data yet. Start learning to see your weekly patterns!
@@ -70,13 +70,13 @@ export default function WeekdayConsistencyBars() {
   const tickColor = 'rgba(148,163,184,0.8)';
 
   return (
-    <div className="bg-card-bg border border-border rounded-2xl p-6">
+    <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-2">Weekly Rhythm</h3>
       <p className="text-sm text-muted-foreground mb-4">
         Activity by day of week (last 6 weeks)
       </p>
 
-      <div className="h-[240px]">
+      <div className="h-[140px]">
         <Bar
           data={{
             labels,
@@ -125,37 +125,12 @@ export default function WeekdayConsistencyBars() {
         />
       </div>
 
-      {/* Average line legend */}
-      <div className="mt-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-[rgba(28,195,223,0.8)]"></div>
-          <span>Above average</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-[rgba(148,163,184,0.4)]"></div>
-          <span>Below average</span>
-        </div>
-      </div>
-
-      {/* Insights */}
-      <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground space-y-1">
-        {mostActiveDay && (
-          <p>
-            🔥 <strong>Most active:</strong> {mostActiveDay.label} ({mostActiveDay.count}{' '}
-            {mostActiveDay.count === 1 ? 'activity' : 'activities'})
-          </p>
-        )}
-        {leastActiveDay && nonZeroDays.length === 7 && (
-          <p>
-            💤 <strong>Least active:</strong> {leastActiveDay.label} ({leastActiveDay.count}{' '}
-            {leastActiveDay.count === 1 ? 'activity' : 'activities'})
-          </p>
-        )}
-        {nonZeroDays.length < 7 && (
-          <p>
-            💡 <strong>Tip:</strong> Try to study on all days of the week for better consistency!
-          </p>
-        )}
+      {/* Legend */}
+      <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Less</span>
+        <div className="w-3 h-3 rounded bg-[rgba(148,163,184,0.4)]"></div>
+        <div className="w-3 h-3 rounded bg-[rgba(28,195,223,0.8)]"></div>
+        <span>More</span>
       </div>
     </div>
   );

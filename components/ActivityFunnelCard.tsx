@@ -8,7 +8,7 @@ export default function ActivityFunnelCard() {
 
   if (loading) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <div className="h-6 bg-secondary/20 rounded mb-4 animate-pulse w-32"></div>
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -21,7 +21,7 @@ export default function ActivityFunnelCard() {
 
   if (error) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Activity Funnel</h3>
         <div className="text-sm text-red-500">{error}</div>
       </div>
@@ -30,7 +30,7 @@ export default function ActivityFunnelCard() {
 
   if (!insights || insights.activityFunnel.length === 0) {
     return (
-      <div className="bg-card-bg border border-border rounded-2xl p-6">
+      <div className="bg-card-bg border border-border rounded-2xl p-6 h-full">
         <h3 className="text-lg font-semibold text-foreground mb-4">Activity Funnel</h3>
         <div className="text-sm text-muted-foreground text-center py-12">
           No recent activity. Start learning to see your engagement funnel!
@@ -53,7 +53,7 @@ export default function ActivityFunnelCard() {
   });
 
   return (
-    <div className="bg-card-bg border border-border rounded-2xl p-6">
+    <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-foreground mb-2">Activity Funnel</h3>
       <p className="text-sm text-muted-foreground mb-4">
         How you move through the learning loop (last 7 days)
