@@ -16,10 +16,20 @@ function formatYmd(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
-function calcLevel(count: number): 0 | 1 | 2 | 3 {
+function buildIntensityThresholds(maxCount: number) {
+  if (maxCount <= 7) {
+    return { low: 3, medium: 7 };
+  }
+
+  const low = Math.max(3, Math.ceil(maxCount * 0.3));
+  const medium = Math.max(low + 1, Math.ceil(maxCount * 0.65));
+  return { low, medium };
+}
+
+function calcLevel(count: number, thresholds: { low: number; medium: number }): 0 | 1 | 2 | 3 {
   if (count <= 0) return 0;
-  if (count <= 3) return 1;
-  if (count <= 7) return 2;
+  if (count <= thresholds.low) return 1;
+  if (count <= thresholds.medium) return 2;
   return 3;
 }
 
@@ -58,13 +68,15 @@ export async function GET(request: NextRequest) {
 
     const map = new Map<string, number>();
     for (const r of agg) map.set(r.date, r.count);
+    const maxCount = map.size ? Math.max(...map.values()) : 0;
+    const thresholds = buildIntensityThresholds(maxCount);
 
     const activities: Array<{ date: string; count: number; level: 0 | 1 | 2 | 3 }> = [];
     const cursor = new Date(startDate);
     while (cursor <= endDate) {
       const key = formatYmd(cursor);
       const count = map.get(key) || 0;
-      activities.push({ date: key, count, level: calcLevel(count) });
+      activities.push({ date: key, count, level: calcLevel(count, thresholds) });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
