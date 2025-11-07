@@ -12,6 +12,12 @@ import StatCard from '@/components/StatCard';
 import StudyActivityHeatmap from '@/components/StudyActivityHeatmap';
 import WeeklyActivityChart from '@/components/WeeklyActivityChart';
 import RecentVideoCard from '@/components/RecentVideoCard';
+import { DashboardInsightsProvider } from '@/hooks/useDashboardInsights';
+import FocusHoursChart from '@/components/FocusHoursChart';
+import ActivityFunnelCard from '@/components/ActivityFunnelCard';
+import VideoEngagementList from '@/components/VideoEngagementList';
+import FlashcardDifficultyDonut from '@/components/FlashcardDifficultyDonut';
+import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
 
 interface StatsResponse {
   totalVideos: number;
@@ -192,6 +198,7 @@ export default function DashboardHomePage() {
   if (!user) return null;
 
   return (
+    <DashboardInsightsProvider>
     <div>
       {/* Page Header */}
       <DashboardHeader
@@ -315,6 +322,29 @@ export default function DashboardHomePage() {
               </div>
             )}
           </div>
+
+          {/* Insights Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Learning Insights</h3>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {/* Row 1: Focus Hours (spans 2 cols) + Activity Funnel */}
+              <div className="xl:col-span-1">
+                <FocusHoursChart />
+              </div>
+              <div className="xl:col-span-1">
+                <ActivityFunnelCard />
+              </div>
+
+              {/* Row 2: Video Engagement + Flashcard Difficulty + Weekday Consistency */}
+              <div className="xl:col-span-1">
+                <VideoEngagementList />
+              </div>
+              <div className="xl:col-span-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FlashcardDifficultyDonut />
+                <WeekdayConsistencyBars />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -348,5 +378,6 @@ export default function DashboardHomePage() {
         confirmText="OK"
       />
     </div>
+    </DashboardInsightsProvider>
   );
 }

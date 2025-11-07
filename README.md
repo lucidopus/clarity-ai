@@ -39,6 +39,12 @@ Clarity AI is packed with features designed to enhance your learning, all genera
 - **📊 Personalized Learning Dashboard**:
     - **Activity Tracking**: Visualize your study habits with a GitHub-style activity heatmap and weekly charts.
     - **Progress Overview**: See your performance on quizzes and flashcards at a glance.
+    - **Learning Insights**: Actionable analytics to optimize your study habits:
+        - **Focus Hours**: Discover your peak productivity times with timezone-aware hourly breakdown
+        - **Activity Funnel**: Identify engagement gaps across chatbot, flashcards, quizzes, and video generation
+        - **Top Videos**: Track your most engaged videos with interaction metrics
+        - **Flashcard Mix**: Visualize the difficulty distribution of your flashcard deck
+        - **Weekly Rhythm**: Analyze consistency patterns across days of the week
     - **Video Gallery**: A central library for all your processed videos, with powerful search and filtering capabilities.
 
 ## 🛠️ Tech Stack
