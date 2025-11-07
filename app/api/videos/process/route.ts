@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
     try {
       materials = await generateLearningMaterials(transcriptResult.text);
       console.log('✅ [VIDEO PROCESS] LLM generation successful!');
-      console.log(`📚 [VIDEO PROCESS] Generated: ${materials.flashcards.length} flashcards, ${materials.quizzes.length} quizzes, ${materials.timestamps.length} timestamps, ${materials.prerequisites.length} prerequisites`);
+      console.log(`📚 [VIDEO PROCESS] Generated: ${materials.flashcards.length} flashcards, ${materials.quizzes.length} quizzes, ${materials.timestamps.length} timestamps, ${materials.prerequisites.length} prerequisites, ${materials.realWorldProblems.length} case studies`);
     } catch (error) {
       console.error('❌ [VIDEO PROCESS] LLM generation failed:', error);
       await Video.findByIdAndUpdate(videoDoc._id, {
@@ -217,13 +217,14 @@ export async function POST(request: NextRequest) {
     await mindMapDoc.save();
     console.log(`✅ [VIDEO PROCESS] Mind map saved with ${materials.mindMap.nodes.length} nodes and ${materials.mindMap.edges.length} edges`);
 
-    // Save timestamps and prerequisites in learning materials collection
-    console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps and ${materials.prerequisites.length} prerequisites...`);
+    // Save timestamps, prerequisites, and real-world problems in learning materials collection
+    console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps, ${materials.prerequisites.length} prerequisites, and ${materials.realWorldProblems.length} real-world problems...`);
     await LearningMaterial.create({
       videoId: videoId, // YouTube video ID
       userId: decoded.userId,
       timestamps: materials.timestamps,
       prerequisites: materials.prerequisites,
+      realWorldProblems: materials.realWorldProblems,
       videoSummary: materials.videoSummary,
       metadata: {
         generatedBy: 'llama-3.3-70b-versatile',
