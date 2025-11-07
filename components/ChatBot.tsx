@@ -256,6 +256,26 @@ export function ChatBot({ videoId }: ChatBotProps) {
   }, [messages, isStreaming, updateSpacer, computeTopBuffer]);
   return (
     <>
+      {/* Smart Keyboard Shortcut Indicator */}
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.3, delay: 1 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] pointer-events-none"
+          >
+            <div className="px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-md border border-border">
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="font-mono font-semibold text-primary">⌘K</span>
+                <span className="text-foreground">to chat</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Action Button */}
       {!isOpen && (
       <motion.button
