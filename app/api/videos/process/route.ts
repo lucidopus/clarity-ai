@@ -9,6 +9,7 @@ import { MindMap } from '@/lib/models';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
+import { resolveClientDay } from '@/lib/date.utils';
 
 interface DecodedToken {
   userId: string;
@@ -17,12 +18,6 @@ interface DecodedToken {
   lastName: string;
   iat: number;
   exp: number;
-}
-
-function startOfDay(date: Date): Date {
-  // Use UTC to avoid timezone issues
-  const d = new Date(date);
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0));
 }
 
 export async function POST(request: NextRequest) {
@@ -42,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request
     console.log('📝 [VIDEO PROCESS] Step 2: Parsing request body...');
-    const { youtubeUrl } = await request.json();
+    const { youtubeUrl, clientTimestamp, timezoneOffsetMinutes, timeZone } = await request.json();
     if (!youtubeUrl || typeof youtubeUrl !== 'string') {
       console.log('❌ [VIDEO PROCESS] Invalid request: YouTube URL missing');
       return NextResponse.json(
@@ -249,13 +244,13 @@ export async function POST(request: NextRequest) {
     // 9. Log video generation activity
     console.log('📊 [VIDEO PROCESS] Step 10: Logging video generation activity...');
     try {
-      const now = new Date();
+      const { now: logTimestamp, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
       await ActivityLog.create({
         userId: decoded.userId,
         activityType: 'video_generated',
         videoId: videoId,
-        date: startOfDay(now),
-        timestamp: now,
+        date: startOfDay,
+        timestamp: logTimestamp,
         metadata: {
           flashcardsGenerated: materials.flashcards.length,
           quizzesGenerated: materials.quizzes.length,
@@ -263,6 +258,8 @@ export async function POST(request: NextRequest) {
           prerequisitesGenerated: materials.prerequisites.length,
           mindMapNodesGenerated: materials.mindMap.nodes.length,
           mindMapEdgesGenerated: materials.mindMap.edges.length,
+          ...(timeZone ? { clientTimeZone: timeZone } : {}),
+          ...(typeof timezoneOffsetMinutes === 'number' ? { clientTimezoneOffsetMinutes: timezoneOffsetMinutes } : {}),
         },
       });
       console.log('✅ [VIDEO PROCESS] Activity logged successfully');
@@ -290,4 +287,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

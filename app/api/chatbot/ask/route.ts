@@ -8,6 +8,7 @@ import { CHATBOT_SYSTEM_PROMPT } from '@/lib/prompts';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
+import { resolveClientDay } from '@/lib/date.utils';
 
 interface DecodedToken {
   userId: string;
@@ -16,11 +17,6 @@ interface DecodedToken {
   lastName: string;
   iat: number;
   exp: number;
-}
-
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0));
 }
 
 export async function POST(request: NextRequest) {
@@ -34,7 +30,14 @@ export async function POST(request: NextRequest) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
     // 2. Parse request
-    const { videoId, message, conversationHistory } = await request.json();
+    const {
+      videoId,
+      message,
+      conversationHistory,
+      clientTimestamp,
+      timezoneOffsetMinutes,
+      timeZone,
+    } = await request.json();
     if (!videoId || !message) {
       return NextResponse.json({ error: 'videoId and message are required' }, { status: 400 });
     }
@@ -136,16 +139,18 @@ export async function POST(request: NextRequest) {
 
     // 11. Log activity
     try {
-      const now = new Date();
+      const { now, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
       await ActivityLog.create({
         userId: decoded.userId,
         activityType: 'chatbot_message_sent',
         videoId: videoId,
-        date: startOfDay(now),
+        date: startOfDay,
         timestamp: now,
         metadata: {
           messageLength: message.length,
           remainingMessages: rateLimit.remaining - 1,
+          ...(timeZone ? { clientTimeZone: timeZone } : {}),
+          ...(typeof timezoneOffsetMinutes === 'number' ? { clientTimezoneOffsetMinutes: timezoneOffsetMinutes } : {}),
         },
       });
     } catch (logError) {
