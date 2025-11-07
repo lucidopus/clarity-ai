@@ -77,8 +77,8 @@ export default function FlashcardDifficultyDonut() {
         Difficulty breakdown of your AI-generated flashcards
       </p>
 
-      <div className="flex items-center justify-center mb-6 p-4">
-        <div className="w-[180px] h-[180px]">
+      <div className="flex-1 flex items-center justify-center mb-4">
+        <div className="w-[240px] h-[240px]">
           <Doughnut
             data={{
               labels,
@@ -118,7 +118,7 @@ export default function FlashcardDifficultyDonut() {
       </div>
 
       {/* Legend */}
-      <div className="space-y-2">
+      <div className="space-y-2 mt-auto">
         {difficulty.map((d) => (
           <div key={d.difficulty} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
