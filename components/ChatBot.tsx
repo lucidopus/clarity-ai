@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Bot } from 'lucide-react';
+import { MessageCircle, X, Bot, Trash2 } from 'lucide-react';
 import { useChatBot } from '@/hooks/useChatBot';
 import { ChatMessage } from './ChatMessage';
 import { ChatInput } from './ChatInput';
@@ -284,13 +284,13 @@ export function ChatBot({ videoId }: ChatBotProps) {
             />
 
             {/* Dialog */}
-            <motion.div
-              className="relative z-10 flex h-[700px] w-full max-w-4xl flex-col rounded-2xl border border-border bg-background shadow-2xl"
-              initial={{ y: '100%', opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: '100%', opacity: 0 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            >
+             <motion.div
+               className="relative z-10 flex h-[800px] w-full max-w-4xl flex-col rounded-2xl border border-border bg-background shadow-2xl"
+               initial={{ y: '100%', opacity: 0 }}
+               animate={{ y: 0, opacity: 1 }}
+               exit={{ y: '100%', opacity: 0 }}
+               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-border p-4">
                 <div className="flex items-center gap-3">
@@ -302,12 +302,22 @@ export function ChatBot({ videoId }: ChatBotProps) {
                      <p className="text-xs text-secondary">Ask {CHATBOT_NAME} anything about this video</p>
                    </div>
                 </div>
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="rounded-lg p-2 hover:bg-card-bg"
-                >
-                  <X className="h-5 w-5 cursor-pointer" />
-                </button>
+                 <div className="flex items-center gap-2">
+                   <button
+                     onClick={() => setShowClearConfirm(true)}
+                     className="flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-card-bg hover:bg-card-bg/80 transition-colors cursor-pointer text-secondary hover:text-foreground text-xs"
+                     title="Clear conversation"
+                   >
+                     <Trash2 className="h-3 w-3" />
+                     Clear Chat
+                   </button>
+                   <button
+                     onClick={() => setIsOpen(false)}
+                     className="rounded-lg p-2 hover:bg-card-bg"
+                   >
+                     <X className="h-5 w-5 cursor-pointer" />
+                   </button>
+                 </div>
               </div>
 
               {/* Messages */}
@@ -334,18 +344,10 @@ export function ChatBot({ videoId }: ChatBotProps) {
                 />
               </div>
 
-              {/* Input */}
-              <div className="border-t border-border p-4">
-                <ChatInput onSend={sendMessage} disabled={isStreaming} />
-                 <div className="mt-2 flex items-center justify-between text-xs text-secondary">
-                   <button
-                     onClick={() => setShowClearConfirm(true)}
-                     className="hover:text-foreground transition-colors cursor-pointer"
-                   >
-                     Clear conversation
-                   </button>
-                 </div>
-              </div>
+               {/* Input */}
+               <div className="border-t border-border p-4">
+                 <ChatInput onSend={sendMessage} disabled={isStreaming} />
+               </div>
             </motion.div>
           </motion.div>
         )}
