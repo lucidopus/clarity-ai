@@ -256,7 +256,7 @@ export default function StudyActivityHeatmap() {
                         <div key={idx} style={{ gridRow: row }} className="group relative">
                           {entry ? (
                             <div
-                              className={`${cellClass(entry.level)} rounded-[3px] transition-colors group-hover:outline-2 group-hover:outline-cyan-400/40`}
+                              className={`${cellClass(entry.level)} rounded-[3px] transition-colors group-hover:outline-2 group-hover:outline-cyan-400/40 cursor-pointer`}
                               style={{ width: 'var(--cell-size)', height: 'var(--cell-size)' }}
                               onMouseEnter={(e) => {
                                 const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();

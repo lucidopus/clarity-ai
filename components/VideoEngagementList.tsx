@@ -62,7 +62,7 @@ export default function VideoEngagementList() {
           <button
             key={video.videoId}
             onClick={() => router.push(`/generations/${video.videoId}`)}
-            className="w-full group"
+            className="w-full group cursor-pointer"
           >
             <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/10 transition-colors">
               {/* Rank badge */}
