@@ -637,7 +637,7 @@ export default function CaseStudyWorkspacePage() {
             <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 max-h-[calc(100vh-8rem)] flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare className="w-5 h-5 text-accent" />
-                <h2 className="text-lg font-semibold text-foreground">AI Guide</h2>
+                <h2 className="text-lg font-semibold text-foreground">Clara</h2>
               </div>
               <div
                 className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1"
@@ -646,7 +646,7 @@ export default function CaseStudyWorkspacePage() {
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground mb-2">
-                      Need help? Ask the AI Guide!
+                      Need help? Ask Clara!
                     </p>
                     <p className="text-xs text-muted-foreground">
                       I'm here to guide your thinking, not give you the answer.
@@ -666,7 +666,7 @@ export default function CaseStudyWorkspacePage() {
                 {isStreaming && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                    AI Guide is thinking...
+                    Clara is thinking...
                   </div>
                 )}
               </div>
@@ -730,7 +730,7 @@ export default function CaseStudyWorkspacePage() {
                   This is your space to tackle real-world problems using concepts from the video.
                 </p>
                 <p>
-                  The <strong className="text-accent">AI Guide</strong> is here to help you think through the problem - not to give you the answer.
+                  The <strong className="text-accent">Clara</strong> is here to help you think through the problem.
                 </p>
                 <p>
                   Use your notes, explore hints, and work through the challenge at your own pace.
