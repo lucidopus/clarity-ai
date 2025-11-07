@@ -36,13 +36,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'content is required and must be a non-empty string' },
-        { status: 400 }
-      );
-    }
-
     await dbConnect();
 
     // 3. Create or update solution
@@ -56,7 +49,7 @@ export async function POST(request: NextRequest) {
         userId: decoded.userId,
         videoId,
         problemId,
-        content: content.trim(),
+        content: typeof content === 'string' ? content.trim() : '',
       },
       {
         upsert: true, // Create if doesn't exist

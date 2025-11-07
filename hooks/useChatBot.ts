@@ -11,6 +11,14 @@ export interface UseChatBotOptions {
   endpoint?: string; // API endpoint to use (default: '/api/chatbot/ask')
   historyEndpoint?: string; // History endpoint (default: '/api/chatbot/history')
   enableHistory?: boolean; // Whether to load/save history (default: true)
+  transformRequestBody?: (payload: {
+    videoId: string;
+    message: string;
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+    clientTimestamp: string;
+    timezoneOffsetMinutes: number;
+    timeZone: string;
+  }) => Record<string, unknown>; // Allows callers to inject extra fields
 }
 
 export interface UseChatBotReturn {
@@ -32,6 +40,7 @@ export function useChatBot(
     endpoint = '/api/chatbot/ask',
     historyEndpoint = '/api/chatbot/history',
     enableHistory = true,
+    transformRequestBody,
   } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -117,17 +126,23 @@ export function useChatBot(
       const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+      const basePayload = {
+        videoId,
+        message: content.trim(),
+        conversationHistory,
+        clientTimestamp: clientNow.toISOString(),
+        timezoneOffsetMinutes,
+        timeZone,
+      };
+
+      const requestBody = transformRequestBody
+        ? transformRequestBody(basePayload)
+        : basePayload;
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoId,
-          message: content.trim(),
-          conversationHistory,
-          clientTimestamp: clientNow.toISOString(),
-          timezoneOffsetMinutes,
-          timeZone,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
       });
 
@@ -203,7 +218,7 @@ export function useChatBot(
       setIsLoading(false);
       setIsStreaming(false);
     }
-  }, [messages, isLoading, isStreaming, videoId, endpoint]);
+  }, [messages, isLoading, isStreaming, videoId, endpoint, transformRequestBody]);
 
   const clearMessages = useCallback(async () => {
     setMessages([]);

@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import { groq } from '@/lib/sdk';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
 import { AI_GUIDE_SYSTEM_PROMPT } from '@/lib/prompts';
-import { LearningMaterial } from '@/lib/models';
+import { LearningMaterial, Solution } from '@/lib/models';
 
 interface DecodedToken {
   userId: string;
@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       problemId,
       message,
       conversationHistory,
+      solutionDraft,
     } = await request.json();
 
     if (!videoId || !problemId || !message) {
@@ -86,22 +87,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Build AI Guide system prompt with context
+    // 6. Fetch user's current solution draft (if any)
+    const existingSolution = await Solution.findOne({
+      userId: decoded.userId,
+      videoId,
+      problemId,
+    });
+
+    const incomingDraft = typeof solutionDraft === 'string' ? solutionDraft : undefined;
+
+    // 7. Build AI Guide system prompt with context
     const systemPrompt = AI_GUIDE_SYSTEM_PROMPT({
       userProfile: { firstName: decoded.firstName },
       problemTitle: problem.title,
       problemScenario: problem.scenario,
       videoSummary: learningMaterial.videoSummary || 'No video summary available.',
+      solutionDraft: incomingDraft ?? existingSolution?.content ?? '',
     });
 
-    // 7. Prepare conversation history (last 4 exchanges = 8 messages)
+    // 8. Prepare conversation history (last 4 exchanges = 8 messages)
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []).slice(-8),
       { role: 'user', content: message }
     ];
 
-    // 8. Call Groq with streaming
+    // 9. Call Groq with streaming
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',
       messages,
@@ -110,7 +121,7 @@ export async function POST(request: NextRequest) {
       stream: true,
     });
 
-    // 9. Create streaming response
+    // 10. Create streaming response
     const stream = new ReadableStream({
       async start(controller) {
         try {
@@ -128,7 +139,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 10. Return streaming response
+    // 11. Return streaming response
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
