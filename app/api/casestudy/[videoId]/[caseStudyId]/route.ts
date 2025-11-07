@@ -19,7 +19,7 @@ interface DecodedToken {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { videoId: string; caseStudyId: string } }
+  { params }: { params: Promise<{ videoId: string; caseStudyId: string }> }
 ) {
   try {
     // 1. Authenticate
@@ -32,7 +32,7 @@ export async function GET(
 
     await dbConnect();
 
-    const { videoId, caseStudyId } = params;
+    const { videoId, caseStudyId } = await params;
 
     // 2. Fetch learning material to get the problem
     const learningMaterial = await LearningMaterial.findOne({
@@ -60,7 +60,7 @@ export async function GET(
     }
 
     // 4. Fetch video info
-    const video = await Video.findOne({ videoId });
+    const video = await Video.findOne({ videoId, userId: decoded.userId });
 
     if (!video) {
       return NextResponse.json(

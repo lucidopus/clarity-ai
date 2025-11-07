@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight } from 'lucide-react';
@@ -9,6 +9,8 @@ import { useChatBot } from '@/hooks/useChatBot';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
 import dynamic from 'next/dynamic';
+import { ChatMessage } from '@/components/ChatMessage';
+import ThemeToggle from '@/components/ThemeToggle';
 
 // Dynamically import rich text editor to avoid SSR issues
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
@@ -54,6 +56,11 @@ export default function CaseStudyWorkspacePage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [expandedHints, setExpandedHints] = useState<Record<number, boolean>>({});
   const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const guideMessagesRef = useRef<HTMLDivElement | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedSolutionRef = useRef('');
+  const [autoSaveState, setAutoSaveState] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
+  const [isMacUser, setIsMacUser] = useState(true);
 
   // Initialize chat with AI Guide endpoint
   const {
@@ -66,7 +73,67 @@ export default function CaseStudyWorkspacePage() {
   } = useChatBot(videoId, {
     endpoint: '/api/chatbot/guide',
     enableHistory: false, // Don't persist guide chat history
+    transformRequestBody: (payload) => ({
+      ...payload,
+      problemId: caseStudyId,
+      solutionDraft: solution,
+    }),
   });
+
+  // Auto-scroll AI Guide conversation when new content arrives
+  useEffect(() => {
+    const container = guideMessagesRef.current;
+    if (!container) return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
+    });
+  }, [messages, isStreaming]);
+
+  const saveSolution = useCallback(async (content: string, options: { showSuccessToast?: boolean; showErrorToast?: boolean } = {}) => {
+    const { showSuccessToast = false, showErrorToast = false } = options;
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+    setAutoSaveState('saving');
+    try {
+      const response = await fetch('/api/solutions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId,
+          problemId: caseStudyId,
+          content,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save solution');
+      }
+
+      lastSavedSolutionRef.current = content;
+      setAutoSaveState('saved');
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+
+      if (showSuccessToast) {
+        setToast({ message: 'Solution saved successfully!', type: 'success' });
+      }
+    } catch (err) {
+      console.error('Error saving solution:', err);
+      setAutoSaveState('error');
+
+      if (showErrorToast) {
+        setToast({ message: 'Failed to save solution', type: 'error' });
+      }
+
+      throw err;
+    }
+  }, [caseStudyId, videoId]);
 
   // Fetch case study data
   useEffect(() => {
@@ -85,6 +152,12 @@ export default function CaseStudyWorkspacePage() {
         // Load existing solution if available
         if (result.existingSolution) {
           setSolution(result.existingSolution);
+          lastSavedSolutionRef.current = result.existingSolution;
+          setAutoSaveState('saved');
+        } else {
+          setSolution('');
+          lastSavedSolutionRef.current = '';
+          setAutoSaveState('idle');
         }
 
         // Check if user has seen onboarding
@@ -106,37 +179,21 @@ export default function CaseStudyWorkspacePage() {
     }
   }, [videoId, caseStudyId]);
 
-  // Save solution
-  const handleSaveSolution = async () => {
-    if (!solution.trim()) {
-      setToast({ message: 'Solution cannot be empty', type: 'error' });
-      return;
-    }
-
+  // Manual save action (optional)
+  const handleSaveSolution = useCallback(async () => {
     try {
-      setIsSaving(true);
-      const response = await fetch('/api/solutions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoId,
-          problemId: caseStudyId,
-          content: solution,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save solution');
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
       }
-
-      setToast({ message: 'Solution saved successfully!', type: 'success' });
+      setIsSaving(true);
+      await saveSolution(solution, { showSuccessToast: true, showErrorToast: true });
     } catch (err) {
-      console.error('Error saving solution:', err);
-      setToast({ message: 'Failed to save solution', type: 'error' });
+      // Error already handled in saveSolution
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [saveSolution, solution]);
 
   // Toggle hint visibility
   const toggleHint = (index: number) => {
@@ -149,6 +206,87 @@ export default function CaseStudyWorkspacePage() {
   // Send message to AI Guide
   const handleSendMessage = async (message: string) => {
     await sendMessage(message);
+  };
+
+  // Auto-save solution (debounced)
+  useEffect(() => {
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    if (solution === lastSavedSolutionRef.current) {
+      return;
+    }
+
+    setAutoSaveState('pending');
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      saveSolution(solution).catch(() => {
+        // Errors handled inside saveSolution
+      });
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [solution, saveSolution]);
+
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Detect platform for shortcut indicator
+  useEffect(() => {
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+    setIsMacUser(isMac);
+  }, []);
+
+  // Ensure previously selected theme is respected in this workspace
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    const root = document.documentElement;
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const themeToApply = savedTheme || (prefersDark ? 'dark' : 'light');
+
+    root.classList.remove('light', 'dark');
+    root.classList.add(themeToApply);
+  }, []);
+
+  // Global Cmd/Ctrl+S shortcut for manual save
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isSaveCombo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's';
+      if (!isSaveCombo) return;
+
+      event.preventDefault();
+      handleSaveSolution();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSaveSolution]);
+
+  const renderAutoSaveText = () => {
+    switch (autoSaveState) {
+      case 'saving':
+        return 'Saving...';
+      case 'saved':
+        return 'All changes saved';
+      case 'pending':
+        return 'Unsaved changes';
+      case 'error':
+        return 'Auto-save failed';
+      default:
+        return '';
+    }
   };
 
   if (loading) {
@@ -199,14 +337,25 @@ export default function CaseStudyWorkspacePage() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={handleSaveSolution}
-              disabled={isSaving || !solution.trim()}
-              size="sm"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save Solution'}
-            </Button>
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              {renderAutoSaveText() && (
+                <span className="text-xs text-muted-foreground">{renderAutoSaveText()}</span>
+              )}
+              <Button
+                onClick={handleSaveSolution}
+                disabled={isSaving}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Now'}
+                <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                  {isMacUser ? '⌘S' : 'Ctrl+S'}
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -330,7 +479,10 @@ export default function CaseStudyWorkspacePage() {
                 <MessageSquare className="w-5 h-5 text-accent" />
                 <h2 className="text-lg font-semibold text-foreground">AI Guide</h2>
               </div>
-              <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+              <div
+                className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1"
+                ref={guideMessagesRef}
+              >
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground mb-2">
@@ -341,20 +493,15 @@ export default function CaseStudyWorkspacePage() {
                     </p>
                   </div>
                 ) : (
-                  messages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`p-3 rounded-lg ${
-                        msg.role === 'user'
-                          ? 'bg-accent/10 ml-4'
-                          : 'bg-background mr-4'
-                      }`}
-                    >
-                      <p className="text-sm text-foreground whitespace-pre-wrap">
-                        {msg.content}
-                      </p>
-                    </div>
-                  ))
+                  <div className="space-y-4">
+                    {messages.map((msg, index) => (
+                      <ChatMessage
+                        key={msg.id}
+                        message={msg}
+                        isStreaming={isStreaming && index === messages.length - 1}
+                      />
+                    ))}
+                  </div>
                 )}
                 {isStreaming && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -438,8 +585,13 @@ export default function CaseStudyWorkspacePage() {
       {/* Toast Notifications */}
       {toast && (
         <ToastContainer
-          message={toast.message}
-          type={toast.type}
+          toasts={[
+            {
+              id: 'case-study-toast',
+              message: toast.message,
+              type: toast.type,
+            },
+          ]}
           onClose={() => setToast(null)}
         />
       )}

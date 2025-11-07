@@ -14,7 +14,7 @@ const SolutionSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   videoId: { type: String, required: true },
   problemId: { type: String, required: true },
-  content: { type: String, required: true },
+  content: { type: String, required: false, default: '' },
 }, {
   timestamps: true,
   collection: 'solutions',
