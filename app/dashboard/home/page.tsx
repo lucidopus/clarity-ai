@@ -301,22 +301,18 @@ export default function DashboardHomePage() {
           {/* Insights Section */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Learning Insights</h3>
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {/* Row 1: Focus Hours (spans 2 cols) + Activity Funnel */}
-              <div className="xl:col-span-1">
-                <FocusHoursChart />
-              </div>
-              <div className="xl:col-span-1">
-                <ActivityFunnelCard />
-              </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Focus Hours - full width on mobile, half on lg+ */}
+              <FocusHoursChart />
 
-              {/* Row 2: Video Engagement + Flashcard Difficulty */}
-              <div className="xl:col-span-1">
-                <VideoEngagementList />
-              </div>
-              <div className="xl:col-span-1">
-                <FlashcardDifficultyDonut />
-              </div>
+              {/* Activity Funnel */}
+              <ActivityFunnelCard />
+
+              {/* Video Engagement */}
+              <VideoEngagementList />
+
+              {/* Flashcard Difficulty */}
+              <FlashcardDifficultyDonut />
             </div>
           </div>
 
