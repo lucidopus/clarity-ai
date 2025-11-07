@@ -142,13 +142,22 @@ export default function DashboardHomePage() {
 
     setIsGenerating(true);
     try {
+      const clientNow = new Date();
+      const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
       const response = await fetch('/api/videos/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ youtubeUrl }),
+        body: JSON.stringify({
+          youtubeUrl,
+          clientTimestamp: clientNow.toISOString(),
+          timezoneOffsetMinutes,
+          timeZone,
+        }),
       });
 
       console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);

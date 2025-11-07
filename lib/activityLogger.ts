@@ -2,10 +2,21 @@ export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_vi
 
 export async function logActivity(activityType: ActivityType, videoId?: string, metadata?: object): Promise<boolean> {
   try {
+    const now = new Date();
+    const timezoneOffsetMinutes = now.getTimezoneOffset();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     const res = await fetch('/api/activity/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ activityType, videoId, metadata }),
+      body: JSON.stringify({
+        activityType,
+        videoId,
+        metadata,
+        clientTimestamp: now.toISOString(),
+        timezoneOffsetMinutes,
+        timeZone,
+      }),
     });
     if (res.ok) {
       if (typeof window !== 'undefined') {

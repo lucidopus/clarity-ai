@@ -97,13 +97,20 @@ export function useChatBot(videoId: string): UseChatBotReturn {
         content: msg.content
       }));
 
+      const clientNow = new Date();
+      const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       const response = await fetch('/api/chatbot/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           videoId,
           message: content.trim(),
-          conversationHistory
+          conversationHistory,
+          clientTimestamp: clientNow.toISOString(),
+          timezoneOffsetMinutes,
+          timeZone,
         }),
         signal: abortControllerRef.current.signal
       });
