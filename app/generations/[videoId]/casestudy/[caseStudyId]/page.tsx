@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Maximize2, Minimize2 } from 'lucide-react';
 import Button from '@/components/Button';
 import { useChatBot } from '@/hooks/useChatBot';
 import { ToastContainer, type ToastType } from '@/components/Toast';
@@ -61,6 +61,49 @@ export default function CaseStudyWorkspacePage() {
   const lastSavedSolutionRef = useRef('');
   const [autoSaveState, setAutoSaveState] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
   const [isMacUser, setIsMacUser] = useState(true);
+
+  // Panel visibility state (with localStorage persistence)
+  const [showLeftPanel, setShowLeftPanel] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('caseStudy_leftPanel');
+      return saved !== null ? saved === 'true' : true; // Default: open
+    }
+    return true;
+  });
+
+  const [showRightPanel, setShowRightPanel] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('caseStudy_rightPanel');
+      return saved !== null ? saved === 'true' : true; // Default: open
+    }
+    return true;
+  });
+
+  const [aiGuideWidth, setAiGuideWidth] = useState<'normal' | 'wide'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('caseStudy_aiGuideWidth') as 'normal' | 'wide';
+      return saved || 'normal';
+    }
+    return 'normal';
+  });
+
+  // Persist panel visibility to localStorage
+  useEffect(() => {
+    localStorage.setItem('caseStudy_leftPanel', String(showLeftPanel));
+  }, [showLeftPanel]);
+
+  useEffect(() => {
+    localStorage.setItem('caseStudy_rightPanel', String(showRightPanel));
+  }, [showRightPanel]);
+
+  useEffect(() => {
+    localStorage.setItem('caseStudy_aiGuideWidth', aiGuideWidth);
+  }, [aiGuideWidth]);
+
+  // Toggle functions
+  const toggleLeftPanel = () => setShowLeftPanel(prev => !prev);
+  const toggleRightPanel = () => setShowRightPanel(prev => !prev);
+  const toggleAiGuideWidth = () => setAiGuideWidth(prev => prev === 'normal' ? 'wide' : 'normal');
 
   // Initialize chat with AI Guide endpoint
   const {
@@ -362,9 +405,96 @@ export default function CaseStudyWorkspacePage() {
 
       {/* Main Workspace - Three Column Layout */}
       <main className="max-w-[1800px] mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Panel Toggle Controls */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleLeftPanel}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+              title={showLeftPanel ? "Hide research desk" : "Show research desk"}
+            >
+              {showLeftPanel ? (
+                <>
+                  <PanelLeftClose className="w-4 h-4" />
+                  <span className="hidden sm:inline">Hide Research</span>
+                </>
+              ) : (
+                <>
+                  <PanelLeftOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Show Research</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={toggleRightPanel}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+              title={showRightPanel ? "Hide AI guide" : "Show AI guide"}
+            >
+              {showRightPanel ? (
+                <>
+                  <PanelRightClose className="w-4 h-4" />
+                  <span className="hidden sm:inline">Hide Guide</span>
+                </>
+              ) : (
+                <>
+                  <PanelRightOpen className="w-4 h-4" />
+                  <span className="hidden sm:inline">Show Guide</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {showRightPanel && (
+            <button
+              onClick={toggleAiGuideWidth}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+              title={aiGuideWidth === 'normal' ? "Expand AI guide" : "Shrink AI guide"}
+            >
+              {aiGuideWidth === 'normal' ? (
+                <>
+                  <Maximize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Expand Guide</span>
+                </>
+              ) : (
+                <>
+                  <Minimize2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Shrink Guide</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        <div className={`grid grid-cols-1 gap-6 transition-all duration-300 ${
+          showLeftPanel && showRightPanel
+            ? aiGuideWidth === 'wide'
+              ? 'lg:grid-cols-12'
+              : 'lg:grid-cols-12'
+            : showLeftPanel && !showRightPanel
+            ? 'lg:grid-cols-12'
+            : !showLeftPanel && showRightPanel
+            ? aiGuideWidth === 'wide'
+              ? 'lg:grid-cols-12'
+              : 'lg:grid-cols-12'
+            : 'lg:grid-cols-1'
+        }`}>
           {/* Left Panel: Research Desk */}
-          <div className="lg:col-span-3 space-y-6">
+          <AnimatePresence>
+            {showLeftPanel && (
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+                className={`space-y-6 ${
+                  !showRightPanel
+                    ? 'lg:col-span-3'
+                    : aiGuideWidth === 'wide'
+                      ? 'lg:col-span-2'
+                      : 'lg:col-span-3'
+                }`}
+              >
             {/* Notes */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -445,10 +575,24 @@ export default function CaseStudyWorkspacePage() {
                 ))}
               </div>
             </div>
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Center Panel: Workbench */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className={`space-y-6 ${
+            showLeftPanel && showRightPanel
+              ? aiGuideWidth === 'wide'
+                ? 'lg:col-span-6'
+                : 'lg:col-span-6'
+              : showLeftPanel && !showRightPanel
+              ? 'lg:col-span-9'
+              : !showLeftPanel && showRightPanel
+              ? aiGuideWidth === 'wide'
+                ? 'lg:col-span-7'
+                : 'lg:col-span-9'
+              : 'lg:col-span-12'
+          }`}>
             {/* Problem Scenario */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">The Challenge</h2>
@@ -473,7 +617,23 @@ export default function CaseStudyWorkspacePage() {
           </div>
 
           {/* Right Panel: AI Guide */}
-          <div className="lg:col-span-3">
+          <AnimatePresence>
+            {showRightPanel && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+                className={`${
+                  !showLeftPanel
+                    ? aiGuideWidth === 'wide'
+                      ? 'lg:col-span-5'
+                      : 'lg:col-span-3'
+                    : aiGuideWidth === 'wide'
+                      ? 'lg:col-span-4'
+                      : 'lg:col-span-3'
+                }`}
+              >
             <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 max-h-[calc(100vh-8rem)] flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare className="w-5 h-5 text-accent" />
@@ -539,7 +699,9 @@ export default function CaseStudyWorkspacePage() {
                 </form>
               </div>
             </div>
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
 
