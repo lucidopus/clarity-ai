@@ -244,7 +244,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
 
 
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/mindmaps/update', {
@@ -279,7 +279,23 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [videoId, nodes, edges, showToast]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Save shortcut (Cmd+S / Ctrl+S)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (!isSaving) {
+          handleSave();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSaving, handleSave]);
 
   const handleAddNode = () => {
     const newNode: Node = {
@@ -331,17 +347,20 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
             <Plus className="w-4 h-4" />
             Add Node
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2"
-            title="Save the current state of your mind map"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+           <Button
+             variant="primary"
+             size="sm"
+             onClick={handleSave}
+             disabled={isSaving}
+             className="flex items-center gap-2"
+             title="Save the current state of your mind map"
+           >
+             <Save className="w-4 h-4" />
+             {isSaving ? 'Saving...' : 'Save Changes'}
+             <span className="ml-2 text-xs text-primary-foreground/60 font-medium hidden sm:inline">
+               ⌘S
+             </span>
+           </Button>
         </div>
 
         {/* Node & Edge Info */}
