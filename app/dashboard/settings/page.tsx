@@ -1,16 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
 import GenerateModal from '@/components/GenerateModal';
+import PasswordVerificationModal from '@/components/PasswordVerificationModal';
+import { Edit2, Save, X, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Edit mode state
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+  });
+  const [originalFormData, setOriginalFormData] = useState({
+    firstName: '',
+    lastName: '',
+    username: '',
+    email: '',
+  });
+
+  // Password verification state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
+  const [pendingPassword, setPendingPassword] = useState<string>('');
+
+  // Form state
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Initialize form data when user loads
+  useEffect(() => {
+    if (user) {
+      const initialData = {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        username: user.username,
+        email: user.email,
+      };
+      setFormData(initialData);
+      setOriginalFormData(initialData);
+    }
+  }, [user]);
 
   const handleGenerate = async (url: string) => {
     setIsGenerating(true);
@@ -32,6 +75,180 @@ export default function SettingsPage() {
     }
   };
 
+  const handleEditClick = () => {
+    setIsEditMode(true);
+    setErrors({});
+    setSuccessMessage(null);
+    setErrorMessage(null);
+  };
+
+  const handleCancelClick = () => {
+    setIsEditMode(false);
+    setFormData(originalFormData);
+    setErrors({});
+    setSuccessMessage(null);
+    setErrorMessage(null);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear field-specific error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+    setErrorMessage(null);
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.length > 50) {
+      newErrors.firstName = 'First name must be less than 50 characters';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.length > 50) {
+      newErrors.lastName = 'Last name must be less than 50 characters';
+    }
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Username is required';
+    } else if (formData.username.length < 3) {
+      newErrors.username = 'Username must be at least 3 characters';
+    } else if (formData.username.length > 20) {
+      newErrors.username = 'Username must be less than 20 characters';
+    } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
+      newErrors.username = 'Username can only contain letters, numbers, underscores, and hyphens';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email address';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveClick = async () => {
+    setSuccessMessage(null);
+    setErrorMessage(null);
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
+    // Check if email is being changed - if so, show password modal
+    const isEmailChanging = formData.email.toLowerCase() !== originalFormData.email.toLowerCase();
+    if (isEmailChanging) {
+      setShowPasswordModal(true);
+      return;
+    }
+
+    // If email not changing, submit directly
+    await submitProfileUpdate();
+  };
+
+  const handlePasswordVerify = async (password: string) => {
+    setPendingPassword(password);
+    setPasswordError(null);
+    setIsVerifyingPassword(true);
+
+    try {
+      await submitProfileUpdate(password);
+      setShowPasswordModal(false);
+    } catch (error) {
+      // Error is handled in submitProfileUpdate
+    } finally {
+      setIsVerifyingPassword(false);
+    }
+  };
+
+  const submitProfileUpdate = async (password?: string) => {
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      const payload: Record<string, string> = {};
+
+      // Only send changed fields
+      if (formData.firstName !== originalFormData.firstName) {
+        payload.firstName = formData.firstName;
+      }
+      if (formData.lastName !== originalFormData.lastName) {
+        payload.lastName = formData.lastName;
+      }
+      if (formData.username !== originalFormData.username) {
+        payload.username = formData.username;
+      }
+      if (formData.email !== originalFormData.email) {
+        payload.email = formData.email;
+        payload.password = password || '';
+      }
+
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.errors) {
+          // Field-specific validation errors
+          setErrors(data.errors);
+          throw new Error('Validation failed');
+        } else if (data.field) {
+          // Single field error (e.g., username taken)
+          setErrors({ [data.field]: data.message });
+          throw new Error(data.message);
+        } else if (response.status === 401 && password) {
+          // Password verification failed
+          setPasswordError(data.message);
+          throw new Error(data.message);
+        } else {
+          setErrorMessage(data.message || 'Failed to update profile');
+          throw new Error(data.message || 'Failed to update profile');
+        }
+      }
+
+      // Success! Update local state
+      const updatedData = {
+        firstName: data.user.firstName,
+        lastName: data.user.lastName,
+        username: data.user.username,
+        email: data.user.email,
+      };
+      setFormData(updatedData);
+      setOriginalFormData(updatedData);
+      setIsEditMode(false);
+      setSuccessMessage('Profile updated successfully!');
+      setPasswordError(null);
+
+      // Reload user data by calling /api/auth/me
+      const userResponse = await fetch('/api/auth/me');
+      const userData = await userResponse.json();
+      // The auth context will automatically update via its checkAuth method
+      window.location.reload(); // Simple reload to refresh all user data
+
+    } catch (error) {
+      console.error('Profile update error:', error);
+      // Error messages already set above
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -46,40 +263,185 @@ export default function SettingsPage() {
 
       {/* Account Information Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
-        <h2 className="text-xl font-semibold text-foreground mb-6">Account Information</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-foreground">Account Information</h2>
+          {!isEditMode && (
+            <Button
+              onClick={handleEditClick}
+              variant="ghost"
+              className="flex items-center gap-2"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit Profile
+            </Button>
+          )}
+        </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-4 flex items-center gap-2 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-600 dark:text-green-400">
+            <CheckCircle2 className="w-5 h-5" />
+            <p className="text-sm font-medium">{successMessage}</p>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-4 flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400">
+            <AlertTriangle className="w-5 h-5" />
+            <p className="text-sm font-medium">{errorMessage}</p>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* First Name */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">First Name</label>
-              <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
-                {user.firstName}
-              </div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                First Name
+              </label>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => handleInputChange('firstName', e.target.value)}
+                    className={`w-full px-4 py-3 bg-background border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors ${
+                      errors.firstName ? 'border-red-500/50' : 'border-border'
+                    }`}
+                    placeholder="Enter first name"
+                  />
+                  {errors.firstName && (
+                    <p className="mt-1 text-sm text-red-500">{errors.firstName}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
+                  {formData.firstName}
+                </div>
+              )}
             </div>
+
+            {/* Last Name */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Last Name</label>
-              <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
-                {user.lastName}
-              </div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Last Name
+              </label>
+              {isEditMode ? (
+                <div>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => handleInputChange('lastName', e.target.value)}
+                    className={`w-full px-4 py-3 bg-background border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors ${
+                      errors.lastName ? 'border-red-500/50' : 'border-border'
+                    }`}
+                    placeholder="Enter last name"
+                  />
+                  {errors.lastName && (
+                    <p className="mt-1 text-sm text-red-500">{errors.lastName}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
+                  {formData.lastName}
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Username */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Username</label>
-            <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
-              {user.username}
-            </div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Username
+            </label>
+            {isEditMode ? (
+              <div>
+                <input
+                  type="text"
+                  value={formData.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  className={`w-full px-4 py-3 bg-background border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors ${
+                    errors.username ? 'border-red-500/50' : 'border-border'
+                  }`}
+                  placeholder="Enter username"
+                />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-500">{errors.username}</p>
+                )}
+              </div>
+            ) : (
+              <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
+                {formData.username}
+              </div>
+            )}
           </div>
+
+          {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-            <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
-              {user.email}
-            </div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Email
+            </label>
+            {isEditMode ? (
+              <div>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className={`w-full px-4 py-3 bg-background border rounded-xl text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors ${
+                    errors.email ? 'border-red-500/50' : 'border-border'
+                  }`}
+                  placeholder="Enter email"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                )}
+                {formData.email.toLowerCase() !== originalFormData.email.toLowerCase() && (
+                  <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                    Changing your email will require password verification
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="px-4 py-3 bg-background border border-border rounded-xl text-foreground">
+                {formData.email}
+              </div>
+            )}
           </div>
         </div>
-        <div className="mt-6 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-          <p className="text-sm text-foreground">
-            <span className="font-medium">ℹ️ Note:</span> Account information is currently view-only. Contact support to make changes.
-          </p>
-        </div>
+
+        {/* Action Buttons */}
+        {isEditMode && (
+          <div className="mt-6 flex items-center justify-end gap-3">
+            <Button
+              onClick={handleCancelClick}
+              variant="ghost"
+              disabled={isSubmitting}
+              className="flex items-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveClick}
+              variant="primary"
+              disabled={isSubmitting}
+              className="flex items-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Appearance Section */}
@@ -174,6 +536,18 @@ export default function SettingsPage() {
         onClose={() => setShowGenerateModal(false)}
         onGenerate={handleGenerate}
         isLoading={isGenerating}
+      />
+
+      {/* Password Verification Modal */}
+      <PasswordVerificationModal
+        isOpen={showPasswordModal}
+        onClose={() => {
+          setShowPasswordModal(false);
+          setPasswordError(null);
+        }}
+        onVerify={handlePasswordVerify}
+        isLoading={isVerifyingPassword}
+        error={passwordError}
       />
     </div>
   );
