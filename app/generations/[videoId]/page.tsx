@@ -287,6 +287,13 @@ export default function VideoMaterialsPage() {
     }
   }, [videoId]);
 
+  // Open chatbot when Challenges tab is selected
+  useEffect(() => {
+    if (activeTab === 'casestudies') {
+      window.dispatchEvent(new CustomEvent('chatbot:open', { detail: { question: '' } }));
+    }
+  }, [activeTab]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
