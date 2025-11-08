@@ -455,7 +455,7 @@ export default function CaseStudyWorkspacePage() {
                 size="sm"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Materials
+                Back to Video
               </Button>
               <div className="h-6 w-px bg-border" />
               <div>
@@ -761,7 +761,7 @@ export default function CaseStudyWorkspacePage() {
                  style={{ width: '500px' }}
                >
                  <div className="pl-4">
-             <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 max-h-[calc(100vh-8rem)] flex flex-col">
+              <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 h-[calc(100vh-8rem)] flex flex-col">
                <div className="flex items-center gap-2 mb-4">
                  <Sparkles className="w-5 h-5 text-accent" />
                  <h2 className="text-lg font-semibold text-foreground">Clara</h2>
@@ -862,7 +862,7 @@ export default function CaseStudyWorkspacePage() {
               className="bg-card-bg border border-border rounded-2xl p-8 max-w-md w-full"
             >
               <h2 className="text-2xl font-bold text-foreground mb-4">
-              Ready to apply what you've learned?
+              Ready to apply what you&apos;ve learned?
               </h2>
               <div className="space-y-3 text-sm text-foreground mb-6">
                 <p>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target, ArrowLeft } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
@@ -448,6 +448,15 @@ export default function VideoMaterialsPage() {
 
             {/* Right Side: Back + Theme Toggle + Logout */}
             <div className="flex items-center gap-3 shrink-0">
+              <Button
+                onClick={() => router.push('/dashboard/gallery')}
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Materials</span>
+              </Button>
               <ThemeToggle />
               <button
                 onClick={logout}
