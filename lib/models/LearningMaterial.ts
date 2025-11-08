@@ -13,12 +13,20 @@ export interface IPrerequisite {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
+export interface IRealWorldProblem {
+  id: string;
+  title: string;
+  scenario: string;
+  hints: string[];
+}
+
 export interface ILearningMaterial extends Document {
   _id: mongoose.Types.ObjectId;
   videoId: string; // YouTube video ID
   userId: mongoose.Types.ObjectId;
   timestamps: ITimestamp[];
   prerequisites: IPrerequisite[];
+  realWorldProblems: IRealWorldProblem[];
   videoSummary: string;
   metadata: {
     generatedBy: string;
@@ -41,11 +49,19 @@ const PrerequisiteSchema: Schema = new Schema({
   difficulty: { type: String, required: true, enum: ['beginner', 'intermediate', 'advanced'] },
 }, { _id: false });
 
+const RealWorldProblemSchema: Schema = new Schema({
+  id: { type: String, required: true },
+  title: { type: String, required: true },
+  scenario: { type: String, required: true },
+  hints: [{ type: String }],
+}, { _id: false });
+
 const LearningMaterialSchema: Schema = new Schema({
   videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   timestamps: [TimestampSchema],
   prerequisites: [PrerequisiteSchema],
+  realWorldProblems: [RealWorldProblemSchema],
   videoSummary: { type: String, required: true },
   metadata: {
     generatedBy: { type: String, required: true },

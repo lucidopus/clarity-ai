@@ -46,7 +46,6 @@ export default function FocusHoursChart() {
   }
 
   const focusHours = insights.focusHours;
-  const maxCount = Math.max(...focusHours.map((b) => b.count));
 
   // Find top 3 hours for highlighting
   const sortedBuckets = [...focusHours].sort((a, b) => b.count - a.count);

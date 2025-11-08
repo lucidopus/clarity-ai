@@ -59,7 +59,7 @@ export default function ActivityFunnelCard() {
         How you move through the learning loop (last 7 days)
       </p>
       <div className="space-y-3">
-        {funnelWithDropoff.map((item, index) => {
+        {funnelWithDropoff.map((item) => {
           const widthPercentage = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
           const hasActivity = item.count > 0;
 

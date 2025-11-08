@@ -7,6 +7,22 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface UseChatBotOptions {
+  endpoint?: string; // API endpoint to use (default: '/api/chatbot/ask')
+  historyEndpoint?: string; // History endpoint (default: '/api/chatbot/history')
+  enableHistory?: boolean; // Whether to load/save history (default: true)
+  channel?: 'chatbot' | 'guide'; // Conversation channel (default: 'chatbot')
+  problemId?: string; // Problem ID (required if channel='guide')
+  transformRequestBody?: (payload: {
+    videoId: string;
+    message: string;
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+    clientTimestamp: string;
+    timezoneOffsetMinutes: number;
+    timeZone: string;
+  }) => Record<string, unknown>; // Allows callers to inject extra fields
+}
+
 export interface UseChatBotReturn {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -18,7 +34,18 @@ export interface UseChatBotReturn {
   clearError: () => void;
 }
 
-export function useChatBot(videoId: string): UseChatBotReturn {
+export function useChatBot(
+  videoId: string,
+  options: UseChatBotOptions = {}
+): UseChatBotReturn {
+  const {
+    endpoint = '/api/chatbot/ask',
+    historyEndpoint = '/api/chatbot/history',
+    enableHistory = true,
+    channel,
+    problemId,
+    transformRequestBody,
+  } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -26,11 +53,22 @@ export function useChatBot(videoId: string): UseChatBotReturn {
   const [remainingMessages, setRemainingMessages] = useState(20);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Load from database on mount
+  // Load from database on mount (if history is enabled)
   useEffect(() => {
+    if (!enableHistory) return;
+
     async function loadMessages() {
       try {
-        const response = await fetch(`/api/chatbot/history?videoId=${videoId}`);
+        // Build history URL with channel and problemId if specified
+        let historyUrl = `${historyEndpoint}?videoId=${videoId}`;
+        if (channel) {
+          historyUrl += `&channel=${channel}`;
+        }
+        if (problemId) {
+          historyUrl += `&problemId=${problemId}`;
+        }
+
+        const response = await fetch(historyUrl);
 
         if (response.ok) {
           const data = await response.json();
@@ -52,7 +90,7 @@ export function useChatBot(videoId: string): UseChatBotReturn {
     }
 
     loadMessages();
-  }, [videoId]);
+  }, [videoId, enableHistory, historyEndpoint, channel, problemId]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading || isStreaming) return;
@@ -101,17 +139,23 @@ export function useChatBot(videoId: string): UseChatBotReturn {
       const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      const response = await fetch('/api/chatbot/ask', {
+      const basePayload = {
+        videoId,
+        message: content.trim(),
+        conversationHistory,
+        clientTimestamp: clientNow.toISOString(),
+        timezoneOffsetMinutes,
+        timeZone,
+      };
+
+      const requestBody = transformRequestBody
+        ? transformRequestBody(basePayload)
+        : basePayload;
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoId,
-          message: content.trim(),
-          conversationHistory,
-          clientTimestamp: clientNow.toISOString(),
-          timezoneOffsetMinutes,
-          timeZone,
-        }),
+        body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
       });
 
@@ -187,21 +231,32 @@ export function useChatBot(videoId: string): UseChatBotReturn {
       setIsLoading(false);
       setIsStreaming(false);
     }
-  }, [messages, isLoading, isStreaming, videoId]);
+  }, [messages, isLoading, isStreaming, videoId, endpoint, transformRequestBody]);
 
   const clearMessages = useCallback(async () => {
     setMessages([]);
     setError(null);
 
-    // Clear from database
-    try {
-      await fetch(`/api/chatbot/history?videoId=${videoId}`, {
-        method: 'DELETE'
-      });
-    } catch (error) {
-      console.error('Failed to clear database messages:', error);
+    // Clear from database (if history is enabled)
+    if (enableHistory) {
+      try {
+        // Build delete URL with channel and problemId if specified
+        let deleteUrl = `${historyEndpoint}?videoId=${videoId}`;
+        if (channel) {
+          deleteUrl += `&channel=${channel}`;
+        }
+        if (problemId) {
+          deleteUrl += `&problemId=${problemId}`;
+        }
+
+        await fetch(deleteUrl, {
+          method: 'DELETE'
+        });
+      } catch (error) {
+        console.error('Failed to clear database messages:', error);
+      }
     }
-  }, [videoId]);
+  }, [videoId, enableHistory, historyEndpoint, channel, problemId]);
 
   const clearError = useCallback(() => {
     setError(null);

@@ -60,6 +60,20 @@ export const LEARNING_MATERIALS_SCHEMA = {
         additionalProperties: false,
       },
     },
+    realWorldProblems: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          scenario: { type: 'string' },
+          hints: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['id', 'title', 'scenario', 'hints'],
+        additionalProperties: false,
+      },
+    },
     videoSummary: { type: 'string', description: `A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context.` },
     mindMap: {
       type: 'object',
@@ -99,7 +113,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'videoSummary', 'mindMap'],
+  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'realWorldProblems', 'videoSummary', 'mindMap'],
   additionalProperties: false,
 } as const;
 
@@ -128,6 +142,12 @@ export interface LearningMaterials {
     id: string;
     topic: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
+  }>;
+  realWorldProblems: Array<{
+    id: string;
+    title: string;
+    scenario: string;
+    hints: string[];
   }>;
   videoSummary: string;
   mindMap: {
