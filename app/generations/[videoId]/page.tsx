@@ -542,7 +542,7 @@ export default function VideoMaterialsPage() {
                         key={problem.id}
                         // whileHover={{ y: -4 }}
                         className="bg-card-bg border border-border rounded-xl p-6 cursor-pointer transition-shadow hover:shadow-lg"
-                        onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}`)}
+                        onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}?openClara=true`)}
                       >
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
