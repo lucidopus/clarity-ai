@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import Button from '@/components/Button';
 import { useChatBot } from '@/hooks/useChatBot';
+import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { ToastContainer, type ToastType } from '@/components/Toast';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from '@/lib/auth-context';
 import dynamic from 'next/dynamic';
 import { ChatMessage } from '@/components/ChatMessage';
@@ -48,6 +50,9 @@ export default function CaseStudyWorkspacePage() {
   const videoId = params.videoId as string;
   const caseStudyId = params.caseStudyId as string;
 
+  // Activity tracking for contextual tooltips
+  const { isInactive, resetActivity } = useActivityTracker({ inactivityThreshold: 120000 });
+
   const [data, setData] = useState<CaseStudyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +66,31 @@ export default function CaseStudyWorkspacePage() {
   const lastSavedSolutionRef = useRef('');
   const [autoSaveState, setAutoSaveState] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
   const [isMacUser, setIsMacUser] = useState(true);
+
+
+
+  // AI Guide contextual tooltips
+  const guideMessages = [
+    "Need help understanding this concept?",
+    "Stuck on the solution? Ask me for guidance!",
+    "Want to explore this topic deeper?",
+    "I can help break down complex ideas",
+    "Have questions about the problem? I'm here!",
+    "Let me help you think through this step-by-step",
+    "Curious about related concepts? Ask away!",
+    "Need clarification on any part?",
+    "I can provide examples and analogies",
+    "Want to verify your understanding?",
+    "Let's discuss the key principles together",
+    "I can suggest different approaches",
+    "Need help organizing your thoughts?",
+    "Ask me about prerequisites or background",
+    "Want to explore real-world applications?"
+  ];
+
+  const [showGuideTooltip, setShowGuideTooltip] = useState(false);
+  const [currentGuideMessage, setCurrentGuideMessage] = useState('');
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Panel visibility state (with localStorage persistence)
   const [showLeftPanel, setShowLeftPanel] = useState(() => {
@@ -79,18 +109,7 @@ export default function CaseStudyWorkspacePage() {
     return true;
   });
 
-  // AI Guide width as percentage (20% to 60% of viewport)
-  const [aiGuideWidthPercent, setAiGuideWidthPercent] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('caseStudy_aiGuideWidthPercent');
-      return saved ? parseInt(saved, 10) : 33; // Default 33%
-    }
-    return 33;
-  });
 
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeStartX, setResizeStartX] = useState(0);
-  const [resizeStartWidth, setResizeStartWidth] = useState(0);
 
   // Persist panel visibility to localStorage
   useEffect(() => {
@@ -101,59 +120,30 @@ export default function CaseStudyWorkspacePage() {
     localStorage.setItem('caseStudy_rightPanel', String(showRightPanel));
   }, [showRightPanel]);
 
-  useEffect(() => {
-    localStorage.setItem('caseStudy_aiGuideWidthPercent', String(aiGuideWidthPercent));
-  }, [aiGuideWidthPercent]);
-
   // Toggle functions
-  const toggleLeftPanel = () => setShowLeftPanel(prev => !prev);
-  const toggleRightPanel = () => setShowRightPanel(prev => !prev);
+  const toggleLeftPanel = useCallback(() => setShowLeftPanel(prev => !prev), []);
+  const toggleRightPanel = useCallback(() => setShowRightPanel(prev => !prev), []);
 
-  // Drag resize handlers
-  const handleResizeStart = (e: React.MouseEvent) => {
-    setIsResizing(true);
-    setResizeStartX(e.clientX);
-    setResizeStartWidth(aiGuideWidthPercent);
-    e.preventDefault();
+  // Global hints toggle
+  const expandAllHints = () => {
+    if (!data?.problem.hints) return;
+    const allIndices = data.problem.hints.map((_, index) => index);
+    setExpandedHints(prev => {
+      const newState = { ...prev };
+      allIndices.forEach(index => newState[index] = true);
+      return newState;
+    });
   };
 
-  useEffect(() => {
-    if (!isResizing) return;
+  const collapseAllHints = () => {
+    setExpandedHints({});
+  };
 
-    const handleResizeMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - resizeStartX;
-      const viewportWidth = window.innerWidth;
-      const deltaPercent = (deltaX / viewportWidth) * 100;
+  // Check if all hints are expanded
+  const allHintsExpanded = data?.problem.hints ? data.problem.hints.every((_, index) => expandedHints[index]) : false;
+  const anyHintsExpanded = Object.values(expandedHints).some(Boolean);
 
-      let newWidth = resizeStartWidth + deltaPercent;
 
-      // Constrain between 20% and 60%
-      newWidth = Math.max(20, Math.min(60, newWidth));
-
-      // Snap to preset widths (within 2%)
-      const snapPoints = [25, 33, 40, 50];
-      for (const snap of snapPoints) {
-        if (Math.abs(newWidth - snap) < 2) {
-          newWidth = snap;
-          break;
-        }
-      }
-
-      setAiGuideWidthPercent(Math.round(newWidth));
-    };
-
-    const handleResizeEnd = () => {
-      setIsResizing(false);
-    };
-
-    document.addEventListener('mousemove', handleResizeMove);
-    document.addEventListener('mouseup', handleResizeEnd);
-
-    return () => {
-      document.removeEventListener('mousemove', handleResizeMove);
-      document.removeEventListener('mouseup', handleResizeEnd);
-    };
-  }, [isResizing, resizeStartX, resizeStartWidth]);
 
   // Initialize chat with AI Guide endpoint
   const {
@@ -355,19 +345,70 @@ export default function CaseStudyWorkspacePage() {
     root.classList.add(themeToApply);
   }, []);
 
-  // Global Cmd/Ctrl+S shortcut for manual save
+
+
+  // Contextual AI Guide tooltips
+  useEffect(() => {
+    if (isInactive && !showRightPanel && !showGuideTooltip) {
+      // Pick random message
+      const randomMessage = guideMessages[Math.floor(Math.random() * guideMessages.length)];
+      setCurrentGuideMessage(randomMessage);
+      setShowGuideTooltip(true);
+
+      // Hide tooltip after 5 seconds
+      tooltipTimeoutRef.current = setTimeout(() => {
+        setShowGuideTooltip(false);
+      }, 5000);
+    }
+
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, [isInactive, showRightPanel, showGuideTooltip, guideMessages]);
+
+  // Reset tooltip when panel is opened or activity resumes
+  useEffect(() => {
+    if (showRightPanel || !isInactive) {
+      setShowGuideTooltip(false);
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    }
+  }, [showRightPanel, isInactive]);
+
+  // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Cmd/Ctrl+S for save
       const isSaveCombo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's';
-      if (!isSaveCombo) return;
+      if (isSaveCombo) {
+        event.preventDefault();
+        handleSaveSolution();
+        return;
+      }
 
-      event.preventDefault();
-      handleSaveSolution();
+      // Cmd/Ctrl+H for toggle hints panel (left panel)
+      const isHintsCombo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'h';
+      if (isHintsCombo) {
+        event.preventDefault();
+        toggleLeftPanel();
+        return;
+      }
+
+      // Cmd/Ctrl+G for toggle AI Guide (right panel)
+      const isGuideCombo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'g';
+      if (isGuideCombo) {
+        event.preventDefault();
+        toggleRightPanel();
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSaveSolution]);
+  }, [handleSaveSolution, toggleLeftPanel, toggleRightPanel]);
 
   const renderAutoSaveText = () => {
     switch (autoSaveState) {
@@ -432,76 +473,127 @@ export default function CaseStudyWorkspacePage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              {renderAutoSaveText() && (
-                <span className="text-xs text-muted-foreground">{renderAutoSaveText()}</span>
-              )}
-              <Button
-                onClick={handleSaveSolution}
-                disabled={isSaving}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Now'}
-                <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                  {isMacUser ? '⌘S' : 'Ctrl+S'}
-                </span>
-              </Button>
-            </div>
+             <div className="flex items-center gap-3">
+               <ThemeToggle />
+               {renderAutoSaveText() && (
+                 <span className="text-xs text-muted-foreground">{renderAutoSaveText()}</span>
+               )}
+               <Button
+                 onClick={handleSaveSolution}
+                 disabled={isSaving}
+                 size="sm"
+                 variant="outline"
+                 className="flex items-center gap-2"
+               >
+                 <Save className="w-4 h-4 mr-2" />
+                 {isSaving ? 'Saving...' : 'Save Now'}
+                 <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                   {isMacUser ? '⌘S' : 'Ctrl+S'}
+                 </span>
+               </Button>
+             </div>
           </div>
         </div>
       </header>
 
-      {/* Main Workspace */}
-      <main className="max-w-[1800px] mx-auto px-6 py-8">
-        {/* Mobile-only Panel Toggle Controls */}
-        <div className="flex items-center gap-2 mb-6 lg:hidden">
-          <button
-            onClick={toggleLeftPanel}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
-            title={showLeftPanel ? "Hide research desk" : "Show research desk"}
-          >
-            {showLeftPanel ? (
-              <>
-                <PanelLeftClose className="w-4 h-4" />
-                <span>Hide Research</span>
-              </>
-            ) : (
-              <>
-                <PanelLeftOpen className="w-4 h-4" />
-                <span>Show Research</span>
-              </>
-            )}
-          </button>
+       {/* Edge-Hugging Tabs - Only show when panels are closed */}
+       {!showLeftPanel && (
+         <motion.div
+           initial={{ opacity: 0, x: -10 }}
+           animate={{ opacity: 1, x: 0 }}
+           exit={{ opacity: 0, x: -10 }}
+           transition={{ duration: 0.2 }}
+           className="fixed left-0 top-1/2 transform -translate-y-1/2 z-20 hidden lg:block"
+         >
+            <button
+              onClick={toggleLeftPanel}
+              className="group relative cursor-pointer flex items-center justify-center w-8 h-12 bg-card-bg border-r border-t border-b border-border rounded-r-lg shadow-sm transition-all duration-200 hover:w-12 text-secondary hover:text-foreground hover:bg-muted hover:border-accent/50"
+              title="Show research desk (Ctrl+H)"
+              aria-label="Show research desk"
+            >
+             <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+             <div className="absolute left-full ml-2 px-2 py-1 bg-card-bg border border-border rounded-md text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-sm">
+               Show Research
+             </div>
+           </button>
+         </motion.div>
+       )}
 
-          <button
-            onClick={toggleRightPanel}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
-            title={showRightPanel ? "Hide AI guide" : "Show AI guide"}
+        {!showRightPanel && (
+          <motion.div
+            initial={{ opacity: 0, x: 10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 10 }}
+            transition={{ duration: 0.2 }}
+            className="fixed right-0 top-1/2 transform -translate-y-1/2 z-20 hidden lg:block"
           >
-            {showRightPanel ? (
-              <>
-                <PanelRightClose className="w-4 h-4" />
-                <span>Hide Guide</span>
-              </>
-            ) : (
-              <>
-                <PanelRightOpen className="w-4 h-4" />
+            <button
+              onClick={() => {
+                toggleRightPanel();
+                resetActivity();
+              }}
+              className="group cursor-pointer relative flex items-center justify-end w-8 h-12 bg-card-bg border-l border-t border-b border-border rounded-l-lg shadow-sm transition-all duration-200 hover:w-12 text-secondary hover:text-foreground hover:bg-muted hover:border-accent/50 animate-shine"
+              title="Chat With Clara (Ctrl+G)"
+              aria-label="Show AI Guide"
+            >
+              <Sparkles className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+              <div className="absolute right-full mr-2 px-2 py-1 bg-card-bg border border-border rounded-md text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-sm">
+                Ask Clara
+              </div>
+              {/* Contextual tooltip */}
+              <AnimatePresence>
+                {showGuideTooltip && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: 10, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-full mr-2 px-3 py-2 bg-card-bg border border-border rounded-lg text-sm text-foreground whitespace-nowrap shadow-lg z-50 max-w-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-accent shrink-0" />
+                      <span className="pr-1">{currentGuideMessage}</span>
+                    </div>
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-card-bg border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-px w-0 h-0 border-l-4 border-l-border border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </button>
+          </motion.div>
+        )}
+
+       {/* Main Workspace */}
+       <main className="max-w-[1800px] mx-auto px-6 py-8">
+         {/* Mobile Panel Controls - Only show when panels are closed */}
+         <div className="flex items-center gap-2 mb-6 lg:hidden">
+           {!showLeftPanel && (
+             <Button
+               onClick={toggleLeftPanel}
+               size="sm"
+               variant="outline"
+               className="flex items-center gap-2"
+               title="Show research desk (Ctrl+H)"
+             >
+               <FileText className="w-4 h-4" />
+               <span>Show Research</span>
+             </Button>
+           )}
+           {!showRightPanel && (
+              <Button
+                onClick={toggleRightPanel}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+                title="Show AI guide (Ctrl+G)"
+              >
+                <Sparkles className="w-4 h-4" />
                 <span>Show Guide</span>
-              </>
-            )}
-          </button>
-        </div>
+              </Button>
+           )}
+         </div>
 
-        <div className="flex gap-0 relative"
-          style={{
-            cursor: isResizing ? 'col-resize' : 'default',
-            userSelect: isResizing ? 'none' : 'auto',
-          }}
-        >
+          <div className="flex gap-0 relative">
           {/* Left Panel: Research Desk */}
           <AnimatePresence>
             {showLeftPanel && (
@@ -555,9 +647,39 @@ export default function CaseStudyWorkspacePage() {
 
             {/* Hints */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Lightbulb className="w-5 h-5 text-accent" />
-                <h2 className="text-lg font-semibold text-foreground">Hints</h2>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-5 h-5 text-accent" />
+                  <h2 className="text-lg font-semibold text-foreground">Hints</h2>
+                  {anyHintsExpanded && (
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                      {Object.values(expandedHints).filter(Boolean).length} revealed
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {!allHintsExpanded && (
+                    <button
+                      onClick={expandAllHints}
+                      className="text-xs cursor-pointer text-accent hover:text-accent/80 font-medium transition-colors"
+                      title="Expand all hints"
+                    >
+                      Expand All
+                    </button>
+                  )}
+                  {anyHintsExpanded && (
+                    <>
+                      {!allHintsExpanded && <span className="text-muted-foreground">|</span>}
+                      <button
+                        onClick={collapseAllHints}
+                        className="text-xs cursor-pointer text-muted-foreground hover:text-foreground font-medium transition-colors"
+                        title="Collapse all hints"
+                      >
+                        Collapse All
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 {data.problem.hints.map((hint, index) => (
@@ -592,110 +714,75 @@ export default function CaseStudyWorkspacePage() {
                     </AnimatePresence>
                   </div>
                 ))}
-              </div>
-            </div>
+               </div>
+             </div>
+                 </div>
+
+                 {/* Left Panel Collapse Indicator */}
+                 <div className="hidden lg:flex absolute top-1/2 -right-3 transform -translate-y-1/2 flex-col items-center justify-center w-6 h-12 bg-card-bg/80 backdrop-blur-sm border border-border rounded-r-lg hover:border-accent hover:bg-accent/10 transition-all duration-200 shadow-sm group cursor-pointer z-10"
+                      onClick={toggleLeftPanel}
+                      title="Hide research desk (Ctrl+H)"
+                      aria-label="Hide research desk">
+                   <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+                 </div>
+
+               </motion.div>
+             )}
+           </AnimatePresence>
+
+           {/* Center Panel: Workbench */}
+           <div className="flex-1 min-w-0 space-y-6 px-4">
+              {/* Problem Scenario */}
+              <div className="bg-card-bg border border-border rounded-xl p-6">
+                <h2 className="text-xl font-bold text-foreground mb-4">The Challenge</h2>
+                <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
+                  <ReactMarkdown>
+                    {data.problem.scenario}
+                  </ReactMarkdown>
                 </div>
-
-                {/* Left Panel Edge Toggle Button */}
-                <button
-                  onClick={toggleLeftPanel}
-                  className="hidden lg:flex absolute top-1/2 -right-3 transform -translate-y-1/2 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-r-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group z-10"
-                  title="Hide research desk"
-                  aria-label="Hide research desk"
-                >
-                  <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Show Left Panel Button (when hidden) */}
-          {!showLeftPanel && (
-            <motion.button
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2 }}
-              onClick={toggleLeftPanel}
-              className="hidden lg:flex shrink-0 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-r-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group absolute left-6 top-1/2 transform -translate-y-1/2 z-10"
-              title="Show research desk"
-              aria-label="Show research desk"
-            >
-              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-            </motion.button>
-          )}
-
-          {/* Center Panel: Workbench */}
-          <div className="flex-1 min-w-0 space-y-6 px-4">
-            {/* Problem Scenario */}
-            <div className="bg-card-bg border border-border rounded-xl p-6">
-              <h2 className="text-xl font-bold text-foreground mb-4">The Challenge</h2>
-              <div className="prose prose-sm max-w-none">
-                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                  {data.problem.scenario}
-                </p>
               </div>
-            </div>
 
-            {/* Solution Pad */}
-            <div className="bg-card-bg border border-border rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-foreground mb-4">
-                Your Solution
-              </h2>
-              <RichTextEditor
-                value={solution}
-                onChange={setSolution}
-                placeholder="Start writing your solution here..."
-              />
-            </div>
-          </div>
-
-          {/* Drag Resize Handle */}
-          {showRightPanel && (
-            <div
-              className="hidden lg:block shrink-0 relative group cursor-col-resize"
-              style={{ width: '8px' }}
-              onMouseDown={handleResizeStart}
-              role="separator"
-              aria-label="Resize AI Guide panel"
-              aria-orientation="vertical"
-            >
-              <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-1 bg-border group-hover:bg-accent transition-colors" />
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-accent opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg" />
-            </div>
-          )}
-
-          {/* Right Panel: AI Guide */}
-          <AnimatePresence>
-            {showRightPanel && (
-              <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: `${aiGuideWidthPercent}%` }}
-                transition={{ duration: 0.3 }}
-                className="shrink-0 relative"
-                style={{
-                  width: `${aiGuideWidthPercent}%`,
-                  minWidth: '280px',
-                  maxWidth: '800px',
-                }}
-              >
-                <div className="pl-4">
-            <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 max-h-[calc(100vh-8rem)] flex flex-col">
-              <div className="flex items-center gap-2 mb-4">
-                <MessageSquare className="w-5 h-5 text-accent" />
-                <h2 className="text-lg font-semibold text-foreground">Clara</h2>
+              {/* Solution Pad */}
+              <div className="bg-card-bg border border-border rounded-xl p-6">
+                <h2 className="text-lg font-semibold text-foreground mb-4">
+                  Your Solution
+                </h2>
+                <RichTextEditor
+                  value={solution}
+                  onChange={setSolution}
+                  placeholder="Start writing your solution here..."
+                />
               </div>
-              <div
-                className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1"
-                ref={guideMessagesRef}
-              >
+           </div>
+
+            {/* Right Panel: AI Guide */}
+           <AnimatePresence>
+             {showRightPanel && (
+               <motion.div
+                 initial={{ opacity: 0, width: 0 }}
+                 animate={{ opacity: 1, width: '500px' }}
+                 exit={{ opacity: 0, width: 0 }}
+                 transition={{ duration: 0.3 }}
+                 className="shrink-0 relative"
+                 style={{ width: '500px' }}
+               >
+                 <div className="pl-4">
+             <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 max-h-[calc(100vh-8rem)] flex flex-col">
+               <div className="flex items-center gap-2 mb-4">
+                 <Sparkles className="w-5 h-5 text-accent" />
+                 <h2 className="text-lg font-semibold text-foreground">Clara</h2>
+               </div>
+               <div
+                 className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1 scrollbar-themed"
+                 ref={guideMessagesRef}
+               >
                 {messages.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground mb-2">
                       Need help? Ask Clara!
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      I'm here to guide your thinking, not give you the answer.
+                      I&apos;m here to guide your thinking, not give you the answer.
                     </p>
                   </div>
                 ) : (
@@ -742,39 +829,24 @@ export default function CaseStudyWorkspacePage() {
                   >
                     Send
                   </Button>
-                </form>
+                 </form>
+               </div>
               </div>
-            </div>
-                </div>
+                  </div>
 
-                {/* Right Panel Edge Toggle Button */}
-                <button
-                  onClick={toggleRightPanel}
-                  className="hidden lg:flex absolute top-1/2 -left-3 transform -translate-y-1/2 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-l-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group z-10"
-                  title="Hide AI Guide"
-                  aria-label="Hide AI Guide"
-                >
-                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                 {/* Right Panel Collapse Indicator */}
+                 <div className="hidden lg:flex absolute top-1/2 -left-3 transform -translate-y-1/2 flex-col items-center justify-center w-6 h-12 bg-card-bg/80 backdrop-blur-sm border border-border rounded-l-lg hover:border-accent hover:bg-accent/10 transition-all duration-200 shadow-sm group cursor-pointer z-10"
+                      onClick={toggleRightPanel}
+                      title="Hide AI Guide (Ctrl+G)"
+                      aria-label="Hide AI Guide">
+                   <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+                 </div>
 
-          {/* Show Right Panel Button (when hidden) */}
-          {!showRightPanel && (
-            <motion.button
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
-              onClick={toggleRightPanel}
-              className="hidden lg:flex shrink-0 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-l-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group absolute right-6 top-1/2 transform -translate-y-1/2 z-10"
-              title="Show AI Guide"
-              aria-label="Show AI Guide"
-            >
-              <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
-            </motion.button>
-          )}
+               </motion.div>
+             )}
+           </AnimatePresence>
+
+
         </div>
       </main>
 
@@ -810,7 +882,7 @@ export default function CaseStudyWorkspacePage() {
                 </p>
               </div>
               <Button onClick={() => setShowOnboarding(false)} className="w-full">
-                Let's Start!
+                Let&apos;s Start!
               </Button>
             </motion.div>
           </motion.div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 
 interface RichTextEditorProps {
   value: string;
@@ -19,15 +19,6 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea based on content
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  }, [value]);
-
   return (
     <div className="relative">
       <textarea
@@ -35,8 +26,7 @@ export default function RichTextEditor({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full min-h-[300px] px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-none font-sans leading-relaxed"
-        style={{ overflow: 'hidden' }}
+        className="w-full min-h-[300px] px-4 py-3 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent resize-vertical font-sans leading-relaxed"
       />
       <div className="absolute bottom-3 right-3 text-xs text-muted-foreground">
         {value.length} characters
