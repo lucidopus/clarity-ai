@@ -27,8 +27,7 @@ Generate 7 learning components based on this transcript:
   - **Hierarchy edges**: Create parent-child edges connecting each node to its parent (e.g., root→concept, concept→subconcept, subconcept→detail).
   - **Relation edges**: Add at least 2-4 meaningful cross-branch connections that reveal deeper insights.
   - **Edge Labels**: ALL edges must have specific and descriptive labels. Instead of a generic "relates to," use labels like "causes," "is an example of," "is required for," "contributes to," or "contradicts."
-- **Example Structure**:
-  ```json
+- **Example Structure (DNA topic)**:
   {
     "nodes": [
       {"id": "n0", "label": "DNA Structure", "type": "root", "description": "...", "level": 0},
@@ -45,7 +44,6 @@ Generate 7 learning components based on this transcript:
       {"id": "e5", "source": "n3", "target": "n4", "label": "determines shape of", "type": "relation"}
     ]
   }
-  ```
 - **Final Polish**:
   - ALL nodes must include a description field providing context and clarification.
   - Ensure the graph is connected and easy to understand.
