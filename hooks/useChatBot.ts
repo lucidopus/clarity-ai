@@ -11,6 +11,8 @@ export interface UseChatBotOptions {
   endpoint?: string; // API endpoint to use (default: '/api/chatbot/ask')
   historyEndpoint?: string; // History endpoint (default: '/api/chatbot/history')
   enableHistory?: boolean; // Whether to load/save history (default: true)
+  channel?: 'chatbot' | 'guide'; // Conversation channel (default: 'chatbot')
+  problemId?: string; // Problem ID (required if channel='guide')
   transformRequestBody?: (payload: {
     videoId: string;
     message: string;
@@ -40,6 +42,8 @@ export function useChatBot(
     endpoint = '/api/chatbot/ask',
     historyEndpoint = '/api/chatbot/history',
     enableHistory = true,
+    channel,
+    problemId,
     transformRequestBody,
   } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -55,7 +59,16 @@ export function useChatBot(
 
     async function loadMessages() {
       try {
-        const response = await fetch(`${historyEndpoint}?videoId=${videoId}`);
+        // Build history URL with channel and problemId if specified
+        let historyUrl = `${historyEndpoint}?videoId=${videoId}`;
+        if (channel) {
+          historyUrl += `&channel=${channel}`;
+        }
+        if (problemId) {
+          historyUrl += `&problemId=${problemId}`;
+        }
+
+        const response = await fetch(historyUrl);
 
         if (response.ok) {
           const data = await response.json();
@@ -77,7 +90,7 @@ export function useChatBot(
     }
 
     loadMessages();
-  }, [videoId, enableHistory, historyEndpoint]);
+  }, [videoId, enableHistory, historyEndpoint, channel, problemId]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading || isStreaming) return;
@@ -227,14 +240,23 @@ export function useChatBot(
     // Clear from database (if history is enabled)
     if (enableHistory) {
       try {
-        await fetch(`${historyEndpoint}?videoId=${videoId}`, {
+        // Build delete URL with channel and problemId if specified
+        let deleteUrl = `${historyEndpoint}?videoId=${videoId}`;
+        if (channel) {
+          deleteUrl += `&channel=${channel}`;
+        }
+        if (problemId) {
+          deleteUrl += `&problemId=${problemId}`;
+        }
+
+        await fetch(deleteUrl, {
           method: 'DELETE'
         });
       } catch (error) {
         console.error('Failed to clear database messages:', error);
       }
     }
-  }, [videoId, enableHistory, historyEndpoint]);
+  }, [videoId, enableHistory, historyEndpoint, channel, problemId]);
 
   const clearError = useCallback(() => {
     setError(null);
