@@ -13,7 +13,7 @@ export async function generateLearningMaterials(transcript: string): Promise<Lea
     // Call Groq with structured output (function calling)
     // Per Groq docs: https://console.groq.com/docs/structured-outputs
     console.log('🤖 [LLM] Calling Groq API with model: openai/gpt-oss-120b');
-    console.log('🤖 [LLM] Temperature: 0.7, Max tokens: 16384');
+    console.log('🤖 [LLM] Temperature: 0.7, Max tokens: 50000');
 
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',
@@ -24,7 +24,7 @@ export async function generateLearningMaterials(transcript: string): Promise<Lea
         },
       ],
       temperature: 0.7,
-      max_tokens: 16384, // Increased from 4096 to allow complete JSON generation with all required fields
+      max_tokens: 50000, // Set to 50K to ensure no truncation for complex learning materials
       response_format: {
         type: 'json_schema',
         json_schema: {
