@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight, ChevronLeft, PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, Maximize2, Minimize2 } from 'lucide-react';
 import Button from '@/components/Button';
 import { useChatBot } from '@/hooks/useChatBot';
 import { ToastContainer, type ToastType } from '@/components/Toast';
