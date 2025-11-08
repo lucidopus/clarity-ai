@@ -95,9 +95,9 @@ export default function CaseStudyWorkspacePage() {
   const [showLeftPanel, setShowLeftPanel] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('caseStudy_leftPanel');
-      return saved !== null ? saved === 'true' : true; // Default: open
+      return saved !== null ? saved === 'true' : false; // Default: closed
     }
-    return true;
+    return false;
   });
 
   const [showRightPanel, setShowRightPanel] = useState(() => {
@@ -862,14 +862,14 @@ export default function CaseStudyWorkspacePage() {
               className="bg-card-bg border border-border rounded-2xl p-8 max-w-md w-full"
             >
               <h2 className="text-2xl font-bold text-foreground mb-4">
-                Welcome to the Problem-Solving Workspace
+              Ready to apply what you've learned?
               </h2>
               <div className="space-y-3 text-sm text-foreground mb-6">
                 <p>
-                  This is your space to tackle real-world problems using concepts from the video.
+                  This is your space to tackle a real-world problem using concepts from the video.
                 </p>
                 <p>
-                  The <strong className="text-accent">Clara</strong> is here to help you think through the problem.
+                  <strong className="text-accent">Clara</strong> is here to help you think through the problem.
                 </p>
                 <p>
                   Use your notes, explore hints, and work through the challenge at your own pace.

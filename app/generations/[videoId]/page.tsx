@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
@@ -105,7 +105,7 @@ const tabs = [
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
-  { id: 'casestudies' as TabType, label: 'Case Studies', icon: Briefcase },
+  { id: 'casestudies' as TabType, label: 'Challenges', icon: Target },
   { id: 'mindmap' as TabType, label: 'Mind Map', icon: Network },
 ];
 
@@ -513,7 +513,7 @@ export default function VideoMaterialsPage() {
             {activeTab === 'casestudies' && (
               <div className="space-y-6">
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Real-World Case Studies</h2>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Real-World Challenges</h2>
                   <p className="text-muted-foreground">
                     Apply concepts from this video to solve complex, realistic problems.
                   </p>
@@ -555,12 +555,12 @@ export default function VideoMaterialsPage() {
                   </div>
                 ) : (
                   <div className="text-center py-12 bg-card-bg border border-border rounded-xl">
-                    <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                     <h3 className="text-lg font-semibold text-foreground mb-2">
-                      No case studies available
+                      No challenges available
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Case studies will be generated when processing new videos.
+                      Challenges will be generated when processing new videos.
                     </p>
                   </div>
                 )}

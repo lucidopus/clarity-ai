@@ -75,7 +75,7 @@ export default function ActivityFunnelCard() {
 
               <div className="flex items-center gap-3">
                 {/* Label */}
-                <div className="w-36 flex-shrink-0 text-sm text-foreground">
+                <div className="w-36 shrink-0 text-sm text-foreground">
                   {item.label}
                 </div>
 
@@ -84,7 +84,7 @@ export default function ActivityFunnelCard() {
                   <div
                     className={`absolute inset-y-0 left-0 rounded-lg transition-all duration-300 ${
                       hasActivity
-                        ? 'bg-gradient-to-r from-cyan-400 to-cyan-500'
+                        ? 'bg-linear-to-r from-cyan-400 to-cyan-500'
                         : 'bg-secondary/30'
                     }`}
                     style={{ width: `${widthPercentage}%` }}
