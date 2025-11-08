@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import { groq } from '@/lib/sdk';
-import { getChatbotContext } from '@/lib/chatbot-context';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
-import { CHATBOT_SYSTEM_PROMPT } from '@/lib/prompts';
-import ActivityLog from '@/lib/models/ActivityLog';
+import { AI_GUIDE_SYSTEM_PROMPT } from '@/lib/prompts';
+import { LearningMaterial, Solution } from '@/lib/models';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
-import { resolveClientDay } from '@/lib/date.utils';
 
 interface DecodedToken {
   userId: string;
@@ -19,6 +17,11 @@ interface DecodedToken {
   exp: number;
 }
 
+/**
+ * POST /api/chatbot/guide
+ * AI Guide for real-world problem-solving workspace
+ * Uses "Supportive Domain Expert" persona to guide users through case studies
+ */
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
@@ -32,19 +35,22 @@ export async function POST(request: NextRequest) {
     // 2. Parse request
     const {
       videoId,
+      problemId,
       message,
       conversationHistory,
-      clientTimestamp,
-      timezoneOffsetMinutes,
-      timeZone,
+      solutionDraft,
     } = await request.json();
-    if (!videoId || !message) {
-      return NextResponse.json({ error: 'videoId and message are required' }, { status: 400 });
+
+    if (!videoId || !problemId || !message) {
+      return NextResponse.json(
+        { error: 'videoId, problemId, and message are required' },
+        { status: 400 }
+      );
     }
 
     await dbConnect();
 
-    // 3. Rate limiting
+    // 3. Rate limiting (same as chatbot)
     const rateLimit = await checkChatbotRateLimit(decoded.userId);
     if (!rateLimit.allowed) {
       return NextResponse.json({
@@ -58,12 +64,46 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 4. Generate session and message identifiers
+    // 4. Fetch learning material and problem details
+    const learningMaterial = await LearningMaterial.findOne({
+      videoId,
+      userId: decoded.userId,
+    });
+
+    if (!learningMaterial) {
+      return NextResponse.json(
+        { error: 'Learning material not found' },
+        { status: 404 }
+      );
+    }
+
+    // 5. Find the specific problem
+    const problem = learningMaterial.realWorldProblems?.find(
+      (p: { id: string }) => p.id === problemId
+    );
+
+    if (!problem) {
+      return NextResponse.json(
+        { error: 'Problem not found' },
+        { status: 404 }
+      );
+    }
+
+    // 6. Fetch user's current solution draft (if any)
+    const existingSolution = await Solution.findOne({
+      userId: decoded.userId,
+      videoId,
+      problemId,
+    });
+
+    const incomingDraft = typeof solutionDraft === 'string' ? solutionDraft : undefined;
+
+    // 7. Generate session and message identifiers
     const sessionId = generateSessionId(decoded.userId, videoId); // LEGACY
     const userMessageId = generateMessageId('user');
     const assistantMessageId = generateMessageId('assistant');
 
-    // 5. Save user message to database
+    // 8. Save user message to database
     try {
       const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
       await saveChatMessage(
@@ -74,38 +114,41 @@ export async function POST(request: NextRequest) {
         decoded.userId,
         videoId,
         clientIp,
-        'chatbot', // channel
-        videoId,   // contextId (same as videoId for chatbot channel)
-        undefined  // problemId (not used for chatbot channel)
+        'guide',   // channel
+        problemId, // contextId (problemId for guide channel)
+        problemId  // problemId
       );
     } catch (saveError) {
-      console.error('Failed to save user message:', saveError);
+      console.error('Failed to save user message (guide):', saveError);
       // Continue anyway - don't block the response
     }
 
-    // 6. Fetch context
-    const context = await getChatbotContext(decoded.userId, videoId);
+    // 9. Build AI Guide system prompt with context
+    const systemPrompt = AI_GUIDE_SYSTEM_PROMPT({
+      userProfile: { firstName: decoded.firstName },
+      problemTitle: problem.title,
+      problemScenario: problem.scenario,
+      videoSummary: learningMaterial.videoSummary || 'No video summary available.',
+      solutionDraft: incomingDraft ?? existingSolution?.content ?? '',
+    });
 
-    // 7. Build system prompt
-    const systemPrompt = CHATBOT_SYSTEM_PROMPT(context);
-
-    // 8. Prepare conversation history (last 3 exchanges = 6 messages)
+    // 10. Prepare conversation history (last 4 exchanges = 8 messages)
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...(conversationHistory || []).slice(-6),
+      ...(conversationHistory || []).slice(-8),
       { role: 'user', content: message }
     ];
 
-    // 9. Call Groq with streaming
+    // 11. Call Groq with streaming
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',
       messages,
-      temperature: 0.7,
+      temperature: 0.8, // Slightly higher for more varied guidance
       max_tokens: 1024,
       stream: true,
     });
 
-    // 10. Create streaming response and accumulate assistant response
+    // 12. Create streaming response and accumulate assistant response
     let assistantResponse = '';
     const stream = new ReadableStream({
       async start(controller) {
@@ -130,40 +173,21 @@ export async function POST(request: NextRequest) {
               decoded.userId,
               videoId,
               clientIp,
-              'chatbot', // channel
-              videoId,   // contextId (same as videoId for chatbot channel)
-              undefined  // problemId (not used for chatbot channel)
+              'guide',   // channel
+              problemId, // contextId (problemId for guide channel)
+              problemId  // problemId
             );
           } catch (saveError) {
-            console.error('Failed to save assistant message:', saveError);
+            console.error('Failed to save assistant message (guide):', saveError);
           }
         } catch (error) {
+          console.error('Streaming error:', error);
           controller.error(error);
         }
       },
     });
 
-    // 11. Log activity
-    try {
-      const { now, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
-      await ActivityLog.create({
-        userId: decoded.userId,
-        activityType: 'chatbot_message_sent',
-        videoId: videoId,
-        date: startOfDay,
-        timestamp: now,
-        metadata: {
-          messageLength: message.length,
-          remainingMessages: rateLimit.remaining - 1,
-          ...(timeZone ? { clientTimeZone: timeZone } : {}),
-          ...(typeof timezoneOffsetMinutes === 'number' ? { clientTimezoneOffsetMinutes: timezoneOffsetMinutes } : {}),
-        },
-      });
-    } catch (logError) {
-      console.error('Failed to log chatbot activity:', logError);
-    }
-
-    // 12. Return streaming response
+    // 11. Return streaming response
     return new NextResponse(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -173,7 +197,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Chatbot API error:', error);
+    console.error('AI Guide API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

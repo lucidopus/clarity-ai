@@ -52,14 +52,7 @@ export default function WeekdayConsistencyBars() {
   const totalActivities = data.reduce((sum, count) => sum + count, 0);
   const averagePerDay = totalActivities / 7;
 
-  // Find most active day
-  const maxCount = Math.max(...data);
-  const mostActiveDay = weekday.find((d) => d.count === maxCount);
 
-  // Find least active day (excluding zero-count days)
-  const nonZeroDays = weekday.filter((d) => d.count > 0);
-  const minNonZeroCount = nonZeroDays.length > 0 ? Math.min(...nonZeroDays.map((d) => d.count)) : 0;
-  const leastActiveDay = nonZeroDays.find((d) => d.count === minNonZeroCount);
 
   // Color bars: above average in accent, below in muted
   const backgroundColors = data.map((count) =>

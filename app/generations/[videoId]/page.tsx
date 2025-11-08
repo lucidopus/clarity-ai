@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
@@ -81,6 +81,12 @@ interface VideoMaterials {
       type: 'hierarchy' | 'relation' | 'dependency';
     }>;
   };
+  realWorldProblems: Array<{
+    id: string;
+    title: string;
+    scenario: string;
+    hints: string[];
+  }>;
   notes: {
     generalNote: string;
     segmentNotes: Array<{
@@ -92,13 +98,14 @@ interface VideoMaterials {
   };
 }
 
-type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap';
+type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
 
 const tabs = [
   { id: 'transcript' as TabType, label: 'Learn', icon: Video },
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
+  { id: 'casestudies' as TabType, label: 'Case Studies', icon: Briefcase },
   { id: 'mindmap' as TabType, label: 'Mind Map', icon: Network },
 ];
 
@@ -502,6 +509,62 @@ export default function VideoMaterialsPage() {
             )}
             {activeTab === 'prerequisites' && (
               <PrerequisitesView prerequisites={materials.prerequisites} />
+            )}
+            {activeTab === 'casestudies' && (
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Real-World Case Studies</h2>
+                  <p className="text-muted-foreground">
+                    Apply concepts from this video to solve complex, realistic problems.
+                  </p>
+                </div>
+
+                {materials.realWorldProblems && materials.realWorldProblems.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+                    {materials.realWorldProblems.map((problem) => (
+                      <motion.div
+                        key={problem.id}
+                        // whileHover={{ y: -4 }}
+                        className="bg-card-bg border border-border rounded-xl p-6 cursor-pointer transition-shadow hover:shadow-lg"
+                        onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}`)}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
+                            <Briefcase className="w-6 h-6 text-accent" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-foreground mb-2">
+                              {problem.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                              {problem.scenario}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Lightbulb className="w-3.5 h-3.5" />
+                                <span>{problem.hints.length} hints available</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-accent font-medium">Start solving →</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-card-bg border border-border rounded-xl">
+                    <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      No case studies available
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Case studies will be generated when processing new videos.
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
             {activeTab === 'mindmap' && (
               <MindMapViewer

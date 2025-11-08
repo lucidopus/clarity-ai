@@ -35,6 +35,7 @@ Clarity AI is packed with features designed to enhance your learning, all genera
     - **Interactive Transcripts**: A full, searchable transcript with clickable timestamps to instantly navigate the video.
     - **Clara, the AI Chatbot**: Ask questions about the video content and get structured, educational answers without leaving the player.
     - **Prerequisite Checker**: Identifies concepts you should know before watching and provides resources to get you up to speed.
+    - **Real-World Problem-Solving Workspace**: Apply concepts from videos to solve practical problems with AI guidance, hints, and solution tracking.
 
 - **📊 Personalized Learning Dashboard**:
     - **Activity Tracking**: Visualize your study habits with a GitHub-style activity heatmap and weekly charts.
