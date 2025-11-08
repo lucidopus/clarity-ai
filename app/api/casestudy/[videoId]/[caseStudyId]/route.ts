@@ -49,7 +49,7 @@ export async function GET(
 
     // 3. Find the specific problem
     const problem = learningMaterial.realWorldProblems?.find(
-      (p) => p.id === caseStudyId
+      (p: { id: string }) => p.id === caseStudyId
     );
 
     if (!problem) {

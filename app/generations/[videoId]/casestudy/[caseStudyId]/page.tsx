@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Lightbulb, FileText, MessageSquare, Save, ChevronDown, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Lightbulb, FileText, Save, ChevronDown, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
 import Button from '@/components/Button';
 import { useChatBot } from '@/hooks/useChatBot';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import ReactMarkdown from 'react-markdown';
-import { useAuth } from '@/lib/auth-context';
+
 import dynamic from 'next/dynamic';
 import { ChatMessage } from '@/components/ChatMessage';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -46,7 +46,6 @@ interface CaseStudyData {
 export default function CaseStudyWorkspacePage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
   const videoId = params.videoId as string;
   const caseStudyId = params.caseStudyId as string;
 
@@ -70,7 +69,7 @@ export default function CaseStudyWorkspacePage() {
 
 
   // AI Guide contextual tooltips
-  const guideMessages = [
+  const guideMessages = useMemo(() => [
     "Need help understanding this concept?",
     "Stuck on the solution? Ask me for guidance!",
     "Want to explore this topic deeper?",
@@ -86,7 +85,7 @@ export default function CaseStudyWorkspacePage() {
     "Need help organizing your thoughts?",
     "Ask me about prerequisites or background",
     "Want to explore real-world applications?"
-  ];
+  ], []);
 
   const [showGuideTooltip, setShowGuideTooltip] = useState(false);
   const [currentGuideMessage, setCurrentGuideMessage] = useState('');
@@ -150,9 +149,7 @@ export default function CaseStudyWorkspacePage() {
     messages,
     isLoading: isChatLoading,
     isStreaming,
-    error: chatError,
     sendMessage,
-    clearError: clearChatError,
   } = useChatBot(videoId, {
     endpoint: '/api/chatbot/guide',
     enableHistory: true, // Enable conversation persistence (Issue #39)
@@ -208,15 +205,12 @@ export default function CaseStudyWorkspacePage() {
       if (showSuccessToast) {
         setToast({ message: 'Solution saved successfully!', type: 'success' });
       }
-    } catch (err) {
-      console.error('Error saving solution:', err);
-      setAutoSaveState('error');
+      } catch {
+        setAutoSaveState('error');
 
       if (showErrorToast) {
         setToast({ message: 'Failed to save solution', type: 'error' });
       }
-
-      throw err;
     }
   }, [caseStudyId, videoId]);
 
@@ -273,7 +267,7 @@ export default function CaseStudyWorkspacePage() {
       }
       setIsSaving(true);
       await saveSolution(solution, { showSuccessToast: true, showErrorToast: true });
-    } catch (err) {
+    } catch {
       // Error already handled in saveSolution
     } finally {
       setIsSaving(false);
@@ -625,16 +619,16 @@ export default function CaseStudyWorkspacePage() {
                     <p className="text-xs text-muted-foreground font-medium">
                       Segment Notes ({data.notes.segmentNotes.length})
                     </p>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {data.notes.segmentNotes.map((note, idx) => (
-                        <div
-                          key={note.segmentId}
-                          className="p-3 bg-background rounded-lg border border-border"
-                        >
-                          <p className="text-xs text-foreground">{note.content}</p>
-                        </div>
-                      ))}
-                    </div>
+                     <div className="max-h-64 overflow-y-auto space-y-2">
+                       {data.notes.segmentNotes.map((note) => (
+                         <div
+                           key={note.segmentId}
+                           className="p-3 bg-background rounded-lg border border-border"
+                         >
+                           <p className="text-xs text-foreground">{note.content}</p>
+                         </div>
+                       ))}
+                     </div>
                   </div>
                 )}
                 {!data.notes.generalNote && data.notes.segmentNotes.length === 0 && (

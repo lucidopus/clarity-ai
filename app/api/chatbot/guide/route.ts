@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // 5. Find the specific problem
     const problem = learningMaterial.realWorldProblems?.find(
-      (p) => p.id === problemId
+      (p: { id: string }) => p.id === problemId
     );
 
     if (!problem) {
