@@ -22,11 +22,12 @@ Generate 7 learning components based on this transcript:
   // eslint-disable-next-line
   - Node types: 'root' (level 0), 'concept' (level 1), 'subconcept' (level 2), 'detail' (level 3).
   - Node count should be proportional to content density (e.g., 10-15 nodes for a 10-min video). Prioritize clarity over count.
-- **Edges and Relationships (CRITICAL - YOU MUST GENERATE AN EDGES ARRAY)**:
-  - **IMPORTANT**: The mindMap object MUST include both a "nodes" array AND an "edges" array.
+- **Edges and Relationships (CRITICAL - YOU MUST ALWAYS INCLUDE AN EDGES ARRAY)**:
+  - **REQUIRED FIELD**: The mindMap object MUST include an "edges" array (even if empty). This field is mandatory.
   - **Hierarchy edges**: Create parent-child edges connecting each node to its parent (e.g., root→concept, concept→subconcept, subconcept→detail).
   - **Relation edges**: Add at least 2-4 meaningful cross-branch connections that reveal deeper insights.
   - **Edge Labels**: ALL edges must have specific and descriptive labels. Instead of a generic "relates to," use labels like "causes," "is an example of," "is required for," "contributes to," or "contradicts."
+  - **Fallback**: If you cannot generate meaningful edges for any reason, return an empty array: "edges": []
 - **Example Structure (DNA topic)**:
   {
     "nodes": [
