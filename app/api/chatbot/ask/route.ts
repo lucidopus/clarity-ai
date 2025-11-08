@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Generate session and message identifiers
-    const sessionId = generateSessionId(decoded.userId, videoId);
+    const sessionId = generateSessionId(decoded.userId, videoId); // LEGACY
     const userMessageId = generateMessageId('user');
     const assistantMessageId = generateMessageId('assistant');
 
@@ -73,7 +73,10 @@ export async function POST(request: NextRequest) {
         message,
         decoded.userId,
         videoId,
-        clientIp
+        clientIp,
+        'chatbot', // channel
+        videoId,   // contextId (same as videoId for chatbot channel)
+        undefined  // problemId (not used for chatbot channel)
       );
     } catch (saveError) {
       console.error('Failed to save user message:', saveError);
@@ -126,7 +129,10 @@ export async function POST(request: NextRequest) {
               assistantResponse,
               decoded.userId,
               videoId,
-              clientIp
+              clientIp,
+              'chatbot', // channel
+              videoId,   // contextId (same as videoId for chatbot channel)
+              undefined  // problemId (not used for chatbot channel)
             );
           } catch (saveError) {
             console.error('Failed to save assistant message:', saveError);

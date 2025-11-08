@@ -39,13 +39,16 @@ export function hashIP(ip: string): string {
 /**
  * Save a single chat message to MongoDB
  *
- * @param sessionId - Unique session identifier (userId_videoId)
+ * @param sessionId - Unique session identifier (userId_videoId) - LEGACY
  * @param messageId - Unique message identifier
  * @param role - 'user' or 'assistant'
  * @param content - Message content
  * @param userId - User ID
  * @param videoId - Video ID
  * @param ip - Optional IP address (will be hashed)
+ * @param channel - Conversation channel ('chatbot' | 'guide')
+ * @param contextId - Context identifier (videoId for chatbot, problemId for guide)
+ * @param problemId - Problem ID (only for guide channel)
  */
 export async function saveChatMessage(
   sessionId: string,
@@ -54,7 +57,10 @@ export async function saveChatMessage(
   content: string,
   userId: string,
   videoId: string,
-  ip?: string
+  ip?: string,
+  channel?: 'chatbot' | 'guide',
+  contextId?: string,
+  problemId?: string
 ): Promise<void> {
   try {
     const chats = await getChatsCollection();
@@ -67,7 +73,10 @@ export async function saveChatMessage(
       timestamp: new Date(),
       userId,
       videoId,
-      ...(ip && { ipHash: hashIP(ip) })
+      ...(ip && { ipHash: hashIP(ip) }),
+      ...(channel && { channel }),
+      ...(contextId && { contextId }),
+      ...(problemId && { problemId })
     };
 
     await chats.insertOne(message);
@@ -78,11 +87,12 @@ export async function saveChatMessage(
 }
 
 /**
- * Load chat history for a session
+ * Load chat history for a session (LEGACY)
  *
  * @param sessionId - Session identifier (userId_videoId)
  * @param limit - Maximum number of messages to retrieve (default: 50)
  * @returns Array of chat messages sorted by timestamp (oldest first)
+ * @deprecated Use loadChatHistoryByChannel instead
  */
 export async function loadChatHistory(
   sessionId: string,
@@ -105,9 +115,45 @@ export async function loadChatHistory(
 }
 
 /**
- * Delete all messages for a session (clear conversation)
+ * Load chat history by channel and context
+ *
+ * @param userId - User ID
+ * @param channel - Conversation channel ('chatbot' | 'guide')
+ * @param contextId - Context identifier (videoId for chatbot, problemId for guide)
+ * @param limit - Maximum number of messages to retrieve (default: 50)
+ * @returns Array of chat messages sorted by timestamp (oldest first)
+ */
+export async function loadChatHistoryByChannel(
+  userId: string,
+  channel: 'chatbot' | 'guide',
+  contextId: string,
+  limit: number = 50
+): Promise<ChatMessage[]> {
+  try {
+    const chats = await getChatsCollection();
+
+    const messages = await chats
+      .find({
+        userId,
+        channel,
+        contextId
+      })
+      .sort({ timestamp: 1 }) // Oldest first
+      .limit(limit)
+      .toArray();
+
+    return messages;
+  } catch (error) {
+    console.error('Failed to load chat history by channel:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete all messages for a session (clear conversation) - LEGACY
  *
  * @param sessionId - Session identifier (userId_videoId)
+ * @deprecated Use deleteChatHistoryByChannel instead
  */
 export async function deleteChatHistory(sessionId: string): Promise<void> {
   try {
@@ -120,21 +166,53 @@ export async function deleteChatHistory(sessionId: string): Promise<void> {
 }
 
 /**
+ * Delete all messages for a channel and context (clear conversation)
+ *
+ * @param userId - User ID
+ * @param channel - Conversation channel ('chatbot' | 'guide')
+ * @param contextId - Context identifier (videoId for chatbot, problemId for guide)
+ */
+export async function deleteChatHistoryByChannel(
+  userId: string,
+  channel: 'chatbot' | 'guide',
+  contextId: string
+): Promise<void> {
+  try {
+    const chats = await getChatsCollection();
+    await chats.deleteMany({
+      userId,
+      channel,
+      contextId
+    });
+  } catch (error) {
+    console.error('Failed to delete chat history by channel:', error);
+    throw error;
+  }
+}
+
+/**
  * Create indexes for the chats collection
  * Should be called once during app initialization
  *
  * Indexes:
- * 1. Compound index: sessionId + role + timestamp (for rate limiting queries)
- * 2. TTL index: timestamp (auto-delete after 30 days)
+ * 1. LEGACY: Compound index: sessionId + role + timestamp (for backward compatibility)
+ * 2. NEW: Compound index: userId + channel + contextId + timestamp (for channel-based queries)
+ * 3. TTL index: timestamp (auto-delete after 30 days)
  */
 export async function createChatIndexes(): Promise<void> {
   try {
     const chats = await getChatsCollection();
 
-    // Compound index for efficient session queries
+    // LEGACY: Compound index for efficient session queries (backward compatibility)
     await chats.createIndex(
       { sessionId: 1, role: 1, timestamp: 1 },
       { name: 'session_role_timestamp_idx' }
+    );
+
+    // NEW: Compound index for channel-based queries (Issue #39)
+    await chats.createIndex(
+      { userId: 1, channel: 1, contextId: 1, timestamp: 1 },
+      { name: 'user_channel_context_timestamp_idx' }
     );
 
     // TTL index - auto-delete messages after 30 days
