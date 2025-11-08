@@ -83,6 +83,18 @@ Generate 7 learning components based on this transcript:
   - Bad: "Optimizing a Database" (too vague)
   - Bad: "Helping TechCorp Inc. with Their System" (fictional company)
 
+- **JSON Structure Example**:
+  {
+    "id": "rp1",
+    "title": "Scaling Netflix's Video Encoding Pipeline",
+    "scenario": "You are a senior infrastructure engineer at Netflix. The encoding pipeline processes 1M videos/day but costs $2M/month. Leadership wants 40% cost reduction in 3 months while maintaining quality.",
+    "hints": [
+      "Consider how the video discusses resource optimization",
+      "Think about AWS spot instances vs reserved capacity",
+      "Look at how Dropbox reduced costs by moving infrastructure"
+    ]
+  }
+
 ## Requirements:
 - Title: Concise, descriptive, and engaging (based on the main topic)
 - Flashcards: Simple, testable, foundational concepts with clear questions and answers
