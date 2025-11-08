@@ -513,7 +513,7 @@ export default function CaseStudyWorkspacePage() {
             >
              <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
              <div className="absolute left-full ml-2 px-2 py-1 bg-card-bg border border-border rounded-md text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-sm">
-               Show Research
+               Show Hints & Notes
              </div>
            </button>
          </motion.div>
