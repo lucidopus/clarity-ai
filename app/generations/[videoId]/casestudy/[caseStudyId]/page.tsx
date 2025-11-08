@@ -165,7 +165,9 @@ export default function CaseStudyWorkspacePage() {
     clearError: clearChatError,
   } = useChatBot(videoId, {
     endpoint: '/api/chatbot/guide',
-    enableHistory: false, // Don't persist guide chat history
+    enableHistory: true, // Enable conversation persistence (Issue #39)
+    channel: 'guide',    // Use guide channel to avoid collision with chatbot
+    problemId: caseStudyId, // Context identifier for guide conversations
     transformRequestBody: (payload) => ({
       ...payload,
       problemId: caseStudyId,

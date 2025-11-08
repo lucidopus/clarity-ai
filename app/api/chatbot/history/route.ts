@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { loadChatHistory, deleteChatHistory } from '@/lib/chat-db';
-import { generateSessionId } from '@/lib/types/chat';
+import { loadChatHistory, deleteChatHistory, loadChatHistoryByChannel, deleteChatHistoryByChannel } from '@/lib/chat-db';
+import { generateSessionId, generateContextId } from '@/lib/types/chat';
 
 interface DecodedToken {
   userId: string;
@@ -14,8 +14,11 @@ interface DecodedToken {
 
 /**
  * GET /api/chatbot/history
- * Retrieve chat history for a specific video
- * Query params: videoId (required)
+ * Retrieve chat history for a specific video or problem
+ * Query params:
+ * - videoId (required)
+ * - channel (optional): 'chatbot' or 'guide'
+ * - problemId (optional): required if channel=guide
  */
 export async function GET(request: NextRequest) {
   try {
@@ -30,6 +33,8 @@ export async function GET(request: NextRequest) {
     // 2. Parse query params
     const { searchParams } = new URL(request.url);
     const videoId = searchParams.get('videoId');
+    const channel = searchParams.get('channel') as 'chatbot' | 'guide' | null;
+    const problemId = searchParams.get('problemId');
 
     if (!videoId) {
       return NextResponse.json(
@@ -38,13 +43,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 3. Generate session ID and load history
-    const sessionId = generateSessionId(decoded.userId, videoId);
-    const history = await loadChatHistory(sessionId, 100); // Last 100 messages
+    // 3. Load history based on channel
+    let history;
+    let sessionId: string | undefined;
+
+    if (channel) {
+      // NEW: Channel-based query
+      if (channel === 'guide' && !problemId) {
+        return NextResponse.json(
+          { error: 'problemId is required for guide channel' },
+          { status: 400 }
+        );
+      }
+
+      const contextId = generateContextId(channel, videoId, problemId || undefined);
+      history = await loadChatHistoryByChannel(decoded.userId, channel, contextId, 100);
+    } else {
+      // LEGACY: Session-based query (backward compatibility)
+      sessionId = generateSessionId(decoded.userId, videoId);
+      history = await loadChatHistory(sessionId, 100);
+    }
 
     // 4. Return chat history
     return NextResponse.json({
-      sessionId,
+      ...(sessionId && { sessionId }),
+      ...(channel && { channel }),
       messages: history,
       count: history.length
     });
@@ -60,8 +83,11 @@ export async function GET(request: NextRequest) {
 
 /**
  * DELETE /api/chatbot/history
- * Clear chat history for a specific video
- * Query params: videoId (required)
+ * Clear chat history for a specific video or problem
+ * Query params:
+ * - videoId (required)
+ * - channel (optional): 'chatbot' or 'guide'
+ * - problemId (optional): required if channel=guide
  */
 export async function DELETE(request: NextRequest) {
   try {
@@ -76,6 +102,8 @@ export async function DELETE(request: NextRequest) {
     // 2. Parse query params
     const { searchParams } = new URL(request.url);
     const videoId = searchParams.get('videoId');
+    const channel = searchParams.get('channel') as 'chatbot' | 'guide' | null;
+    const problemId = searchParams.get('problemId');
 
     if (!videoId) {
       return NextResponse.json(
@@ -84,9 +112,23 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 3. Generate session ID and delete history
-    const sessionId = generateSessionId(decoded.userId, videoId);
-    await deleteChatHistory(sessionId);
+    // 3. Delete history based on channel
+    if (channel) {
+      // NEW: Channel-based delete
+      if (channel === 'guide' && !problemId) {
+        return NextResponse.json(
+          { error: 'problemId is required for guide channel' },
+          { status: 400 }
+        );
+      }
+
+      const contextId = generateContextId(channel, videoId, problemId || undefined);
+      await deleteChatHistoryByChannel(decoded.userId, channel, contextId);
+    } else {
+      // LEGACY: Session-based delete (backward compatibility)
+      const sessionId = generateSessionId(decoded.userId, videoId);
+      await deleteChatHistory(sessionId);
+    }
 
     // 4. Return success
     return NextResponse.json({
