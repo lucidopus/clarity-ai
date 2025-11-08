@@ -410,7 +410,7 @@ export default function CaseStudyWorkspacePage() {
           <div className="flex items-center gap-2">
             <button
               onClick={toggleLeftPanel}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+              className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
               title={showLeftPanel ? "Hide research desk" : "Show research desk"}
             >
               {showLeftPanel ? (
@@ -421,14 +421,14 @@ export default function CaseStudyWorkspacePage() {
               ) : (
                 <>
                   <PanelLeftOpen className="w-4 h-4" />
-                  <span className="hidden sm:inline">Show Research</span>
+                  <span className="hidden sm:inline">Toggle Sidebar</span>
                 </>
               )}
             </button>
 
             <button
               onClick={toggleRightPanel}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+              className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
               title={showRightPanel ? "Hide AI guide" : "Show AI guide"}
             >
               {showRightPanel ? (
@@ -545,7 +545,7 @@ export default function CaseStudyWorkspacePage() {
                   <div key={index} className="border border-border rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleHint(index)}
-                      className="w-full px-4 py-3 flex items-center justify-between bg-background hover:bg-muted transition-colors"
+                      className="w-full cursor-pointer px-4 py-3 flex items-center justify-between bg-background hover:bg-muted transition-colors"
                     >
                       <span className="text-sm font-medium text-foreground">
                         Hint {index + 1}

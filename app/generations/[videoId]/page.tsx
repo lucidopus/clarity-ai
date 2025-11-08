@@ -524,7 +524,7 @@ export default function VideoMaterialsPage() {
                     {materials.realWorldProblems.map((problem) => (
                       <motion.div
                         key={problem.id}
-                        whileHover={{ y: -4 }}
+                        // whileHover={{ y: -4 }}
                         className="bg-card-bg border border-border rounded-xl p-6 cursor-pointer transition-shadow hover:shadow-lg"
                         onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}`)}
                       >
