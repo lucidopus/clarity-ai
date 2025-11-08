@@ -99,13 +99,14 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
       animated: edge.type === 'relation',
       style: {
         stroke: edge.type === 'hierarchy' ? 'var(--accent)' :
-                edge.type === 'relation' ? 'var(--muted-foreground)' :
+                edge.type === 'relation' ? 'rgb(115, 115, 115)' : // Mid-contrast neutral gray for relation edges
                 'var(--border)',
         strokeWidth: 2,
+        strokeDasharray: edge.type === 'relation' ? '5,5' : undefined, // Dashed for relation edges
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: edge.type === 'hierarchy' ? 'var(--accent)' : 'var(--muted-foreground)',
+        color: edge.type === 'hierarchy' ? 'var(--accent)' : 'rgb(115, 115, 115)',
       },
       data: {
         onDelete: (edgeId: string) => deleteEdgeRef.current?.(edgeId), // Use ref to avoid hook ordering issue
