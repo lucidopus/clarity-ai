@@ -84,7 +84,9 @@ export function ChatBot({ videoId }: ChatBotProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handler = (e: any) => {
       setIsOpen(true);
-      sendMessage(e.detail.question);
+      if (e.detail.question.trim()) {
+        sendMessage(e.detail.question);
+      }
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).addEventListener('chatbot:open', handler);
