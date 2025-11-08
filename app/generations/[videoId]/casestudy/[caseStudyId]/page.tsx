@@ -102,6 +102,10 @@ export default function CaseStudyWorkspacePage() {
 
   const [showRightPanel, setShowRightPanel] = useState(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('openClara') === 'true') {
+        return true;
+      }
       const saved = localStorage.getItem('caseStudy_rightPanel');
       return saved !== null ? saved === 'true' : true; // Default: open
     }
