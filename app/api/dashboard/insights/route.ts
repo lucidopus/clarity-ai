@@ -199,8 +199,7 @@ export async function GET(request: NextRequest) {
       { $sort: { _id: 1 } },
     ]);
 
-    // Calculate total days per weekday in the period for percentage
-    const totalWeeks = 6;
+    // Calculate weekday consistency data
     const weekdayConsistency = Array.from({ length: 7 }, (_, i) => {
       const dayOfWeek = i + 1; // 1 = Monday, 7 = Sunday
       const found = weekdayData.find((d) => d._id === dayOfWeek);

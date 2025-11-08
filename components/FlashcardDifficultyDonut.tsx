@@ -66,9 +66,7 @@ export default function FlashcardDifficultyDonut() {
 
   const backgroundColors = difficulty.map((d) => colors[d.difficulty as keyof typeof colors]);
 
-  // Find dominant difficulty
-  const sortedDifficulty = [...difficulty].sort((a, b) => b.count - a.count);
-  const dominant = sortedDifficulty[0];
+
 
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-6 h-full flex flex-col">
