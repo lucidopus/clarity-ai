@@ -22,12 +22,30 @@ Generate 7 learning components based on this transcript:
   // eslint-disable-next-line
   - Node types: 'root' (level 0), 'concept' (level 1), 'subconcept' (level 2), 'detail' (level 3).
   - Node count should be proportional to content density (e.g., 10-15 nodes for a 10-min video). Prioritize clarity over count.
-- **Edges and Relationships**:
-  - **Hierarchy**: Use standard parent-child edges for the main structure.
-  - **Crucially, you must add at least 2-4 meaningful, non-hierarchical 'relation' edges.** These cross-branch connections are the most valuable part of the mind map as they reveal deeper insights.
+- **Edges and Relationships (CRITICAL - YOU MUST GENERATE AN EDGES ARRAY)**:
+  - **IMPORTANT**: The mindMap object MUST include both a "nodes" array AND an "edges" array.
+  - **Hierarchy edges**: Create parent-child edges connecting each node to its parent (e.g., root→concept, concept→subconcept, subconcept→detail).
+  - **Relation edges**: Add at least 2-4 meaningful cross-branch connections that reveal deeper insights.
   - **Edge Labels**: ALL edges must have specific and descriptive labels. Instead of a generic "relates to," use labels like "causes," "is an example of," "is required for," "contributes to," or "contradicts."
-- **Example of a high-quality connection**:
-  - A 'detail' node 'Base Pairing (A-T, C-G)' under a 'subconcept' of 'Nucleotides' could have a 'relation' edge to the 'concept' node 'Double Helix Structure' with the edge label "determines the shape of". This creates a valuable cross-connection that shows a deeper understanding.
+- **Example Structure**:
+  ```json
+  {
+    "nodes": [
+      {"id": "n0", "label": "DNA Structure", "type": "root", "description": "...", "level": 0},
+      {"id": "n1", "label": "Components", "type": "concept", "description": "...", "level": 1},
+      {"id": "n2", "label": "Nucleotides", "type": "subconcept", "description": "...", "level": 2},
+      {"id": "n3", "label": "Base Pairing", "type": "detail", "description": "...", "level": 3},
+      {"id": "n4", "label": "Double Helix", "type": "concept", "description": "...", "level": 1}
+    ],
+    "edges": [
+      {"id": "e1", "source": "n0", "target": "n1", "label": "composed of", "type": "hierarchy"},
+      {"id": "e2", "source": "n1", "target": "n2", "label": "includes", "type": "hierarchy"},
+      {"id": "e3", "source": "n2", "target": "n3", "label": "features", "type": "hierarchy"},
+      {"id": "e4", "source": "n0", "target": "n4", "label": "forms", "type": "hierarchy"},
+      {"id": "e5", "source": "n3", "target": "n4", "label": "determines shape of", "type": "relation"}
+    ]
+  }
+  ```
 - **Final Polish**:
   - ALL nodes must include a description field providing context and clarification.
   - Ensure the graph is connected and easy to understand.

@@ -109,7 +109,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
           },
         },
       },
-      required: ['nodes', 'edges'],
+      required: ['nodes'],
       additionalProperties: false,
     },
   },
@@ -158,7 +158,7 @@ export interface LearningMaterials {
       description: string;
       level: number;
     }>;
-    edges: Array<{
+    edges?: Array<{
       id: string;
       source: string;
       target: string;
