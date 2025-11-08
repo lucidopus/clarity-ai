@@ -7,7 +7,8 @@ import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
 import GenerateModal from '@/components/GenerateModal';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
-import { Edit2, Save, X, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { ToastContainer, type ToastType } from '@/components/Toast';
+import { Edit2, Save, X } from 'lucide-react';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -38,8 +39,9 @@ export default function SettingsPage() {
   // Form state
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Toast state
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
 
   // Initialize form data when user loads
   useEffect(() => {
@@ -54,6 +56,16 @@ export default function SettingsPage() {
       setOriginalFormData(initialData);
     }
   }, [user]);
+
+  // Toast helpers
+  const addToast = (message: string, type: ToastType = 'info') => {
+    const id = Date.now().toString();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   const handleGenerate = async (url: string) => {
     setIsGenerating(true);
@@ -78,16 +90,12 @@ export default function SettingsPage() {
   const handleEditClick = () => {
     setIsEditMode(true);
     setErrors({});
-    setSuccessMessage(null);
-    setErrorMessage(null);
   };
 
   const handleCancelClick = () => {
     setIsEditMode(false);
     setFormData(originalFormData);
     setErrors({});
-    setSuccessMessage(null);
-    setErrorMessage(null);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -100,7 +108,6 @@ export default function SettingsPage() {
         return newErrors;
       });
     }
-    setErrorMessage(null);
   };
 
   const validateForm = () => {
@@ -139,9 +146,6 @@ export default function SettingsPage() {
   };
 
   const handleSaveClick = async () => {
-    setSuccessMessage(null);
-    setErrorMessage(null);
-
     // Validate form
     if (!validateForm()) {
       return;
@@ -175,7 +179,6 @@ export default function SettingsPage() {
 
   const submitProfileUpdate = async (password?: string) => {
     setIsSubmitting(true);
-    setErrorMessage(null);
 
     try {
       const payload: Record<string, string> = {};
@@ -207,17 +210,19 @@ export default function SettingsPage() {
         if (data.errors) {
           // Field-specific validation errors
           setErrors(data.errors);
+          addToast('Please fix the validation errors', 'error');
           throw new Error('Validation failed');
         } else if (data.field) {
           // Single field error (e.g., username taken)
           setErrors({ [data.field]: data.message });
+          addToast(data.message, 'error');
           throw new Error(data.message);
         } else if (response.status === 401 && password) {
           // Password verification failed
           setPasswordError(data.message);
           throw new Error(data.message);
         } else {
-          setErrorMessage(data.message || 'Failed to update profile');
+          addToast(data.message || 'Failed to update profile', 'error');
           throw new Error(data.message || 'Failed to update profile');
         }
       }
@@ -232,8 +237,8 @@ export default function SettingsPage() {
       setFormData(updatedData);
       setOriginalFormData(updatedData);
       setIsEditMode(false);
-      setSuccessMessage('Profile updated successfully!');
       setPasswordError(null);
+      addToast('Profile updated successfully!', 'success');
 
       // Reload user data by calling /api/auth/me
       const userResponse = await fetch('/api/auth/me');
@@ -276,22 +281,6 @@ export default function SettingsPage() {
             </Button>
           )}
         </div>
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className="mb-4 flex items-center gap-2 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-600 dark:text-green-400">
-            <CheckCircle2 className="w-5 h-5" />
-            <p className="text-sm font-medium">{successMessage}</p>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {errorMessage && (
-          <div className="mb-4 flex items-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 dark:text-red-400">
-            <AlertTriangle className="w-5 h-5" />
-            <p className="text-sm font-medium">{errorMessage}</p>
-          </div>
-        )}
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -549,6 +538,9 @@ export default function SettingsPage() {
         isLoading={isVerifyingPassword}
         error={passwordError}
       />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
   );
 }
