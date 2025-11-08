@@ -79,13 +79,18 @@ export default function CaseStudyWorkspacePage() {
     return true;
   });
 
-  const [aiGuideWidth, setAiGuideWidth] = useState<'normal' | 'wide'>(() => {
+  // AI Guide width as percentage (20% to 60% of viewport)
+  const [aiGuideWidthPercent, setAiGuideWidthPercent] = useState(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('caseStudy_aiGuideWidth') as 'normal' | 'wide';
-      return saved || 'normal';
+      const saved = localStorage.getItem('caseStudy_aiGuideWidthPercent');
+      return saved ? parseInt(saved, 10) : 33; // Default 33%
     }
-    return 'normal';
+    return 33;
   });
+
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStartX, setResizeStartX] = useState(0);
+  const [resizeStartWidth, setResizeStartWidth] = useState(0);
 
   // Persist panel visibility to localStorage
   useEffect(() => {
@@ -97,13 +102,58 @@ export default function CaseStudyWorkspacePage() {
   }, [showRightPanel]);
 
   useEffect(() => {
-    localStorage.setItem('caseStudy_aiGuideWidth', aiGuideWidth);
-  }, [aiGuideWidth]);
+    localStorage.setItem('caseStudy_aiGuideWidthPercent', String(aiGuideWidthPercent));
+  }, [aiGuideWidthPercent]);
 
   // Toggle functions
   const toggleLeftPanel = () => setShowLeftPanel(prev => !prev);
   const toggleRightPanel = () => setShowRightPanel(prev => !prev);
-  const toggleAiGuideWidth = () => setAiGuideWidth(prev => prev === 'normal' ? 'wide' : 'normal');
+
+  // Drag resize handlers
+  const handleResizeStart = (e: React.MouseEvent) => {
+    setIsResizing(true);
+    setResizeStartX(e.clientX);
+    setResizeStartWidth(aiGuideWidthPercent);
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handleResizeMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - resizeStartX;
+      const viewportWidth = window.innerWidth;
+      const deltaPercent = (deltaX / viewportWidth) * 100;
+
+      let newWidth = resizeStartWidth + deltaPercent;
+
+      // Constrain between 20% and 60%
+      newWidth = Math.max(20, Math.min(60, newWidth));
+
+      // Snap to preset widths (within 2%)
+      const snapPoints = [25, 33, 40, 50];
+      for (const snap of snapPoints) {
+        if (Math.abs(newWidth - snap) < 2) {
+          newWidth = snap;
+          break;
+        }
+      }
+
+      setAiGuideWidthPercent(Math.round(newWidth));
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+    };
+
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [isResizing, resizeStartX, resizeStartWidth]);
 
   // Initialize chat with AI Guide endpoint
   const {
@@ -115,7 +165,9 @@ export default function CaseStudyWorkspacePage() {
     clearError: clearChatError,
   } = useChatBot(videoId, {
     endpoint: '/api/chatbot/guide',
-    enableHistory: false, // Don't persist guide chat history
+    enableHistory: true, // Enable conversation persistence (Issue #39)
+    channel: 'guide',    // Use guide channel to avoid collision with chatbot
+    problemId: caseStudyId, // Context identifier for guide conversations
     transformRequestBody: (payload) => ({
       ...payload,
       problemId: caseStudyId,
@@ -403,98 +455,65 @@ export default function CaseStudyWorkspacePage() {
         </div>
       </header>
 
-      {/* Main Workspace - Three Column Layout */}
+      {/* Main Workspace */}
       <main className="max-w-[1800px] mx-auto px-6 py-8">
-        {/* Panel Toggle Controls */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleLeftPanel}
-              className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
-              title={showLeftPanel ? "Hide research desk" : "Show research desk"}
-            >
-              {showLeftPanel ? (
-                <>
-                  <PanelLeftClose className="w-4 h-4" />
-                  <span className="hidden sm:inline">Hide Research</span>
-                </>
-              ) : (
-                <>
-                  <PanelLeftOpen className="w-4 h-4" />
-                  <span className="hidden sm:inline">Toggle Sidebar</span>
-                </>
-              )}
-            </button>
+        {/* Mobile-only Panel Toggle Controls */}
+        <div className="flex items-center gap-2 mb-6 lg:hidden">
+          <button
+            onClick={toggleLeftPanel}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+            title={showLeftPanel ? "Hide research desk" : "Show research desk"}
+          >
+            {showLeftPanel ? (
+              <>
+                <PanelLeftClose className="w-4 h-4" />
+                <span>Hide Research</span>
+              </>
+            ) : (
+              <>
+                <PanelLeftOpen className="w-4 h-4" />
+                <span>Show Research</span>
+              </>
+            )}
+          </button>
 
-            <button
-              onClick={toggleRightPanel}
-              className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
-              title={showRightPanel ? "Hide AI guide" : "Show AI guide"}
-            >
-              {showRightPanel ? (
-                <>
-                  <PanelRightClose className="w-4 h-4" />
-                  <span className="hidden sm:inline">Hide Guide</span>
-                </>
-              ) : (
-                <>
-                  <PanelRightOpen className="w-4 h-4" />
-                  <span className="hidden sm:inline">Show Guide</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {showRightPanel && (
-            <button
-              onClick={toggleAiGuideWidth}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
-              title={aiGuideWidth === 'normal' ? "Expand AI guide" : "Shrink AI guide"}
-            >
-              {aiGuideWidth === 'normal' ? (
-                <>
-                  <Maximize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Expand Guide</span>
-                </>
-              ) : (
-                <>
-                  <Minimize2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Shrink Guide</span>
-                </>
-              )}
-            </button>
-          )}
+          <button
+            onClick={toggleRightPanel}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground bg-card-bg border border-border rounded-lg hover:border-accent transition-all duration-200"
+            title={showRightPanel ? "Hide AI guide" : "Show AI guide"}
+          >
+            {showRightPanel ? (
+              <>
+                <PanelRightClose className="w-4 h-4" />
+                <span>Hide Guide</span>
+              </>
+            ) : (
+              <>
+                <PanelRightOpen className="w-4 h-4" />
+                <span>Show Guide</span>
+              </>
+            )}
+          </button>
         </div>
 
-        <div className={`grid grid-cols-1 gap-6 transition-all duration-300 ${
-          showLeftPanel && showRightPanel
-            ? aiGuideWidth === 'wide'
-              ? 'lg:grid-cols-12'
-              : 'lg:grid-cols-12'
-            : showLeftPanel && !showRightPanel
-            ? 'lg:grid-cols-12'
-            : !showLeftPanel && showRightPanel
-            ? aiGuideWidth === 'wide'
-              ? 'lg:grid-cols-12'
-              : 'lg:grid-cols-12'
-            : 'lg:grid-cols-1'
-        }`}>
+        <div className="flex gap-0 relative"
+          style={{
+            cursor: isResizing ? 'col-resize' : 'default',
+            userSelect: isResizing ? 'none' : 'auto',
+          }}
+        >
           {/* Left Panel: Research Desk */}
           <AnimatePresence>
             {showLeftPanel && (
               <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: '320px' }}
+                exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.3 }}
-                className={`space-y-6 ${
-                  !showRightPanel
-                    ? 'lg:col-span-3'
-                    : aiGuideWidth === 'wide'
-                      ? 'lg:col-span-2'
-                      : 'lg:col-span-3'
-                }`}
+                className="shrink-0 relative"
+                style={{ width: '320px' }}
               >
+                <div className="space-y-6 pr-4">
             {/* Notes */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -575,24 +594,39 @@ export default function CaseStudyWorkspacePage() {
                 ))}
               </div>
             </div>
+                </div>
+
+                {/* Left Panel Edge Toggle Button */}
+                <button
+                  onClick={toggleLeftPanel}
+                  className="hidden lg:flex absolute top-1/2 -right-3 transform -translate-y-1/2 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-r-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group z-10"
+                  title="Hide research desk"
+                  aria-label="Hide research desk"
+                >
+                  <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
 
+          {/* Show Left Panel Button (when hidden) */}
+          {!showLeftPanel && (
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              onClick={toggleLeftPanel}
+              className="hidden lg:flex shrink-0 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-r-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group absolute left-6 top-1/2 transform -translate-y-1/2 z-10"
+              title="Show research desk"
+              aria-label="Show research desk"
+            >
+              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+            </motion.button>
+          )}
+
           {/* Center Panel: Workbench */}
-          <div className={`space-y-6 ${
-            showLeftPanel && showRightPanel
-              ? aiGuideWidth === 'wide'
-                ? 'lg:col-span-6'
-                : 'lg:col-span-6'
-              : showLeftPanel && !showRightPanel
-              ? 'lg:col-span-9'
-              : !showLeftPanel && showRightPanel
-              ? aiGuideWidth === 'wide'
-                ? 'lg:col-span-7'
-                : 'lg:col-span-9'
-              : 'lg:col-span-12'
-          }`}>
+          <div className="flex-1 min-w-0 space-y-6 px-4">
             {/* Problem Scenario */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
               <h2 className="text-xl font-bold text-foreground mb-4">The Challenge</h2>
@@ -616,24 +650,36 @@ export default function CaseStudyWorkspacePage() {
             </div>
           </div>
 
+          {/* Drag Resize Handle */}
+          {showRightPanel && (
+            <div
+              className="hidden lg:block shrink-0 relative group cursor-col-resize"
+              style={{ width: '8px' }}
+              onMouseDown={handleResizeStart}
+              role="separator"
+              aria-label="Resize AI Guide panel"
+              aria-orientation="vertical"
+            >
+              <div className="absolute inset-y-0 left-1/2 transform -translate-x-1/2 w-1 bg-border group-hover:bg-accent transition-colors" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-accent opacity-0 group-hover:opacity-100 transition-opacity rounded-full shadow-lg" />
+            </div>
+          )}
+
           {/* Right Panel: AI Guide */}
           <AnimatePresence>
             {showRightPanel && (
               <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: `${aiGuideWidthPercent}%` }}
                 transition={{ duration: 0.3 }}
-                className={`${
-                  !showLeftPanel
-                    ? aiGuideWidth === 'wide'
-                      ? 'lg:col-span-5'
-                      : 'lg:col-span-3'
-                    : aiGuideWidth === 'wide'
-                      ? 'lg:col-span-4'
-                      : 'lg:col-span-3'
-                }`}
+                className="shrink-0 relative"
+                style={{
+                  width: `${aiGuideWidthPercent}%`,
+                  minWidth: '280px',
+                  maxWidth: '800px',
+                }}
               >
+                <div className="pl-4">
             <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 max-h-[calc(100vh-8rem)] flex flex-col">
               <div className="flex items-center gap-2 mb-4">
                 <MessageSquare className="w-5 h-5 text-accent" />
@@ -699,9 +745,36 @@ export default function CaseStudyWorkspacePage() {
                 </form>
               </div>
             </div>
+                </div>
+
+                {/* Right Panel Edge Toggle Button */}
+                <button
+                  onClick={toggleRightPanel}
+                  className="hidden lg:flex absolute top-1/2 -left-3 transform -translate-y-1/2 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-l-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group z-10"
+                  title="Hide AI Guide"
+                  aria-label="Hide AI Guide"
+                >
+                  <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Show Right Panel Button (when hidden) */}
+          {!showRightPanel && (
+            <motion.button
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ duration: 0.2 }}
+              onClick={toggleRightPanel}
+              className="hidden lg:flex shrink-0 flex-col items-center justify-center w-6 h-16 bg-card-bg border border-border rounded-l-lg hover:border-accent hover:bg-accent/5 transition-all duration-200 shadow-sm group absolute right-6 top-1/2 transform -translate-y-1/2 z-10"
+              title="Show AI Guide"
+              aria-label="Show AI Guide"
+            >
+              <ChevronLeft className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors" />
+            </motion.button>
+          )}
         </div>
       </main>
 

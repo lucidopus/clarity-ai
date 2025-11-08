@@ -5,6 +5,8 @@ import { groq } from '@/lib/sdk';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
 import { AI_GUIDE_SYSTEM_PROMPT } from '@/lib/prompts';
 import { LearningMaterial, Solution } from '@/lib/models';
+import { saveChatMessage } from '@/lib/chat-db';
+import { generateSessionId, generateMessageId } from '@/lib/types/chat';
 
 interface DecodedToken {
   userId: string;
@@ -96,7 +98,32 @@ export async function POST(request: NextRequest) {
 
     const incomingDraft = typeof solutionDraft === 'string' ? solutionDraft : undefined;
 
-    // 7. Build AI Guide system prompt with context
+    // 7. Generate session and message identifiers
+    const sessionId = generateSessionId(decoded.userId, videoId); // LEGACY
+    const userMessageId = generateMessageId('user');
+    const assistantMessageId = generateMessageId('assistant');
+
+    // 8. Save user message to database
+    try {
+      const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+      await saveChatMessage(
+        sessionId,
+        userMessageId,
+        'user',
+        message,
+        decoded.userId,
+        videoId,
+        clientIp,
+        'guide',   // channel
+        problemId, // contextId (problemId for guide channel)
+        problemId  // problemId
+      );
+    } catch (saveError) {
+      console.error('Failed to save user message (guide):', saveError);
+      // Continue anyway - don't block the response
+    }
+
+    // 9. Build AI Guide system prompt with context
     const systemPrompt = AI_GUIDE_SYSTEM_PROMPT({
       userProfile: { firstName: decoded.firstName },
       problemTitle: problem.title,
@@ -105,14 +132,14 @@ export async function POST(request: NextRequest) {
       solutionDraft: incomingDraft ?? existingSolution?.content ?? '',
     });
 
-    // 8. Prepare conversation history (last 4 exchanges = 8 messages)
+    // 10. Prepare conversation history (last 4 exchanges = 8 messages)
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory || []).slice(-8),
       { role: 'user', content: message }
     ];
 
-    // 9. Call Groq with streaming
+    // 11. Call Groq with streaming
     const response = await groq.chat.completions.create({
       model: 'openai/gpt-oss-120b',
       messages,
@@ -121,17 +148,38 @@ export async function POST(request: NextRequest) {
       stream: true,
     });
 
-    // 10. Create streaming response
+    // 12. Create streaming response and accumulate assistant response
+    let assistantResponse = '';
     const stream = new ReadableStream({
       async start(controller) {
         try {
           for await (const chunk of response) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
+              assistantResponse += content;
               controller.enqueue(new TextEncoder().encode(content));
             }
           }
           controller.close();
+
+          // Save assistant message after streaming completes
+          try {
+            const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
+            await saveChatMessage(
+              sessionId,
+              assistantMessageId,
+              'assistant',
+              assistantResponse,
+              decoded.userId,
+              videoId,
+              clientIp,
+              'guide',   // channel
+              problemId, // contextId (problemId for guide channel)
+              problemId  // problemId
+            );
+          } catch (saveError) {
+            console.error('Failed to save assistant message (guide):', saveError);
+          }
         } catch (error) {
           console.error('Streaming error:', error);
           controller.error(error);
