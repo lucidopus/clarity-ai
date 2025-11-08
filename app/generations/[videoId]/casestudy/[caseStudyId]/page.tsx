@@ -471,25 +471,12 @@ export default function CaseStudyWorkspacePage() {
                 </p>
               </div>
             </div>
-             <div className="flex items-center gap-3">
-               <ThemeToggle />
-               {renderAutoSaveText() && (
-                 <span className="text-xs text-muted-foreground">{renderAutoSaveText()}</span>
-               )}
-               <Button
-                 onClick={handleSaveSolution}
-                 disabled={isSaving}
-                 size="sm"
-                 variant="outline"
-                 className="flex items-center gap-2"
-               >
-                 <Save className="w-4 h-4 mr-2" />
-                 {isSaving ? 'Saving...' : 'Save Now'}
-                 <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                   {isMacUser ? '⌘S' : 'Ctrl+S'}
-                 </span>
-               </Button>
-             </div>
+              <div className="flex items-center gap-3">
+                {renderAutoSaveText() && (
+                  <span className="text-xs text-muted-foreground">{renderAutoSaveText()}</span>
+                )}
+                <ThemeToggle />
+              </div>
           </div>
         </div>
       </header>
@@ -740,17 +727,32 @@ export default function CaseStudyWorkspacePage() {
                 </div>
               </div>
 
-              {/* Solution Pad */}
-              <div className="bg-card-bg border border-border rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-foreground mb-4">
-                  Your Solution
-                </h2>
-                <RichTextEditor
-                  value={solution}
-                  onChange={setSolution}
-                  placeholder="Start writing your solution here..."
-                />
-              </div>
+               {/* Solution Pad */}
+               <div className="bg-card-bg border border-border rounded-xl p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h2 className="text-lg font-semibold text-foreground">
+                     Your Solution
+                   </h2>
+                   <Button
+                     onClick={handleSaveSolution}
+                     disabled={isSaving}
+                     size="sm"
+                     variant="outline"
+                     className="flex items-center gap-2"
+                   >
+                     <Save className="w-4 h-4 mr-2" />
+                     {isSaving ? 'Saving...' : 'Save'}
+                     <span className="text-[11px] text-muted-foreground hidden sm:inline">
+                       {isMacUser ? '⌘S' : 'Ctrl+S'}
+                     </span>
+                   </Button>
+                 </div>
+                 <RichTextEditor
+                   value={solution}
+                   onChange={setSolution}
+                   placeholder="Start writing your solution here..."
+                 />
+               </div>
            </div>
 
             {/* Right Panel: AI Guide */}
@@ -780,7 +782,7 @@ export default function CaseStudyWorkspacePage() {
                       Need help? Ask Clara!
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      I&apos;m here to guide your thinking, not give you the answer.
+                      I&apos;m here to guide your thinking.
                     </p>
                   </div>
                 ) : (
