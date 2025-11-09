@@ -54,15 +54,18 @@ export default function TimePreferencesStep({ preferences, onNext, onBack, loadi
               min="0.5"
               max="8"
               step="0.5"
-              value={timePreferences.availableTimePerDay}
+              value={timePreferences?.availableTimePerDay || 1}
               onChange={(e) => setTimePreferences(prev => ({
                 ...prev,
-                availableTimePerDay: parseFloat(e.target.value)
+                availableTimePerDay: parseFloat(e.target.value),
+                availableTimePerWeek: prev?.availableTimePerWeek || 7,
+                preferredSessionLength: prev?.preferredSessionLength || 30,
+                notificationsEnabled: prev?.notificationsEnabled ?? true
               }))}
               className="w-full"
             />
             <div className="text-center text-sm text-muted-foreground">
-              {timePreferences.availableTimePerDay} hours
+              {timePreferences?.availableTimePerDay || 1} hours
             </div>
           </div>
 
@@ -75,15 +78,18 @@ export default function TimePreferencesStep({ preferences, onNext, onBack, loadi
               min="1"
               max="40"
               step="1"
-              value={timePreferences.availableTimePerWeek}
+              value={timePreferences?.availableTimePerWeek || 7}
               onChange={(e) => setTimePreferences(prev => ({
                 ...prev,
-                availableTimePerWeek: parseInt(e.target.value)
+                availableTimePerDay: prev?.availableTimePerDay || 1,
+                availableTimePerWeek: parseInt(e.target.value),
+                preferredSessionLength: prev?.preferredSessionLength || 30,
+                notificationsEnabled: prev?.notificationsEnabled ?? true
               }))}
               className="w-full"
             />
             <div className="text-center text-sm text-muted-foreground">
-              {timePreferences.availableTimePerWeek} hours
+              {timePreferences?.availableTimePerWeek || 7} hours
             </div>
           </div>
         </div>
@@ -97,15 +103,18 @@ export default function TimePreferencesStep({ preferences, onNext, onBack, loadi
             min="5"
             max="120"
             step="5"
-            value={timePreferences.preferredSessionLength}
+            value={timePreferences?.preferredSessionLength || 30}
             onChange={(e) => setTimePreferences(prev => ({
               ...prev,
-              preferredSessionLength: parseInt(e.target.value)
+              availableTimePerDay: prev?.availableTimePerDay || 1,
+              availableTimePerWeek: prev?.availableTimePerWeek || 7,
+              preferredSessionLength: parseInt(e.target.value),
+              notificationsEnabled: prev?.notificationsEnabled ?? true
             }))}
             className="w-full"
           />
           <div className="text-center text-sm text-muted-foreground">
-            {timePreferences.preferredSessionLength} minutes
+            {timePreferences?.preferredSessionLength || 30} minutes
           </div>
         </div>
 
@@ -113,9 +122,12 @@ export default function TimePreferencesStep({ preferences, onNext, onBack, loadi
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
-              checked={timePreferences.notificationsEnabled}
+              checked={timePreferences?.notificationsEnabled ?? true}
               onChange={(e) => setTimePreferences(prev => ({
                 ...prev,
+                availableTimePerDay: prev?.availableTimePerDay || 1,
+                availableTimePerWeek: prev?.availableTimePerWeek || 7,
+                preferredSessionLength: prev?.preferredSessionLength || 30,
                 notificationsEnabled: e.target.checked
               }))}
               className="text-accent focus:ring-accent"

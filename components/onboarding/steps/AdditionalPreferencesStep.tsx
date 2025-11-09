@@ -13,7 +13,7 @@ interface AdditionalPreferencesStepProps {
 }
 
 export default function AdditionalPreferencesStep({ preferences, onNext, onBack, loading }: AdditionalPreferencesStepProps) {
-  const [additionalPreferences, setAdditionalPreferences] = useState<IUserPreferences['additionalPreferences']>(
+  const [additionalPreferences, setAdditionalPreferences] = useState<NonNullable<IUserPreferences['additionalPreferences']>>(
     preferences.additionalPreferences || {
       collaborationEnabled: false,
       dataPrivacyLevel: 'Standard',
@@ -102,7 +102,7 @@ export default function AdditionalPreferencesStep({ preferences, onNext, onBack,
                   checked={additionalPreferences.dataPrivacyLevel === level.value}
                   onChange={(e) => setAdditionalPreferences(prev => ({
                     ...prev,
-                    dataPrivacyLevel: e.target.value as IUserPreferences['additionalPreferences']['dataPrivacyLevel']
+                    dataPrivacyLevel: e.target.value as NonNullable<IUserPreferences['additionalPreferences']>['dataPrivacyLevel']
                   }))}
                   className="mt-1 text-accent focus:ring-accent"
                 />

@@ -44,17 +44,18 @@ export default function LearningStyleStep({ preferences, onNext, onBack, loading
     },
   ];
 
-  const handleStyleToggle = (style: IUserPreferences['learningStyle'][0]) => {
-    setSelectedStyles(prev =>
-      prev.includes(style)
+  const handleStyleToggle = (style: NonNullable<IUserPreferences['learningStyle']>[0]) => {
+    setSelectedStyles(prev => {
+      if (!prev) return [style];
+      return prev.includes(style)
         ? prev.filter(s => s !== style)
-        : [...prev, style]
-    );
+        : [...prev, style];
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedStyles.length > 0) {
+    if (selectedStyles && selectedStyles.length > 0) {
       onNext({ learningStyle: selectedStyles });
     }
   };
@@ -83,7 +84,7 @@ export default function LearningStyleStep({ preferences, onNext, onBack, loading
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
-                selectedStyles.includes(style.value)
+                selectedStyles?.includes(style.value)
                   ? 'border-accent bg-accent/5'
                   : 'border-border hover:border-accent/50'
               }`}
@@ -114,7 +115,7 @@ export default function LearningStyleStep({ preferences, onNext, onBack, loading
           <Button
             type="submit"
             variant="primary"
-            disabled={selectedStyles.length === 0 || loading}
+            disabled={!selectedStyles || selectedStyles.length === 0 || loading}
           >
             {loading ? 'Saving...' : 'Continue'}
           </Button>

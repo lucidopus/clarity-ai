@@ -57,8 +57,13 @@ export default function TechnicalComfortStep({ preferences, onNext, onBack, load
     },
   ];
 
-  const handleAccessibilityChange = (key: keyof IUserPreferences['accessibility'], value: boolean) => {
-    setAccessibility(prev => ({ ...prev, [key]: value }));
+  const handleAccessibilityChange = (key: keyof NonNullable<IUserPreferences['accessibility']>, value: boolean) => {
+    setAccessibility(prev => {
+      if (!prev) {
+        return { largerText: false, voiceNarration: false, simplifiedInterface: false, [key]: value };
+      }
+      return { ...prev, [key]: value };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -121,7 +126,7 @@ export default function TechnicalComfortStep({ preferences, onNext, onBack, load
               <label key={option.key} className="flex items-center space-x-3">
                 <input
                   type="checkbox"
-                  checked={accessibility[option.key]}
+                  checked={accessibility?.[option.key] || false}
                   onChange={(e) => handleAccessibilityChange(option.key, e.target.checked)}
                   className="text-accent focus:ring-accent"
                 />
