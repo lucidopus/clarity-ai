@@ -1,0 +1,112 @@
+import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import dbConnect from '@/lib/mongodb';
+import User from '@/lib/models/User';
+
+interface DecodedToken {
+  userId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  iat: number;
+  exp: number;
+}
+
+const updatePreferencesSchema = z.object({
+  emailNotifications: z.boolean().optional(),
+  studyReminders: z.boolean().optional(),
+  autoPlayVideos: z.boolean().optional(),
+});
+
+export async function PATCH(request: NextRequest) {
+  try {
+    // 1. Authenticate user
+    const token = request.cookies.get('jwt')?.value;
+    if (!token) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
+    let decoded: DecodedToken;
+    try {
+      decoded = jwt.verify(token, jwtSecret) as DecodedToken;
+    } catch (error) {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
+    }
+
+    // 2. Parse and validate request body
+    const body = await request.json();
+    const validation = updatePreferencesSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        errors: validation.error.flatten().fieldErrors,
+      }, { status: 400 });
+    }
+
+    const { emailNotifications, studyReminders, autoPlayVideos } = validation.data;
+
+    // At least one field must be provided
+    if (emailNotifications === undefined && studyReminders === undefined && autoPlayVideos === undefined) {
+      return NextResponse.json({
+        success: false,
+        message: 'At least one preference field must be provided',
+      }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    // 3. Get current user from database
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    }
+
+    // 4. Initialize preferences object if it doesn't exist
+    if (!user.preferences) {
+      user.preferences = {} as any;
+    }
+    if (!user.preferences.generalPreferences) {
+      user.preferences.generalPreferences = {
+        emailNotifications: true,
+        studyReminders: true,
+        autoPlayVideos: false,
+      };
+    }
+
+    // 5. Update only provided fields
+    if (emailNotifications !== undefined) {
+      user.preferences.generalPreferences.emailNotifications = emailNotifications;
+    }
+    if (studyReminders !== undefined) {
+      user.preferences.generalPreferences.studyReminders = studyReminders;
+    }
+    if (autoPlayVideos !== undefined) {
+      user.preferences.generalPreferences.autoPlayVideos = autoPlayVideos;
+    }
+
+    // Mark the nested path as modified for Mongoose
+    user.markModified('preferences');
+    await user.save();
+
+    // 6. Return updated preferences
+    return NextResponse.json({
+      success: true,
+      message: 'Preferences updated successfully',
+      preferences: user.preferences.generalPreferences,
+    });
+
+  } catch (error) {
+    console.error('Preferences Update Error:', error);
+    return NextResponse.json({
+      success: false,
+      message: 'Server error while updating preferences',
+    }, { status: 500 });
+  }
+}
