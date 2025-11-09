@@ -102,6 +102,10 @@ export async function POST(request: NextRequest) {
         'preferences.accessibility': '',
         'preferences.timePreferences': '',
         'preferences.additionalPreferences': '',
+        // Also unset any old fields that might be in preferences.general
+        'preferences.general.accessibility': '',
+        'preferences.general.notificationsEnabled': '',
+        'preferences.general.dataPrivacyLevel': '',
       }
     };
 
