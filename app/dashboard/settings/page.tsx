@@ -186,7 +186,7 @@ export default function SettingsPage() {
     }
 
     // Check if email is being changed - if so, show password modal
-    const isEmailChanging = formData.email.toLowerCase() !== originalFormData.email.toLowerCase();
+    const isEmailChanging = formData.email?.toLowerCase() !== originalFormData.email?.toLowerCase();
     if (isEmailChanging) {
       setShowPasswordModal(true);
       return;
@@ -517,7 +517,7 @@ export default function SettingsPage() {
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-500">{errors.email}</p>
                 )}
-                {formData.email.toLowerCase() !== originalFormData.email.toLowerCase() && (
+                {formData.email && originalFormData.email && formData.email.toLowerCase() !== originalFormData.email.toLowerCase() && (
                   <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
                     Changing your email will require password verification
                   </p>
