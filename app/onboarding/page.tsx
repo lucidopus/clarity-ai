@@ -13,7 +13,8 @@ export default function OnboardingPage() {
     if (!loading) {
       if (!user) {
         router.push('/auth/signin');
-      } else if (user.preferences) {
+      } else if (user.preferences?.learning) {
+        // User has completed onboarding, redirect to dashboard
         router.push('/dashboard');
       }
     }
@@ -88,7 +89,7 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!user || user.preferences) {
+  if (!user || user.preferences?.learning) {
     return null; // Will redirect
   }
 
