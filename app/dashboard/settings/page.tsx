@@ -43,6 +43,12 @@ export default function SettingsPage() {
   // Toast state
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
 
+  // General preferences state
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [studyReminders, setStudyReminders] = useState(true);
+  const [autoPlayVideos, setAutoPlayVideos] = useState(false);
+  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+
   // Initialize form data when user loads
   useEffect(() => {
     if (user) {
@@ -54,6 +60,13 @@ export default function SettingsPage() {
       };
       setFormData(initialData);
       setOriginalFormData(initialData);
+
+      // Initialize general preferences from user data
+      if (user.preferences?.generalPreferences) {
+        setEmailNotifications(user.preferences.generalPreferences.emailNotifications ?? true);
+        setStudyReminders(user.preferences.generalPreferences.studyReminders ?? true);
+        setAutoPlayVideos(user.preferences.generalPreferences.autoPlayVideos ?? false);
+      }
     }
   }, [user]);
 
@@ -137,8 +150,8 @@ export default function SettingsPage() {
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email address';
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
     setErrors(newErrors);
@@ -167,17 +180,16 @@ export default function SettingsPage() {
     setPasswordError(null);
     setIsVerifyingPassword(true);
 
-    try {
-      await submitProfileUpdate(password);
+    const success = await submitProfileUpdate(password);
+
+    if (success) {
       setShowPasswordModal(false);
-    } catch (error) {
-      // Error is handled in submitProfileUpdate
-    } finally {
-      setIsVerifyingPassword(false);
     }
+
+    setIsVerifyingPassword(false);
   };
 
-  const submitProfileUpdate = async (password?: string) => {
+  const submitProfileUpdate = async (password?: string): Promise<boolean> => {
     setIsSubmitting(true);
 
     try {
@@ -211,19 +223,19 @@ export default function SettingsPage() {
           // Field-specific validation errors
           setErrors(data.errors);
           addToast('Please fix the validation errors', 'error');
-          throw new Error('Validation failed');
+          return false;
         } else if (data.field) {
           // Single field error (e.g., username taken)
           setErrors({ [data.field]: data.message });
           addToast(data.message, 'error');
-          throw new Error(data.message);
+          return false;
         } else if (response.status === 401 && password) {
           // Password verification failed
           setPasswordError(data.message);
-          throw new Error(data.message);
+          return false;
         } else {
           addToast(data.message || 'Failed to update profile', 'error');
-          throw new Error(data.message || 'Failed to update profile');
+          return false;
         }
       }
 
@@ -240,17 +252,63 @@ export default function SettingsPage() {
       setPasswordError(null);
       addToast('Profile updated successfully!', 'success');
 
-      // Reload user data by calling /api/auth/me
-      const userResponse = await fetch('/api/auth/me');
-      const userData = await userResponse.json();
-      // The auth context will automatically update via its checkAuth method
-      window.location.reload(); // Simple reload to refresh all user data
+      // Wait 2 seconds to allow user to see the success toast before reloading
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+
+      return true;
 
     } catch (error) {
       console.error('Profile update error:', error);
-      // Error messages already set above
+      addToast('An unexpected error occurred', 'error');
+      return false;
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePreferenceToggle = async (
+    preference: 'emailNotifications' | 'studyReminders' | 'autoPlayVideos',
+    value: boolean
+  ) => {
+    // Optimistically update UI
+    if (preference === 'emailNotifications') setEmailNotifications(value);
+    if (preference === 'studyReminders') setStudyReminders(value);
+    if (preference === 'autoPlayVideos') setAutoPlayVideos(value);
+
+    setIsUpdatingPreferences(true);
+
+    try {
+      const response = await fetch('/api/user/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [preference]: value }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Revert on error
+        if (preference === 'emailNotifications') setEmailNotifications(!value);
+        if (preference === 'studyReminders') setStudyReminders(!value);
+        if (preference === 'autoPlayVideos') setAutoPlayVideos(!value);
+
+        addToast(data.message || 'Failed to update preference', 'error');
+        return;
+      }
+
+      addToast('Preference updated successfully', 'success');
+    } catch (error) {
+      // Revert on error
+      if (preference === 'emailNotifications') setEmailNotifications(!value);
+      if (preference === 'studyReminders') setStudyReminders(!value);
+      if (preference === 'autoPlayVideos') setAutoPlayVideos(!value);
+
+      console.error('Preference update error:', error);
+      addToast('Failed to update preference', 'error');
+    } finally {
+      setIsUpdatingPreferences(false);
     }
   };
 
@@ -447,9 +505,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Preferences Section */}
+      {/* General Preferences Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
-        <h2 className="text-xl font-semibold text-foreground mb-6">Preferences</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-6">General Preferences</h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
             <div>
@@ -459,8 +517,14 @@ export default function SettingsPage() {
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={emailNotifications}
+                onChange={(e) => handlePreferenceToggle('emailNotifications', e.target.checked)}
+                disabled={isUpdatingPreferences}
+              />
+              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
           </div>
           <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
@@ -471,8 +535,14 @@ export default function SettingsPage() {
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={studyReminders}
+                onChange={(e) => handlePreferenceToggle('studyReminders', e.target.checked)}
+                disabled={isUpdatingPreferences}
+              />
+              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
           </div>
           <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
@@ -483,8 +553,14 @@ export default function SettingsPage() {
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={autoPlayVideos}
+                onChange={(e) => handlePreferenceToggle('autoPlayVideos', e.target.checked)}
+                disabled={isUpdatingPreferences}
+              />
+              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
           </div>
         </div>

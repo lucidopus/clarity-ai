@@ -22,6 +22,7 @@ export default function PasswordVerificationModal({
 }: PasswordVerificationModalProps) {
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
+  const [shouldShake, setShouldShake] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -33,6 +34,15 @@ export default function PasswordVerificationModal({
     });
     return () => cancelAnimationFrame(frame);
   }, [isOpen]);
+
+  // Trigger shake animation when external error changes
+  useEffect(() => {
+    if (externalError) {
+      setShouldShake(true);
+      const timer = setTimeout(() => setShouldShake(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [externalError]);
 
   const displayError = externalError || localError;
 
@@ -70,9 +80,22 @@ export default function PasswordVerificationModal({
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            animate={
+              shouldShake
+                ? {
+                    opacity: 1,
+                    scale: 1,
+                    y: 0,
+                    x: [0, -10, 10, -10, 10, -5, 5, 0],
+                  }
+                : { opacity: 1, scale: 1, y: 0, x: 0 }
+            }
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={
+              shouldShake
+                ? { duration: 0.5, ease: 'easeOut' }
+                : { duration: 0.2, ease: 'easeOut' }
+            }
             className="bg-card-bg border border-border rounded-2xl shadow-xl max-w-md w-full"
             onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
           >
