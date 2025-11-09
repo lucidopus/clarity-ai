@@ -13,8 +13,8 @@ interface ContentTypesStepProps {
 }
 
 type ContentType = {
-  type: IUserPreferences['preferredContentTypes'][0]['type'];
-  frequency: IUserPreferences['preferredContentTypes'][0]['frequency'];
+  type: NonNullable<IUserPreferences['preferredContentTypes']>[0]['type'];
+  frequency: NonNullable<IUserPreferences['preferredContentTypes']>[0]['frequency'];
 };
 
 export default function ContentTypesStep({ preferences, onNext, onBack, loading }: ContentTypesStepProps) {
@@ -22,27 +22,27 @@ export default function ContentTypesStep({ preferences, onNext, onBack, loading 
     preferences.preferredContentTypes || []
   );
 
-  const availableTypes: IUserPreferences['preferredContentTypes'][0]['type'][] = [
+  const availableTypes: NonNullable<IUserPreferences['preferredContentTypes']>[0]['type'][] = [
     'Videos', 'Flashcards', 'Quizzes', 'Transcripts', 'Interactive Summaries'
   ];
 
-  const frequencies: IUserPreferences['preferredContentTypes'][0]['frequency'][] = [
+  const frequencies: NonNullable<IUserPreferences['preferredContentTypes']>[0]['frequency'][] = [
     'Daily', 'Weekly', 'Monthly', 'As needed'
   ];
 
-  const handleAddContentType = (type: IUserPreferences['preferredContentTypes'][0]['type']) => {
+  const handleAddContentType = (type: NonNullable<IUserPreferences['preferredContentTypes']>[0]['type']) => {
     if (!contentTypes.find(ct => ct.type === type)) {
       setContentTypes(prev => [...prev, { type, frequency: 'Weekly' }]);
     }
   };
 
-  const handleUpdateFrequency = (type: IUserPreferences['preferredContentTypes'][0]['type'], frequency: IUserPreferences['preferredContentTypes'][0]['frequency']) => {
+  const handleUpdateFrequency = (type: NonNullable<IUserPreferences['preferredContentTypes']>[0]['type'], frequency: NonNullable<IUserPreferences['preferredContentTypes']>[0]['frequency']) => {
     setContentTypes(prev =>
       prev.map(ct => ct.type === type ? { ...ct, frequency } : ct)
     );
   };
 
-  const handleRemoveContentType = (type: IUserPreferences['preferredContentTypes'][0]['type']) => {
+  const handleRemoveContentType = (type: NonNullable<IUserPreferences['preferredContentTypes']>[0]['type']) => {
     setContentTypes(prev => prev.filter(ct => ct.type !== type));
   };
 
@@ -112,7 +112,7 @@ export default function ContentTypesStep({ preferences, onNext, onBack, loading 
                     value={contentType.frequency}
                     onChange={(e) => handleUpdateFrequency(
                       contentType.type,
-                      e.target.value as IUserPreferences['preferredContentTypes'][0]['frequency']
+                      e.target.value as NonNullable<IUserPreferences['preferredContentTypes']>[0]['frequency']
                     )}
                     className="px-3 py-1 border border-border rounded bg-background text-foreground text-sm"
                   >

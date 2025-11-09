@@ -160,7 +160,6 @@ export default function Step4Motivation({
               lowLabel="Not important"
               highLabel="Very important"
               description="Mastery orientation: Learning for the sake of growth and understanding"
-              emojis={['😐', '🙂', '😊', '😄', '🤓', '🧠', '🚀']}
             />
           </motion.div>
 
@@ -181,7 +180,6 @@ export default function Step4Motivation({
               lowLabel="Not important"
               highLabel="Very important"
               description="Performance orientation: Learning to achieve specific outcomes"
-              emojis={['😐', '🙂', '😊', '😄', '🏆', '🎯', '💪']}
             />
           </motion.div>
 
