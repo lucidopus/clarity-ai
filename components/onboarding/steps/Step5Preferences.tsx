@@ -130,7 +130,6 @@ export default function Step5Preferences({
                   id={option.id}
                   label={option.label}
                   minutes={option.minutes}
-                  icon={option.icon}
                   isSelected={dailyTime === option.minutes}
                   onSelect={() => setDailyTime(option.minutes)}
                 />
@@ -147,7 +146,7 @@ export default function Step5Preferences({
             className="p-5 bg-accent/5 border border-accent/20 rounded-lg"
           >
             <div className="flex items-start gap-3">
-              <div className="text-2xl flex-shrink-0">✨</div>
+              <div className="text-2xl shrink-0">✨</div>
               <div className="flex-1">
                 <p className="text-sm font-medium text-foreground mb-1">
                   Great choices!
