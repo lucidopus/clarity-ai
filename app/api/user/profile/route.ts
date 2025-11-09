@@ -190,6 +190,7 @@ export async function PATCH(request: NextRequest) {
       const jwtExpireDays = process.env.JWT_EXPIRE_DAYS || '1';
       const expireDays = parseInt(jwtExpireDays, 10);
       const expiresInSeconds = expireDays * 24 * 60 * 60;
+
       const signOptions: SignOptions = { expiresIn: expiresInSeconds };
 
       newToken = jwt.sign(

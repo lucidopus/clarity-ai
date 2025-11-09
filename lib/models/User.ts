@@ -37,7 +37,7 @@ export interface IUserPreferences {
   learning?: ILearningPreferences;
   general?: IGeneralPreferences;
 
-  // Legacy fields (deprecated but kept for backward compatibility)
+  // Flat fields for onboarding flow compatibility (will be mapped to learning.*)
   role?: 'Student' | 'Teacher' | 'Professional Learner' | 'Content Creator';
   learningGoals?: string[];
   learningGoalText?: string;
@@ -52,29 +52,6 @@ export interface IUserPreferences {
   };
   preferredMaterialsRanked?: string[];
   dailyTimeMinutes?: number;
-  preferredContentTypes?: {
-    type: 'Videos' | 'Flashcards' | 'Quizzes' | 'Transcripts' | 'Interactive Summaries';
-    frequency: 'Daily' | 'Weekly' | 'Monthly' | 'As needed';
-  }[];
-  subjects?: string[];
-  expertiseLevel?: 'Beginner' | 'Intermediate' | 'Advanced';
-  learningStyle?: ('Visual' | 'Auditory' | 'Reading/Writing' | 'Kinesthetic')[];
-  technicalComfort?: 'Beginner' | 'Intermediate' | 'Advanced';
-  accessibility?: {
-    largerText: boolean;
-    voiceNarration: boolean;
-    simplifiedInterface: boolean;
-  };
-  timePreferences?: {
-    availableTimePerDay: number;
-    availableTimePerWeek: number;
-    preferredSessionLength: number;
-    notificationsEnabled: boolean;
-  };
-  additionalPreferences?: {
-    collaborationEnabled: boolean;
-    dataPrivacyLevel: 'Standard' | 'Enhanced';
-  };
 }
 
 export interface IUser extends Document {
