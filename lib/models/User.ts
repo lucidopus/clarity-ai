@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 // Learning-specific preferences (from onboarding flow)
 export interface ILearningPreferences {
   // Step 1: Learning Goals & Context
-  role?: 'Student' | 'Teacher' | 'Professional Learner' | 'Content Creator';
+  role?: 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator';
   learningGoals: string[];
   learningGoalText?: string;
 
@@ -38,7 +38,7 @@ export interface IUserPreferences {
   general?: IGeneralPreferences;
 
   // Flat fields for onboarding flow compatibility (will be mapped to learning.*)
-  role?: 'Student' | 'Teacher' | 'Professional Learner' | 'Content Creator';
+  role?: 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator';
   learningGoals?: string[];
   learningGoalText?: string;
   learningChallenges?: string[];
@@ -83,7 +83,7 @@ const UserSchema: Schema = new Schema({
   preferences: {
     // Learning preferences (from onboarding)
     learning: {
-      role: { type: String, enum: ['Student', 'Teacher', 'Professional Learner', 'Content Creator'] },
+      role: { type: String, enum: ['Student', 'Teacher', 'Working Professional', 'Content Creator'] },
       learningGoals: [{ type: String }],
       learningGoalText: { type: String },
       learningChallenges: [{ type: String }],

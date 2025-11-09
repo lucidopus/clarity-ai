@@ -50,11 +50,12 @@ export default function OnboardingFlow() {
   }, [currentStep, preferences]);
 
   const handleNext = (stepData: Partial<IUserPreferences>) => {
-    setPreferences(prev => ({ ...prev, ...stepData }));
+    const updatedPreferences = { ...preferences, ...stepData };
+    setPreferences(updatedPreferences);
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      handleComplete();
+      handleComplete(updatedPreferences);
     }
   };
 
@@ -64,13 +65,13 @@ export default function OnboardingFlow() {
     }
   };
 
-  const handleComplete = async () => {
+  const handleComplete = async (finalPreferences: Partial<IUserPreferences>) => {
     setLoading(true);
     try {
       const response = await fetch('/api/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify(finalPreferences),
       });
 
       if (!response.ok) {
