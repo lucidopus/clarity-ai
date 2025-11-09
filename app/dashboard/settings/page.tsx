@@ -350,8 +350,10 @@ export default function SettingsPage() {
     setIsVerifyingPassword(true);
 
     try {
-      await submitProfileUpdate(password);
-      setShowPasswordModal(false);
+      const success = await submitProfileUpdate(password);
+      if (success) {
+        setShowPasswordModal(false);
+      }
     } catch {
       // Error is handled in submitProfileUpdate
       // Password errors don't throw, so this is for other errors
@@ -401,14 +403,20 @@ export default function SettingsPage() {
           addToast(data.message, 'error');
           throw new Error(data.message);
         } else if (response.status === 401 && password) {
-          // Password verification failed
+          // Password verification failed - don't throw, keep modal open
           const attemptState = recordPasswordFailure();
-          const remainingAttempts = Math.max(MAX_PASSWORD_ATTEMPTS - attemptState.attempts, 0);
-          const message = attemptState.lockedUntil && attemptState.lockedUntil > Date.now()
-            ? getLockoutMessage(attemptState.lockedUntil)
-            : `${data.message || 'Incorrect password'}. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`;
-          setPasswordError(message);
-          throw new Error(message);
+          if (attemptState.lockedUntil && attemptState.lockedUntil > Date.now()) {
+            setPasswordError(getLockoutMessage(attemptState.lockedUntil));
+          } else {
+            const remainingAttempts = Math.max(MAX_PASSWORD_ATTEMPTS - attemptState.attempts, 0);
+            const baseMessage =
+              data?.message && !/attempt/i.test(data.message)
+                ? data.message
+                : 'Incorrect password';
+            const attemptsText = `${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`;
+            setPasswordError(`${baseMessage}. ${attemptsText}`);
+          }
+          return false;
         } else {
           addToast(data.message || 'Failed to update profile', 'error');
           throw new Error(data.message || 'Failed to update profile');
