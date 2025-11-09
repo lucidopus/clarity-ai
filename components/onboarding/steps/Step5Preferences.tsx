@@ -153,7 +153,7 @@ export default function Step5Preferences({
                   Great choices!
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  We'll prioritize{' '}
+                  We&apos;ll prioritize{' '}
                   <strong className="text-accent">
                     {preferredMaterials.join(', ')}
                   </strong>{' '}

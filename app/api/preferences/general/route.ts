@@ -3,6 +3,12 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User, { IGeneralPreferences } from '@/lib/models/User';
 
+type GeneralPreferencesPayload = {
+  emailNotifications?: unknown;
+  studyReminders?: unknown;
+  autoplayVideos?: unknown;
+};
+
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
@@ -43,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    const requestBody: any = await request.json();
+    const requestBody: GeneralPreferencesPayload = await request.json();
 
     // Extract ONLY the three allowed boolean fields
     const generalPreferences: Partial<IGeneralPreferences> = {};
