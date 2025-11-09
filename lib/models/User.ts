@@ -25,15 +25,11 @@ export interface ILearningPreferences {
   dailyTimeMinutes?: number;
 }
 
-// General app preferences
+// General app preferences (from Settings page)
 export interface IGeneralPreferences {
-  accessibility?: {
-    largerText: boolean;
-    voiceNarration: boolean;
-    simplifiedInterface: boolean;
-  };
-  notificationsEnabled?: boolean;
-  dataPrivacyLevel?: 'Standard' | 'Enhanced';
+  emailNotifications?: boolean;
+  studyReminders?: boolean;
+  autoplayVideos?: boolean;
 }
 
 // Root preferences interface
@@ -126,15 +122,11 @@ const UserSchema: Schema = new Schema({
       dailyTimeMinutes: { type: Number, min: 0 },
     },
 
-    // General app preferences
+    // General app preferences (from Settings page)
     general: {
-      accessibility: {
-        largerText: { type: Boolean, default: false },
-        voiceNarration: { type: Boolean, default: false },
-        simplifiedInterface: { type: Boolean, default: false },
-      },
-      notificationsEnabled: { type: Boolean, default: true },
-      dataPrivacyLevel: { type: String, enum: ['Standard', 'Enhanced'], default: 'Standard' },
+      emailNotifications: { type: Boolean, default: true },
+      studyReminders: { type: Boolean, default: true },
+      autoplayVideos: { type: Boolean, default: false },
     },
   },
   // Streak tracking fields with defaults

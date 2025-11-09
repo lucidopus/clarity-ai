@@ -48,6 +48,12 @@ export default function SettingsPage() {
   // Toast state
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
 
+  // General preferences state
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [studyReminders, setStudyReminders] = useState(true);
+  const [autoplayVideos, setAutoplayVideos] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+
   // Initialize form data when user loads
   useEffect(() => {
     if (user) {
@@ -59,6 +65,29 @@ export default function SettingsPage() {
       };
       setFormData(initialData);
       setOriginalFormData(initialData);
+    }
+  }, [user]);
+
+  // Load general preferences from API
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const response = await fetch('/api/preferences/general');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.preferences) {
+            setEmailNotifications(data.preferences.emailNotifications ?? true);
+            setStudyReminders(data.preferences.studyReminders ?? true);
+            setAutoplayVideos(data.preferences.autoplayVideos ?? false);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+      }
+    };
+
+    if (user) {
+      loadPreferences();
     }
   }, [user]);
 
@@ -290,6 +319,73 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePreferenceChange = async (field: 'emailNotifications' | 'studyReminders' | 'autoplayVideos', value: boolean) => {
+    // Optimistically update UI
+    switch (field) {
+      case 'emailNotifications':
+        setEmailNotifications(value);
+        break;
+      case 'studyReminders':
+        setStudyReminders(value);
+        break;
+      case 'autoplayVideos':
+        setAutoplayVideos(value);
+        break;
+    }
+
+    setIsSavingPreferences(true);
+
+    try {
+      const response = await fetch('/api/preferences/general', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailNotifications: field === 'emailNotifications' ? value : emailNotifications,
+          studyReminders: field === 'studyReminders' ? value : studyReminders,
+          autoplayVideos: field === 'autoplayVideos' ? value : autoplayVideos,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Revert on error
+        switch (field) {
+          case 'emailNotifications':
+            setEmailNotifications(!value);
+            break;
+          case 'studyReminders':
+            setStudyReminders(!value);
+            break;
+          case 'autoplayVideos':
+            setAutoplayVideos(!value);
+            break;
+        }
+        addToast(data.message || 'Failed to save preference', 'error');
+        return;
+      }
+
+      addToast('Preference saved', 'success');
+    } catch (error) {
+      console.error('Save preference error:', error);
+      // Revert on error
+      switch (field) {
+        case 'emailNotifications':
+          setEmailNotifications(!value);
+          break;
+        case 'studyReminders':
+          setStudyReminders(!value);
+          break;
+        case 'autoplayVideos':
+          setAutoplayVideos(!value);
+          break;
+      }
+      addToast('Failed to save preference', 'error');
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -495,8 +591,14 @@ export default function SettingsPage() {
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={emailNotifications}
+                onChange={(e) => handlePreferenceChange('emailNotifications', e.target.checked)}
+                disabled={isSavingPreferences}
+              />
+              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
           </div>
           <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
@@ -507,8 +609,14 @@ export default function SettingsPage() {
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" defaultChecked />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={studyReminders}
+                onChange={(e) => handlePreferenceChange('studyReminders', e.target.checked)}
+                disabled={isSavingPreferences}
+              />
+              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
           </div>
           <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
@@ -519,8 +627,14 @@ export default function SettingsPage() {
               </p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" />
-              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={autoplayVideos}
+                onChange={(e) => handlePreferenceChange('autoplayVideos', e.target.checked)}
+                disabled={isSavingPreferences}
+              />
+              <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
           </div>
         </div>
