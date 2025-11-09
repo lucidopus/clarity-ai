@@ -360,6 +360,8 @@ export default function SettingsPage() {
     } finally {
       setIsVerifyingPassword(false);
     }
+
+    setIsVerifyingPassword(false);
   };
 
   const submitProfileUpdate = async (password?: string): Promise<boolean> => {
@@ -396,12 +398,12 @@ export default function SettingsPage() {
           // Field-specific validation errors
           setErrors(data.errors);
           addToast('Please fix the validation errors', 'error');
-          throw new Error('Validation failed');
+          return false;
         } else if (data.field) {
           // Single field error (e.g., username taken)
           setErrors({ [data.field]: data.message });
           addToast(data.message, 'error');
-          throw new Error(data.message);
+          return false;
         } else if (response.status === 401 && password) {
           // Password verification failed - don't throw, keep modal open
           const attemptState = recordPasswordFailure();
@@ -419,7 +421,7 @@ export default function SettingsPage() {
           return false;
         } else {
           addToast(data.message || 'Failed to update profile', 'error');
-          throw new Error(data.message || 'Failed to update profile');
+          return false;
         }
       }
 
@@ -745,9 +747,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Preferences Section */}
+      {/* General Preferences Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
-        <h2 className="text-xl font-semibold text-foreground mb-6">Preferences</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-6">General Preferences</h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
             <div>
