@@ -75,6 +75,11 @@ export interface IUserPreferences {
     collaborationEnabled: boolean;
     dataPrivacyLevel: 'Standard' | 'Enhanced';
   };
+  generalPreferences?: {
+    emailNotifications: boolean;
+    studyReminders: boolean;
+    autoPlayVideos: boolean;
+  };
 }
 
 export interface IUser extends Document {
@@ -127,6 +132,11 @@ const UserSchema: Schema = new Schema({
       emailNotifications: { type: Boolean, default: true },
       studyReminders: { type: Boolean, default: true },
       autoplayVideos: { type: Boolean, default: false },
+    },
+    generalPreferences: {
+      emailNotifications: { type: Boolean, default: true },
+      studyReminders: { type: Boolean, default: true },
+      autoPlayVideos: { type: Boolean, default: false },
     },
   },
   // Streak tracking fields with defaults
