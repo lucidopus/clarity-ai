@@ -39,37 +39,31 @@ export default function Step2Challenges({
     {
       id: 'staying-motivated',
       label: 'Staying Motivated',
-      icon: '💪',
       description: 'Hard to maintain consistent study habits',
     },
     {
       id: 'time-management',
       label: 'Time Management',
-      icon: '⏰',
       description: 'Balancing learning with other responsibilities',
     },
     {
       id: 'information-overload',
       label: 'Information Overload',
-      icon: '🌊',
       description: 'Too much content, unsure where to focus',
     },
     {
       id: 'lack-of-structure',
       label: 'Lack of Structure',
-      icon: '🗺️',
       description: 'Need clearer learning paths and organization',
     },
     {
       id: 'retention',
       label: 'Retention Issues',
-      icon: '🧠',
       description: 'Difficulty remembering what I learn',
     },
     {
       id: 'procrastination',
       label: 'Procrastination',
-      icon: '⏳',
       description: 'Tend to delay study sessions',
     },
   ];
@@ -125,7 +119,6 @@ export default function Step2Challenges({
               <CheckboxCard
                 id={challenge.id}
                 label={challenge.label}
-                icon={challenge.icon}
                 isSelected={selectedChallenges.includes(challenge.id)}
                 onToggle={() => handleChallengeToggle(challenge.id)}
                 description={challenge.description}
@@ -152,7 +145,8 @@ export default function Step2Challenges({
             className="
               w-full px-4 py-3 border border-border rounded-lg
               bg-background text-foreground
-              placeholder:text-muted-foreground
+              placeholder:text-foreground/40
+              dark:placeholder:text-foreground/50
               focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent
               resize-none
               transition-all duration-200

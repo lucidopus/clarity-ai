@@ -168,7 +168,8 @@ export default function Step1GoalsContext({
             className="
               w-full px-4 py-3 border border-border rounded-lg
               bg-background text-foreground
-              placeholder:text-muted-foreground
+              placeholder:text-foreground/40
+              dark:placeholder:text-foreground/50
               focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent
               resize-none
               transition-all duration-200

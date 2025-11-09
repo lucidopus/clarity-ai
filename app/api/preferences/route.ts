@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import User, { IUserPreferences } from '@/lib/models/User';
+import User, { ILearningPreferences, IGeneralPreferences } from '@/lib/models/User';
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,16 +39,16 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    const preferences: Partial<IUserPreferences> = await request.json();
+    const learningPreferences: Partial<ILearningPreferences> = await request.json();
 
     // Validation for new onboarding flow
-    if (!preferences.learningGoals || preferences.learningGoals.length === 0) {
+    if (!learningPreferences.learningGoals || learningPreferences.learningGoals.length === 0) {
       return NextResponse.json({ success: false, message: 'Learning goals are required' }, { status: 400 });
     }
 
     // Validate personality profile if present (all scores must be 1-7)
-    if (preferences.personalityProfile) {
-      const { conscientiousness, emotionalStability, selfEfficacy, masteryOrientation, performanceOrientation } = preferences.personalityProfile;
+    if (learningPreferences.personalityProfile) {
+      const { conscientiousness, emotionalStability, selfEfficacy, masteryOrientation, performanceOrientation } = learningPreferences.personalityProfile;
 
       const scores = [conscientiousness, emotionalStability, selfEfficacy, masteryOrientation, performanceOrientation];
       const allScoresValid = scores.every(score =>
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate preferredMaterialsRanked (max 3 items)
-    if (preferences.preferredMaterialsRanked && preferences.preferredMaterialsRanked.length > 3) {
+    if (learningPreferences.preferredMaterialsRanked && learningPreferences.preferredMaterialsRanked.length > 3) {
       return NextResponse.json({
         success: false,
         message: 'Maximum 3 preferred materials allowed'
@@ -72,22 +72,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate dailyTimeMinutes (must be positive)
-    if (preferences.dailyTimeMinutes !== undefined && preferences.dailyTimeMinutes < 0) {
+    if (learningPreferences.dailyTimeMinutes !== undefined && learningPreferences.dailyTimeMinutes < 0) {
       return NextResponse.json({
         success: false,
         message: 'Daily time must be a positive number'
       }, { status: 400 });
     }
 
-    // Prepare update operation with $unset for deprecated fields
+    // Prepare update operation - save to preferences.learning
     const updateOperation: any = {
-      $set: { preferences },
+      $set: {
+        'preferences.learning': learningPreferences
+      },
       $unset: {
+        // Unset deprecated root-level fields
         'preferences.preferredContentTypes': '',
         'preferences.subjects': '',
         'preferences.expertiseLevel': '',
         'preferences.learningStyle': '',
         'preferences.technicalComfort': '',
+        'preferences.timePreferences': '',
+        'preferences.additionalPreferences': '',
       }
     };
 
