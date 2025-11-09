@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { useState } from 'react';
 
 interface EmojiSliderProps {
@@ -9,15 +8,13 @@ interface EmojiSliderProps {
   onChange: (value: number) => void;
   lowLabel: string;
   highLabel: string;
-  emojis?: string[]; // Optional custom emoji set (default: 7 emojis for 1-7 scale)
   description?: string;
 }
 
 /**
- * EmojiSlider - Range input with emoji feedback (1-7 scale)
+ * EmojiSlider - Range input (1-7 scale)
  *
  * Features:
- * - Visual emoji feedback that changes with slider value
  * - Accessible keyboard navigation (arrow keys)
  * - Smooth 200ms animations
  * - Touch-friendly 44px+ touch targets
@@ -29,12 +26,9 @@ export default function EmojiSlider({
   onChange,
   lowLabel,
   highLabel,
-  emojis = ['😰', '😟', '😐', '🙂', '😊', '😄', '🤩'], // Default 1-7 emoji progression
   description,
 }: EmojiSliderProps) {
   const [isFocused, setIsFocused] = useState(false);
-
-  const currentEmoji = emojis[value - 1] || emojis[3]; // Default to middle emoji if value invalid
 
   return (
     <div className="space-y-3">
@@ -48,19 +42,6 @@ export default function EmojiSlider({
             <p className="mt-1 text-xs text-muted-foreground">{description}</p>
           )}
         </div>
-
-        {/* Emoji Feedback */}
-        <motion.div
-          key={value}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="text-3xl"
-          role="img"
-          aria-label={`Emotion level ${value} out of 7`}
-        >
-          {currentEmoji}
-        </motion.div>
       </div>
 
       {/* Slider */}

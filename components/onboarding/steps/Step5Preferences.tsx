@@ -47,11 +47,11 @@ export default function Step5Preferences({
   ];
 
   const timeOptions = [
-    { id: 'time-15', minutes: 15, label: 'Quick Sessions', icon: '⚡' },
-    { id: 'time-30', minutes: 30, label: 'Focused Study', icon: '🎯' },
-    { id: 'time-60', minutes: 60, label: 'Deep Learning', icon: '🧠' },
-    { id: 'time-90', minutes: 90, label: 'Extended Study', icon: '📚' },
-    { id: 'time-120', minutes: 120, label: 'Intensive Sessions', icon: '🔥' },
+    { id: 'time-15', minutes: 15, label: 'Quick Sessions' },
+    { id: 'time-30', minutes: 30, label: 'Focused Study' },
+    { id: 'time-60', minutes: 60, label: 'Deep Learning' },
+    { id: 'time-90', minutes: 90, label: 'Extended Study' },
+    { id: 'time-120', minutes: 120, label: 'Intensive Sessions' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {

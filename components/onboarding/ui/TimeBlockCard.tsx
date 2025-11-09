@@ -61,7 +61,7 @@ export default function TimeBlockCard({
       className={`
         relative w-full p-5 rounded-lg border-2 text-center
         transition-all duration-200 ease-out
-        min-h-[88px] cursor-pointer
+        h-[120px] cursor-pointer flex flex-col items-center justify-center
         focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
         dark:focus:ring-offset-background
         ${
