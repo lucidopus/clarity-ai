@@ -4,25 +4,19 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import ProgressIndicator from './ProgressIndicator';
-import WelcomeStep from './steps/WelcomeStep';
-import LearningGoalsStep from './steps/LearningGoalsStep';
-import ContentTypesStep from './steps/ContentTypesStep';
-import SubjectsStep from './steps/SubjectsStep';
-import LearningStyleStep from './steps/LearningStyleStep';
-import TechnicalComfortStep from './steps/TechnicalComfortStep';
-import TimePreferencesStep from './steps/TimePreferencesStep';
-import AdditionalPreferencesStep from './steps/AdditionalPreferencesStep';
+import Step1GoalsContext from './steps/Step1GoalsContext';
+import Step2Challenges from './steps/Step2Challenges';
+import Step3Personality from './steps/Step3Personality';
+import Step4Motivation from './steps/Step4Motivation';
+import Step5Preferences from './steps/Step5Preferences';
 import { IUserPreferences } from '@/lib/models/User';
 
 const steps = [
-  { id: 'welcome', component: WelcomeStep, title: 'Welcome' },
-  { id: 'goals', component: LearningGoalsStep, title: 'Learning Goals' },
-  { id: 'content', component: ContentTypesStep, title: 'Content Types' },
-  { id: 'subjects', component: SubjectsStep, title: 'Subjects & Expertise' },
-  { id: 'style', component: LearningStyleStep, title: 'Learning Style' },
-  { id: 'comfort', component: TechnicalComfortStep, title: 'Technical Comfort' },
-  { id: 'time', component: TimePreferencesStep, title: 'Time Preferences' },
-  { id: 'additional', component: AdditionalPreferencesStep, title: 'Additional Preferences' },
+  { id: 'goals', component: Step1GoalsContext, title: 'Learning Goals & Context' },
+  { id: 'challenges', component: Step2Challenges, title: 'Learning Challenges' },
+  { id: 'personality', component: Step3Personality, title: 'Learning Personality' },
+  { id: 'motivation', component: Step4Motivation, title: 'Confidence & Motivation' },
+  { id: 'preferences', component: Step5Preferences, title: 'Learning Preferences' },
 ];
 
 export default function OnboardingFlow() {
