@@ -13,9 +13,15 @@ export default function OnboardingPage() {
     if (!loading) {
       if (!user) {
         router.push('/auth/signin');
-      } else if (user.preferences?.learning) {
-        // User has completed onboarding, redirect to dashboard
-        router.push('/dashboard');
+      } else {
+        // Check if learning preferences exist AND have actual data (not just an empty object)
+        const hasLearningPreferences = user.preferences?.learning &&
+          Object.keys(user.preferences.learning).length > 0;
+
+        if (hasLearningPreferences) {
+          // User has completed onboarding, redirect to dashboard
+          router.push('/dashboard');
+        }
       }
     }
   }, [user, loading, router]);
@@ -89,7 +95,11 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!user || user.preferences?.learning) {
+  // Don't render if user is not logged in or has already completed onboarding
+  const hasLearningPreferences = user?.preferences?.learning &&
+    Object.keys(user.preferences.learning).length > 0;
+
+  if (!user || hasLearningPreferences) {
     return null; // Will redirect
   }
 
