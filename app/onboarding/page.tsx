@@ -10,17 +10,24 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('Onboarding useEffect - loading:', loading, 'user:', user ? 'exists' : 'null');
     if (!loading) {
       if (!user) {
+        console.log('Onboarding - No user, redirecting to signin');
         router.push('/auth/signin');
       } else {
         // Check if learning preferences exist AND have actual data (not just an empty object)
+        console.log('Onboarding - user.preferences:', JSON.stringify(user.preferences, null, 2));
         const hasLearningPreferences = user.preferences?.learning &&
           Object.keys(user.preferences.learning).length > 0;
+        console.log('Onboarding - hasLearningPreferences:', hasLearningPreferences);
 
         if (hasLearningPreferences) {
           // User has completed onboarding, redirect to dashboard
+          console.log('Onboarding - Has learning preferences, redirecting to dashboard');
           router.push('/dashboard');
+        } else {
+          console.log('Onboarding - No learning preferences, staying on onboarding page');
         }
       }
     }
@@ -99,9 +106,13 @@ export default function OnboardingPage() {
   const hasLearningPreferences = user?.preferences?.learning &&
     Object.keys(user.preferences.learning).length > 0;
 
+  console.log('Onboarding render - user:', user ? 'exists' : 'null', 'hasLearningPreferences:', hasLearningPreferences);
+
   if (!user || hasLearningPreferences) {
+    console.log('Onboarding render - Returning null (will redirect)');
     return null; // Will redirect
   }
 
+  console.log('Onboarding render - Rendering OnboardingFlow');
   return <OnboardingFlow />;
 }
