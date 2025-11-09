@@ -136,45 +136,6 @@ const UserSchema: Schema = new Schema({
       notificationsEnabled: { type: Boolean, default: true },
       dataPrivacyLevel: { type: String, enum: ['Standard', 'Enhanced'], default: 'Standard' },
     },
-
-    // Legacy fields (deprecated but kept for backward compatibility)
-    role: { type: String, enum: ['Student', 'Teacher', 'Professional Learner', 'Content Creator'] },
-    learningGoals: [{ type: String }],
-    learningGoalText: { type: String },
-    learningChallenges: [{ type: String }],
-    learningChallengesText: { type: String },
-    personalityProfile: {
-      conscientiousness: { type: Number, min: 1, max: 7 },
-      emotionalStability: { type: Number, min: 1, max: 7 },
-      selfEfficacy: { type: Number, min: 1, max: 7 },
-      masteryOrientation: { type: Number, min: 1, max: 7 },
-      performanceOrientation: { type: Number, min: 1, max: 7 },
-    },
-    preferredMaterialsRanked: [{ type: String }],
-    dailyTimeMinutes: { type: Number, min: 0 },
-    preferredContentTypes: [{
-      type: { type: String, enum: ['Videos', 'Flashcards', 'Quizzes', 'Transcripts', 'Interactive Summaries'] },
-      frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly', 'As needed'] },
-    }],
-    subjects: [{ type: String }],
-    expertiseLevel: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-    learningStyle: [{ type: String, enum: ['Visual', 'Auditory', 'Reading/Writing', 'Kinesthetic'] }],
-    technicalComfort: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-    accessibility: {
-      largerText: { type: Boolean, default: false },
-      voiceNarration: { type: Boolean, default: false },
-      simplifiedInterface: { type: Boolean, default: false },
-    },
-    timePreferences: {
-      availableTimePerDay: { type: Number, min: 0 },
-      availableTimePerWeek: { type: Number, min: 0 },
-      preferredSessionLength: { type: Number, min: 5 },
-      notificationsEnabled: { type: Boolean, default: true },
-    },
-    additionalPreferences: {
-      collaborationEnabled: { type: Boolean, default: false },
-      dataPrivacyLevel: { type: String, enum: ['Standard', 'Enhanced'], default: 'Standard' },
-    },
   },
   // Streak tracking fields with defaults
   lastLoginDate: { type: Date, default: null },

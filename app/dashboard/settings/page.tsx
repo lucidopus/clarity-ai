@@ -7,6 +7,7 @@ import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
 import GenerateModal from '@/components/GenerateModal';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
+import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { Edit2, Save, X } from 'lucide-react';
 
@@ -14,6 +15,10 @@ export default function SettingsPage() {
   const { user, logout } = useAuth();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -255,37 +260,8 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    // Confirm deletion with user
-    const confirmed = window.confirm(
-      'Are you absolutely sure you want to delete your account?\n\n' +
-      'This action cannot be undone. All your data including:\n' +
-      '• Learning materials\n' +
-      '• Flashcards\n' +
-      '• Progress tracking\n' +
-      '• Notes and videos\n\n' +
-      'will be permanently deleted.'
-    );
+    setIsDeletingAccount(true);
 
-    if (!confirmed) return;
-
-    // Double confirmation
-    const doubleConfirmed = window.confirm(
-      'This is your final warning!\n\n' +
-      'Type YES in the next prompt to confirm account deletion.'
-    );
-
-    if (!doubleConfirmed) return;
-
-    const finalConfirmation = window.prompt(
-      'Type YES (in capital letters) to permanently delete your account:'
-    );
-
-    if (finalConfirmation !== 'YES') {
-      addToast('Account deletion cancelled', 'info');
-      return;
-    }
-
-    // Proceed with deletion
     try {
       const response = await fetch('/api/account', {
         method: 'DELETE',
@@ -295,17 +271,22 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         addToast(data.message || 'Failed to delete account', 'error');
+        setShowDeleteModal(false);
         return;
       }
 
       // Success - redirect to home page
       addToast('Account deleted successfully', 'success');
+      setShowDeleteModal(false);
       setTimeout(() => {
         window.location.href = '/';
       }, 1500);
     } catch (error) {
       console.error('Delete account error:', error);
       addToast('An error occurred while deleting your account', 'error');
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
@@ -567,7 +548,7 @@ export default function SettingsPage() {
                 Permanently delete your account and all data
               </p>
             </div>
-            <Button onClick={handleDeleteAccount} variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-500/20">
+            <Button onClick={() => setShowDeleteModal(true)} variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-500/20">
               Delete
             </Button>
           </div>
@@ -592,6 +573,14 @@ export default function SettingsPage() {
         onVerify={handlePasswordVerify}
         isLoading={isVerifyingPassword}
         error={passwordError}
+      />
+
+      {/* Delete Account Confirmation Modal */}
+      <DeleteAccountConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+        isLoading={isDeletingAccount}
       />
 
       {/* Toast Container */}
