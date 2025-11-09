@@ -18,6 +18,7 @@ interface Step1GoalsContextProps {
  * Step 1: Learning Goals & Context
  *
  * Collects:
+ * - role: Single-select (Student, Teacher, Working Professional, Content Creator)
  * - learningGoals: Multi-select cards (pre-defined options)
  * - learningGoalText: Optional text elaboration
  */
@@ -28,12 +29,22 @@ export default function Step1GoalsContext({
   isFirst,
   loading,
 }: Step1GoalsContextProps) {
+  const [selectedRole, setSelectedRole] = useState<string>(
+    preferences.role || ''
+  );
   const [selectedGoals, setSelectedGoals] = useState<string[]>(
     preferences.learningGoals || []
   );
   const [goalText, setGoalText] = useState<string>(
     preferences.learningGoalText || ''
   );
+
+  const roleOptions = [
+    { id: 'Student', label: 'Student', icon: '🎓', description: 'Currently enrolled in formal education' },
+    { id: 'Teacher', label: 'Teacher', icon: '👨‍🏫', description: 'Educator or instructor' },
+    { id: 'Working Professional', label: 'Working Professional', icon: '💼', description: 'Learning for career development' },
+    { id: 'Content Creator', label: 'Content Creator', icon: '🎬', description: 'Creating educational content' },
+  ];
 
   const goalOptions = [
     { id: 'exam-prep', label: 'Exam Preparation', icon: '📝' },
@@ -54,8 +65,9 @@ export default function Step1GoalsContext({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedGoals.length > 0) {
+    if (selectedRole && selectedGoals.length > 0) {
       onNext({
+        role: selectedRole as 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator',
         learningGoals: selectedGoals,
         learningGoalText: goalText.trim() || undefined,
       });
@@ -72,16 +84,104 @@ export default function Step1GoalsContext({
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-foreground mb-3">
-          What brings you here today?
+          Tell us about yourself (skip the AI)
         </h2>
         <p className="text-lg text-muted-foreground">
-          Select all learning goals that apply to you. This helps us personalize your experience.
+          We&apos;ll use this to personalize your materials. The more real you are, the better they&apos;ll be.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Role Selection */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              I am a...
+            </label>
+            <p className="text-xs text-muted-foreground">
+              This helps us understand your learning context
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {roleOptions.map((role, index) => {
+              const isSelected = selectedRole === role.id;
+
+              return (
+                <motion.button
+                  key={role.id}
+                  type="button"
+                  onClick={() => setSelectedRole(role.id)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.2,
+                    delay: index * 0.05,
+                    ease: 'easeOut',
+                  }}
+                  className={`
+                    relative p-4 rounded-lg border-2 text-left
+                    transition-all duration-200 ease-out
+                    cursor-pointer
+                    focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2
+                    dark:focus:ring-offset-background
+                    ${
+                      isSelected
+                        ? 'border-accent bg-accent/5'
+                        : 'border-border hover:border-accent/50 bg-card'
+                    }
+                  `}
+                  aria-pressed={isSelected}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl shrink-0" aria-hidden="true">
+                      {role.icon}
+                    </div>
+                    <div className="flex-1 pr-6">
+                      <div className={`font-medium ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                        {role.label}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {role.description}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Radio indicator */}
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      opacity: isSelected ? 1 : 0,
+                      scale: isSelected ? 1 : 0.5,
+                    }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    className="absolute top-3 right-3"
+                    aria-hidden="true"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    </div>
+                  </motion.div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Goal Selection Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              What are your learning goals?
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Select all that apply
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {goalOptions.map((goal, index) => {
             const isSelected = selectedGoals.includes(goal.id);
 
@@ -148,6 +248,7 @@ export default function Step1GoalsContext({
               </motion.button>
             );
           })}
+          </div>
         </div>
 
         {/* Optional Text Elaboration */}
@@ -164,7 +265,7 @@ export default function Step1GoalsContext({
             onChange={(e) => setGoalText(e.target.value)}
             placeholder="e.g., I want to transition into data science and need to build foundational skills in statistics and Python..."
             rows={4}
-            maxLength={500}
+            maxLength={800}
             className="
               w-full px-4 py-3 border border-border rounded-lg
               bg-background text-foreground
@@ -176,8 +277,8 @@ export default function Step1GoalsContext({
             "
           />
           <div className="flex justify-between items-center text-xs text-muted-foreground">
-            <span>Share context to help us tailor your learning materials</span>
-            <span className="tabular-nums">{goalText.length}/500</span>
+            <span className="italic">Authentic answers get you materials that actually work for you</span>
+            <span className="tabular-nums">{goalText.length}/800</span>
           </div>
         </div>
 
@@ -195,7 +296,7 @@ export default function Step1GoalsContext({
           <Button
             type="submit"
             variant="primary"
-            disabled={selectedGoals.length === 0 || loading}
+            disabled={!selectedRole || selectedGoals.length === 0 || loading}
           >
             {loading ? 'Saving...' : 'Continue'}
           </Button>
