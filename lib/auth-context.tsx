@@ -64,8 +64,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.message || 'Login failed');
     }
 
-    await checkAuth();
-    router.push('/dashboard');
+    const result = await response.json();
+    const authenticatedUser = result.user;
+
+    // Update local state
+    setUser(authenticatedUser);
+
+    // Redirect based on onboarding completion
+    // Check if learning preferences exist AND have actual data (not just an empty object)
+    const hasLearningPreferences = authenticatedUser.preferences?.learning &&
+      Object.keys(authenticatedUser.preferences.learning).length > 0;
+
+    if (!hasLearningPreferences) {
+      router.push('/onboarding');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const signup = async (data: {
@@ -100,7 +114,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
 
     // Redirect to onboarding if user hasn't completed learning preferences, otherwise to dashboard
-    if (!newUser.preferences?.learning) {
+    // Check if learning preferences exist AND have actual data (not just an empty object)
+    const hasLearningPreferences = newUser.preferences?.learning &&
+      Object.keys(newUser.preferences.learning).length > 0;
+
+    if (!hasLearningPreferences) {
       router.push('/onboarding');
     } else {
       router.push('/dashboard');
