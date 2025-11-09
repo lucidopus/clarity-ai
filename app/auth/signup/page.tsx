@@ -21,23 +21,81 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
 
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string[]> = {};
+
+    // First name validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = ['First name is required'];
+    } else if (formData.firstName.length > 50) {
+      newErrors.firstName = ['First name must be less than 50 characters'];
+    }
+
+    // Last name validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = ['Last name is required'];
+    } else if (formData.lastName.length > 50) {
+      newErrors.lastName = ['Last name must be less than 50 characters'];
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = ['Email is required'];
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
+      newErrors.email = ['Please enter a valid email address'];
+    }
+
+    // Username validation
+    if (!formData.username.trim()) {
+      newErrors.username = ['Username is required'];
+    } else if (formData.username.length < 3) {
+      newErrors.username = ['Username must be at least 3 characters'];
+    } else if (formData.username.length > 20) {
+      newErrors.username = ['Username must be less than 20 characters'];
+    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      newErrors.username = ['Username can only contain letters, numbers, and underscores'];
+    }
+
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = ['Password is required'];
+    } else if (formData.password.length < 8) {
+      newErrors.password = ['Password must be at least 8 characters'];
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(formData.password)) {
+      newErrors.password = ['Password must contain uppercase, lowercase, number, and special character'];
+    }
+
+    // Confirm password validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = ['Please confirm your password'];
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = ['Passwords do not match'];
+    }
+
+    // User type validation
+    if (!formData.userType) {
+      newErrors.userType = ['Please select a user type'];
+    }
+
+    // Custom user type validation
+    if (formData.userType === 'Other' && !formData.customUserType.trim()) {
+      newErrors.customUserType = ['Please specify your user type'];
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
-
-    // Basic client-side validation
-    if (!formData.userType) {
-      setErrors({ userType: ['Please select a user type'] });
-      setLoading(false);
-      return;
-    }
-
-    if (formData.userType === 'Other' && !formData.customUserType.trim()) {
-      setErrors({ customUserType: ['Please specify your user type'] });
-      setLoading(false);
-      return;
-    }
 
     try {
       await signup({

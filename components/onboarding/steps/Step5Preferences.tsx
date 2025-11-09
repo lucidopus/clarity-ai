@@ -20,8 +20,8 @@ interface Step5PreferencesProps {
  * Step 5: Learning Preferences
  *
  * Collects:
- * - preferredContentTypes: Max 3 learning materials, ordered by preference
- * - timePreferences.preferredSessionLength: Daily time commitment
+ * - preferredMaterialsRanked: Max 3 learning materials, ordered by preference
+ * - dailyTimeMinutes: Daily time commitment
  */
 export default function Step5Preferences({
   preferences,
@@ -31,41 +31,35 @@ export default function Step5Preferences({
   loading,
 }: Step5PreferencesProps) {
   const [preferredMaterials, setPreferredMaterials] = useState<string[]>(
-    preferences.preferredContentTypes?.map(item => item.type as string) || []
+    preferences.preferredMaterialsRanked || []
   );
   const [dailyTime, setDailyTime] = useState<number | null>(
-    preferences.timePreferences?.preferredSessionLength || null
+    preferences.dailyTimeMinutes || null
   );
 
   const materialOptions = [
     'Flashcards',
     'Quizzes',
-    'Videos',
-    'Transcripts',
-    'Interactive Summaries',
+    'Video Timestamps',
+    'Interactive Transcripts',
+    'Study Guides',
     'Mind Maps',
   ];
 
   const timeOptions = [
-    { id: 'time-15', minutes: 15, label: 'Quick Sessions', icon: '🕒' },
-    { id: 'time-30', minutes: 30, label: 'Focused Study', icon: '🕒' },
-    { id: 'time-60', minutes: 60, label: 'Deep Learning', icon: '🕒' },
-    { id: 'time-90', minutes: 90, label: 'Extended Study', icon: '🕒' },
-    { id: 'time-120', minutes: 120, label: 'Intensive Sessions', icon: '🕒' },
+    { id: 'time-15', minutes: 15, label: 'Quick Sessions' },
+    { id: 'time-30', minutes: 30, label: 'Focused Study' },
+    { id: 'time-60', minutes: 60, label: 'Deep Learning' },
+    { id: 'time-90', minutes: 90, label: 'Extended Study' },
+    { id: 'time-120', minutes: 120, label: 'Intensive Sessions' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (preferredMaterials.length > 0 && dailyTime !== null) {
       onNext({
-        preferredContentTypes: preferredMaterials.map(item => ({
-          type: item as any,
-          frequency: 'As needed',
-        })),
-        timePreferences: {
-          ...preferences.timePreferences,
-          preferredSessionLength: dailyTime,
-        } as IUserPreferences['timePreferences'],
+        preferredMaterialsRanked: preferredMaterials,
+        dailyTimeMinutes: dailyTime,
       });
     }
   };
@@ -136,7 +130,6 @@ export default function Step5Preferences({
                   id={option.id}
                   label={option.label}
                   minutes={option.minutes}
-                  icon={option.icon}
                   isSelected={dailyTime === option.minutes}
                   onSelect={() => setDailyTime(option.minutes)}
                 />

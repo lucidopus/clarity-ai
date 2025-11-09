@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { X, Lock, Loader2, AlertTriangle } from 'lucide-react';
 import Button from './Button';
 
@@ -11,6 +11,7 @@ interface PasswordVerificationModalProps {
   onVerify: (password: string) => Promise<void>;
   isLoading?: boolean;
   error?: string | null;
+  isLockedOut?: boolean;
 }
 
 export default function PasswordVerificationModal({
@@ -19,10 +20,11 @@ export default function PasswordVerificationModal({
   onVerify,
   isLoading = false,
   error: externalError = null,
+  isLockedOut = false,
 }: PasswordVerificationModalProps) {
   const [password, setPassword] = useState('');
   const [localError, setLocalError] = useState('');
-  const [shouldShake, setShouldShake] = useState(false);
+  const shakeControls = useAnimation();
 
   useEffect(() => {
     if (!isOpen) {
@@ -35,20 +37,15 @@ export default function PasswordVerificationModal({
     return () => cancelAnimationFrame(frame);
   }, [isOpen]);
 
-  // Trigger shake animation when external error changes
-  useEffect(() => {
-    if (externalError) {
-      setTimeout(() => {
-        if (!shouldShake) {
-          setShouldShake(true);
-        }
-      }, 0);
-      const timer = setTimeout(() => setShouldShake(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [externalError, shouldShake]);
-
   const displayError = externalError || localError;
+
+  useEffect(() => {
+    if (!displayError) return;
+    shakeControls.start({
+      x: [0, -8, 8, -6, 6, -4, 4, 0],
+      transition: { duration: 0.5, ease: 'easeInOut' },
+    });
+  }, [displayError, shakeControls]);
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(e.target.value);
@@ -57,7 +54,7 @@ export default function PasswordVerificationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading) return;
+    if (isLoading || isLockedOut) return;
 
     if (!password) {
       setLocalError('Password is required');
@@ -72,6 +69,8 @@ export default function PasswordVerificationModal({
     }
   };
 
+  const isSubmitDisabled = !password || isLoading || isLockedOut;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -84,22 +83,9 @@ export default function PasswordVerificationModal({
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={
-              shouldShake
-                ? {
-                    opacity: 1,
-                    scale: 1,
-                    y: 0,
-                    x: [0, -10, 10, -10, 10, -5, 5, 0],
-                  }
-                : { opacity: 1, scale: 1, y: 0, x: 0 }
-            }
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={
-              shouldShake
-                ? { duration: 0.5, ease: 'easeOut' }
-                : { duration: 0.2, ease: 'easeOut' }
-            }
+            transition={{ duration: 0.2, ease: 'easeOut' }}
             className="bg-card-bg border border-border rounded-2xl shadow-xl max-w-md w-full"
             onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
           >
@@ -126,7 +112,7 @@ export default function PasswordVerificationModal({
 
               {/* Body */}
               <div className="p-6 space-y-4">
-                <div className="relative">
+                <motion.div animate={shakeControls} className="relative">
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                     <Lock className="w-5 h-5" />
                   </div>
@@ -138,12 +124,12 @@ export default function PasswordVerificationModal({
                     placeholder="Enter your password"
                     className={`w-full pl-12 pr-4 py-3 bg-background border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors ${
                       displayError ? 'border-red-500/50 ring-red-500/50' : 'border-border'
-                    }`}
+                    } ${isLockedOut ? 'cursor-not-allowed opacity-70' : ''}`}
                     required
-                    disabled={isLoading}
+                    disabled={isLoading || isLockedOut}
                     autoFocus
                   />
-                </div>
+                </motion.div>
                 {displayError && (
                   <div className="flex items-center gap-2 text-sm text-red-500">
                     <AlertTriangle className="w-4 h-4" />
@@ -160,7 +146,7 @@ export default function PasswordVerificationModal({
                 <Button
                   type="submit"
                   variant="primary"
-                  disabled={!password || isLoading}
+                  disabled={isSubmitDisabled}
                 >
                   {isLoading ? (
                     <>

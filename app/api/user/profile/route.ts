@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest) {
     let decoded: DecodedToken;
     try {
       decoded = jwt.verify(token, jwtSecret) as DecodedToken;
-    } catch (error) {
+    } catch {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
     }
 
@@ -153,6 +153,23 @@ export async function PATCH(request: NextRequest) {
           success: false,
           message: 'Username is already taken',
           field: 'username',
+        }, { status: 409 });
+      }
+    }
+
+    // 6b. If email is being changed, check uniqueness
+    if (isEmailChanging) {
+      const normalizedEmail = email!.toLowerCase();
+      const existingUser = await User.findOne({
+        email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') },
+        _id: { $ne: user._id }
+      });
+
+      if (existingUser) {
+        return NextResponse.json({
+          success: false,
+          message: 'Email is already in use',
+          field: 'email',
         }, { status: 409 });
       }
     }
