@@ -1,19 +1,69 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
 import GenerateModal from '@/components/GenerateModal';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
+import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { Edit2, Save, X } from 'lucide-react';
+
+const PASSWORD_ATTEMPT_KEY = 'settings-email-password-attempts';
+const MAX_PASSWORD_ATTEMPTS = 4;
+const PASSWORD_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+
+type PasswordAttemptState = {
+  attempts: number;
+  windowStart: number | null;
+  lockedUntil: number | null;
+};
+
+const defaultPasswordAttemptState: PasswordAttemptState = {
+  attempts: 0,
+  windowStart: null,
+  lockedUntil: null,
+};
+
+const formatLockoutDuration = (remainingMs: number) => {
+  const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+};
+
+const normalizeStoredPasswordAttempts = (state: { attempts?: number; windowStart?: number | null }): PasswordAttemptState => {
+  if (!state || !state.windowStart) {
+    return defaultPasswordAttemptState;
+  }
+
+  const now = Date.now();
+  const elapsed = now - state.windowStart;
+
+  if (elapsed >= PASSWORD_ATTEMPT_WINDOW_MS) {
+    return defaultPasswordAttemptState;
+  }
+
+  const attempts = Number(state.attempts) || 0;
+  const lockedUntil = attempts >= MAX_PASSWORD_ATTEMPTS
+    ? state.windowStart + PASSWORD_ATTEMPT_WINDOW_MS
+    : null;
+
+  return {
+    attempts,
+    windowStart: state.windowStart,
+    lockedUntil,
+  };
+};
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Delete account modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -34,6 +84,50 @@ export default function SettingsPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
+  const [passwordAttempts, setPasswordAttempts] = useState<PasswordAttemptState>(defaultPasswordAttemptState);
+
+  const persistPasswordAttemptState = useCallback((state: PasswordAttemptState) => {
+    if (typeof window === 'undefined') return;
+    if (!state.windowStart) {
+      window.localStorage.removeItem(PASSWORD_ATTEMPT_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      PASSWORD_ATTEMPT_KEY,
+      JSON.stringify({
+        attempts: state.attempts,
+        windowStart: state.windowStart,
+      }),
+    );
+  }, []);
+
+  const resetPasswordAttempts = useCallback(() => {
+    setPasswordAttempts(defaultPasswordAttemptState);
+    persistPasswordAttemptState(defaultPasswordAttemptState);
+  }, [persistPasswordAttemptState]);
+
+  const recordPasswordFailure = useCallback(() => {
+    const now = Date.now();
+    const windowStartValid = passwordAttempts.windowStart && (now - passwordAttempts.windowStart) < PASSWORD_ATTEMPT_WINDOW_MS;
+    const windowStart = windowStartValid ? passwordAttempts.windowStart! : now;
+    const attempts = windowStartValid ? passwordAttempts.attempts + 1 : 1;
+    const lockedUntil = attempts >= MAX_PASSWORD_ATTEMPTS ? windowStart + PASSWORD_ATTEMPT_WINDOW_MS : null;
+
+    const nextState = {
+      attempts,
+      windowStart,
+      lockedUntil,
+    };
+
+    setPasswordAttempts(nextState);
+    persistPasswordAttemptState(nextState);
+    return nextState;
+  }, [passwordAttempts, persistPasswordAttemptState]);
+
+  const getLockoutMessage = useCallback((lockedUntil: number | null) => {
+    if (!lockedUntil) return '';
+    return `Too many attempts. Try again in ${formatLockoutDuration(Math.max(lockedUntil - Date.now(), 0))}.`;
+  }, []);
 
   // Form state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -45,8 +139,8 @@ export default function SettingsPage() {
   // General preferences state
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [studyReminders, setStudyReminders] = useState(true);
-  const [autoPlayVideos, setAutoPlayVideos] = useState(false);
-  const [isUpdatingPreferences, setIsUpdatingPreferences] = useState(false);
+  const [autoplayVideos, setAutoplayVideos] = useState(false);
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   // Initialize form data when user loads
   useEffect(() => {
@@ -59,13 +153,78 @@ export default function SettingsPage() {
       };
       setFormData(initialData);
       setOriginalFormData(initialData);
+    }
+  }, [user]);
 
-      // Initialize general preferences from user data
-      if (user.preferences?.generalPreferences) {
-        setEmailNotifications(user.preferences.generalPreferences.emailNotifications ?? true);
-        setStudyReminders(user.preferences.generalPreferences.studyReminders ?? true);
-        setAutoPlayVideos(user.preferences.generalPreferences.autoPlayVideos ?? false);
+  // Load stored password attempt data (if any)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const stored = window.localStorage.getItem(PASSWORD_ATTEMPT_KEY);
+      if (!stored) return;
+      const normalized = normalizeStoredPasswordAttempts(JSON.parse(stored));
+      setPasswordAttempts(normalized);
+      if (!normalized.windowStart) {
+        persistPasswordAttemptState(normalized);
       }
+    } catch (error) {
+      console.error('Failed to load password attempts', error);
+      window.localStorage.removeItem(PASSWORD_ATTEMPT_KEY);
+    }
+  }, [persistPasswordAttemptState]);
+
+  // Automatically clear attempts once the window expires
+  useEffect(() => {
+    if (!passwordAttempts.windowStart) return;
+
+    const now = Date.now();
+    const elapsed = now - passwordAttempts.windowStart;
+    const remaining = PASSWORD_ATTEMPT_WINDOW_MS - elapsed;
+
+    if (remaining <= 0) {
+      resetPasswordAttempts();
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      resetPasswordAttempts();
+    }, remaining);
+
+    return () => clearTimeout(timeout);
+  }, [passwordAttempts.windowStart, resetPasswordAttempts]);
+
+  // Keep error message in sync with lockout state
+  useEffect(() => {
+    if (showPasswordModal && passwordAttempts.lockedUntil && passwordAttempts.lockedUntil > Date.now()) {
+      setPasswordError(getLockoutMessage(passwordAttempts.lockedUntil));
+    }
+
+    if (!passwordAttempts.windowStart && passwordError) {
+      setPasswordError(null);
+    }
+  }, [getLockoutMessage, passwordAttempts.lockedUntil, passwordAttempts.windowStart, passwordError, showPasswordModal]);
+
+  // Load general preferences from API
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        const response = await fetch('/api/preferences/general');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.preferences) {
+            setEmailNotifications(data.preferences.emailNotifications ?? true);
+            setStudyReminders(data.preferences.studyReminders ?? true);
+            setAutoplayVideos(data.preferences.autoplayVideos ?? false);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load preferences:', error);
+      }
+    };
+
+    if (user) {
+      loadPreferences();
     }
   }, [user]);
 
@@ -98,6 +257,8 @@ export default function SettingsPage() {
       setIsGenerating(false);
     }
   };
+
+  const isPasswordLockedOut = Boolean(passwordAttempts.lockedUntil && passwordAttempts.lockedUntil > Date.now());
 
   const handleEditClick = () => {
     setIsEditMode(true);
@@ -150,7 +311,7 @@ export default function SettingsPage() {
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Invalid email address';
     }
 
     setErrors(newErrors);
@@ -164,7 +325,7 @@ export default function SettingsPage() {
     }
 
     // Check if email is being changed - if so, show password modal
-    const isEmailChanging = formData.email.toLowerCase() !== originalFormData.email.toLowerCase();
+    const isEmailChanging = formData.email?.toLowerCase() !== originalFormData.email?.toLowerCase();
     if (isEmailChanging) {
       setShowPasswordModal(true);
       return;
@@ -175,13 +336,24 @@ export default function SettingsPage() {
   };
 
   const handlePasswordVerify = async (password: string) => {
+    if (isPasswordLockedOut) {
+      setPasswordError(getLockoutMessage(passwordAttempts.lockedUntil));
+      return;
+    }
+
     setPasswordError(null);
     setIsVerifyingPassword(true);
 
-    const success = await submitProfileUpdate(password);
-
-    if (success) {
-      setShowPasswordModal(false);
+    try {
+      const success = await submitProfileUpdate(password);
+      if (success) {
+        setShowPasswordModal(false);
+      }
+    } catch {
+      // Error is handled in submitProfileUpdate
+      // Password errors don't throw, so this is for other errors
+    } finally {
+      setIsVerifyingPassword(false);
     }
 
     setIsVerifyingPassword(false);
@@ -228,8 +400,19 @@ export default function SettingsPage() {
           addToast(data.message, 'error');
           return false;
         } else if (response.status === 401 && password) {
-          // Password verification failed
-          setPasswordError(data.message);
+          // Password verification failed - don't throw, keep modal open
+          const attemptState = recordPasswordFailure();
+          if (attemptState.lockedUntil && attemptState.lockedUntil > Date.now()) {
+            setPasswordError(getLockoutMessage(attemptState.lockedUntil));
+          } else {
+            const remainingAttempts = Math.max(MAX_PASSWORD_ATTEMPTS - attemptState.attempts, 0);
+            const baseMessage =
+              data?.message && !/attempt/i.test(data.message)
+                ? data.message
+                : 'Incorrect password';
+            const attemptsText = `${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`;
+            setPasswordError(`${baseMessage}. ${attemptsText}`);
+          }
           return false;
         } else {
           addToast(data.message || 'Failed to update profile', 'error');
@@ -248,65 +431,121 @@ export default function SettingsPage() {
       setOriginalFormData(updatedData);
       setIsEditMode(false);
       setPasswordError(null);
+      resetPasswordAttempts();
       addToast('Profile updated successfully!', 'success');
 
-      // Wait 2 seconds to allow user to see the success toast before reloading
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      // Reload user data by calling /api/auth/me
+      const userResponse = await fetch('/api/auth/me');
+      await userResponse.json();
+      // The auth context will automatically update via its checkAuth method
+      window.location.reload(); // Simple reload to refresh all user data
 
-      return true;
+      return true; // Return true to indicate success
 
     } catch (error) {
       console.error('Profile update error:', error);
-      addToast('An unexpected error occurred', 'error');
-      return false;
+      // Error messages already set above
+      return false; // Return false to indicate failure
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handlePreferenceToggle = async (
-    preference: 'emailNotifications' | 'studyReminders' | 'autoPlayVideos',
-    value: boolean
-  ) => {
-    // Optimistically update UI
-    if (preference === 'emailNotifications') setEmailNotifications(value);
-    if (preference === 'studyReminders') setStudyReminders(value);
-    if (preference === 'autoPlayVideos') setAutoPlayVideos(value);
-
-    setIsUpdatingPreferences(true);
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
 
     try {
-      const response = await fetch('/api/user/preferences', {
-        method: 'PATCH',
+      const response = await fetch('/api/account', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        addToast(data.message || 'Failed to delete account', 'error');
+        setShowDeleteModal(false);
+        return;
+      }
+
+      // Success - redirect to home page
+      addToast('Account deleted successfully', 'success');
+      setShowDeleteModal(false);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    } catch (error) {
+      console.error('Delete account error:', error);
+      addToast('An error occurred while deleting your account', 'error');
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handlePreferenceChange = async (field: 'emailNotifications' | 'studyReminders' | 'autoplayVideos', value: boolean) => {
+    // Optimistically update UI
+    switch (field) {
+      case 'emailNotifications':
+        setEmailNotifications(value);
+        break;
+      case 'studyReminders':
+        setStudyReminders(value);
+        break;
+      case 'autoplayVideos':
+        setAutoplayVideos(value);
+        break;
+    }
+
+    setIsSavingPreferences(true);
+
+    try {
+      const response = await fetch('/api/preferences/general', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [preference]: value }),
+        body: JSON.stringify({
+          emailNotifications: field === 'emailNotifications' ? value : emailNotifications,
+          studyReminders: field === 'studyReminders' ? value : studyReminders,
+          autoplayVideos: field === 'autoplayVideos' ? value : autoplayVideos,
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         // Revert on error
-        if (preference === 'emailNotifications') setEmailNotifications(!value);
-        if (preference === 'studyReminders') setStudyReminders(!value);
-        if (preference === 'autoPlayVideos') setAutoPlayVideos(!value);
-
-        addToast(data.message || 'Failed to update preference', 'error');
+        switch (field) {
+          case 'emailNotifications':
+            setEmailNotifications(!value);
+            break;
+          case 'studyReminders':
+            setStudyReminders(!value);
+            break;
+          case 'autoplayVideos':
+            setAutoplayVideos(!value);
+            break;
+        }
+        addToast(data.message || 'Failed to save preference', 'error');
         return;
       }
 
-      addToast('Preference updated successfully', 'success');
+      addToast('Preference saved', 'success');
     } catch (error) {
+      console.error('Save preference error:', error);
       // Revert on error
-      if (preference === 'emailNotifications') setEmailNotifications(!value);
-      if (preference === 'studyReminders') setStudyReminders(!value);
-      if (preference === 'autoPlayVideos') setAutoPlayVideos(!value);
-
-      console.error('Preference update error:', error);
-      addToast('Failed to update preference', 'error');
+      switch (field) {
+        case 'emailNotifications':
+          setEmailNotifications(!value);
+          break;
+        case 'studyReminders':
+          setStudyReminders(!value);
+          break;
+        case 'autoplayVideos':
+          setAutoplayVideos(!value);
+          break;
+      }
+      addToast('Failed to save preference', 'error');
     } finally {
-      setIsUpdatingPreferences(false);
+      setIsSavingPreferences(false);
     }
   };
 
@@ -441,7 +680,7 @@ export default function SettingsPage() {
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-500">{errors.email}</p>
                 )}
-                {formData.email.toLowerCase() !== originalFormData.email.toLowerCase() && (
+                {formData.email && originalFormData.email && formData.email.toLowerCase() !== originalFormData.email.toLowerCase() && (
                   <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
                     Changing your email will require password verification
                   </p>
@@ -519,8 +758,8 @@ export default function SettingsPage() {
                 type="checkbox"
                 className="sr-only peer"
                 checked={emailNotifications}
-                onChange={(e) => handlePreferenceToggle('emailNotifications', e.target.checked)}
-                disabled={isUpdatingPreferences}
+                onChange={(e) => handlePreferenceChange('emailNotifications', e.target.checked)}
+                disabled={isSavingPreferences}
               />
               <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
@@ -537,8 +776,8 @@ export default function SettingsPage() {
                 type="checkbox"
                 className="sr-only peer"
                 checked={studyReminders}
-                onChange={(e) => handlePreferenceToggle('studyReminders', e.target.checked)}
-                disabled={isUpdatingPreferences}
+                onChange={(e) => handlePreferenceChange('studyReminders', e.target.checked)}
+                disabled={isSavingPreferences}
               />
               <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
@@ -554,9 +793,9 @@ export default function SettingsPage() {
               <input
                 type="checkbox"
                 className="sr-only peer"
-                checked={autoPlayVideos}
-                onChange={(e) => handlePreferenceToggle('autoPlayVideos', e.target.checked)}
-                disabled={isUpdatingPreferences}
+                checked={autoplayVideos}
+                onChange={(e) => handlePreferenceChange('autoplayVideos', e.target.checked)}
+                disabled={isSavingPreferences}
               />
               <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent peer-disabled:opacity-50 peer-disabled:cursor-not-allowed"></div>
             </label>
@@ -586,7 +825,7 @@ export default function SettingsPage() {
                 Permanently delete your account and all data
               </p>
             </div>
-            <Button variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-500/20">
+            <Button onClick={() => setShowDeleteModal(true)} variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-500/20">
               Delete
             </Button>
           </div>
@@ -611,6 +850,15 @@ export default function SettingsPage() {
         onVerify={handlePasswordVerify}
         isLoading={isVerifyingPassword}
         error={passwordError}
+        isLockedOut={isPasswordLockedOut}
+      />
+
+      {/* Delete Account Confirmation Modal */}
+      <DeleteAccountConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+        isLoading={isDeletingAccount}
       />
 
       {/* Toast Container */}

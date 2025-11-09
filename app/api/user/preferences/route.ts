@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
-import User from '@/lib/models/User';
+import User, { type IUserPreferences } from '@/lib/models/User';
 
 interface DecodedToken {
   userId: string;
@@ -16,7 +16,7 @@ interface DecodedToken {
 const updatePreferencesSchema = z.object({
   emailNotifications: z.boolean().optional(),
   studyReminders: z.boolean().optional(),
-  autoPlayVideos: z.boolean().optional(),
+  autoplayVideos: z.boolean().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -35,13 +35,17 @@ export async function PATCH(request: NextRequest) {
     let decoded: DecodedToken;
     try {
       decoded = jwt.verify(token, jwtSecret) as DecodedToken;
-    } catch (error) {
+    } catch {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
     }
 
     // 2. Parse and validate request body
-    const body = await request.json();
-    const validation = updatePreferencesSchema.safeParse(body);
+    const rawBody = await request.json();
+    const normalizedBody = {
+      ...rawBody,
+      autoplayVideos: rawBody.autoplayVideos ?? rawBody.autoPlayVideos,
+    };
+    const validation = updatePreferencesSchema.safeParse(normalizedBody);
 
     if (!validation.success) {
       return NextResponse.json({
@@ -50,10 +54,10 @@ export async function PATCH(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { emailNotifications, studyReminders, autoPlayVideos } = validation.data;
+    const { emailNotifications, studyReminders, autoplayVideos } = validation.data;
 
     // At least one field must be provided
-    if (emailNotifications === undefined && studyReminders === undefined && autoPlayVideos === undefined) {
+    if (emailNotifications === undefined && studyReminders === undefined && autoplayVideos === undefined) {
       return NextResponse.json({
         success: false,
         message: 'At least one preference field must be provided',
@@ -70,36 +74,36 @@ export async function PATCH(request: NextRequest) {
 
     // 4. Initialize preferences object if it doesn't exist
     if (!user.preferences) {
-      user.preferences = {};
+      user.preferences = {} as IUserPreferences;
     }
-    if (!user.preferences.generalPreferences) {
-      user.preferences.generalPreferences = {
+    if (!user.preferences.general) {
+      user.preferences.general = {
         emailNotifications: true,
         studyReminders: true,
-        autoPlayVideos: false,
+        autoplayVideos: false,
       };
     }
 
     // 5. Update only provided fields
     if (emailNotifications !== undefined) {
-      user.preferences.generalPreferences.emailNotifications = emailNotifications;
+      user.preferences.general.emailNotifications = emailNotifications;
     }
     if (studyReminders !== undefined) {
-      user.preferences.generalPreferences.studyReminders = studyReminders;
+      user.preferences.general.studyReminders = studyReminders;
     }
-    if (autoPlayVideos !== undefined) {
-      user.preferences.generalPreferences.autoPlayVideos = autoPlayVideos;
+    if (autoplayVideos !== undefined) {
+      user.preferences.general.autoplayVideos = autoplayVideos;
     }
 
     // Mark the nested path as modified for Mongoose
-    user.markModified('preferences');
+    user.markModified('preferences.general');
     await user.save();
 
     // 6. Return updated preferences
     return NextResponse.json({
       success: true,
       message: 'Preferences updated successfully',
-      preferences: user.preferences.generalPreferences,
+      preferences: user.preferences.general,
     });
 
   } catch (error) {

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import User, { IUserPreferences } from '@/lib/models/User';
+import User, { ILearningPreferences } from '@/lib/models/User';
+
+type LearningPreferencesPayload = Partial<ILearningPreferences> & Record<string, unknown>;
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,17 +41,95 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    const preferences: IUserPreferences = await request.json();
+    const requestBody: LearningPreferencesPayload = await request.json();
 
-    // Basic validation
-    if (!preferences.role || !preferences.learningGoals.length) {
-      return NextResponse.json({ success: false, message: 'Invalid preferences data' }, { status: 400 });
+    // Extract ONLY allowed learning preferences fields (ignore any extra fields from old onboarding steps or localStorage)
+    const learningPreferences: Partial<ILearningPreferences> = {};
+
+    // Only copy allowed fields
+    if (requestBody.role !== undefined) learningPreferences.role = requestBody.role;
+    if (requestBody.learningGoals !== undefined) learningPreferences.learningGoals = requestBody.learningGoals;
+    if (requestBody.learningGoalText !== undefined) learningPreferences.learningGoalText = requestBody.learningGoalText;
+    if (requestBody.learningChallenges !== undefined) learningPreferences.learningChallenges = requestBody.learningChallenges;
+    if (requestBody.learningChallengesText !== undefined) learningPreferences.learningChallengesText = requestBody.learningChallengesText;
+    if (requestBody.personalityProfile !== undefined) learningPreferences.personalityProfile = requestBody.personalityProfile;
+    if (requestBody.preferredMaterialsRanked !== undefined) learningPreferences.preferredMaterialsRanked = requestBody.preferredMaterialsRanked;
+    if (requestBody.dailyTimeMinutes !== undefined) learningPreferences.dailyTimeMinutes = requestBody.dailyTimeMinutes;
+
+    // Validation for new onboarding flow
+    if (!learningPreferences.learningGoals || learningPreferences.learningGoals.length === 0) {
+      return NextResponse.json({ success: false, message: 'Learning goals are required' }, { status: 400 });
     }
+
+    // Validate personality profile if present (all scores must be 1-7)
+    if (learningPreferences.personalityProfile) {
+      const { conscientiousness, emotionalStability, selfEfficacy, masteryOrientation, performanceOrientation } = learningPreferences.personalityProfile;
+
+      const scores = [conscientiousness, emotionalStability, selfEfficacy, masteryOrientation, performanceOrientation];
+      const allScoresValid = scores.every(score =>
+        score !== undefined && score >= 1 && score <= 7
+      );
+
+      if (!allScoresValid) {
+        return NextResponse.json({
+          success: false,
+          message: 'Personality profile scores must be between 1 and 7'
+        }, { status: 400 });
+      }
+    }
+
+    // Validate preferredMaterialsRanked (max 3 items)
+    if (learningPreferences.preferredMaterialsRanked && learningPreferences.preferredMaterialsRanked.length > 3) {
+      return NextResponse.json({
+        success: false,
+        message: 'Maximum 3 preferred materials allowed'
+      }, { status: 400 });
+    }
+
+    // Validate dailyTimeMinutes (must be positive)
+    if (learningPreferences.dailyTimeMinutes !== undefined && learningPreferences.dailyTimeMinutes < 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'Daily time must be a positive number'
+      }, { status: 400 });
+    }
+
+    // Prepare update operation - save to preferences.learning
+    const updateOperation: Record<string, unknown> = {
+      $set: {
+        'preferences.learning': learningPreferences
+      },
+      $unset: {
+        // Unset ALL deprecated root-level fields (from old schema)
+        'preferences.role': '',
+        'preferences.learningGoals': '',
+        'preferences.learningGoalText': '',
+        'preferences.learningChallenges': '',
+        'preferences.learningChallengesText': '',
+        'preferences.personalityProfile': '',
+        'preferences.preferredMaterialsRanked': '',
+        'preferences.dailyTimeMinutes': '',
+        'preferences.preferredContentTypes': '',
+        'preferences.subjects': '',
+        'preferences.expertiseLevel': '',
+        'preferences.learningStyle': '',
+        'preferences.technicalComfort': '',
+        'preferences.accessibility': '',
+        'preferences.timePreferences': '',
+        'preferences.additionalPreferences': '',
+        // Remove the duplicate generalPreferences field
+        'preferences.generalPreferences': '',
+        // Also unset any old fields that might be in preferences.general
+        'preferences.general.accessibility': '',
+        'preferences.general.notificationsEnabled': '',
+        'preferences.general.dataPrivacyLevel': '',
+      }
+    };
 
     const user = await User.findByIdAndUpdate(
       decoded.userId,
-      { preferences },
-      { new: true }
+      updateOperation,
+      { new: true, runValidators: true }
     );
 
     if (!user) {

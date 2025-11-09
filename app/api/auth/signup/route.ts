@@ -40,10 +40,17 @@ export async function POST(request: Request) {
 
     const { username, firstName, lastName, email, password, userType, customUserType } = validation.data;
 
+    // Check if username already exists
     const existingUser = await User.findOne({ username });
     console.log('Checking for existing user:', { username, foundUser: !!existingUser });
     if (existingUser) {
       return NextResponse.json({ success: false, message: 'Username already exists' }, { status: 409 });
+    }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    if (existingEmail) {
+      return NextResponse.json({ success: false, message: 'Email is already registered' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
@@ -76,8 +83,10 @@ export async function POST(request: Request) {
       user: {
         id: newUser._id,
         username: newUser.username,
+        email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
+        preferences: newUser.preferences || null,
       },
       message: 'Account created successfully',
     });

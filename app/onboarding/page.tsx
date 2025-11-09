@@ -10,11 +10,38 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('Onboarding useEffect - loading:', loading, 'user:', user ? 'exists' : 'null');
     if (!loading) {
       if (!user) {
+        console.log('Onboarding - No user, redirecting to signin');
         router.push('/auth/signin');
-      } else if (user.preferences) {
-        router.push('/dashboard');
+      } else {
+        // Check if learning preferences exist AND have actual meaningful data
+        console.log('Onboarding - user.preferences:', JSON.stringify(user.preferences, null, 2));
+
+        const hasLearningPreferences = !!(
+          user.preferences?.learning &&
+          (
+            // Check if any of these fields have actual data
+            (user.preferences.learning.role) ||
+            (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+            (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+            (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+            (user.preferences.learning.personalityProfile &&
+             Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+             Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+          )
+        );
+
+        console.log('Onboarding - hasLearningPreferences:', hasLearningPreferences);
+
+        if (hasLearningPreferences) {
+          // User has completed onboarding, redirect to dashboard
+          console.log('Onboarding - Has learning preferences, redirecting to dashboard');
+          router.push('/dashboard');
+        } else {
+          console.log('Onboarding - No learning preferences, staying on onboarding page');
+        }
       }
     }
   }, [user, loading, router]);
@@ -88,9 +115,28 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!user || user.preferences) {
+  // Don't render if user is not logged in or has already completed onboarding
+  const hasLearningPreferences = !!(
+    user?.preferences?.learning &&
+    (
+      // Check if any of these fields have actual data
+      (user.preferences.learning.role) ||
+      (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+      (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+      (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+      (user.preferences.learning.personalityProfile &&
+       Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+       Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+    )
+  );
+
+  console.log('Onboarding render - user:', user ? 'exists' : 'null', 'hasLearningPreferences:', hasLearningPreferences);
+
+  if (!user || hasLearningPreferences) {
+    console.log('Onboarding render - Returning null (will redirect)');
     return null; // Will redirect
   }
 
+  console.log('Onboarding render - Rendering OnboardingFlow');
   return <OnboardingFlow />;
 }

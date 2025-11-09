@@ -27,6 +27,7 @@ interface AuthContextType {
     customUserType?: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,8 +65,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(error.message || 'Login failed');
     }
 
-    await checkAuth();
-    router.push('/dashboard');
+    const result = await response.json();
+    const authenticatedUser = result.user;
+
+    // Update local state
+    setUser(authenticatedUser);
+
+    // Redirect based on onboarding completion
+    // Check if learning preferences exist AND have actual meaningful data
+    const hasLearningPreferences = !!(
+      authenticatedUser.preferences?.learning &&
+      (
+        // Check if any of these fields have actual data
+        (authenticatedUser.preferences.learning.role) ||
+        (authenticatedUser.preferences.learning.learningGoals && authenticatedUser.preferences.learning.learningGoals.length > 0) ||
+        (authenticatedUser.preferences.learning.preferredMaterialsRanked && authenticatedUser.preferences.learning.preferredMaterialsRanked.length > 0) ||
+        (authenticatedUser.preferences.learning.dailyTimeMinutes && authenticatedUser.preferences.learning.dailyTimeMinutes > 0) ||
+        (authenticatedUser.preferences.learning.personalityProfile &&
+         Object.keys(authenticatedUser.preferences.learning.personalityProfile).length > 0 &&
+         Object.values(authenticatedUser.preferences.learning.personalityProfile).some(v => v !== undefined))
+      )
+    );
+
+    if (!hasLearningPreferences) {
+      router.push('/onboarding');
+    } else {
+      router.push('/dashboard');
+    }
   };
 
   const signup = async (data: {
@@ -99,10 +125,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Update local state
     setUser(newUser);
 
-    // Redirect to onboarding if user has no role set (first step), otherwise to dashboard
-    if (!newUser.preferences?.role) {
+    // Redirect to onboarding if user hasn't completed learning preferences, otherwise to dashboard
+    // Check if learning preferences exist AND have actual meaningful data
+    console.log('Signup - newUser.preferences:', JSON.stringify(newUser.preferences, null, 2));
+
+    const hasLearningPreferences = !!(
+      newUser.preferences?.learning &&
+      (
+        // Check if any of these fields have actual data
+        (newUser.preferences.learning.role) ||
+        (newUser.preferences.learning.learningGoals && newUser.preferences.learning.learningGoals.length > 0) ||
+        (newUser.preferences.learning.preferredMaterialsRanked && newUser.preferences.learning.preferredMaterialsRanked.length > 0) ||
+        (newUser.preferences.learning.dailyTimeMinutes && newUser.preferences.learning.dailyTimeMinutes > 0) ||
+        (newUser.preferences.learning.personalityProfile &&
+         Object.keys(newUser.preferences.learning.personalityProfile).length > 0 &&
+         Object.values(newUser.preferences.learning.personalityProfile).some(v => v !== undefined))
+      )
+    );
+
+    console.log('Signup - hasLearningPreferences:', hasLearningPreferences);
+
+    if (!hasLearningPreferences) {
+      console.log('Signup - Redirecting to /onboarding');
       router.push('/onboarding');
     } else {
+      console.log('Signup - Redirecting to /dashboard');
       router.push('/dashboard');
     }
   };
@@ -113,8 +160,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/');
   };
 
+  const refreshUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      setUser(data.user);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
