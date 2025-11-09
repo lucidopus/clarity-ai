@@ -202,16 +202,20 @@ export default function SettingsPage() {
     setIsVerifyingPassword(true);
 
     try {
-      await submitProfileUpdate(password);
-      setShowPasswordModal(false);
+      const success = await submitProfileUpdate(password);
+      // Only close modal if update was successful
+      if (success) {
+        setShowPasswordModal(false);
+      }
     } catch (error) {
       // Error is handled in submitProfileUpdate
+      // Password errors don't throw, so this is for other errors
     } finally {
       setIsVerifyingPassword(false);
     }
   };
 
-  const submitProfileUpdate = async (password?: string) => {
+  const submitProfileUpdate = async (password?: string): Promise<boolean> => {
     setIsSubmitting(true);
 
     try {
@@ -252,9 +256,9 @@ export default function SettingsPage() {
           addToast(data.message, 'error');
           throw new Error(data.message);
         } else if (response.status === 401 && password) {
-          // Password verification failed
+          // Password verification failed - handle gracefully without console error
           setPasswordError(data.message);
-          throw new Error(data.message);
+          return false; // Return false to indicate failure, keep modal open
         } else {
           addToast(data.message || 'Failed to update profile', 'error');
           throw new Error(data.message || 'Failed to update profile');
@@ -280,9 +284,12 @@ export default function SettingsPage() {
       // The auth context will automatically update via its checkAuth method
       window.location.reload(); // Simple reload to refresh all user data
 
+      return true; // Return true to indicate success
+
     } catch (error) {
       console.error('Profile update error:', error);
       // Error messages already set above
+      return false; // Return false to indicate failure
     } finally {
       setIsSubmitting(false);
     }
