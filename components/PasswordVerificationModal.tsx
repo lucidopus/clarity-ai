@@ -38,11 +38,15 @@ export default function PasswordVerificationModal({
   // Trigger shake animation when external error changes
   useEffect(() => {
     if (externalError) {
-      setShouldShake(true);
+      setTimeout(() => {
+        if (!shouldShake) {
+          setShouldShake(true);
+        }
+      }, 0);
       const timer = setTimeout(() => setShouldShake(false), 500);
       return () => clearTimeout(timer);
     }
-  }, [externalError]);
+  }, [externalError, shouldShake]);
 
   const displayError = externalError || localError;
 

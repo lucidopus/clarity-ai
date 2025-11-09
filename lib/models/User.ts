@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IUserPreferences {
   role: 'Student' | 'Teacher' | 'Professional Learner' | 'Content Creator';
   learningGoals: string[];
+  learningGoalText?: string;
   preferredContentTypes: {
     type: 'Videos' | 'Flashcards' | 'Quizzes' | 'Transcripts' | 'Interactive Summaries';
     frequency: 'Daily' | 'Weekly' | 'Monthly' | 'As needed';
@@ -62,6 +63,7 @@ const UserSchema: Schema = new Schema({
   preferences: {
     role: { type: String, enum: ['Student', 'Teacher', 'Professional Learner', 'Content Creator'] },
     learningGoals: [{ type: String }],
+    learningGoalText: { type: String, maxlength: 500 },
     preferredContentTypes: [{
       type: { type: String, enum: ['Videos', 'Flashcards', 'Quizzes', 'Transcripts', 'Interactive Summaries'] },
       frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly', 'As needed'] },

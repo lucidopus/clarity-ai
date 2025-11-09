@@ -34,7 +34,6 @@ export default function SettingsPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
-  const [pendingPassword, setPendingPassword] = useState<string>('');
 
   // Form state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -176,7 +175,6 @@ export default function SettingsPage() {
   };
 
   const handlePasswordVerify = async (password: string) => {
-    setPendingPassword(password);
     setPasswordError(null);
     setIsVerifyingPassword(true);
 

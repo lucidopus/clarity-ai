@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest) {
 
     // 4. Initialize preferences object if it doesn't exist
     if (!user.preferences) {
-      user.preferences = {} as any;
+      user.preferences = {};
     }
     if (!user.preferences.generalPreferences) {
       user.preferences.generalPreferences = {
