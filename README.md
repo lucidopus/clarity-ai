@@ -97,6 +97,15 @@ Clarity AI is packed with features designed to enhance your learning, all genera
 
 5.  Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
 
+## 📜 Available Scripts
+
+In the project directory, you can run the following commands:
+
+- **`npm run dev`**: Runs the app in development mode.
+- **`npm run build`**: Builds the app for production.
+- **`npm run start`**: Starts the production server.
+- **`npm run lint`**: Lints the code using ESLint.
+
 ## 🤝 Contributing
 
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.

@@ -424,6 +424,7 @@ The platform is built on proven learning principles:
 - **Progress Tracker**: `/docs/PHASE_TRACKER.md` (track your work)
 - **Design Principles**: `/docs/context/design-principles.md` (CRITICAL - follow strictly)
 - **Project Plan**: `/docs/PROJECT_PLAN.md` (full vision and context)
+- **Changelog**: `CHANGELOG.md` (a log of all notable changes to the project)
 - **Groq Docs**: https://console.groq.com/docs/quickstart and https://console.groq.com/docs/structured-outputs
 - **Next.js Docs**: https://nextjs.org/docs
 - **Tailwind CSS v4**: https://tailwindcss.com/docs
