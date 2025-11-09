@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import Button from '@/components/Button';
@@ -10,6 +10,51 @@ import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { Edit2, Save, X } from 'lucide-react';
+
+const PASSWORD_ATTEMPT_KEY = 'settings-email-password-attempts';
+const MAX_PASSWORD_ATTEMPTS = 4;
+const PASSWORD_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+
+type PasswordAttemptState = {
+  attempts: number;
+  windowStart: number | null;
+  lockedUntil: number | null;
+};
+
+const defaultPasswordAttemptState: PasswordAttemptState = {
+  attempts: 0,
+  windowStart: null,
+  lockedUntil: null,
+};
+
+const formatLockoutDuration = (remainingMs: number) => {
+  const minutes = Math.max(1, Math.ceil(remainingMs / 60000));
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+};
+
+const normalizeStoredPasswordAttempts = (state: { attempts?: number; windowStart?: number | null }): PasswordAttemptState => {
+  if (!state || !state.windowStart) {
+    return defaultPasswordAttemptState;
+  }
+
+  const now = Date.now();
+  const elapsed = now - state.windowStart;
+
+  if (elapsed >= PASSWORD_ATTEMPT_WINDOW_MS) {
+    return defaultPasswordAttemptState;
+  }
+
+  const attempts = Number(state.attempts) || 0;
+  const lockedUntil = attempts >= MAX_PASSWORD_ATTEMPTS
+    ? state.windowStart + PASSWORD_ATTEMPT_WINDOW_MS
+    : null;
+
+  return {
+    attempts,
+    windowStart: state.windowStart,
+    lockedUntil,
+  };
+};
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -39,7 +84,55 @@ export default function SettingsPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
-  const [pendingPassword, setPendingPassword] = useState<string>('');
+  const [passwordAttempts, setPasswordAttempts] = useState<PasswordAttemptState>(defaultPasswordAttemptState);
+
+  const persistPasswordAttemptState = useCallback((state: PasswordAttemptState) => {
+    if (typeof window === 'undefined') return;
+    if (!state.windowStart) {
+      window.localStorage.removeItem(PASSWORD_ATTEMPT_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      PASSWORD_ATTEMPT_KEY,
+      JSON.stringify({
+        attempts: state.attempts,
+        windowStart: state.windowStart,
+      }),
+    );
+  }, []);
+
+  const resetPasswordAttempts = useCallback(() => {
+    setPasswordAttempts(defaultPasswordAttemptState);
+    persistPasswordAttemptState(defaultPasswordAttemptState);
+  }, [persistPasswordAttemptState]);
+
+  const recordPasswordFailure = useCallback(() => {
+    let nextState = defaultPasswordAttemptState;
+
+    setPasswordAttempts(prev => {
+      const now = Date.now();
+      const windowStartValid = prev.windowStart && (now - prev.windowStart) < PASSWORD_ATTEMPT_WINDOW_MS;
+      const windowStart = windowStartValid ? prev.windowStart! : now;
+      const attempts = windowStartValid ? prev.attempts + 1 : 1;
+      const lockedUntil = attempts >= MAX_PASSWORD_ATTEMPTS ? windowStart + PASSWORD_ATTEMPT_WINDOW_MS : null;
+
+      nextState = {
+        attempts,
+        windowStart,
+        lockedUntil,
+      };
+
+      persistPasswordAttemptState(nextState);
+      return nextState;
+    });
+
+    return nextState;
+  }, [persistPasswordAttemptState]);
+
+  const getLockoutMessage = useCallback((lockedUntil: number | null) => {
+    if (!lockedUntil) return '';
+    return `Too many attempts. Try again in ${formatLockoutDuration(Math.max(lockedUntil - Date.now(), 0))}.`;
+  }, []);
 
   // Form state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,6 +160,55 @@ export default function SettingsPage() {
       setOriginalFormData(initialData);
     }
   }, [user]);
+
+  // Load stored password attempt data (if any)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const stored = window.localStorage.getItem(PASSWORD_ATTEMPT_KEY);
+      if (!stored) return;
+      const normalized = normalizeStoredPasswordAttempts(JSON.parse(stored));
+      setPasswordAttempts(normalized);
+      if (!normalized.windowStart) {
+        persistPasswordAttemptState(normalized);
+      }
+    } catch (error) {
+      console.error('Failed to load password attempts', error);
+      window.localStorage.removeItem(PASSWORD_ATTEMPT_KEY);
+    }
+  }, [persistPasswordAttemptState]);
+
+  // Automatically clear attempts once the window expires
+  useEffect(() => {
+    if (!passwordAttempts.windowStart) return;
+
+    const now = Date.now();
+    const elapsed = now - passwordAttempts.windowStart;
+    const remaining = PASSWORD_ATTEMPT_WINDOW_MS - elapsed;
+
+    if (remaining <= 0) {
+      resetPasswordAttempts();
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      resetPasswordAttempts();
+    }, remaining);
+
+    return () => clearTimeout(timeout);
+  }, [passwordAttempts.windowStart, resetPasswordAttempts]);
+
+  // Keep error message in sync with lockout state
+  useEffect(() => {
+    if (showPasswordModal && passwordAttempts.lockedUntil && passwordAttempts.lockedUntil > Date.now()) {
+      setPasswordError(getLockoutMessage(passwordAttempts.lockedUntil));
+    }
+
+    if (!passwordAttempts.windowStart && passwordError) {
+      setPasswordError(null);
+    }
+  }, [getLockoutMessage, passwordAttempts.lockedUntil, passwordAttempts.windowStart, passwordError, showPasswordModal]);
 
   // Load general preferences from API
   useEffect(() => {
@@ -120,6 +262,8 @@ export default function SettingsPage() {
       setIsGenerating(false);
     }
   };
+
+  const isPasswordLockedOut = Boolean(passwordAttempts.lockedUntil && passwordAttempts.lockedUntil > Date.now());
 
   const handleEditClick = () => {
     setIsEditMode(true);
@@ -197,17 +341,18 @@ export default function SettingsPage() {
   };
 
   const handlePasswordVerify = async (password: string) => {
-    setPendingPassword(password);
+    if (isPasswordLockedOut) {
+      setPasswordError(getLockoutMessage(passwordAttempts.lockedUntil));
+      return;
+    }
+
     setPasswordError(null);
     setIsVerifyingPassword(true);
 
     try {
-      const success = await submitProfileUpdate(password);
-      // Only close modal if update was successful
-      if (success) {
-        setShowPasswordModal(false);
-      }
-    } catch (error) {
+      await submitProfileUpdate(password);
+      setShowPasswordModal(false);
+    } catch {
       // Error is handled in submitProfileUpdate
       // Password errors don't throw, so this is for other errors
     } finally {
@@ -256,9 +401,14 @@ export default function SettingsPage() {
           addToast(data.message, 'error');
           throw new Error(data.message);
         } else if (response.status === 401 && password) {
-          // Password verification failed - handle gracefully without console error
-          setPasswordError(data.message);
-          return false; // Return false to indicate failure, keep modal open
+          // Password verification failed
+          const attemptState = recordPasswordFailure();
+          const remainingAttempts = Math.max(MAX_PASSWORD_ATTEMPTS - attemptState.attempts, 0);
+          const message = attemptState.lockedUntil && attemptState.lockedUntil > Date.now()
+            ? getLockoutMessage(attemptState.lockedUntil)
+            : `${data.message || 'Incorrect password'}. ${remainingAttempts} attempt${remainingAttempts === 1 ? '' : 's'} remaining.`;
+          setPasswordError(message);
+          throw new Error(message);
         } else {
           addToast(data.message || 'Failed to update profile', 'error');
           throw new Error(data.message || 'Failed to update profile');
@@ -276,11 +426,12 @@ export default function SettingsPage() {
       setOriginalFormData(updatedData);
       setIsEditMode(false);
       setPasswordError(null);
+      resetPasswordAttempts();
       addToast('Profile updated successfully!', 'success');
 
       // Reload user data by calling /api/auth/me
       const userResponse = await fetch('/api/auth/me');
-      const userData = await userResponse.json();
+      await userResponse.json();
       // The auth context will automatically update via its checkAuth method
       window.location.reload(); // Simple reload to refresh all user data
 
@@ -694,6 +845,7 @@ export default function SettingsPage() {
         onVerify={handlePasswordVerify}
         isLoading={isVerifyingPassword}
         error={passwordError}
+        isLockedOut={isPasswordLockedOut}
       />
 
       {/* Delete Account Confirmation Modal */}
