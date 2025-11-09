@@ -155,6 +155,23 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    // 6b. If email is being changed, check uniqueness
+    if (isEmailChanging) {
+      const normalizedEmail = email!.toLowerCase();
+      const existingUser = await User.findOne({
+        email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') },
+        _id: { $ne: user._id }
+      });
+
+      if (existingUser) {
+        return NextResponse.json({
+          success: false,
+          message: 'Email is already in use',
+          field: 'email',
+        }, { status: 409 });
+      }
+    }
+
     // 7. Update user fields
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
