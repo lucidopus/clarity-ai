@@ -114,7 +114,7 @@ export default function Step1GoalsContext({
                 aria-pressed={isSelected}
               >
                 <div className="flex items-center gap-3">
-                  <div className="text-3xl flex-shrink-0" aria-hidden="true">
+                  <div className="text-3xl shrink-0" aria-hidden="true">
                     {goal.icon}
                   </div>
                   <div className="flex-1 font-medium pr-6">{goal.label}</div>
