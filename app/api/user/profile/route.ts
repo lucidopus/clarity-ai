@@ -55,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     let decoded: DecodedToken;
     try {
       decoded = jwt.verify(token, jwtSecret) as DecodedToken;
-    } catch (error) {
+    } catch {
       return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
     }
 
@@ -188,8 +188,6 @@ export async function PATCH(request: NextRequest) {
       const jwtExpireDays = process.env.JWT_EXPIRE_DAYS || '1';
       const expireDays = parseInt(jwtExpireDays, 10);
       const expiresInSeconds = expireDays * 24 * 60 * 60;
-      const maxAge = expiresInSeconds;
-
       const signOptions: SignOptions = { expiresIn: expiresInSeconds };
 
       newToken = jwt.sign(

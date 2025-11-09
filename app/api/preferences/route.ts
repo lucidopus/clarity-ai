@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import User, { ILearningPreferences, IGeneralPreferences } from '@/lib/models/User';
+import User, { ILearningPreferences } from '@/lib/models/User';
+
+type LearningPreferencesPayload = Partial<ILearningPreferences> & Record<string, unknown>;
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    const requestBody: any = await request.json();
+    const requestBody: LearningPreferencesPayload = await request.json();
 
     // Extract ONLY allowed learning preferences fields (ignore any extra fields from old onboarding steps or localStorage)
     const learningPreferences: Partial<ILearningPreferences> = {};
@@ -93,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare update operation - save to preferences.learning
-    const updateOperation: any = {
+    const updateOperation: Record<string, unknown> = {
       $set: {
         'preferences.learning': learningPreferences
       },

@@ -98,7 +98,7 @@ export default function Step2Challenges({
           What learning challenges do you face?
         </h2>
         <p className="text-lg text-muted-foreground">
-          Select any obstacles you encounter. We'll tailor support to help you overcome them.
+          Select any obstacles you encounter. We&apos;ll tailor support to help you overcome them.
         </p>
       </div>
 
