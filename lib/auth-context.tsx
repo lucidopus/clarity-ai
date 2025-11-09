@@ -71,9 +71,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authenticatedUser);
 
     // Redirect based on onboarding completion
-    // Check if learning preferences exist AND have actual data (not just an empty object)
-    const hasLearningPreferences = authenticatedUser.preferences?.learning &&
-      Object.keys(authenticatedUser.preferences.learning).length > 0;
+    // Check if learning preferences exist AND have actual meaningful data
+    const hasLearningPreferences = !!(
+      authenticatedUser.preferences?.learning &&
+      (
+        // Check if any of these fields have actual data
+        (authenticatedUser.preferences.learning.role) ||
+        (authenticatedUser.preferences.learning.learningGoals && authenticatedUser.preferences.learning.learningGoals.length > 0) ||
+        (authenticatedUser.preferences.learning.preferredMaterialsRanked && authenticatedUser.preferences.learning.preferredMaterialsRanked.length > 0) ||
+        (authenticatedUser.preferences.learning.dailyTimeMinutes && authenticatedUser.preferences.learning.dailyTimeMinutes > 0) ||
+        (authenticatedUser.preferences.learning.personalityProfile &&
+         Object.keys(authenticatedUser.preferences.learning.personalityProfile).length > 0 &&
+         Object.values(authenticatedUser.preferences.learning.personalityProfile).some(v => v !== undefined))
+      )
+    );
 
     if (!hasLearningPreferences) {
       router.push('/onboarding');
@@ -114,10 +125,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
 
     // Redirect to onboarding if user hasn't completed learning preferences, otherwise to dashboard
-    // Check if learning preferences exist AND have actual data (not just an empty object)
+    // Check if learning preferences exist AND have actual meaningful data
     console.log('Signup - newUser.preferences:', JSON.stringify(newUser.preferences, null, 2));
-    const hasLearningPreferences = newUser.preferences?.learning &&
-      Object.keys(newUser.preferences.learning).length > 0;
+
+    const hasLearningPreferences = !!(
+      newUser.preferences?.learning &&
+      (
+        // Check if any of these fields have actual data
+        (newUser.preferences.learning.role) ||
+        (newUser.preferences.learning.learningGoals && newUser.preferences.learning.learningGoals.length > 0) ||
+        (newUser.preferences.learning.preferredMaterialsRanked && newUser.preferences.learning.preferredMaterialsRanked.length > 0) ||
+        (newUser.preferences.learning.dailyTimeMinutes && newUser.preferences.learning.dailyTimeMinutes > 0) ||
+        (newUser.preferences.learning.personalityProfile &&
+         Object.keys(newUser.preferences.learning.personalityProfile).length > 0 &&
+         Object.values(newUser.preferences.learning.personalityProfile).some(v => v !== undefined))
+      )
+    );
+
     console.log('Signup - hasLearningPreferences:', hasLearningPreferences);
 
     if (!hasLearningPreferences) {
