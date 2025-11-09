@@ -43,28 +43,61 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    const generalPreferences: Partial<IGeneralPreferences> = await request.json();
+    const requestBody: any = await request.json();
 
-    // Validate boolean fields
-    const validFields = ['emailNotifications', 'studyReminders', 'autoplayVideos'];
-    for (const [key, value] of Object.entries(generalPreferences)) {
-      if (!validFields.includes(key)) {
+    // Extract ONLY the three allowed boolean fields
+    const generalPreferences: Partial<IGeneralPreferences> = {};
+
+    // Only accept these three fields
+    if (requestBody.emailNotifications !== undefined) {
+      if (typeof requestBody.emailNotifications !== 'boolean') {
         return NextResponse.json({
           success: false,
-          message: `Invalid field: ${key}`
+          message: 'emailNotifications must be a boolean value'
         }, { status: 400 });
       }
-      if (typeof value !== 'boolean') {
+      generalPreferences.emailNotifications = requestBody.emailNotifications;
+    }
+
+    if (requestBody.studyReminders !== undefined) {
+      if (typeof requestBody.studyReminders !== 'boolean') {
         return NextResponse.json({
           success: false,
-          message: `${key} must be a boolean value`
+          message: 'studyReminders must be a boolean value'
         }, { status: 400 });
       }
+      generalPreferences.studyReminders = requestBody.studyReminders;
+    }
+
+    if (requestBody.autoplayVideos !== undefined) {
+      if (typeof requestBody.autoplayVideos !== 'boolean') {
+        return NextResponse.json({
+          success: false,
+          message: 'autoplayVideos must be a boolean value'
+        }, { status: 400 });
+      }
+      generalPreferences.autoplayVideos = requestBody.autoplayVideos;
+    }
+
+    // Ensure at least one field is being updated
+    if (Object.keys(generalPreferences).length === 0) {
+      return NextResponse.json({
+        success: false,
+        message: 'No valid preferences provided'
+      }, { status: 400 });
     }
 
     const user = await User.findByIdAndUpdate(
       decoded.userId,
-      { $set: { 'preferences.general': generalPreferences } },
+      {
+        $set: { 'preferences.general': generalPreferences },
+        $unset: {
+          // Remove any unwanted fields that might exist
+          'preferences.general.accessibility': '',
+          'preferences.general.notificationsEnabled': '',
+          'preferences.general.dataPrivacyLevel': '',
+        }
+      },
       { new: true, runValidators: true }
     );
 
