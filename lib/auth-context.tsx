@@ -115,12 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Redirect to onboarding if user hasn't completed learning preferences, otherwise to dashboard
     // Check if learning preferences exist AND have actual data (not just an empty object)
+    console.log('Signup - newUser.preferences:', JSON.stringify(newUser.preferences, null, 2));
     const hasLearningPreferences = newUser.preferences?.learning &&
       Object.keys(newUser.preferences.learning).length > 0;
+    console.log('Signup - hasLearningPreferences:', hasLearningPreferences);
 
     if (!hasLearningPreferences) {
+      console.log('Signup - Redirecting to /onboarding');
       router.push('/onboarding');
     } else {
+      console.log('Signup - Redirecting to /dashboard');
       router.push('/dashboard');
     }
   };
