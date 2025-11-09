@@ -15,6 +15,14 @@ Automated tests are not yet established; introduce them alongside new features. 
 ## Commit & Pull Request Guidelines
 Follow Conventional Commits (`feat:`, `fix:`, `chore:`) so the changelog stays readable. Scope commits to one intent and keep messages under 72 characters. Every PR should describe the change, reference related issues, list testing performed (`npm run dev`, `npm run lint`, upcoming tests), and include screenshots or recordings for UI adjustments. Request review early when architectural choices need alignment; convert to ready-for-review only after addressing blockers.
 
+## Changelog Guidelines
+
+This project follows the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format. The `CHANGELOG.md` file is a manually-updated log of notable changes for each version.
+
+- **Conventional Commits**: All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. This helps in automatically generating changelogs in the future.
+- **Update the `CHANGELOG.md`**: For any user-facing change (`feat`, `fix`, `perf`), add a corresponding entry to the `## [Unreleased]` section of the `CHANGELOG.md` file.
+- **Categorize Changes**: Group changes under the following headings: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
+
 ## Configuration & Secrets
 Store API keys (Gemini, Groq, MongoDB) in `.env.local`, never in source control. Add new required variables to the README and provide sane fallbacks in code. When testing third-party integrations, gate calls behind environment checks so `npm run dev` works without credentials.
 
