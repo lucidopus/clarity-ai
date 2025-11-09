@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth-context';
 import ProgressIndicator from './ProgressIndicator';
 import Step1GoalsContext from './steps/Step1GoalsContext';
 import Step2Challenges from './steps/Step2Challenges';
@@ -24,6 +25,7 @@ export default function OnboardingFlow() {
   const [preferences, setPreferences] = useState<Partial<IUserPreferences>>({});
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -77,6 +79,9 @@ export default function OnboardingFlow() {
 
       // Clear localStorage
       localStorage.removeItem('onboarding-progress');
+
+      // Refresh user data in auth context to get updated preferences
+      await refreshUser();
 
       // Redirect to dashboard
       router.push('/dashboard');
