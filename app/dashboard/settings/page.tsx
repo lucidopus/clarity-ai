@@ -254,6 +254,61 @@ export default function SettingsPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    // Confirm deletion with user
+    const confirmed = window.confirm(
+      'Are you absolutely sure you want to delete your account?\n\n' +
+      'This action cannot be undone. All your data including:\n' +
+      '• Learning materials\n' +
+      '• Flashcards\n' +
+      '• Progress tracking\n' +
+      '• Notes and videos\n\n' +
+      'will be permanently deleted.'
+    );
+
+    if (!confirmed) return;
+
+    // Double confirmation
+    const doubleConfirmed = window.confirm(
+      'This is your final warning!\n\n' +
+      'Type YES in the next prompt to confirm account deletion.'
+    );
+
+    if (!doubleConfirmed) return;
+
+    const finalConfirmation = window.prompt(
+      'Type YES (in capital letters) to permanently delete your account:'
+    );
+
+    if (finalConfirmation !== 'YES') {
+      addToast('Account deletion cancelled', 'info');
+      return;
+    }
+
+    // Proceed with deletion
+    try {
+      const response = await fetch('/api/account', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        addToast(data.message || 'Failed to delete account', 'error');
+        return;
+      }
+
+      // Success - redirect to home page
+      addToast('Account deleted successfully', 'success');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    } catch (error) {
+      console.error('Delete account error:', error);
+      addToast('An error occurred while deleting your account', 'error');
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -512,7 +567,7 @@ export default function SettingsPage() {
                 Permanently delete your account and all data
               </p>
             </div>
-            <Button variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-500/20">
+            <Button onClick={handleDeleteAccount} variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-500/20">
               Delete
             </Button>
           </div>

@@ -99,11 +99,11 @@ export default function Step4Motivation({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-10">
-        {/* Part A: Self-Efficacy */}
+        {/* Self-Efficacy */}
         <div className="space-y-6">
           <div className="pb-3 border-b border-border">
             <h3 className="text-xl font-semibold text-foreground">
-              Part A: Your Confidence
+              Your Confidence
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
               How confident are you in your ability to learn new things?
@@ -132,11 +132,11 @@ export default function Step4Motivation({
           ))}
         </div>
 
-        {/* Part B: Goal Orientations */}
+        {/* Goal Orientations */}
         <div className="space-y-6">
           <div className="pb-3 border-b border-border">
             <h3 className="text-xl font-semibold text-foreground">
-              Part B: What Motivates You?
+              What Motivates You?
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
               Different people learn for different reasons. Both are equally valid!
