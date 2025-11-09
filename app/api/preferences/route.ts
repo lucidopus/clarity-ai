@@ -39,7 +39,20 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
-    const learningPreferences: Partial<ILearningPreferences> = await request.json();
+    const requestBody: any = await request.json();
+
+    // Extract ONLY allowed learning preferences fields (ignore any extra fields from old onboarding steps or localStorage)
+    const learningPreferences: Partial<ILearningPreferences> = {};
+
+    // Only copy allowed fields
+    if (requestBody.role !== undefined) learningPreferences.role = requestBody.role;
+    if (requestBody.learningGoals !== undefined) learningPreferences.learningGoals = requestBody.learningGoals;
+    if (requestBody.learningGoalText !== undefined) learningPreferences.learningGoalText = requestBody.learningGoalText;
+    if (requestBody.learningChallenges !== undefined) learningPreferences.learningChallenges = requestBody.learningChallenges;
+    if (requestBody.learningChallengesText !== undefined) learningPreferences.learningChallengesText = requestBody.learningChallengesText;
+    if (requestBody.personalityProfile !== undefined) learningPreferences.personalityProfile = requestBody.personalityProfile;
+    if (requestBody.preferredMaterialsRanked !== undefined) learningPreferences.preferredMaterialsRanked = requestBody.preferredMaterialsRanked;
+    if (requestBody.dailyTimeMinutes !== undefined) learningPreferences.dailyTimeMinutes = requestBody.dailyTimeMinutes;
 
     // Validation for new onboarding flow
     if (!learningPreferences.learningGoals || learningPreferences.learningGoals.length === 0) {
