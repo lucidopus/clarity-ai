@@ -85,12 +85,21 @@ export async function POST(request: NextRequest) {
         'preferences.learning': learningPreferences
       },
       $unset: {
-        // Unset deprecated root-level fields
+        // Unset ALL deprecated root-level fields (from old schema)
+        'preferences.role': '',
+        'preferences.learningGoals': '',
+        'preferences.learningGoalText': '',
+        'preferences.learningChallenges': '',
+        'preferences.learningChallengesText': '',
+        'preferences.personalityProfile': '',
+        'preferences.preferredMaterialsRanked': '',
+        'preferences.dailyTimeMinutes': '',
         'preferences.preferredContentTypes': '',
         'preferences.subjects': '',
         'preferences.expertiseLevel': '',
         'preferences.learningStyle': '',
         'preferences.technicalComfort': '',
+        'preferences.accessibility': '',
         'preferences.timePreferences': '',
         'preferences.additionalPreferences': '',
       }
