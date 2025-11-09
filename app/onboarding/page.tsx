@@ -16,10 +16,23 @@ export default function OnboardingPage() {
         console.log('Onboarding - No user, redirecting to signin');
         router.push('/auth/signin');
       } else {
-        // Check if learning preferences exist AND have actual data (not just an empty object)
+        // Check if learning preferences exist AND have actual meaningful data
         console.log('Onboarding - user.preferences:', JSON.stringify(user.preferences, null, 2));
-        const hasLearningPreferences = user.preferences?.learning &&
-          Object.keys(user.preferences.learning).length > 0;
+
+        const hasLearningPreferences = !!(
+          user.preferences?.learning &&
+          (
+            // Check if any of these fields have actual data
+            (user.preferences.learning.role) ||
+            (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+            (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+            (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+            (user.preferences.learning.personalityProfile &&
+             Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+             Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+          )
+        );
+
         console.log('Onboarding - hasLearningPreferences:', hasLearningPreferences);
 
         if (hasLearningPreferences) {
@@ -103,8 +116,19 @@ export default function OnboardingPage() {
   }
 
   // Don't render if user is not logged in or has already completed onboarding
-  const hasLearningPreferences = user?.preferences?.learning &&
-    Object.keys(user.preferences.learning).length > 0;
+  const hasLearningPreferences = !!(
+    user?.preferences?.learning &&
+    (
+      // Check if any of these fields have actual data
+      (user.preferences.learning.role) ||
+      (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+      (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+      (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+      (user.preferences.learning.personalityProfile &&
+       Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+       Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+    )
+  );
 
   console.log('Onboarding render - user:', user ? 'exists' : 'null', 'hasLearningPreferences:', hasLearningPreferences);
 

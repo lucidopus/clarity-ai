@@ -14,8 +14,29 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth/signin');
+    if (!loading) {
+      if (!user) {
+        router.push('/auth/signin');
+      } else {
+        // Check if user has completed onboarding
+        const hasLearningPreferences = !!(
+          user.preferences?.learning &&
+          (
+            // Check if any of these fields have actual data
+            (user.preferences.learning.role) ||
+            (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+            (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+            (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+            (user.preferences.learning.personalityProfile &&
+             Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+             Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+          )
+        );
+
+        if (!hasLearningPreferences) {
+          router.push('/onboarding');
+        }
+      }
     }
   }, [user, loading, router]);
 
