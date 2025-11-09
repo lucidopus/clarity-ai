@@ -98,7 +98,9 @@ export async function POST(request: NextRequest) {
       {
         $set: { 'preferences.general': generalPreferences },
         $unset: {
-          // Remove any unwanted fields that might exist
+          // Remove the duplicate generalPreferences field
+          'preferences.generalPreferences': '',
+          // Remove any unwanted fields that might exist in general
           'preferences.general.accessibility': '',
           'preferences.general.notificationsEnabled': '',
           'preferences.general.dataPrivacyLevel': '',

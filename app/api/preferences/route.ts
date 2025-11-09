@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
         'preferences.accessibility': '',
         'preferences.timePreferences': '',
         'preferences.additionalPreferences': '',
+        // Remove the duplicate generalPreferences field
+        'preferences.generalPreferences': '',
         // Also unset any old fields that might be in preferences.general
         'preferences.general.accessibility': '',
         'preferences.general.notificationsEnabled': '',

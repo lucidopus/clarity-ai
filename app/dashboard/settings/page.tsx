@@ -107,27 +107,22 @@ export default function SettingsPage() {
   }, [persistPasswordAttemptState]);
 
   const recordPasswordFailure = useCallback(() => {
-    let nextState = defaultPasswordAttemptState;
+    const now = Date.now();
+    const windowStartValid = passwordAttempts.windowStart && (now - passwordAttempts.windowStart) < PASSWORD_ATTEMPT_WINDOW_MS;
+    const windowStart = windowStartValid ? passwordAttempts.windowStart! : now;
+    const attempts = windowStartValid ? passwordAttempts.attempts + 1 : 1;
+    const lockedUntil = attempts >= MAX_PASSWORD_ATTEMPTS ? windowStart + PASSWORD_ATTEMPT_WINDOW_MS : null;
 
-    setPasswordAttempts(prev => {
-      const now = Date.now();
-      const windowStartValid = prev.windowStart && (now - prev.windowStart) < PASSWORD_ATTEMPT_WINDOW_MS;
-      const windowStart = windowStartValid ? prev.windowStart! : now;
-      const attempts = windowStartValid ? prev.attempts + 1 : 1;
-      const lockedUntil = attempts >= MAX_PASSWORD_ATTEMPTS ? windowStart + PASSWORD_ATTEMPT_WINDOW_MS : null;
+    const nextState = {
+      attempts,
+      windowStart,
+      lockedUntil,
+    };
 
-      nextState = {
-        attempts,
-        windowStart,
-        lockedUntil,
-      };
-
-      persistPasswordAttemptState(nextState);
-      return nextState;
-    });
-
+    setPasswordAttempts(nextState);
+    persistPasswordAttemptState(nextState);
     return nextState;
-  }, [persistPasswordAttemptState]);
+  }, [passwordAttempts, persistPasswordAttemptState]);
 
   const getLockoutMessage = useCallback((lockedUntil: number | null) => {
     if (!lockedUntil) return '';
