@@ -99,8 +99,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Update local state
     setUser(newUser);
 
-    // Redirect to onboarding if user has no role set (first step), otherwise to dashboard
-    if (!newUser.preferences?.role) {
+    // Redirect to onboarding if user hasn't completed learning preferences, otherwise to dashboard
+    if (!newUser.preferences?.learning) {
       router.push('/onboarding');
     } else {
       router.push('/dashboard');
