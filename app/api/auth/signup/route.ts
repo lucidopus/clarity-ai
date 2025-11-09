@@ -76,8 +76,10 @@ export async function POST(request: Request) {
       user: {
         id: newUser._id,
         username: newUser.username,
+        email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
+        preferences: newUser.preferences || null,
       },
       message: 'Account created successfully',
     });
