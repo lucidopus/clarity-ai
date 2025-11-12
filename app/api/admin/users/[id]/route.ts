@@ -7,6 +7,7 @@ import MindMap from '@/lib/models/MindMap';
 import Note from '@/lib/models/Note';
 import Solution from '@/lib/models/Solution';
 import Flashcard from '@/lib/models/Flashcard';
+import Quiz from '@/lib/models/Quiz';
 import Progress from '@/lib/models/Progress';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { withAdminAuth } from '@/lib/admin-middleware';
@@ -33,54 +34,58 @@ async function handleGET(
 
     // Get all videos for this user
     const videos = await Video.find({ userId: id })
-      .select('_id videoId title thumbnailUrl createdAt')
+      .select('_id videoId title thumbnail createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
-    const videoIds = videos.map((v) => v._id.toString());
+    const youtubeVideoIds = videos.map((v) => v.videoId); // YouTube IDs, not MongoDB _id
 
     // Get detailed generation data for each video
     const generationsData = await Promise.all(
       videos.map(async (video) => {
-        const videoIdStr = video._id.toString();
+        const youtubeId = video.videoId; // YouTube video ID like "dQw4w9WgXcQ"
 
-        // Get learning materials
-        const material = await LearningMaterial.findOne({ videoId: videoIdStr }).lean();
+        // Get learning materials (uses YouTube videoId)
+        const material = await LearningMaterial.findOne({ videoId: youtubeId }).lean();
+
+        // Get flashcards (separate collection, uses YouTube videoId)
+        const flashcards = await Flashcard.find({ videoId: youtubeId }).lean();
+
+        // Get quizzes (separate collection, uses YouTube videoId)
+        const quizzes = await Quiz.find({ videoId: youtubeId }).lean();
 
         // Get mind maps
-        const mindMaps = await MindMap.find({ videoId: videoIdStr }).lean();
+        const mindMaps = await MindMap.find({ videoId: youtubeId }).lean();
 
         // Get notes
-        const notes = await Note.find({ videoId: videoIdStr }).lean();
+        const notes = await Note.find({ videoId: youtubeId }).lean();
 
         // Get solutions
-        const solutions = await Solution.find({ videoId: videoIdStr }).lean();
-
-        // Get user flashcards
-        const userFlashcards = await Flashcard.find({ videoId: videoIdStr }).lean();
+        const solutions = await Solution.find({ videoId: youtubeId }).lean();
 
         return {
           videoId: video._id,
           videoYouTubeId: video.videoId,
           title: video.title,
-          thumbnailUrl: video.thumbnailUrl,
+          thumbnailUrl: video.thumbnail,
           createdAt: video.createdAt,
           materials: {
-            flashcards: material?.flashcards?.length || 0,
-            quizzes: material?.quizzes?.length || 0,
+            flashcards: flashcards.length,
+            quizzes: quizzes.length,
             prerequisites: material?.prerequisites?.length || 0,
             timestamps: material?.timestamps?.length || 0,
             mindMaps: mindMaps.length,
             notes: notes.length,
             solutions: solutions.length,
-            userFlashcards: userFlashcards.length,
+            userFlashcards: flashcards.filter((f) => f.generationType === 'human').length,
           },
           materialIds: {
             learningMaterialId: material?._id?.toString(),
+            flashcardIds: flashcards.map((f) => f._id.toString()),
+            quizIds: quizzes.map((q) => q._id.toString()),
             mindMapIds: mindMaps.map((m) => m._id.toString()),
             noteIds: notes.map((n) => n._id.toString()),
             solutionIds: solutions.map((s) => s._id.toString()),
-            flashcardIds: userFlashcards.map((f) => f._id.toString()),
           },
         };
       })
@@ -166,25 +171,25 @@ async function handleDELETE(
     }
 
     // Get all videos for this user to cascade deletion
-    const videos = await Video.find({ userId: id }).select('_id').lean();
-    const videoIds = videos.map((v) => v._id.toString());
+    const videos = await Video.find({ userId: id }).select('videoId').lean();
+    const youtubeVideoIds = videos.map((v) => v.videoId); // YouTube IDs
 
     // Cascade delete all related data
     await Promise.all([
       // Delete all videos
       Video.deleteMany({ userId: id }),
-      // Delete all learning materials for user's videos
-      LearningMaterial.deleteMany({ videoId: { $in: videoIds } }),
+      // Delete all learning materials for user's videos (uses YouTube videoId)
+      LearningMaterial.deleteMany({ videoId: { $in: youtubeVideoIds } }),
       // Delete all mind maps
-      MindMap.deleteMany({ videoId: { $in: videoIds } }),
+      MindMap.deleteMany({ videoId: { $in: youtubeVideoIds } }),
       // Delete all notes
-      Note.deleteMany({ videoId: { $in: videoIds } }),
-      // Delete all quizzes (if separate collection exists)
-      // Quiz.deleteMany({ videoId: { $in: videoIds } }),
+      Note.deleteMany({ videoId: { $in: youtubeVideoIds } }),
+      // Delete all quizzes
+      Quiz.deleteMany({ videoId: { $in: youtubeVideoIds } }),
       // Delete all user flashcards
-      Flashcard.deleteMany({ videoId: { $in: videoIds } }),
+      Flashcard.deleteMany({ videoId: { $in: youtubeVideoIds } }),
       // Delete all solutions
-      Solution.deleteMany({ videoId: { $in: videoIds } }),
+      Solution.deleteMany({ videoId: { $in: youtubeVideoIds } }),
       // Delete all progress records
       Progress.deleteMany({ userId: id }),
       // Delete all activity logs
@@ -199,7 +204,7 @@ async function handleDELETE(
       message: 'User and all related data deleted successfully',
       deletedData: {
         userId: id,
-        videosDeleted: videoIds.length,
+        videosDeleted: youtubeVideoIds.length,
       },
     });
   } catch (error) {
