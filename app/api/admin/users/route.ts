@@ -3,6 +3,8 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
+import Flashcard from '@/lib/models/Flashcard';
+import Quiz from '@/lib/models/Quiz';
 import { withAdminAuth } from '@/lib/admin-middleware';
 
 async function handleGET(request: NextRequest) {
@@ -44,38 +46,41 @@ async function handleGET(request: NextRequest) {
         const userId = user._id.toString();
 
         // Get all videos for this user
-        const videos = await Video.find({ userId }).select('_id').lean();
-        const videoIds = videos.map((v) => v._id.toString());
+        const videos = await Video.find({ userId }).select('videoId').lean();
+        const youtubeVideoIds = videos.map((v) => v.videoId); // YouTube IDs
 
-        // Get learning materials counts
-        const materialsCount = videoIds.length > 0
-          ? await LearningMaterial.aggregate([
-              { $match: { videoId: { $in: videoIds } } },
-              {
-                $group: {
-                  _id: null,
-                  totalFlashcards: {
-                    $sum: { $cond: [{ $isArray: '$flashcards' }, { $size: '$flashcards' }, 0] },
-                  },
-                  totalQuizzes: {
-                    $sum: { $cond: [{ $isArray: '$quizzes' }, { $size: '$quizzes' }, 0] },
-                  },
-                  totalPrerequisites: {
-                    $sum: { $cond: [{ $isArray: '$prerequisites' }, { $size: '$prerequisites' }, 0] },
-                  },
-                  totalTimestamps: {
-                    $sum: { $cond: [{ $isArray: '$timestamps' }, { $size: '$timestamps' }, 0] },
+        // Get counts from separate collections (use YouTube videoId)
+        const [flashcardsCount, quizzesCount, materialsCount] = await Promise.all([
+          youtubeVideoIds.length > 0 ? Flashcard.countDocuments({ videoId: { $in: youtubeVideoIds } }) : 0,
+          youtubeVideoIds.length > 0 ? Quiz.countDocuments({ videoId: { $in: youtubeVideoIds } }) : 0,
+          youtubeVideoIds.length > 0
+            ? LearningMaterial.aggregate([
+                { $match: { videoId: { $in: youtubeVideoIds } } },
+                {
+                  $group: {
+                    _id: null,
+                    totalPrerequisites: {
+                      $sum: { $cond: [{ $isArray: '$prerequisites' }, { $size: '$prerequisites' }, 0] },
+                    },
+                    totalTimestamps: {
+                      $sum: { $cond: [{ $isArray: '$timestamps' }, { $size: '$timestamps' }, 0] },
+                    },
                   },
                 },
-              },
-            ])
-          : [];
+              ])
+            : [],
+        ]);
 
-        const counts = materialsCount[0] || {
-          totalFlashcards: 0,
-          totalQuizzes: 0,
+        const materialAggregation = materialsCount[0] || {
           totalPrerequisites: 0,
           totalTimestamps: 0,
+        };
+
+        const counts = {
+          totalFlashcards: flashcardsCount,
+          totalQuizzes: quizzesCount,
+          totalPrerequisites: materialAggregation.totalPrerequisites,
+          totalTimestamps: materialAggregation.totalTimestamps,
         };
 
         return {
