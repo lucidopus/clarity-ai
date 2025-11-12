@@ -3,24 +3,49 @@ import dbConnect from '@/lib/mongodb';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { withAdminAuth } from '@/lib/admin-middleware';
 
+// Helper function to format date labels based on granularity
+function formatDateLabel(dateStr: string, format: string): string {
+  if (format === '%Y-%m') {
+    // Month-level: convert "2025-01" to "Jan"
+    const [year, month] = dateStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1);
+    return date.toLocaleString('en-US', { month: 'short' });
+  } else {
+    // Day-level: convert "2025-01-15" to "Jan 15"
+    const [year, month, day] = dateStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+  }
+}
+
 async function handleGET(request: NextRequest) {
   try {
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
-    const range = searchParams.get('range') || 'month'; // 'month', 'year'
+    const range = searchParams.get('range') || 'month'; // 'week', 'month', 'year'
 
-    // Calculate date range
+    // Calculate date range and format
     const now = new Date();
     let startDate: Date;
+    let format: string;
 
     switch (range) {
+      case 'week':
+        // Last 7 days, day-level granularity
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        format = '%Y-%m-%d';
+        break;
       case 'year':
-        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        // Full year, month-level granularity
+        startDate = new Date(now.getFullYear(), 0, 1);
+        format = '%Y-%m';
         break;
       case 'month':
       default:
+        // Last 30 days, day-level granularity
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        format = '%Y-%m-%d';
         break;
     }
 
@@ -36,7 +61,7 @@ async function handleGET(request: NextRequest) {
           _id: {
             date: {
               $dateToString: {
-                format: '%Y-%m-%d',
+                format: format,
                 date: '$timestamp',
               },
             },
@@ -62,9 +87,9 @@ async function handleGET(request: NextRequest) {
       },
     ]);
 
-    // Format data for heatmap
+    // Format data for heatmap with readable labels
     const data = activities.map((item) => ({
-      date: item._id,
+      date: formatDateLabel(item._id, format),
       total: item.totalCount,
       byType: item.activities.reduce((acc: Record<string, number>, activity: { type: string; count: number }) => {
         acc[activity.type] = activity.count;
