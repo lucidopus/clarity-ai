@@ -2,6 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Card from '@/components/Card';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend,
+  ChartOptions,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 type TimeRange = 'week' | 'month' | 'year';
 
@@ -62,12 +74,73 @@ export default function AnalyticsSection() {
     }
   };
 
-  const getMaxValue = (data: { count?: number; total?: number }[]) => {
-    return Math.max(...data.map((d) => d.count || d.total || 0), 1);
+  const gridColor = 'rgba(148,163,184,0.15)';
+  const tickColor = 'rgba(148,163,184,0.8)';
+
+  const registrationChartOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.parsed.y} ${ctx.parsed.y === 1 ? 'user' : 'users'}`,
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+          color: tickColor,
+        },
+        grid: { color: gridColor },
+        border: { display: false },
+      },
+      x: {
+        ticks: {
+          color: tickColor,
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: { display: false },
+        border: { display: false },
+      },
+    },
   };
 
-  const getBarHeight = (value: number, maxValue: number) => {
-    return `${(value / maxValue) * 100}%`;
+  const activityChartOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.parsed.y} ${ctx.parsed.y === 1 ? 'activity' : 'activities'}`,
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+          color: tickColor,
+        },
+        grid: { color: gridColor },
+        border: { display: false },
+      },
+      x: {
+        ticks: {
+          color: tickColor,
+          maxRotation: 45,
+          minRotation: 45,
+        },
+        grid: { display: false },
+        border: { display: false },
+      },
+    },
   };
 
   return (
@@ -98,25 +171,21 @@ export default function AnalyticsSection() {
         ) : registrations.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">No data available</div>
         ) : (
-          <div className="h-64 flex items-end justify-between gap-1">
-            {registrations.map((item) => {
-              const maxValue = getMaxValue(registrations);
-              const height = getBarHeight(item.count, maxValue);
-              return (
-                <div key={item.date} className="flex-1 flex flex-col items-center group relative">
-                  <div
-                    className="w-full bg-accent rounded-t-lg transition-all duration-300 hover:bg-accent-hover"
-                    style={{ height }}
-                  >
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-card-bg border border-border rounded-lg px-3 py-2 shadow-lg z-10 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">{item.count} users</div>
-                      <div className="text-xs text-muted-foreground">{item.date}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="h-64">
+            <Bar
+              data={{
+                labels: registrations.map((item) => item.date),
+                datasets: [
+                  {
+                    label: 'Users',
+                    data: registrations.map((item) => item.count),
+                    backgroundColor: 'rgba(28, 195, 223, 0.8)',
+                    borderRadius: 4,
+                  },
+                ],
+              }}
+              options={registrationChartOptions}
+            />
           </div>
         )}
       </Card>
@@ -147,32 +216,21 @@ export default function AnalyticsSection() {
         ) : activities.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">No data available</div>
         ) : (
-          <div className="h-64 flex items-end justify-between gap-1">
-            {activities.map((item) => {
-              const maxValue = getMaxValue(activities);
-              const height = getBarHeight(item.total, maxValue);
-              return (
-                <div key={item.date} className="flex-1 flex flex-col items-center group relative">
-                  <div
-                    className="w-full bg-accent/70 rounded-t-lg transition-all duration-300 hover:bg-accent"
-                    style={{ height }}
-                  >
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-card-bg border border-border rounded-lg px-3 py-2 shadow-lg z-10 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">{item.total} activities</div>
-                      <div className="text-xs text-muted-foreground">{item.date}</div>
-                      <div className="text-xs text-muted-foreground mt-1 border-t border-border pt-1">
-                        {Object.entries(item.byType).map(([type, count]) => (
-                          <div key={type}>
-                            {type}: {count}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="h-64">
+            <Bar
+              data={{
+                labels: activities.map((item) => item.date),
+                datasets: [
+                  {
+                    label: 'Activities',
+                    data: activities.map((item) => item.total),
+                    backgroundColor: 'rgba(28, 195, 223, 0.7)',
+                    borderRadius: 4,
+                  },
+                ],
+              }}
+              options={activityChartOptions}
+            />
           </div>
         )}
       </Card>
