@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import { verifyAdminToken } from '@/lib/admin-auth';
 
 interface DecodedToken {
   userId: string;
@@ -14,11 +15,34 @@ interface DecodedToken {
 
 // Define protected routes
 const protectedRoutes = ['/dashboard'];
+const adminRoutes = ['/admin/dashboard'];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if the current path is protected
+  // Check for admin routes first
+  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+
+  if (isAdminRoute) {
+    const adminToken = request.cookies.get('admin_jwt')?.value;
+
+    if (!adminToken) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+
+    const admin = verifyAdminToken(adminToken);
+    if (!admin) {
+      // Token is invalid or expired, redirect to login
+      const response = NextResponse.redirect(new URL('/admin/login', request.url));
+      response.cookies.delete('admin_jwt');
+      return response;
+    }
+
+    // Token is valid, allow access
+    return NextResponse.next();
+  }
+
+  // Check if the current path is protected (user routes)
   const isProtectedRoute = protectedRoutes.some(route =>
     pathname.startsWith(route)
   );
