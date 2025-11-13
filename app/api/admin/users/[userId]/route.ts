@@ -113,13 +113,14 @@ export async function GET(
       {}
     );
 
-    // Get total counts
+    // Get total counts - convert userId to ObjectId for proper comparison
+    const userObjectId = new mongoose.Types.ObjectId(userId);
     const [totalFlashcards, totalQuizzes, totalNotes, totalMindMaps, totalSolutions] = await Promise.all([
-      Flashcard.countDocuments({ userId }),
-      Quiz.countDocuments({ userId }),
-      Note.countDocuments({ userId }),
-      MindMap.countDocuments({ userId }),
-      Solution.countDocuments({ userId }),
+      Flashcard.countDocuments({ userId: userObjectId }),
+      Quiz.countDocuments({ userId: userObjectId }),
+      Note.countDocuments({ userId: userObjectId }),
+      MindMap.countDocuments({ userId: userObjectId }),
+      Solution.countDocuments({ userId: userObjectId }),
     ]);
 
     return NextResponse.json({

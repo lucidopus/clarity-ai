@@ -166,10 +166,6 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-        <p className="text-muted-foreground mt-1">View and manage user accounts</p>
-      </div>
 
       {/* Search Bar */}
       <div className="bg-card-bg rounded-xl border border-border p-4">
@@ -192,13 +188,13 @@ export default function AdminUsersPage() {
       <div className="bg-card-bg rounded-xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-secondary border-b border-border">
+            <thead className="bg-background border-b border-border">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">User</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Joined</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Activity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">Actions</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Joined</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Activity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -216,7 +212,7 @@ export default function AdminUsersPage() {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="hover:bg-secondary/50 transition-colors">
+                  <tr key={user.id} className="hover:bg-background transition-colors">
                     <td className="px-6 py-4">
                       <div>
                         <div className="font-medium text-foreground">
@@ -241,15 +237,17 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           onClick={() => fetchUserDetails(user.id)}
-                          className="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors cursor-pointer"
+                          variant="primary"
+                          size="sm"
                         >
                           View Details
-                        </button>
+                        </Button>
                         <button
                           onClick={() => setDeleteUserDialog({ show: true, userId: user.id })}
-                          className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 text-muted-foreground hover:bg-background rounded-lg transition-colors cursor-pointer"
+                          aria-label="Delete user"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -272,14 +270,14 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="p-2 border border-border rounded-lg hover:bg-background hover:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4 text-foreground" />
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="p-2 border border-border rounded-lg hover:bg-background hover:border-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4 text-foreground" />
               </button>
@@ -301,7 +299,7 @@ export default function AdminUsersPage() {
               </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="p-2 hover:bg-secondary rounded-lg transition-colors cursor-pointer"
+                className="p-2 hover:bg-background rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5 text-foreground" />
               </button>
@@ -347,15 +345,15 @@ export default function AdminUsersPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-3">Statistics</h3>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-secondary/50 rounded-lg p-4">
+                    <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <p className="text-sm text-muted-foreground">Videos</p>
                       <p className="text-2xl font-bold text-foreground">{selectedUser.stats.totalVideos}</p>
                     </div>
-                    <div className="bg-secondary/50 rounded-lg p-4">
+                    <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <p className="text-sm text-muted-foreground">Flashcards</p>
                       <p className="text-2xl font-bold text-foreground">{selectedUser.stats.totalFlashcards}</p>
                     </div>
-                    <div className="bg-secondary/50 rounded-lg p-4">
+                    <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                       <p className="text-sm text-muted-foreground">Quizzes</p>
                       <p className="text-2xl font-bold text-foreground">{selectedUser.stats.totalQuizzes}</p>
                     </div>
@@ -367,7 +365,7 @@ export default function AdminUsersPage() {
                   <h3 className="text-lg font-semibold text-foreground mb-3">Videos ({selectedUser.videos.length})</h3>
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {selectedUser.videos.map((video) => (
-                      <div key={video.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+                      <div key={video.id} className="flex items-center justify-between p-3 bg-card-bg border border-border rounded-lg hover:border-accent/50 transition-colors">
                         <div className="flex-1 cursor-pointer">
                           <p className="text-sm font-medium text-foreground">{video.title}</p>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -377,7 +375,8 @@ export default function AdminUsersPage() {
                         </div>
                         <button
                           onClick={() => setDeleteItemDialog({ show: true, userId: selectedUser.user.id, itemType: 'video', itemId: video.id })}
-                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                          className="p-2 text-muted-foreground hover:bg-background rounded-lg transition-colors cursor-pointer"
+                          aria-label="Delete video"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -388,14 +387,13 @@ export default function AdminUsersPage() {
 
                 {/* Delete User Button */}
                 <div className="pt-4 border-t border-border">
-                  <Button
-                    variant="outline"
+                  <button
                     onClick={() => setDeleteUserDialog({ show: true, userId: selectedUser.user.id })}
-                    className="w-full text-red-500 border-red-500 hover:bg-red-500/10 cursor-pointer"
+                    className="w-full px-6 py-3 bg-red-500/10 text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500/20 hover:border-red-500/50 transition-colors font-medium cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <Trash2 className="w-4 h-4 mr-2" />
+                    <Trash2 className="w-4 h-4" />
                     Delete User and All Data
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
