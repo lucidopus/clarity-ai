@@ -56,8 +56,8 @@ export function getClientIP(request: NextRequest): string {
     return realIP;
   }
 
-  // Fallback to connection IP (may be proxy in production)
-  return request.ip || 'unknown';
+  // Fallback to 'unknown' (request.ip is not available in Next.js)
+  return 'unknown';
 }
 
 /**

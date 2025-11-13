@@ -305,23 +305,23 @@ export default function AdminDashboardPage() {
     view: ViewMode;
     setView: (view: ViewMode) => void;
   }) => (
-    <div className="inline-flex bg-secondary rounded-lg p-1">
+    <div className="inline-flex items-center overflow-hidden rounded-full border border-border">
       <button
         onClick={() => setView('week')}
-        className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
+        className={`px-3 py-1 cursor-pointer text-sm ${
           view === 'week'
-            ? 'bg-accent text-white shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-accent text-white'
+            : 'bg-transparent text-foreground hover:bg-accent/10'
         }`}
       >
         Week
       </button>
       <button
         onClick={() => setView('month')}
-        className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
+        className={`px-3 py-1 cursor-pointer text-sm ${
           view === 'month'
-            ? 'bg-accent text-white shadow-sm'
-            : 'text-muted-foreground hover:text-foreground'
+            ? 'bg-accent text-white'
+            : 'bg-transparent text-foreground hover:bg-accent/10'
         }`}
       >
         Month
@@ -350,11 +350,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Platform metrics and user activity overview</p>
-      </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -418,7 +413,7 @@ export default function AdminDashboardPage() {
         {/* Registration Timeline */}
         <div className="bg-card-bg rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-foreground">Registration Timeline</h2>
+            <h2 className="text-lg font-semibold text-foreground">Registrations</h2>
             <ViewToggle view={registrationView} setView={setRegistrationView} />
           </div>
           <div className="h-[300px]">
@@ -429,7 +424,7 @@ export default function AdminDashboardPage() {
         {/* Activity Heatmap */}
         <div className="bg-card-bg rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-foreground">Activity Heatmap</h2>
+            <h2 className="text-lg font-semibold text-foreground">Interactions</h2>
             <ViewToggle view={activityView} setView={setActivityView} />
           </div>
           <div className="h-[300px]">

@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, Users, LogOut, Shield } from 'lucide-react';
+import { BarChart3, Users, LogOut } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
+import Button from '@/components/Button';
 
 export default function AdminDashboardLayout({
   children,
@@ -108,17 +110,19 @@ export default function AdminDashboardLayout({
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Admin Sidebar */}
-      <aside className="w-64 bg-card-bg border-r border-border flex flex-col shrink-0">
-        {/* Logo/Title */}
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center space-x-2">
-            <Shield className="w-6 h-6 text-accent" />
-            <h1 className="text-xl font-bold text-foreground">Admin Portal</h1>
-          </div>
-        </div>
+       {/* Admin Sidebar */}
+       <aside className="w-64 bg-card-bg border-r border-border flex flex-col shrink-0">
+         {/* Logo/Title */}
+         <div className="px-6 py-8 border-b border-border">
+           <div className="flex items-center space-x-3">
+             <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+               <span className="text-white font-bold text-xl">C</span>
+             </div>
+             <h1 className="text-xl font-bold text-foreground">Clarity AI</h1>
+           </div>
+         </div>
 
-        {/* Navigation */}
+         {/* Navigation */}
         <nav className="flex-1 p-4">
           <div className="space-y-1">
             {navItems.map((item) => {
@@ -127,14 +131,14 @@ export default function AdminDashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                     isActive
-                      ? 'bg-accent text-white'
-                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                      ? 'bg-accent/10 text-accent font-medium'
+                      : 'text-muted-foreground hover:bg-background hover:text-foreground'
                   }`}
                 >
-                  {item.icon}
-                  <span className="font-medium">{item.label}</span>
+                  <span className={isActive ? 'text-accent' : ''}>{item.icon}</span>
+                  <span>{item.label}</span>
                 </Link>
               );
             })}
@@ -142,23 +146,29 @@ export default function AdminDashboardLayout({
         </nav>
 
         {/* Logout Button */}
-        <div className="p-4 border-t border-border">
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors w-full"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-8 py-8">
-          {children}
-        </div>
-      </main>
+       {/* Main Content Area */}
+       <main className="flex-1 overflow-y-auto">
+         <div className="max-w-7xl mx-auto px-8 py-8">
+           {/* Admin Header */}
+           <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">
+             <div className="flex items-center space-x-3">
+               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
+                 <span className="text-white font-bold text-xl">C</span>
+               </div>
+               <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+             </div>
+             <div className="flex items-center space-x-4">
+               <ThemeToggle />
+               <Button onClick={handleLogout} variant="ghost" size="icon" aria-label="Logout">
+                 <LogOut className="w-5 h-5" />
+               </Button>
+             </div>
+           </div>
+           {children}
+         </div>
+       </main>
     </div>
   );
 }

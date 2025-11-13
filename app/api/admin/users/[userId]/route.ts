@@ -47,7 +47,7 @@ export async function GET(
     await dbConnect();
 
     // Get user details
-    const user = await User.findById(userId)
+    const user: any = await User.findById(userId)
       .select('-passwordHash')
       .lean();
 
@@ -69,7 +69,7 @@ export async function GET(
 
     // Get generation counts by video
     const videosWithCounts = await Promise.all(
-      videos.map(async (video) => {
+      videos.map(async (video: any) => {
         const [flashcardCount, quizCount, hasLearningMaterial, hasMindMap, hasNotes] = await Promise.all([
           Flashcard.countDocuments({ userId, videoId: video.videoId }),
           Quiz.countDocuments({ userId, videoId: video.videoId }),
@@ -79,7 +79,7 @@ export async function GET(
         ]);
 
         return {
-          id: video._id.toString(),
+          id: String(video._id),
           videoId: video.videoId,
           title: video.title,
           thumbnail: video.thumbnail,
@@ -125,7 +125,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       user: {
-        id: user._id.toString(),
+        id: String(user._id),
         username: user.username,
         email: user.email,
         firstName: user.firstName,

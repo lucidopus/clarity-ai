@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
     // Get generation counts for each user
     const usersWithCounts = await Promise.all(
-      users.map(async (user) => {
+      users.map(async (user: any) => {
         const [videoCount, flashcardCount, quizCount, activityCount] = await Promise.all([
           Video.countDocuments({ userId: user._id }),
           Flashcard.countDocuments({ userId: user._id }),
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         ]);
 
         return {
-          id: user._id.toString(),
+          id: String(user._id),
           username: user.username,
           email: user.email,
           firstName: user.firstName,

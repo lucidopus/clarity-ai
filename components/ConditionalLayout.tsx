@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import Navbar from './Navbar';
 import Footer from './Footer';
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
@@ -24,7 +23,6 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
 
   return (
     <>
-      <Navbar />
       {children}
       <Footer />
     </>
