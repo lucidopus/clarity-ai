@@ -22,110 +22,94 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const view = searchParams.get('view') || 'week'; // week, month, or year
+    const view = searchParams.get('view') || 'month'; // week or month
 
-    let groupBy: Record<string, unknown>;
-    let dateRange: Date;
     const now = new Date();
 
-    switch (view) {
-      case 'week':
-        // Last 7 days, group by day
-        dateRange = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        groupBy = {
-          year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' },
-          day: { $dayOfMonth: '$createdAt' },
-        };
-        break;
+    if (view === 'week') {
+      // Last 7 days, group by weekday
+      const dateRange = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      case 'month':
-        // Last 30 days, group by day
-        dateRange = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        groupBy = {
-          year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' },
-          day: { $dayOfMonth: '$createdAt' },
-        };
-        break;
-
-      case 'year':
-        // Last 12 months, group by month
-        dateRange = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        groupBy = {
-          year: { $year: '$createdAt' },
-          month: { $month: '$createdAt' },
-        };
-        break;
-
-      default:
-        return NextResponse.json(
-          {
-            success: false,
-            message: 'Invalid view parameter. Must be: week, month, or year',
+      const registrations = await User.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: dateRange },
           },
-          { status: 400 }
-        );
+        },
+        {
+          $group: {
+            _id: { $dayOfWeek: '$createdAt' }, // 1 = Sunday, 7 = Saturday
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { '_id': 1 },
+        },
+      ]);
+
+      // Map to weekday names
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const formattedData = dayNames.map((name, index) => {
+        const dayOfWeek = index + 1; // MongoDB uses 1-based indexing (1 = Sunday)
+        const found = registrations.find((r) => r._id === dayOfWeek);
+        return {
+          label: name,
+          count: found ? found.count : 0,
+        };
+      });
+
+      return NextResponse.json({
+        success: true,
+        view: 'week',
+        data: formattedData,
+      });
+    } else if (view === 'month') {
+      // Current month, group by day
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const daysInMonth = endOfMonth.getDate();
+
+      const registrations = await User.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfMonth, $lte: endOfMonth },
+          },
+        },
+        {
+          $group: {
+            _id: { $dayOfMonth: '$createdAt' },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { '_id': 1 },
+        },
+      ]);
+
+      // Create array for all days in month
+      const formattedData = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
+        const found = registrations.find((r) => r._id === day);
+        return {
+          label: String(day),
+          count: found ? found.count : 0,
+        };
+      });
+
+      return NextResponse.json({
+        success: true,
+        view: 'month',
+        data: formattedData,
+      });
+    } else {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid view parameter. Must be: week or month',
+        },
+        { status: 400 }
+      );
     }
-
-    // Aggregate registrations
-    const registrations = await User.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: dateRange },
-        },
-      },
-      {
-        $group: {
-          _id: groupBy,
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $sort: {
-          '_id.year': 1,
-          '_id.month': 1,
-          '_id.day': 1,
-        },
-      },
-    ]);
-
-    // Format the data based on view
-    const formattedData = registrations.map((item) => {
-      const { _id, count } = item;
-
-      if (view === 'year') {
-        // Format as "YYYY-MM"
-        const month = String(_id.month).padStart(2, '0');
-        return {
-          date: `${_id.year}-${month}`,
-          year: _id.year,
-          month: _id.month,
-          count,
-        };
-      } else {
-        // Format as "YYYY-MM-DD"
-        const month = String(_id.month).padStart(2, '0');
-        const day = String(_id.day).padStart(2, '0');
-        return {
-          date: `${_id.year}-${month}-${day}`,
-          year: _id.year,
-          month: _id.month,
-          day: _id.day,
-          count,
-        };
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      view,
-      dateRange: {
-        start: dateRange.toISOString(),
-        end: now.toISOString(),
-      },
-      data: formattedData,
-    });
   } catch (error) {
     console.error('Admin registrations analytics error:', error);
     return NextResponse.json(

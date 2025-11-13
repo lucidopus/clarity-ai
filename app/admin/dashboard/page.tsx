@@ -13,8 +13,9 @@ import {
   Tooltip,
   Legend,
   ChartOptions,
+  Filler,
 } from 'chart.js';
-import { Users, Video, CreditCard, Activity, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, Video, CreditCard, Activity, TrendingUp } from 'lucide-react';
 
 // Register Chart.js components
 ChartJS.register(
@@ -25,7 +26,8 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler
 );
 
 interface SummaryStats {
@@ -48,23 +50,20 @@ interface SummaryStats {
   activityBreakdown: Record<string, number>;
 }
 
-interface RegistrationData {
-  date: string;
+interface ChartDataPoint {
+  label: string;
   count: number;
+  uniqueUsers?: number;
 }
 
-interface ActivityData {
-  date: string;
-  count: number;
-  uniqueUsers: number;
-}
+type ViewMode = 'week' | 'month';
 
 export default function AdminDashboardPage() {
   const [summary, setSummary] = useState<SummaryStats | null>(null);
-  const [registrations, setRegistrations] = useState<RegistrationData[]>([]);
-  const [activities, setActivities] = useState<ActivityData[]>([]);
-  const [registrationView, setRegistrationView] = useState<'week' | 'month' | 'year'>('month');
-  const [activityView, setActivityView] = useState<'month' | 'year'>('month');
+  const [registrations, setRegistrations] = useState<ChartDataPoint[]>([]);
+  const [activities, setActivities] = useState<ChartDataPoint[]>([]);
+  const [registrationView, setRegistrationView] = useState<ViewMode>('month');
+  const [activityView, setActivityView] = useState<ViewMode>('month');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -101,89 +100,268 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [registrationView, activityView]);
 
+  // Define chart colors matching app theme
+  const accentColor = 'rgb(99, 102, 241)';      // Indigo/purple accent
+  const accentLight = 'rgba(99, 102, 241, 0.1)';
+  const greenColor = 'rgb(16, 185, 129)';       // Success green
+  const greenLight = 'rgba(16, 185, 129, 0.1)';
+
   const registrationChartData = {
-    labels: registrations.map((r) => r.date),
+    labels: registrations.map((r) => r.label),
     datasets: [
       {
         label: 'New Registrations',
         data: registrations.map((r) => r.count),
-        borderColor: 'rgb(99, 102, 241)',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderColor: accentColor,
+        backgroundColor: accentLight,
         tension: 0.4,
         fill: true,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        pointBackgroundColor: accentColor,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
       },
     ],
   };
 
   const activityChartData = {
-    labels: activities.map((a) => a.date),
+    labels: activities.map((a) => a.label),
     datasets: [
       {
         label: 'Total Activities',
         data: activities.map((a) => a.count),
-        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+        backgroundColor: accentColor,
+        borderRadius: 6,
+        barThickness: registrationView === 'month' ? undefined : 50,
+        maxBarThickness: 50,
       },
       {
         label: 'Active Users',
-        data: activities.map((a) => a.uniqueUsers),
-        backgroundColor: 'rgba(16, 185, 129, 0.6)',
+        data: activities.map((a) => a.uniqueUsers || 0),
+        backgroundColor: greenColor,
+        borderRadius: 6,
+        barThickness: registrationView === 'month' ? undefined : 50,
+        maxBarThickness: 50,
       },
     ],
   };
 
-  const chartOptions: ChartOptions<'line'> = {
+  const lineChartOptions: ChartOptions<'line'> = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    },
     plugins: {
       legend: {
-        position: 'top' as const,
-        labels: {
-          color: 'rgb(156, 163, 175)',
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        displayColors: false,
+        callbacks: {
+          title: (items) => {
+            const item = items[0];
+            return registrationView === 'week'
+              ? `${item.label}`
+              : `Day ${item.label}`;
+          },
+          label: (item) => `${item.formattedValue} registrations`,
         },
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        ticks: {
-          color: 'rgb(156, 163, 175)',
+        border: {
+          display: false,
         },
         grid: {
           color: 'rgba(156, 163, 175, 0.1)',
+          drawTicks: false,
+        },
+        ticks: {
+          color: 'rgb(156, 163, 175)',
+          padding: 8,
+          font: {
+            size: 12,
+          },
         },
       },
       x: {
-        ticks: {
-          color: 'rgb(156, 163, 175)',
+        border: {
+          display: false,
         },
         grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
+          display: false,
+        },
+        ticks: {
+          color: 'rgb(156, 163, 175)',
+          padding: 8,
+          font: {
+            size: 12,
+          },
+          maxRotation: 0,
         },
       },
     },
   };
 
   const barChartOptions: ChartOptions<'bar'> = {
-    ...chartOptions,
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index',
+    },
     plugins: {
       legend: {
         position: 'top' as const,
+        align: 'end',
         labels: {
           color: 'rgb(156, 163, 175)',
+          padding: 16,
+          font: {
+            size: 12,
+            weight: '500',
+          },
+          usePointStyle: true,
+          pointStyle: 'circle',
+        },
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: 12,
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        callbacks: {
+          title: (items) => {
+            const item = items[0];
+            return activityView === 'week'
+              ? `${item.label}`
+              : `Day ${item.label}`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        border: {
+          display: false,
+        },
+        grid: {
+          color: 'rgba(156, 163, 175, 0.1)',
+          drawTicks: false,
+        },
+        ticks: {
+          color: 'rgb(156, 163, 175)',
+          padding: 8,
+          font: {
+            size: 12,
+          },
+        },
+      },
+      x: {
+        border: {
+          display: false,
+        },
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: 'rgb(156, 163, 175)',
+          padding: 8,
+          font: {
+            size: 12,
+          },
+          maxRotation: 0,
         },
       },
     },
   };
 
+  const StatCard = ({
+    icon,
+    label,
+    value,
+    trendLabel,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: number;
+    trendLabel?: string;
+  }) => (
+    <div className="bg-card-bg rounded-xl border border-border p-6 hover:border-accent/50 transition-colors">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-muted-foreground mb-2">{label}</p>
+          <p className="text-3xl font-bold text-foreground mb-1">{value.toLocaleString()}</p>
+          {trendLabel && (
+            <div className="flex items-center gap-1.5 text-sm">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              <span className="text-green-500 font-medium">{trendLabel}</span>
+            </div>
+          )}
+        </div>
+        <div className="p-3 bg-accent/10 rounded-lg shrink-0">{icon}</div>
+      </div>
+    </div>
+  );
+
+  const ViewToggle = ({
+    view,
+    setView,
+  }: {
+    view: ViewMode;
+    setView: (view: ViewMode) => void;
+  }) => (
+    <div className="inline-flex bg-secondary rounded-lg p-1">
+      <button
+        onClick={() => setView('week')}
+        className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
+          view === 'week'
+            ? 'bg-accent text-white shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        Week
+      </button>
+      <button
+        onClick={() => setView('month')}
+        className={`px-4 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${
+          view === 'month'
+            ? 'bg-accent text-white shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        }`}
+      >
+        Month
+      </button>
+    </div>
+  );
+
   if (loading || !summary) {
     return (
-      <div className="space-y-8">
-        <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
+      <div className="space-y-8 animate-pulse">
+        <div>
+          <div className="h-8 bg-secondary/20 rounded w-48 mb-2"></div>
+          <div className="h-4 bg-secondary/20 rounded w-96"></div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-card-bg rounded-xl border border-border p-6">
-              <div className="h-4 bg-secondary/20 rounded mb-2 animate-pulse w-20"></div>
-              <div className="h-8 bg-secondary/20 rounded animate-pulse w-16"></div>
+              <div className="h-4 bg-secondary/20 rounded mb-2 w-20"></div>
+              <div className="h-8 bg-secondary/20 rounded w-16"></div>
             </div>
           ))}
         </div>
@@ -191,42 +369,12 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const StatCard = ({
-    icon,
-    label,
-    value,
-    trend,
-    trendLabel,
-  }: {
-    icon: React.ReactNode;
-    label: string;
-    value: number;
-    trend?: 'up' | 'down';
-    trendLabel?: string;
-  }) => (
-    <div className="bg-card-bg rounded-xl border border-border p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground mb-1">{label}</p>
-          <p className="text-3xl font-bold text-foreground">{value.toLocaleString()}</p>
-          {trendLabel && (
-            <div className="flex items-center mt-2 text-sm">
-              {trend === 'up' && <TrendingUp className="w-4 h-4 text-green-500 mr-1" />}
-              {trend === 'down' && <TrendingDown className="w-4 h-4 text-red-500 mr-1" />}
-              <span className={trend === 'up' ? 'text-green-500' : 'text-red-500'}>{trendLabel}</span>
-            </div>
-          )}
-        </div>
-        <div className="p-3 bg-accent/10 rounded-lg">{icon}</div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Analytics Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Overview of platform metrics and user activity</p>
+        <p className="text-muted-foreground mt-1">Platform metrics and user activity overview</p>
       </div>
 
       {/* Summary Stats */}
@@ -235,7 +383,6 @@ export default function AdminDashboardPage() {
           icon={<Users className="w-6 h-6 text-accent" />}
           label="Total Users"
           value={summary.users.total}
-          trend="up"
           trendLabel={`+${summary.users.newLastWeek} this week`}
         />
         <StatCard
@@ -261,13 +408,13 @@ export default function AdminDashboardPage() {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-card-bg rounded-xl border border-border p-6">
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Content Overview</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-4">Content Overview</h3>
           <div className="space-y-3">
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-foreground">Quizzes</span>
               <span className="font-semibold text-foreground">{summary.content.totalQuizzes.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <span className="text-foreground">Activities</span>
               <span className="font-semibold text-foreground">{summary.content.totalActivities.toLocaleString()}</span>
             </div>
@@ -275,11 +422,11 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="bg-card-bg rounded-xl border border-border p-6 md:col-span-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-4">Activity Breakdown</h3>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-4">Activity Breakdown</h3>
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(summary.activityBreakdown).map(([type, count]) => (
               <div key={type} className="flex justify-between items-center">
-                <span className="text-sm text-foreground">{type.replace(/_/g, ' ')}</span>
+                <span className="text-sm text-foreground capitalize">{type.replace(/_/g, ' ')}</span>
                 <span className="text-sm font-semibold text-foreground">{count.toLocaleString()}</span>
               </div>
             ))}
@@ -287,53 +434,28 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Registration Timeline */}
-      <div className="bg-card-bg rounded-xl border border-border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">Registration Timeline</h2>
-          <div className="flex gap-2">
-            {(['week', 'month', 'year'] as const).map((view) => (
-              <button
-                key={view}
-                onClick={() => setRegistrationView(view)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  registrationView === view
-                    ? 'bg-accent text-white'
-                    : 'bg-secondary text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {view.charAt(0).toUpperCase() + view.slice(1)}
-              </button>
-            ))}
+      {/* Charts Side by Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Registration Timeline */}
+        <div className="bg-card-bg rounded-xl border border-border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-foreground">Registration Timeline</h2>
+            <ViewToggle view={registrationView} setView={setRegistrationView} />
+          </div>
+          <div className="h-[300px]">
+            <Line data={registrationChartData} options={lineChartOptions} />
           </div>
         </div>
-        <div className="h-[300px]">
-          <Line data={registrationChartData} options={chartOptions} />
-        </div>
-      </div>
 
-      {/* Activity Heatmap */}
-      <div className="bg-card-bg rounded-xl border border-border p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-foreground">Activity Heatmap</h2>
-          <div className="flex gap-2">
-            {(['month', 'year'] as const).map((view) => (
-              <button
-                key={view}
-                onClick={() => setActivityView(view)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  activityView === view
-                    ? 'bg-accent text-white'
-                    : 'bg-secondary text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {view.charAt(0).toUpperCase() + view.slice(1)}
-              </button>
-            ))}
+        {/* Activity Heatmap */}
+        <div className="bg-card-bg rounded-xl border border-border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-foreground">Activity Heatmap</h2>
+            <ViewToggle view={activityView} setView={setActivityView} />
           </div>
-        </div>
-        <div className="h-[300px]">
-          <Bar data={activityChartData} options={barChartOptions} />
+          <div className="h-[300px]">
+            <Bar data={activityChartData} options={barChartOptions} />
+          </div>
         </div>
       </div>
     </div>
