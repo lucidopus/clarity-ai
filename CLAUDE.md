@@ -274,6 +274,9 @@ JWT_SECRET=               # Strong random string for JWT signing (32+ chars)
 JWT_EXPIRE_DAYS=1         # Short-lived token expiry (1 day)
 JWT_REMEMBER_DAYS=30      # Remember-me token expiry (30 days)
 
+# Admin Portal
+ADMIN_PASSWORD=           # Password for admin portal access (use a strong password)
+
 # Application
 NODE_ENV=development      # development, production
 ```
@@ -336,6 +339,42 @@ The platform is built on proven learning principles:
 - **Generation Effect**: User-created flashcards enhance learning
 - **Spaced Repetition**: Optimal review timing for memory consolidation
 - **Interactive Engagement**: Boosts motivation and material retention
+
+## Admin Portal
+
+A password-protected admin portal is available at `/admin` for platform monitoring and management.
+
+**Features**:
+- **Analytics Dashboard**: View platform-wide metrics including:
+  - Total users, active users, new registrations
+  - Content statistics (videos, flashcards, quizzes)
+  - Registration timeline charts (week/month/year views)
+  - Activity heatmaps showing engagement patterns
+  - Activity breakdown by type
+
+- **User Management**:
+  - Search and filter users by name, username, or email
+  - View detailed user profiles with full activity history
+  - See generation counts per user (videos, flashcards, quizzes, etc.)
+  - Cascade delete users (removes all associated data)
+  - Delete individual generation items
+
+**Security**:
+- Password-only authentication using `ADMIN_PASSWORD` environment variable
+- JWT-based session management (24-hour tokens)
+- Rate limiting: Max 5 failed login attempts per IP in 15 minutes
+- Audit logging of all login attempts
+- HTTP-only secure cookies
+
+**Access**:
+- Login URL: `/admin`
+- Dashboard: `/admin/dashboard` (analytics)
+- User Management: `/admin/dashboard/users`
+
+**Setup**:
+1. Set `ADMIN_PASSWORD` environment variable to a strong password
+2. Navigate to `/admin` and enter the password
+3. Access admin dashboard and user management features
 
 ## Design Philosophy
 
