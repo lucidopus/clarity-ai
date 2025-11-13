@@ -34,17 +34,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `CLAUDE.md` to document the admin portal feature and environment variables.
 - Created `.env.example` file with all required environment variables.
 - **Admin Dashboard Improvements**:
-  - Redesigned analytics charts with better theming matching app aesthetics
+  - Redesigned analytics charts with cyan accent color (#06B6D4) matching app theme in both light and dark modes
   - Charts now display side-by-side for better space utilization
   - Switched to radio-button style view toggles (Week/Month only, removed year)
   - Line chart for registrations with filled area and styled points
-  - Bar chart for activity with rounded corners and grouped data
+  - Simplified activity heatmap to show only Total Activities bar chart
   - Week view shows data by weekday (Sun, Mon, Tue, etc.)
   - Month view shows data by day of month (1-30/31)
   - Added cursor-pointer to all interactive elements for better UX
   - Custom tooltips with dark theme and proper formatting
+  - Integrated Dialog component for delete confirmations (replaced browser alerts)
+  - All metrics now display as integers (e.g., "17" instead of "17.0")
   - Fixed runtime error in user details modal (stats.totalVideos undefined)
   - Updated API endpoints for proper weekday/day aggregation
+
+### Fixed
+
+- **Admin Analytics**: Fixed variable shadowing bug in summary endpoint where `activeUsersLast30Days` was referenced before initialization
+- **Admin Analytics**: Fixed active users count exceeding total users by verifying users still exist in database before counting (excludes deleted users' orphaned activity logs)
 
 ## [0.1.0] - 2025-11-09
 
