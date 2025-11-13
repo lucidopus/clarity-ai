@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     // Verify these users still exist in the User collection
     const [activeUsersLast7Days, activeUsersLast30Days] = await Promise.all([
       User.countDocuments({ _id: { $in: activeUserIdsLast7Days } }),
-      User.countDocuments({ _id: { $in: activeUsersLast30Days } }),
+      User.countDocuments({ _id: { $in: activeUserIdsLast30Days } }),
     ]);
 
     // Get activity breakdown
