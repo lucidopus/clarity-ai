@@ -100,11 +100,9 @@ export default function AdminDashboardPage() {
     fetchData();
   }, [registrationView, activityView]);
 
-  // Define chart colors matching app theme
-  const accentColor = 'rgb(99, 102, 241)';      // Indigo/purple accent
-  const accentLight = 'rgba(99, 102, 241, 0.1)';
-  const greenColor = 'rgb(16, 185, 129)';       // Success green
-  const greenLight = 'rgba(16, 185, 129, 0.1)';
+  // Define chart colors matching app theme (cyan/teal accent)
+  const accentColor = '#06B6D4';           // Cyan accent
+  const accentLight = 'rgba(6, 182, 212, 0.1)';
 
   const registrationChartData = {
     labels: registrations.map((r) => r.label),
@@ -134,15 +132,7 @@ export default function AdminDashboardPage() {
         data: activities.map((a) => a.count),
         backgroundColor: accentColor,
         borderRadius: 6,
-        barThickness: registrationView === 'month' ? undefined : 50,
-        maxBarThickness: 50,
-      },
-      {
-        label: 'Active Users',
-        data: activities.map((a) => a.uniqueUsers || 0),
-        backgroundColor: greenColor,
-        borderRadius: 6,
-        barThickness: registrationView === 'month' ? undefined : 50,
+        barThickness: activityView === 'month' ? undefined : 50,
         maxBarThickness: 50,
       },
     ],
@@ -224,18 +214,7 @@ export default function AdminDashboardPage() {
     },
     plugins: {
       legend: {
-        position: 'top' as const,
-        align: 'end',
-        labels: {
-          color: 'rgb(156, 163, 175)',
-          padding: 16,
-          font: {
-            size: 12,
-            weight: '500',
-          },
-          usePointStyle: true,
-          pointStyle: 'circle',
-        },
+        display: false,
       },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -395,13 +374,13 @@ export default function AdminDashboardPage() {
           icon={<Video className="w-6 h-6 text-accent" />}
           label="Total Videos"
           value={summary.content.totalVideos}
-          trendLabel={`${summary.content.avgVideosPerUser.toFixed(1)} per user`}
+          trendLabel={`${summary.content.avgVideosPerUser} per user`}
         />
         <StatCard
           icon={<CreditCard className="w-6 h-6 text-accent" />}
           label="Total Flashcards"
           value={summary.content.totalFlashcards}
-          trendLabel={`${summary.content.avgFlashcardsPerUser.toFixed(1)} per user`}
+          trendLabel={`${summary.content.avgFlashcardsPerUser} per user`}
         />
       </div>
 

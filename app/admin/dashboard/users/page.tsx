@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Trash2, ChevronLeft, ChevronRight, X, AlertTriangle } from 'lucide-react';
+import { Search, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Button from '@/components/Button';
+import Dialog from '@/components/Dialog';
 
 interface User {
   id: string;
@@ -72,7 +73,8 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [deleteUserDialog, setDeleteUserDialog] = useState<{ show: boolean; userId: string | null }>({ show: false, userId: null });
+  const [deleteItemDialog, setDeleteItemDialog] = useState<{ show: boolean; userId: string; itemType: string; itemId: string } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchUsers = async () => {
@@ -113,35 +115,36 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async () => {
+    if (!deleteUserDialog.userId) return;
+
     setDeleteLoading(true);
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(`/api/admin/users/${deleteUserDialog.userId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        setShowDeleteConfirm(null);
+        setDeleteUserDialog({ show: false, userId: null });
         setSelectedUser(null);
         fetchUsers(); // Refresh the list
       } else {
         const data = await response.json();
-        alert(`Failed to delete user: ${data.message}`);
+        console.error('Failed to delete user:', data.message);
       }
     } catch (error) {
       console.error('Failed to delete user:', error);
-      alert('Failed to delete user');
     } finally {
       setDeleteLoading(false);
     }
   };
 
-  const handleDeleteItem = async (userId: string, itemType: string, itemId: string) => {
-    if (!confirm(`Are you sure you want to delete this ${itemType}?`)) {
-      return;
-    }
+  const handleDeleteItem = async () => {
+    if (!deleteItemDialog) return;
 
+    setDeleteLoading(true);
     try {
+      const { userId, itemType, itemId } = deleteItemDialog;
       const response = await fetch(`/api/admin/users/${userId}/items/${itemType}/${itemId}`, {
         method: 'DELETE',
       });
@@ -149,13 +152,15 @@ export default function AdminUsersPage() {
       if (response.ok) {
         // Refresh user details
         fetchUserDetails(userId);
+        setDeleteItemDialog(null);
       } else {
         const data = await response.json();
-        alert(`Failed to delete ${itemType}: ${data.message}`);
+        console.error(`Failed to delete ${itemType}:`, data.message);
       }
     } catch (error) {
-      console.error(`Failed to delete ${itemType}:`, error);
-      alert(`Failed to delete ${itemType}`);
+      console.error(`Failed to delete item:`, error);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -243,7 +248,7 @@ export default function AdminUsersPage() {
                           View Details
                         </button>
                         <button
-                          onClick={() => setShowDeleteConfirm(user.id)}
+                          onClick={() => setDeleteUserDialog({ show: true, userId: user.id })}
                           className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -371,7 +376,7 @@ export default function AdminUsersPage() {
                           </p>
                         </div>
                         <button
-                          onClick={() => handleDeleteItem(selectedUser.user.id, 'video', video.id)}
+                          onClick={() => setDeleteItemDialog({ show: true, userId: selectedUser.user.id, itemType: 'video', itemId: video.id })}
                           className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -385,7 +390,7 @@ export default function AdminUsersPage() {
                 <div className="pt-4 border-t border-border">
                   <Button
                     variant="outline"
-                    onClick={() => setShowDeleteConfirm(selectedUser.user.id)}
+                    onClick={() => setDeleteUserDialog({ show: true, userId: selectedUser.user.id })}
                     className="w-full text-red-500 border-red-500 hover:bg-red-500/10 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -398,38 +403,34 @@ export default function AdminUsersPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card-bg rounded-xl border border-border max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-red-500/10 rounded-full">
-                <AlertTriangle className="w-6 h-6 text-red-500" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground">Confirm Deletion</h3>
-                <p className="text-sm text-muted-foreground">This action cannot be undone</p>
-              </div>
-            </div>
-            <p className="text-sm text-foreground mb-6">
-              Are you sure you want to delete this user? All associated data (videos, flashcards, quizzes, notes, etc.)
-              will be permanently deleted.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(null)} className="flex-1 cursor-pointer">
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => handleDeleteUser(showDeleteConfirm)}
-                disabled={deleteLoading}
-                className="flex-1 bg-red-500 hover:bg-red-600 cursor-pointer"
-              >
-                {deleteLoading ? 'Deleting...' : 'Delete User'}
-              </Button>
-            </div>
-          </div>
-        </div>
+      {/* Delete User Dialog */}
+      <Dialog
+        isOpen={deleteUserDialog.show}
+        onClose={() => setDeleteUserDialog({ show: false, userId: null })}
+        onConfirm={handleDeleteUser}
+        type="confirm"
+        variant="error"
+        title="Delete User"
+        message="Are you sure you want to delete this user? All associated data (videos, flashcards, quizzes, notes, etc.) will be permanently deleted. This action cannot be undone."
+        confirmText="Delete User"
+        cancelText="Cancel"
+        isLoading={deleteLoading}
+      />
+
+      {/* Delete Item Dialog */}
+      {deleteItemDialog && (
+        <Dialog
+          isOpen={true}
+          onClose={() => setDeleteItemDialog(null)}
+          onConfirm={handleDeleteItem}
+          type="confirm"
+          variant="warning"
+          title={`Delete ${deleteItemDialog.itemType}`}
+          message={`Are you sure you want to delete this ${deleteItemDialog.itemType}? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isLoading={deleteLoading}
+        />
       )}
     </div>
   );

@@ -29,11 +29,9 @@ export async function GET(request: NextRequest) {
     const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Get total counts
+    // Get total counts and active users
     const [
       totalUsers,
-      activeUsersLast7Days,
-      activeUsersLast30Days,
       totalVideos,
       totalFlashcards,
       totalQuizzes,
@@ -42,18 +40,26 @@ export async function GET(request: NextRequest) {
       newUsersLast30Days,
     ] = await Promise.all([
       User.countDocuments(),
-      ActivityLog.distinct('userId', {
-        timestamp: { $gte: last7Days },
-      }).then((ids) => ids.length),
-      ActivityLog.distinct('userId', {
-        timestamp: { $gte: last30Days },
-      }).then((ids) => ids.length),
       Video.countDocuments(),
       Flashcard.countDocuments(),
       Quiz.countDocuments(),
       ActivityLog.countDocuments(),
       User.countDocuments({ createdAt: { $gte: last7Days } }),
       User.countDocuments({ createdAt: { $gte: last30Days } }),
+    ]);
+
+    // Get active users (users with activity who still exist in the system)
+    const activeUserIdsLast7Days = await ActivityLog.distinct('userId', {
+      timestamp: { $gte: last7Days },
+    });
+    const activeUserIdsLast30Days = await ActivityLog.distinct('userId', {
+      timestamp: { $gte: last30Days },
+    });
+
+    // Verify these users still exist in the User collection
+    const [activeUsersLast7Days, activeUsersLast30Days] = await Promise.all([
+      User.countDocuments({ _id: { $in: activeUserIdsLast7Days } }),
+      User.countDocuments({ _id: { $in: activeUsersLast30Days } }),
     ]);
 
     // Get activity breakdown
@@ -70,10 +76,10 @@ export async function GET(request: NextRequest) {
       {}
     );
 
-    // Get average generations per user
-    const avgVideosPerUser = totalUsers > 0 ? totalVideos / totalUsers : 0;
-    const avgFlashcardsPerUser = totalUsers > 0 ? totalFlashcards / totalUsers : 0;
-    const avgQuizzesPerUser = totalUsers > 0 ? totalQuizzes / totalUsers : 0;
+    // Get average generations per user (as integers)
+    const avgVideosPerUser = totalUsers > 0 ? Math.round(totalVideos / totalUsers) : 0;
+    const avgFlashcardsPerUser = totalUsers > 0 ? Math.round(totalFlashcards / totalUsers) : 0;
+    const avgQuizzesPerUser = totalUsers > 0 ? Math.round(totalQuizzes / totalUsers) : 0;
 
     return NextResponse.json({
       success: true,
@@ -90,9 +96,9 @@ export async function GET(request: NextRequest) {
           totalFlashcards,
           totalQuizzes,
           totalActivities,
-          avgVideosPerUser: parseFloat(avgVideosPerUser.toFixed(2)),
-          avgFlashcardsPerUser: parseFloat(avgFlashcardsPerUser.toFixed(2)),
-          avgQuizzesPerUser: parseFloat(avgQuizzesPerUser.toFixed(2)),
+          avgVideosPerUser,
+          avgFlashcardsPerUser,
+          avgQuizzesPerUser,
         },
         activityBreakdown: activityStats,
       },
