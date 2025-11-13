@@ -503,28 +503,28 @@ export default function AdminUsersPage() {
                   <div className="space-y-6">
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 rounded-xl p-4 border border-cyan-500/20">
+                      <div className="bg-linear-to-br from-cyan-500/10 to-cyan-600/5 rounded-xl p-4 border border-cyan-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Video className="w-5 h-5 text-cyan-500" />
                           <p className="text-sm text-muted-foreground">Videos</p>
                         </div>
                         <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalVideos}</p>
                       </div>
-                      <div className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 rounded-xl p-4 border border-purple-500/20">
+                      <div className="bg-linear-to-br from-purple-500/10 to-purple-600/5 rounded-xl p-4 border border-purple-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <CreditCard className="w-5 h-5 text-purple-500" />
                           <p className="text-sm text-muted-foreground">Flashcards</p>
                         </div>
                         <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalFlashcards}</p>
                       </div>
-                      <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-4 border border-blue-500/20">
+                      <div className="bg-linear-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-4 border border-blue-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <FileQuestion className="w-5 h-5 text-blue-500" />
                           <p className="text-sm text-muted-foreground">Quizzes</p>
                         </div>
                         <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalQuizzes}</p>
                       </div>
-                      <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl p-4 border border-emerald-500/20">
+                      <div className="bg-linear-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl p-4 border border-emerald-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Activity className="w-5 h-5 text-emerald-500" />
                           <p className="text-sm text-muted-foreground">Activities</p>
