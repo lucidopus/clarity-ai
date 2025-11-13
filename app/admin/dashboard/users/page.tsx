@@ -21,12 +21,22 @@ interface User {
   };
 }
 
-interface UserDetails extends User {
-  userType: string;
-  customUserType?: string;
-  preferences?: unknown;
-  updatedAt: string;
-  longestStreak: number;
+interface UserDetailsResponse {
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    userType: string;
+    customUserType?: string;
+    preferences?: unknown;
+    createdAt: string;
+    updatedAt: string;
+    lastLoginDate: string | null;
+    loginStreak: number;
+    longestStreak: number;
+  };
   videos: Array<{
     id: string;
     videoId: string;
@@ -56,7 +66,7 @@ interface UserDetails extends User {
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserDetailsResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -94,7 +104,7 @@ export default function AdminUsersPage() {
       const response = await fetch(`/api/admin/users/${userId}`);
       if (response.ok) {
         const data = await response.json();
-        setSelectedUser(data.user as UserDetails);
+        setSelectedUser(data as UserDetailsResponse);
       }
     } catch (error) {
       console.error('Failed to fetch user details:', error);
@@ -228,13 +238,13 @@ export default function AdminUsersPage() {
                       <div className="flex gap-2">
                         <button
                           onClick={() => fetchUserDetails(user.id)}
-                          className="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+                          className="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors cursor-pointer"
                         >
                           View Details
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(user.id)}
-                          className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -257,14 +267,14 @@ export default function AdminUsersPage() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4 text-foreground" />
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="p-2 border border-border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4 text-foreground" />
               </button>
@@ -280,13 +290,13 @@ export default function AdminUsersPage() {
             <div className="sticky top-0 bg-card-bg border-b border-border px-6 py-4 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-xl font-bold text-foreground">
-                  {selectedUser.firstName} {selectedUser.lastName}
+                  {selectedUser.user.firstName} {selectedUser.user.lastName}
                 </h2>
-                <p className="text-sm text-muted-foreground">@{selectedUser.username}</p>
+                <p className="text-sm text-muted-foreground">@{selectedUser.user.username}</p>
               </div>
               <button
                 onClick={() => setSelectedUser(null)}
-                className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                className="p-2 hover:bg-secondary rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5 text-foreground" />
               </button>
@@ -300,31 +310,31 @@ export default function AdminUsersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-muted-foreground">Email</label>
-                    <p className="text-foreground">{selectedUser.email}</p>
+                    <p className="text-foreground">{selectedUser.user.email}</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">User Type</label>
-                    <p className="text-foreground">{selectedUser.userType}</p>
+                    <p className="text-foreground">{selectedUser.user.userType}</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">Joined</label>
-                    <p className="text-foreground">{new Date(selectedUser.createdAt).toLocaleString()}</p>
+                    <p className="text-foreground">{new Date(selectedUser.user.createdAt).toLocaleString()}</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">Last Login</label>
                     <p className="text-foreground">
-                      {selectedUser.lastLoginDate
-                        ? new Date(selectedUser.lastLoginDate).toLocaleString()
+                      {selectedUser.user.lastLoginDate
+                        ? new Date(selectedUser.user.lastLoginDate).toLocaleString()
                         : 'Never'}
                     </p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">Current Streak</label>
-                    <p className="text-foreground">{selectedUser.loginStreak} days</p>
+                    <p className="text-foreground">{selectedUser.user.loginStreak} days</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground">Longest Streak</label>
-                    <p className="text-foreground">{selectedUser.longestStreak} days</p>
+                    <p className="text-foreground">{selectedUser.user.longestStreak} days</p>
                   </div>
                 </div>
 
@@ -353,7 +363,7 @@ export default function AdminUsersPage() {
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
                     {selectedUser.videos.map((video) => (
                       <div key={video.id} className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
-                        <div className="flex-1">
+                        <div className="flex-1 cursor-pointer">
                           <p className="text-sm font-medium text-foreground">{video.title}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {video.stats.flashcards} cards • {video.stats.quizzes} quizzes •{' '}
@@ -361,8 +371,8 @@ export default function AdminUsersPage() {
                           </p>
                         </div>
                         <button
-                          onClick={() => handleDeleteItem(selectedUser.id, 'video', video.id)}
-                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                          onClick={() => handleDeleteItem(selectedUser.user.id, 'video', video.id)}
+                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -375,8 +385,8 @@ export default function AdminUsersPage() {
                 <div className="pt-4 border-t border-border">
                   <Button
                     variant="outline"
-                    onClick={() => setShowDeleteConfirm(selectedUser.id)}
-                    className="w-full text-red-500 border-red-500 hover:bg-red-500/10"
+                    onClick={() => setShowDeleteConfirm(selectedUser.user.id)}
+                    className="w-full text-red-500 border-red-500 hover:bg-red-500/10 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete User and All Data
@@ -406,14 +416,14 @@ export default function AdminUsersPage() {
               will be permanently deleted.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(null)} className="flex-1">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(null)} className="flex-1 cursor-pointer">
                 Cancel
               </Button>
               <Button
                 variant="primary"
                 onClick={() => handleDeleteUser(showDeleteConfirm)}
                 disabled={deleteLoading}
-                className="flex-1 bg-red-500 hover:bg-red-600"
+                className="flex-1 bg-red-500 hover:bg-red-600 cursor-pointer"
               >
                 {deleteLoading ? 'Deleting...' : 'Delete User'}
               </Button>
