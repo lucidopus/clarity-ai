@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Line, Bar } from 'react-chartjs-2';
+import { useEffect, useState } from "react";
+import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,8 +14,8 @@ import {
   Legend,
   ChartOptions,
   Filler,
-} from 'chart.js';
-import { Users, Video, CreditCard, Activity, TrendingUp } from 'lucide-react';
+} from "chart.js";
+import { Users, Video, CreditCard, Activity, TrendingUp } from "lucide-react";
 
 // Register Chart.js components
 ChartJS.register(
@@ -56,14 +56,14 @@ interface ChartDataPoint {
   uniqueUsers?: number;
 }
 
-type ViewMode = 'week' | 'month';
+type ViewMode = "week" | "month";
 
 export default function AdminDashboardPage() {
   const [summary, setSummary] = useState<SummaryStats | null>(null);
   const [registrations, setRegistrations] = useState<ChartDataPoint[]>([]);
   const [activities, setActivities] = useState<ChartDataPoint[]>([]);
-  const [registrationView, setRegistrationView] = useState<ViewMode>('month');
-  const [activityView, setActivityView] = useState<ViewMode>('month');
+  const [registrationView, setRegistrationView] = useState<ViewMode>("month");
+  const [activityView, setActivityView] = useState<ViewMode>("month");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
       setLoading(true);
       try {
         const [summaryRes, regRes, actRes] = await Promise.all([
-          fetch('/api/admin/analytics/summary'),
+          fetch("/api/admin/analytics/summary"),
           fetch(`/api/admin/analytics/registrations?view=${registrationView}`),
           fetch(`/api/admin/analytics/activity-heatmap?view=${activityView}`),
         ]);
@@ -91,7 +91,7 @@ export default function AdminDashboardPage() {
           setActivities(data.data);
         }
       } catch (error) {
-        console.error('Failed to fetch analytics:', error);
+        console.error("Failed to fetch analytics:", error);
       } finally {
         setLoading(false);
       }
@@ -101,14 +101,14 @@ export default function AdminDashboardPage() {
   }, [registrationView, activityView]);
 
   // Define chart colors matching app theme (cyan/teal accent)
-  const accentColor = '#06B6D4';           // Cyan accent
-  const accentLight = 'rgba(6, 182, 212, 0.1)';
+  const accentColor = "#06B6D4"; // Cyan accent
+  const accentLight = "rgba(6, 182, 212, 0.1)";
 
   const registrationChartData = {
     labels: registrations.map((r) => r.label),
     datasets: [
       {
-        label: 'New Registrations',
+        label: "New Registrations",
         data: registrations.map((r) => r.count),
         borderColor: accentColor,
         backgroundColor: accentLight,
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
         pointRadius: 4,
         pointHoverRadius: 6,
         pointBackgroundColor: accentColor,
-        pointBorderColor: '#fff',
+        pointBorderColor: "#fff",
         pointBorderWidth: 2,
       },
     ],
@@ -128,39 +128,39 @@ export default function AdminDashboardPage() {
     labels: activities.map((a) => a.label),
     datasets: [
       {
-        label: 'Total Activities',
+        label: "Total Activities",
         data: activities.map((a) => a.count),
         backgroundColor: accentColor,
         borderRadius: 6,
-        barThickness: activityView === 'month' ? undefined : 50,
+        barThickness: activityView === "month" ? undefined : 50,
         maxBarThickness: 50,
       },
     ],
   };
 
-  const lineChartOptions: ChartOptions<'line'> = {
+  const lineChartOptions: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
       intersect: false,
-      mode: 'index',
+      mode: "index",
     },
     plugins: {
       legend: {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
         padding: 12,
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255, 255, 255, 0.1)",
         borderWidth: 1,
         displayColors: false,
         callbacks: {
           title: (items) => {
             const item = items[0];
-            return registrationView === 'week'
+            return registrationView === "week"
               ? `${item.label}`
               : `Day ${item.label}`;
           },
@@ -175,11 +175,11 @@ export default function AdminDashboardPage() {
           display: false,
         },
         grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
+          color: "rgba(156, 163, 175, 0.1)",
           drawTicks: false,
         },
         ticks: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
           padding: 8,
           font: {
             size: 12,
@@ -194,7 +194,7 @@ export default function AdminDashboardPage() {
           display: false,
         },
         ticks: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
           padding: 8,
           font: {
             size: 12,
@@ -205,28 +205,28 @@ export default function AdminDashboardPage() {
     },
   };
 
-  const barChartOptions: ChartOptions<'bar'> = {
+  const barChartOptions: ChartOptions<"bar"> = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
       intersect: false,
-      mode: 'index',
+      mode: "index",
     },
     plugins: {
       legend: {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
         padding: 12,
-        titleColor: '#fff',
-        bodyColor: '#fff',
-        borderColor: 'rgba(255, 255, 255, 0.1)',
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(255, 255, 255, 0.1)",
         borderWidth: 1,
         callbacks: {
           title: (items) => {
             const item = items[0];
-            return activityView === 'week'
+            return activityView === "week"
               ? `${item.label}`
               : `Day ${item.label}`;
           },
@@ -240,11 +240,11 @@ export default function AdminDashboardPage() {
           display: false,
         },
         grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
+          color: "rgba(156, 163, 175, 0.1)",
           drawTicks: false,
         },
         ticks: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
           padding: 8,
           font: {
             size: 12,
@@ -259,7 +259,7 @@ export default function AdminDashboardPage() {
           display: false,
         },
         ticks: {
-          color: 'rgb(156, 163, 175)',
+          color: "rgb(156, 163, 175)",
           padding: 8,
           font: {
             size: 12,
@@ -284,8 +284,12 @@ export default function AdminDashboardPage() {
     <div className="bg-card-bg rounded-xl border border-border p-6 hover:border-accent/50 transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-muted-foreground mb-2">{label}</p>
-          <p className="text-3xl font-bold text-foreground mb-1">{value.toLocaleString()}</p>
+          <p className="text-sm font-medium text-muted-foreground mb-2">
+            {label}
+          </p>
+          <p className="text-3xl font-bold text-foreground mb-1">
+            {value.toLocaleString()}
+          </p>
           {trendLabel && (
             <div className="flex items-center gap-1.5 text-sm">
               <TrendingUp className="w-4 h-4 text-green-500" />
@@ -307,21 +311,21 @@ export default function AdminDashboardPage() {
   }) => (
     <div className="inline-flex items-center overflow-hidden rounded-full border border-border">
       <button
-        onClick={() => setView('week')}
+        onClick={() => setView("week")}
         className={`px-3 py-1 cursor-pointer text-sm ${
-          view === 'week'
-            ? 'bg-accent text-white'
-            : 'bg-transparent text-foreground hover:bg-accent/10'
+          view === "week"
+            ? "bg-accent text-white"
+            : "bg-transparent text-foreground hover:bg-accent/10"
         }`}
       >
         Week
       </button>
       <button
-        onClick={() => setView('month')}
+        onClick={() => setView("month")}
         className={`px-3 py-1 cursor-pointer text-sm ${
-          view === 'month'
-            ? 'bg-accent text-white'
-            : 'bg-transparent text-foreground hover:bg-accent/10'
+          view === "month"
+            ? "bg-accent text-white"
+            : "bg-transparent text-foreground hover:bg-accent/10"
         }`}
       >
         Month
@@ -338,7 +342,10 @@ export default function AdminDashboardPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-card-bg rounded-xl border border-border p-6">
+            <div
+              key={i}
+              className="bg-card-bg rounded-xl border border-border p-6"
+            >
               <div className="h-4 bg-secondary/20 rounded mb-2 w-20"></div>
               <div className="h-8 bg-secondary/20 rounded w-16"></div>
             </div>
@@ -350,7 +357,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
@@ -382,26 +388,38 @@ export default function AdminDashboardPage() {
       {/* Additional Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-card-bg rounded-xl border border-border p-6">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-4">Content Overview</h3>
+          <h2 className="text-lg font-bold text-foreground mb-4">
+            Content Overview
+          </h2>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-foreground">Quizzes</span>
-              <span className="font-semibold text-foreground">{summary.content.totalQuizzes.toLocaleString()}</span>
+              <span className="font-semibold text-foreground">
+                {summary.content.totalQuizzes.toLocaleString()}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-foreground">Activities</span>
-              <span className="font-semibold text-foreground">{summary.content.totalActivities.toLocaleString()}</span>
+              <span className="font-semibold text-foreground">
+                {summary.content.totalActivities.toLocaleString()}
+              </span>
             </div>
           </div>
         </div>
 
         <div className="bg-card-bg rounded-xl border border-border p-6 md:col-span-2">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-4">Activity Breakdown</h3>
+          <h2 className="text-lg font-bold text-foreground mb-4">
+            Activity Breakdown
+          </h2>
           <div className="grid grid-cols-2 gap-3">
             {Object.entries(summary.activityBreakdown).map(([type, count]) => (
               <div key={type} className="flex justify-between items-center">
-                <span className="text-sm text-foreground capitalize">{type.replace(/_/g, ' ')}</span>
-                <span className="text-sm font-semibold text-foreground">{count.toLocaleString()}</span>
+                <span className="text-sm text-foreground capitalize">
+                  {type.replace(/_/g, " ")}
+                </span>
+                <span className="text-sm font-semibold text-foreground">
+                  {count.toLocaleString()}
+                </span>
               </div>
             ))}
           </div>
@@ -413,7 +431,9 @@ export default function AdminDashboardPage() {
         {/* Registration Timeline */}
         <div className="bg-card-bg rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-foreground">Registrations</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Registrations
+            </h2>
             <ViewToggle view={registrationView} setView={setRegistrationView} />
           </div>
           <div className="h-[300px]">
@@ -424,7 +444,9 @@ export default function AdminDashboardPage() {
         {/* Activity Heatmap */}
         <div className="bg-card-bg rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-foreground">Interactions</h2>
+            <h2 className="text-lg font-semibold text-foreground">
+              Interactions
+            </h2>
             <ViewToggle view={activityView} setView={setActivityView} />
           </div>
           <div className="h-[300px]">
