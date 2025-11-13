@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, Trash2, ChevronLeft, ChevronRight, X, Filter, Calendar, ArrowUpDown } from 'lucide-react';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
 
@@ -72,6 +72,10 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<'videos' | 'joined' | 'name'>('joined');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [joinDateAfter, setJoinDateAfter] = useState('');
+  const [joinDateBefore, setJoinDateBefore] = useState('');
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [deleteUserDialog, setDeleteUserDialog] = useState<{ show: boolean; userId: string | null }>({ show: false, userId: null });
   const [deleteItemDialog, setDeleteItemDialog] = useState<{ show: boolean; userId: string; itemType: string; itemId: string } | null>(null);
@@ -80,9 +84,17 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `/api/admin/users?search=${encodeURIComponent(searchQuery)}&page=${page}&limit=20`
-      );
+      const params = new URLSearchParams({
+        search: searchQuery,
+        page: page.toString(),
+        limit: '20',
+        sortBy,
+        sortOrder,
+        ...(joinDateAfter && { joinDateAfter }),
+        ...(joinDateBefore && { joinDateBefore }),
+      });
+
+      const response = await fetch(`/api/admin/users?${params}`);
       if (response.ok) {
         const data = await response.json();
         setUsers(data.users);
@@ -98,7 +110,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, searchQuery]);
+  }, [page, searchQuery, sortBy, sortOrder, joinDateAfter, joinDateBefore]);
 
   const fetchUserDetails = async (userId: string) => {
     setDetailsLoading(true);
@@ -181,6 +193,111 @@ export default function AdminUsersPage() {
             }}
             className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
           />
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-card-bg rounded-xl border border-border p-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Sort By */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              <Filter className="w-4 h-4 inline mr-1" />
+              Sort By
+            </label>
+            <select
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value as 'videos' | 'joined' | 'name');
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            >
+              <option value="joined">Join Date</option>
+              <option value="videos">Most Videos</option>
+              <option value="name">Name</option>
+            </select>
+          </div>
+
+          {/* Sort Order */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              <ArrowUpDown className="w-4 h-4 inline mr-1" />
+              Order
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(e) => {
+                setSortOrder(e.target.value as 'asc' | 'desc');
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            >
+              {sortBy === 'name' ? (
+                <>
+                  <option value="asc">A-Z</option>
+                  <option value="desc">Z-A</option>
+                </>
+              ) : (
+                <>
+                  <option value="desc">Newest First</option>
+                  <option value="asc">Oldest First</option>
+                </>
+              )}
+            </select>
+          </div>
+
+          {/* Join Date After */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              <Calendar className="w-4 h-4 inline mr-1" />
+              Joined After
+            </label>
+            <input
+              type="date"
+              value={joinDateAfter}
+              onChange={(e) => {
+                setJoinDateAfter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+          </div>
+
+          {/* Join Date Before */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              <Calendar className="w-4 h-4 inline mr-1" />
+              Joined Before
+            </label>
+            <input
+              type="date"
+              value={joinDateBefore}
+              onChange={(e) => {
+                setJoinDateBefore(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+            />
+          </div>
+
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <Button
+              onClick={() => {
+                setSortBy('joined');
+                setSortOrder('desc');
+                setJoinDateAfter('');
+                setJoinDateBefore('');
+                setSearchQuery('');
+                setPage(1);
+              }}
+              variant="secondary"
+              size="sm"
+            >
+              Clear Filters
+            </Button>
+          </div>
         </div>
       </div>
 
