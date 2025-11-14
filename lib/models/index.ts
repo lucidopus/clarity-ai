@@ -9,3 +9,4 @@ export { default as Note } from './Note';
 export type { INote } from '@/lib/types/notes';
 export { default as MindMap, type IMindMap, type IMindMapNode, type IMindMapEdge } from './MindMap';
 export { default as Solution, type ISolution } from './Solution';
+export { default as Cost, type ICost, type IServiceUsage, type IUnitDetails, ServiceType } from './Cost';

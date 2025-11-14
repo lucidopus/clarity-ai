@@ -2,7 +2,19 @@ import { groq } from './sdk';
 import { LEARNING_MATERIALS_PROMPT } from './prompts';
 import { LEARNING_MATERIALS_SCHEMA, LearningMaterials } from './structuredOutput';
 
-export async function generateLearningMaterials(transcript: string): Promise<LearningMaterials> {
+/**
+ * Response type that includes both learning materials and token usage data
+ */
+export interface LLMGenerationResponse {
+  materials: LearningMaterials;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+export async function generateLearningMaterials(transcript: string): Promise<LLMGenerationResponse> {
   console.log('🤖 [LLM] Starting LLM generation...');
   console.log(`🤖 [LLM] Transcript length: ${transcript.length} characters`);
 
@@ -58,7 +70,16 @@ export async function generateLearningMaterials(transcript: string): Promise<Lea
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
      console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
 
-    return materials;
+    // Extract usage data from response
+    const usage = {
+      promptTokens: response.usage?.prompt_tokens || 0,
+      completionTokens: response.usage?.completion_tokens || 0,
+      totalTokens: response.usage?.total_tokens || 0,
+    };
+
+    console.log(`🤖 [LLM] Token usage: ${usage.promptTokens} input + ${usage.completionTokens} output = ${usage.totalTokens} total`);
+
+    return { materials, usage };
   } catch (error) {
     console.error('❌ [LLM] Generation failed:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

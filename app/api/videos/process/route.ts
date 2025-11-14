@@ -5,11 +5,14 @@ import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
-import { MindMap } from '@/lib/models';
+import { MindMap, ServiceType } from '@/lib/models';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
 import { resolveClientDay } from '@/lib/date.utils';
+import { calculateLLMCost, calculateApifyCost, getCurrentModelInfo } from '@/lib/cost/calculator';
+import { logGenerationCost, calculateTotalCost, formatCost } from '@/lib/cost/logger';
+import type { IServiceUsage } from '@/lib/models/Cost';
 
 interface DecodedToken {
   userId: string;
@@ -100,9 +103,31 @@ export async function POST(request: NextRequest) {
     // 5. Extract transcript
     console.log('📜 [VIDEO PROCESS] Step 6: Extracting transcript from YouTube...');
     let transcriptResult;
+    const services: IServiceUsage[] = [];
+
     try {
+      const transcriptStartTime = Date.now();
       transcriptResult = await getYouTubeTranscript(youtubeUrl);
+      const transcriptDuration = Date.now() - transcriptStartTime;
       console.log(`✅ [VIDEO PROCESS] Transcript extracted successfully: ${transcriptResult.segments.length} segments, ${transcriptResult.text.length} characters`);
+
+      // Track Apify cost
+      const apifyCost = calculateApifyCost();
+      services.push({
+        service: ServiceType.APIFY_TRANSCRIPT,
+        usage: {
+          cost: apifyCost,
+          unitDetails: {
+            duration: transcriptDuration,
+            metadata: {
+              segmentCount: transcriptResult.segments.length,
+              characterCount: transcriptResult.text.length,
+            },
+          },
+        },
+        status: 'success',
+      });
+      console.log(`💰 [COST] Apify transcript extraction: ${formatCost(apifyCost)} (${transcriptDuration}ms)`);
 
       // Calculate total video duration from transcript segments
       const totalDuration = transcriptResult.segments.length > 0
@@ -147,10 +172,43 @@ export async function POST(request: NextRequest) {
     console.log('🤖 [VIDEO PROCESS] Step 7: Generating learning materials with LLM...');
     console.log(`📊 [VIDEO PROCESS] Sending ${transcriptResult.text.length} characters to Groq LLM...`);
     let materials;
+    let llmUsage;
     try {
-      materials = await generateLearningMaterials(transcriptResult.text);
+      const modelInfo = getCurrentModelInfo();
+      console.log(`🤖 [VIDEO PROCESS] Using model: ${modelInfo.model} (input: $${modelInfo.inputCostPerMillion}/M, output: $${modelInfo.outputCostPerMillion}/M)`);
+
+      const llmResponse = await generateLearningMaterials(transcriptResult.text);
+      materials = llmResponse.materials;
+      llmUsage = llmResponse.usage;
+
       console.log('✅ [VIDEO PROCESS] LLM generation successful!');
       console.log(`📚 [VIDEO PROCESS] Generated: ${materials.flashcards.length} flashcards, ${materials.quizzes.length} quizzes, ${materials.timestamps.length} timestamps, ${materials.prerequisites.length} prerequisites, ${materials.realWorldProblems.length} case studies`);
+
+      // Track LLM cost
+      const llmCost = calculateLLMCost(llmUsage.promptTokens, llmUsage.completionTokens);
+      services.push({
+        service: ServiceType.GROQ_LLM,
+        usage: {
+          cost: llmCost,
+          unitDetails: {
+            inputTokens: llmUsage.promptTokens,
+            outputTokens: llmUsage.completionTokens,
+            totalTokens: llmUsage.totalTokens,
+            metadata: {
+              model: modelInfo.model,
+              flashcardsGenerated: materials.flashcards.length,
+              quizzesGenerated: materials.quizzes.length,
+              timestampsGenerated: materials.timestamps.length,
+              prerequisitesGenerated: materials.prerequisites.length,
+              realWorldProblemsGenerated: materials.realWorldProblems.length,
+              mindMapNodesGenerated: materials.mindMap.nodes.length,
+              mindMapEdgesGenerated: materials.mindMap.edges.length,
+            },
+          },
+        },
+        status: 'success',
+      });
+      console.log(`💰 [COST] LLM (${modelInfo.model}): ${llmUsage.promptTokens} input + ${llmUsage.completionTokens} output tokens = ${formatCost(llmCost)}`);
     } catch (error) {
       console.error('❌ [VIDEO PROCESS] LLM generation failed:', error);
       await Video.findByIdAndUpdate(videoDoc._id, {
@@ -269,7 +327,23 @@ export async function POST(request: NextRequest) {
       // Don't fail the entire request if activity logging fails
     }
 
-    // 10. Return success with YouTube videoId
+    // 10. Log API usage costs
+    console.log('💰 [VIDEO PROCESS] Step 11: Logging API usage costs...');
+    try {
+      const totalCost = calculateTotalCost(services);
+      await logGenerationCost({
+        userId: decoded.userId,
+        videoId: videoDoc._id,
+        services,
+        totalCost,
+      });
+      console.log(`✅ [VIDEO PROCESS] Cost logged successfully: ${formatCost(totalCost)} total`);
+    } catch (costError) {
+      console.error('⚠️ [VIDEO PROCESS] Failed to log costs (non-critical):', costError);
+      // Don't fail the entire request if cost logging fails
+    }
+
+    // 11. Return success with YouTube videoId
     console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! YouTube Video ID: ${videoId}`);
     return NextResponse.json({
       success: true,

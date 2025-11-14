@@ -26,6 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `GET /api/admin/analytics/activity-heatmap` - Get activity heatmap
   - **New Models**: `AdminLoginAttempt` for rate limiting and audit logging.
   - **Environment Variable**: `ADMIN_PASSWORD` for admin authentication.
+- **Cost Tracking System**: Comprehensive API usage tracking and billing records for all third-party services.
+  - **Automatic Cost Logging**: Every video generation automatically logs costs to MongoDB `costs` collection
+  - **Model-Based Pricing Dictionary**: Flexible, service-agnostic pricing configuration supporting any LLM provider (Groq, OpenAI, Anthropic, Google, etc.) with zero code changes
+  - **Multi-Service Support**: Tracks costs for both Groq LLM (token-based) and Apify transcript extraction (fixed-cost)
+  - **Detailed Usage Metrics**: Captures input/output tokens, execution duration, and generation metadata for each API call
+  - **New Models**: `Cost` with `IServiceUsage` and `IUnitDetails` interfaces for flexible cost tracking
+  - **New Utilities**:
+    - `lib/cost/config.ts` - Model pricing dictionary with configurable rates
+    - `lib/cost/calculator.ts` - Cost calculation functions for LLM tokens and Apify calls
+    - `lib/cost/logger.ts` - Non-blocking cost logging to MongoDB with graceful error handling
+  - **Environment Variable**: `LLM_MODEL` - Maps to pricing dictionary key for automatic cost calculation (e.g., `openai/gpt-oss-120b`, `llama-3.3-70b-versatile`, `qwen/qwen3-32b`)
+  - **Pipeline Integration**: Integrated into `app/api/videos/process/route.ts` to track costs after transcript extraction and LLM generation
+  - **Documentation**: Created comprehensive `docs/cost-tracking.md` with schema details, pricing rates, query examples, and instructions for adding new models
+  - **Future-Ready**: Enables cost analysis, billing dashboards, per-user usage reports, and budget management features
 - Created `CHANGELOG.md` to track project changes.
 
 ### Changed
