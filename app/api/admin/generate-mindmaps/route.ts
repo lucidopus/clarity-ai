@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
         const mindMapDoc = new MindMap({
           videoId: video.videoId,
           userId: video.userId,
-          nodes: materials.mindMap.nodes,
-          edges: materials.mindMap.edges,
+          nodes: materials.materials.mindMap.nodes,
+          edges: materials.materials.mindMap.edges,
           metadata: {
             generatedBy: 'migration-ai',
             generatedAt: new Date(),
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         });
 
         await mindMapDoc.save();
-        console.log(`💾 [MINDMAP MIGRATION] Mind map saved for video: ${video.videoId} (${materials.mindMap.nodes.length} nodes, ${materials.mindMap.edges.length} edges)`);
+        console.log(`💾 [MINDMAP MIGRATION] Mind map saved for video: ${video.videoId} (${materials.materials.mindMap.nodes.length} nodes, ${materials.materials.mindMap.edges.length} edges)`);
 
         results.successful++;
 

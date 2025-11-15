@@ -168,9 +168,10 @@ export async function POST(request: NextRequest) {
               controller.enqueue(new TextEncoder().encode(content));
             }
             // Capture usage data from chunk if available
-            if (chunk.usage) {
-              promptTokens = chunk.usage.prompt_tokens || 0;
-              completionTokens = chunk.usage.completion_tokens || 0;
+            const chunkWithUsage = chunk as unknown as { usage?: { prompt_tokens?: number; completion_tokens?: number } };
+            if (chunkWithUsage.usage) {
+              promptTokens = chunkWithUsage.usage.prompt_tokens || 0;
+              completionTokens = chunkWithUsage.usage.completion_tokens || 0;
             }
           }
           controller.close();
