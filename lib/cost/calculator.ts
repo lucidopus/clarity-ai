@@ -32,7 +32,8 @@ export function calculateLLMCost(inputTokens: number, outputTokens: number): num
   }
 
   // Get current model pricing from environment variable
-  const model = getCurrentLLMModel();
+  // (Validates that LLM_MODEL env var is set and model exists in pricing dict)
+  getCurrentLLMModel();
   const pricing = getCurrentModelPricing();
 
   // Calculate cost per formula
