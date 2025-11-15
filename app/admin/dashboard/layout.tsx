@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, Users, LogOut } from 'lucide-react';
+import { BarChart3, Users, DollarSign, LogOut } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 
@@ -100,6 +100,11 @@ export default function AdminDashboardLayout({
       href: '/admin/dashboard',
       label: 'Analytics',
       icon: <BarChart3 className="w-5 h-5" />,
+    },
+    {
+      href: '/admin/dashboard/costs',
+      label: 'Costs',
+      icon: <DollarSign className="w-5 h-5" />,
     },
     {
       href: '/admin/dashboard/users',
