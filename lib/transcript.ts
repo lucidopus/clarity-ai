@@ -118,7 +118,6 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
 }
 
 export function extractVideoId(url: string): string {
-  // Extract from: https://youtu.be/ABC123 or https://youtube.com/watch?v=ABC123
   const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
   const match = url.match(regex);
   if (!match) throw new Error('Invalid YouTube URL');

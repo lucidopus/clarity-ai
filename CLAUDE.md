@@ -274,6 +274,12 @@ JWT_SECRET=               # Strong random string for JWT signing (32+ chars)
 JWT_EXPIRE_DAYS=1         # Short-lived token expiry (1 day)
 JWT_REMEMBER_DAYS=30      # Remember-me token expiry (30 days)
 
+# Webshare Proxy (YouTube Transcript Extraction)
+WEBSHARE_PROXY_ENABLED=true    # Enable/disable proxy (set to 'false' for local dev on residential IP)
+WEBSHARE_PROXY_USERNAME=       # Webshare username from dashboard
+WEBSHARE_PROXY_PASSWORD=       # Webshare password from dashboard
+WEBSHARE_PROXY_URL=            # Full proxy URL: http://username:password@p.webshare.io:80
+
 # Admin Portal
 ADMIN_PASSWORD=           # Password for admin portal access (use a strong password)
 
@@ -281,7 +287,25 @@ ADMIN_PASSWORD=           # Password for admin portal access (use a strong passw
 NODE_ENV=development      # development, production
 ```
 
-**Note**: Transcript API (youtube-transcript) requires NO API key - it's open source
+### Webshare Proxy Setup (Critical for Production)
+
+**Purpose:** Routes transcript extraction requests through residential proxies to bypass YouTube's cloud provider IP blocking.
+
+**Setup:**
+1. Create Webshare account: https://www.webshare.io
+2. Purchase "Residential Proxy" package (NOT "Proxy Server" or "Static Residential")
+3. Retrieve credentials from Webshare dashboard → Proxy Settings
+4. Add to environment variables as shown above
+
+**Troubleshooting:**
+- If transcript extraction fails with "ECONNREFUSED": Check proxy credentials
+- If YouTube returns 429 (rate limit): Webshare may be rate-limited, wait and retry
+- If extraction still fails in production: Verify residential proxy plan is active
+- Test proxy connectivity: `curl https://your-app.vercel.app/api/test/proxy`
+
+**Cost:** Webshare residential proxies start at ~$2.99/month for 1GB bandwidth. Free tier available with limited usage.
+
+**Note**: Transcript API (youtube-transcript) requires NO API key - it's open source, but proxy is needed for production deployment
 
 ## Key Technical Decisions (FINALIZED)
 
