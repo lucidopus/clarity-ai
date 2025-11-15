@@ -173,8 +173,8 @@ export async function POST(request: NextRequest) {
     console.log(`📊 [VIDEO PROCESS] Sending ${transcriptResult.text.length} characters to Groq LLM...`);
     let materials;
     let llmUsage;
+    const modelInfo = getCurrentModelInfo();
     try {
-      const modelInfo = getCurrentModelInfo();
       console.log(`🤖 [VIDEO PROCESS] Using model: ${modelInfo.model} (input: $${modelInfo.inputCostPerMillion}/M, output: $${modelInfo.outputCostPerMillion}/M)`);
 
       const llmResponse = await generateLearningMaterials(transcriptResult.text);
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
       realWorldProblems: materials.realWorldProblems,
       videoSummary: materials.videoSummary,
       metadata: {
-        generatedBy: 'llama-3.3-70b-versatile',
+        generatedBy: modelInfo.model,
         generatedAt: new Date(),
       },
     });
