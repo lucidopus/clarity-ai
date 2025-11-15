@@ -52,10 +52,11 @@ Clarity AI is packed with features designed to enhance your learning, all genera
 
 - **Frontend**: [Next.js](https://nextjs.org/) with [TypeScript](https://www.typescriptlang.org/) and [Tailwind CSS](https://tailwindcss.com/)
 - **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
-- **AI/LLM**: [Groq API](https://groq.com/)
-- **Authentication**: JWT-based custom authentication
-- **Transcript API**: [youtube-transcript](https://www.npmjs.com/package/youtube-transcript) and other providers for reliability.
-- **Deployment**: Vercel 
+- **AI/LLM**: [Groq API](https://groq.com/) (gpt-4o-120b model)
+- **Transcript Extraction**: youtube-transcript-plus v1.1.1 with Webshare residential proxies
+- **Authentication**: JWT-based with HTTP-only cookies
+- **Proxy Service**: Webshare residential proxies (bypasses YouTube IP blocking in production)
+- **Deployment**: Vercel
 
 ## 🏁 Getting Started
 
