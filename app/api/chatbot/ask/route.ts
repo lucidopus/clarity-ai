@@ -9,6 +9,10 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
 import { resolveClientDay } from '@/lib/date.utils';
+import { calculateLLMCost, getCurrentModelInfo } from '@/lib/cost/calculator';
+import { logGenerationCost, formatCost } from '@/lib/cost/logger';
+import { CostSource, ServiceType } from '@/lib/models/Cost';
+import type { IServiceUsage } from '@/lib/models/Cost';
 
 interface DecodedToken {
   userId: string;
@@ -110,11 +114,20 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // Track usage from response headers (if available)
+          let promptTokens = 0;
+          let completionTokens = 0;
+
           for await (const chunk of response) {
             const content = chunk.choices[0]?.delta?.content;
             if (content) {
               assistantResponse += content;
               controller.enqueue(new TextEncoder().encode(content));
+            }
+            // Capture usage data from chunk if available
+            if (chunk.usage) {
+              promptTokens = chunk.usage.prompt_tokens || 0;
+              completionTokens = chunk.usage.completion_tokens || 0;
             }
           }
           controller.close();
@@ -136,6 +149,46 @@ export async function POST(request: NextRequest) {
             );
           } catch (saveError) {
             console.error('Failed to save assistant message:', saveError);
+          }
+
+          // 13. Log cost after streaming completes
+          try {
+            const modelInfo = getCurrentModelInfo();
+            if (promptTokens > 0 || completionTokens > 0) {
+              const llmCost = calculateLLMCost(promptTokens, completionTokens);
+              const services: IServiceUsage[] = [
+                {
+                  service: ServiceType.GROQ_LLM,
+                  usage: {
+                    cost: llmCost,
+                    unitDetails: {
+                      inputTokens: promptTokens,
+                      outputTokens: completionTokens,
+                      totalTokens: promptTokens + completionTokens,
+                      metadata: {
+                        model: modelInfo.model,
+                        messageLength: message.length,
+                        responseLength: assistantResponse.length,
+                      },
+                    },
+                  },
+                  status: 'success',
+                },
+              ];
+
+              await logGenerationCost({
+                userId: decoded.userId,
+                source: CostSource.LEARNING_CHATBOT,
+                videoId: videoId,
+                services,
+                totalCost: llmCost,
+              });
+
+              console.log(`💰 [COST] Learning chatbot (${modelInfo.model}): ${promptTokens} input + ${completionTokens} output tokens = ${formatCost(llmCost)}`);
+            }
+          } catch (costError) {
+            console.error('⚠️ [CHATBOT] Failed to log cost (non-critical):', costError);
+            // Don't fail the entire request if cost logging fails
           }
         } catch (error) {
           controller.error(error);

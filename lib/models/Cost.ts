@@ -9,6 +9,21 @@ export enum ServiceType {
 }
 
 /**
+ * Cost source - where the cost originated from
+ * Helps track API usage across different features
+ */
+export enum CostSource {
+  // Learning material generation from video transcripts
+  LEARNING_MATERIAL_GENERATION = 'learning_material_generation',
+
+  // Chatbot interactions while learning a video's materials
+  LEARNING_CHATBOT = 'learning_chatbot',
+
+  // AI Guide for real-world problem-solving workspace
+  CHALLENGE_CHATBOT = 'challenge_chatbot',
+}
+
+/**
  * Unit details for service usage (optional fields for flexibility)
  */
 export interface IUnitDetails {
@@ -38,8 +53,10 @@ export interface IServiceUsage {
 export interface ICost extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  videoId?: mongoose.Types.ObjectId;
+  source: CostSource; // where this cost originated (material generation, learning chatbot, or challenge chatbot)
+  videoId?: mongoose.Types.ObjectId | string; // MongoDB ObjectId OR YouTube video ID string
   transcriptId?: mongoose.Types.ObjectId;
+  problemId?: mongoose.Types.ObjectId | string; // MongoDB ObjectId OR problem ID string (e.g., "rp1")
   services: IServiceUsage[];
   totalCost: number; // denormalized for fast queries (sum of all service costs)
   createdAt: Date;
@@ -83,8 +100,19 @@ const ServiceUsageSchema: Schema = new Schema({
  */
 const CostSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: Schema.Types.ObjectId, ref: 'Video' },
+  source: {
+    type: String,
+    required: true,
+    enum: Object.values(CostSource),
+  },
+  videoId: {
+    type: Schema.Types.Mixed, // Can be MongoDB ObjectId (from video processing) or YouTube video ID string (from chatbots)
+    ref: 'Video'
+  },
   transcriptId: { type: Schema.Types.ObjectId },
+  problemId: {
+    type: Schema.Types.Mixed, // Can be MongoDB ObjectId or problem ID string (e.g., "rp1" from challenge chatbot)
+  },
   services: { type: [ServiceUsageSchema], required: true },
   totalCost: { type: Number, required: true, min: 0 },
 }, {
@@ -94,7 +122,10 @@ const CostSchema: Schema = new Schema({
 
 // Create indexes for fast aggregations and queries
 CostSchema.index({ userId: 1, createdAt: -1 });
+CostSchema.index({ source: 1 });
+CostSchema.index({ userId: 1, source: 1, createdAt: -1 });
 CostSchema.index({ videoId: 1 });
+CostSchema.index({ problemId: 1 });
 CostSchema.index({ 'services.service': 1 });
 CostSchema.index({ createdAt: -1 });
 

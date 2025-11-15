@@ -13,6 +13,7 @@ import { resolveClientDay } from '@/lib/date.utils';
 import { calculateLLMCost, calculateApifyCost, getCurrentModelInfo } from '@/lib/cost/calculator';
 import { logGenerationCost, calculateTotalCost, formatCost } from '@/lib/cost/logger';
 import type { IServiceUsage } from '@/lib/models/Cost';
+import { CostSource } from '@/lib/models/Cost';
 
 interface DecodedToken {
   userId: string;
@@ -260,19 +261,25 @@ export async function POST(request: NextRequest) {
     );
     console.log('✅ [VIDEO PROCESS] Quizzes saved');
 
-    // Save mind map to database
+    // Save mind map to database (upsert if already exists)
     console.log('💾 [VIDEO PROCESS] Saving mind map...');
-    const mindMapDoc = new MindMap({
-      videoId: videoId,
-      userId: decoded.userId,
-      nodes: materials.mindMap.nodes,
-      edges: materials.mindMap.edges,
-      metadata: {
-        generatedBy: 'ai',
-        generatedAt: new Date(),
+    await MindMap.findOneAndUpdate(
+      {
+        userId: decoded.userId,
+        videoId: videoId,
       },
-    });
-    await mindMapDoc.save();
+      {
+        userId: decoded.userId,
+        videoId: videoId,
+        nodes: materials.mindMap.nodes,
+        edges: materials.mindMap.edges,
+        metadata: {
+          generatedBy: 'ai',
+          generatedAt: new Date(),
+        },
+      },
+      { upsert: true, new: true }
+    );
     console.log(`✅ [VIDEO PROCESS] Mind map saved with ${materials.mindMap.nodes.length} nodes and ${materials.mindMap.edges.length} edges`);
 
     // Save timestamps, prerequisites, and real-world problems in learning materials collection
@@ -333,6 +340,7 @@ export async function POST(request: NextRequest) {
       const totalCost = calculateTotalCost(services);
       await logGenerationCost({
         userId: decoded.userId,
+        source: CostSource.LEARNING_MATERIAL_GENERATION,
         videoId: videoDoc._id,
         services,
         totalCost,
