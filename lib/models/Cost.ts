@@ -31,7 +31,7 @@ export interface IUnitDetails {
   outputTokens?: number;
   totalTokens?: number;
   duration?: number; // in milliseconds
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
