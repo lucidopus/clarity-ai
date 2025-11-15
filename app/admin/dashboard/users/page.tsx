@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Search, Trash2, ChevronLeft, ChevronRight, X, Filter, Calendar, ArrowUpDown, ChevronDown, Video, CreditCard, FileQuestion, Activity, TrendingUp, Flame } from 'lucide-react';
+import { Search, Trash2, ChevronLeft, ChevronRight, X, Filter, Calendar, ArrowUpDown, ChevronDown, Video, CreditCard, FileQuestion, Activity, TrendingUp, Flame, DollarSign } from 'lucide-react';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
 
@@ -20,6 +20,10 @@ interface User {
     flashcards: number;
     quizzes: number;
     activities: number;
+  };
+  cost?: {
+    totalCost: number;
+    operations: number;
   };
 }
 
@@ -326,6 +330,7 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Joined</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-foreground uppercase">Cost</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Activity</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase">Actions</th>
               </tr>
@@ -333,13 +338,13 @@ export default function AdminUsersPage() {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                     Loading...
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
+                  <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                     No users found
                   </td>
                 </tr>
@@ -357,6 +362,18 @@ export default function AdminUsersPage() {
                     <td className="px-6 py-4 text-sm text-foreground">{user.email}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">
                       {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {user.cost ? (
+                        <div className="inline-flex items-center space-x-1 px-2 py-1 bg-accent/10 rounded-lg">
+                          <DollarSign className="w-3 h-3 text-accent" />
+                          <span className="text-sm font-medium text-accent">
+                            {user.cost.totalCost.toFixed(4)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">$0.00</span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-3 text-sm">

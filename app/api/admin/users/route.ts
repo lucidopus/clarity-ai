@@ -7,6 +7,7 @@ import Video from '@/lib/models/Video';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import ActivityLog from '@/lib/models/ActivityLog';
+import Cost from '@/lib/models/Cost';
 
 export async function GET(request: NextRequest) {
   try {
@@ -145,6 +146,23 @@ export async function GET(request: NextRequest) {
           ActivityLog.countDocuments({ userId: userObjectId }),
         ]);
 
+        // Get cost data for user
+        const costData = await Cost.aggregate([
+          { $match: { userId: userObjectId } },
+          {
+            $group: {
+              _id: null,
+              totalCost: { $sum: '$totalCost' },
+              operations: { $sum: 1 },
+            }
+          }
+        ]);
+
+        const userCost = costData.length > 0 ? {
+          totalCost: parseFloat(costData[0].totalCost.toFixed(6)),
+          operations: costData[0].operations,
+        } : null;
+
         return {
           id: String(user._id),
           username: user.username,
@@ -160,6 +178,7 @@ export async function GET(request: NextRequest) {
             quizzes: quizCount,
             activities: activityCount,
           },
+          cost: userCost,
         };
       })
     );
