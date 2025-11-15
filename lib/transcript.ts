@@ -89,7 +89,7 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     console.log(`📜 [TRANSCRIPT] Received ${transcriptSegments.length} transcript segments`);
 
     // Transform Apify format to our TranscriptResult format
-    const segments = transcriptSegments.map((segment: any) => ({
+    const segments = transcriptSegments.map((segment: { text: string; start: string; dur: string }) => ({
       text: segment.text,
       offset: parseFloat(segment.start), // Convert string to number (seconds)
       duration: parseFloat(segment.dur), // Convert string to number (seconds)

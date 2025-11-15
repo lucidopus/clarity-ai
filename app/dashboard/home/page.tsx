@@ -10,8 +10,13 @@ import { useState, useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
 import StatCard from '@/components/StatCard';
 import StudyActivityHeatmap from '@/components/StudyActivityHeatmap';
-import WeeklyActivityChart from '@/components/WeeklyActivityChart';
 import RecentVideoCard from '@/components/RecentVideoCard';
+import { DashboardInsightsProvider } from '@/hooks/useDashboardInsights';
+import FocusHoursChart from '@/components/FocusHoursChart';
+import ActivityFunnelCard from '@/components/ActivityFunnelCard';
+import VideoEngagementList from '@/components/VideoEngagementList';
+import FlashcardDifficultyDonut from '@/components/FlashcardDifficultyDonut';
+import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
 
 interface StatsResponse {
   totalVideos: number;
@@ -142,13 +147,22 @@ export default function DashboardHomePage() {
 
     setIsGenerating(true);
     try {
+      const clientNow = new Date();
+      const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
       const response = await fetch('/api/videos/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ youtubeUrl }),
+        body: JSON.stringify({
+          youtubeUrl,
+          clientTimestamp: clientNow.toISOString(),
+          timezoneOffsetMinutes,
+          timeZone,
+        }),
       });
 
       console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
@@ -183,6 +197,7 @@ export default function DashboardHomePage() {
   if (!user) return null;
 
   return (
+    <DashboardInsightsProvider>
     <div>
       {/* Page Header */}
       <DashboardHeader
@@ -193,8 +208,68 @@ export default function DashboardHomePage() {
 
       {/* Loading/Error */}
       {loading && (
-        <div className="bg-card-bg rounded-2xl border border-border min-h-[300px] flex items-center justify-center">
-          <div className="text-sm text-muted-foreground">Loading your dashboard…</div>
+        <div className="space-y-8">
+          {/* Stats Cards Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-card-bg rounded-xl border border-border p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="h-4 bg-secondary/20 rounded mb-2 animate-pulse w-16"></div>
+                    <div className="h-8 bg-secondary/20 rounded mb-1 animate-pulse w-12"></div>
+                    <div className="h-3 bg-accent/20 rounded animate-pulse w-20"></div>
+                  </div>
+                  <div className="w-10 h-10 bg-accent/20 rounded-lg animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Heatmap + Weekly Chart Skeleton */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="xl:col-span-2">
+              <div className="bg-card-bg rounded-xl border border-border p-6">
+                <div className="h-6 bg-secondary/20 rounded mb-4 animate-pulse w-48"></div>
+                <div className="grid grid-cols-7 gap-1 mb-4">
+                  {Array.from({ length: 35 }).map((_, i) => (
+                    <div key={i} className="aspect-square bg-secondary/10 rounded animate-pulse"></div>
+                  ))}
+                </div>
+                <div className="flex justify-between text-xs">
+                  <div className="h-3 bg-secondary/20 rounded animate-pulse w-8"></div>
+                  <div className="h-3 bg-secondary/20 rounded animate-pulse w-12"></div>
+                  <div className="h-3 bg-secondary/20 rounded animate-pulse w-8"></div>
+                </div>
+              </div>
+            </div>
+            <div className="h-full">
+              <div className="bg-card-bg rounded-xl border border-border p-6 h-full">
+                <div className="h-6 bg-secondary/20 rounded mb-4 animate-pulse w-40"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="h-4 bg-secondary/20 rounded animate-pulse w-20"></div>
+                      <div className="h-4 bg-accent/20 rounded animate-pulse w-8"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity Skeleton */}
+          <div>
+            <div className="h-6 bg-secondary/20 rounded mb-3 animate-pulse w-32"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="bg-card-bg rounded-xl border border-border p-4">
+                  <div className="aspect-video bg-secondary/20 rounded-lg mb-3 animate-pulse"></div>
+                  <div className="h-4 bg-secondary/20 rounded mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-secondary/20 rounded animate-pulse w-16"></div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
       {error && (
@@ -213,15 +288,34 @@ export default function DashboardHomePage() {
             <StatCard icon={<Flame className="w-5 h-5" />} label="Streak" value={stats.currentStreak} trend={{ value: `${stats.longestStreak} longest`, isPositive: true }} />
           </div>
 
-          {/* Heatmap + Weekly Chart */}
+          {/* Heatmap + Weekly Rhythm */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             <div className="xl:col-span-2">
               <StudyActivityHeatmap />
             </div>
             <div className="h-full">
-              <WeeklyActivityChart />
+              <WeekdayConsistencyBars />
             </div>
           </div>
+
+          {/* Insights Section */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Learning Insights</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Focus Hours - full width on mobile, half on lg+ */}
+              <FocusHoursChart />
+
+              {/* Activity Funnel */}
+              <ActivityFunnelCard />
+
+              {/* Video Engagement */}
+              <VideoEngagementList />
+
+              {/* Flashcard Difficulty */}
+              <FlashcardDifficultyDonut />
+            </div>
+          </div>
+
           {/* Recent Activity */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Recent Activity</h3>
@@ -234,16 +328,16 @@ export default function DashboardHomePage() {
                 />
               </div>
             ) : (
-               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                 {recentVideos.map(v => (
-                   <RecentVideoCard
-                     key={v._id}
-                     title={v.title}
-                     createdAt={v.createdAt}
-                     onClick={() => router.push(`/dashboard/generations/${v._id}`)}
-                   />
-                 ))}
-               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                {recentVideos.map((v) => (
+                  <RecentVideoCard
+                    key={v._id}
+                    title={v.title}
+                    createdAt={v.createdAt}
+                    onClick={() => router.push(`/generations/${v.videoId ?? v._id}`)}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
@@ -279,5 +373,6 @@ export default function DashboardHomePage() {
         confirmText="OK"
       />
     </div>
+    </DashboardInsightsProvider>
   );
 }

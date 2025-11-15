@@ -1,118 +1,138 @@
-# Clarity AI
+ <p align="center">
+   <img src="public/ai.svg" alt="Clarity AI Logo" width="120">
+   <h1>Clarity AI</h1>
+   <p>
+     <strong>Transform YouTube videos into interactive, personalized learning experiences.</strong>
+   </p>
+   <p>
+     <a href="#features">Features</a> •
+     <a href="#tech-stack">Tech Stack</a> •
+     <a href="#getting-started">Getting Started</a> •
+     <a href="#contributing">Contributing</a> •
+     <a href="#license">License</a>
+   </p>
+ </p>
 
-An AI-powered educational platform that transforms passive YouTube video watching into active, engaging learning experiences. Clarity AI automatically generates personalized study materials from any educational video, helping students at the undergraduate and graduate level truly understand and retain what they learn.
+---
 
-## The Core Problem
+Clarity AI is an AI-powered educational platform that turns passive YouTube video watching into active, engaging learning. Built for undergraduate and graduate students, our platform automatically generates a suite of personalized study materials from any educational video, helping you understand and retain knowledge more effectively.
 
-Educational videos are everywhere, but watching them passively leads to poor retention. Students face:
-- Passive consumption that doesn't create lasting knowledge
-- Manual creation of study materials is time-consuming
-- Lost content with no easy way to revisit or review
-- No personalized or adaptive learning path
-- Scattered progress across multiple videos
+## 🚀 Live Demo
 
-Clarity AI solves this by turning video content into an interactive learning hub.
+**Experience Clarity AI in action: [clarityml.vercel.app](https://clarityml.vercel.app/)**
 
-## Features
+## ✨ Features
 
-Clarity AI is packed with features designed to enhance learning, all generated automatically from a single YouTube link:
+Clarity AI is packed with features designed to enhance your learning, all generated automatically from a single YouTube link:
 
-- **AI-Generated Study Materials**:
+- **🧠 AI-Generated Study Materials**:
     - **Flashcards**: Reinforce key concepts with AI-generated and user-created flashcards.
-    - **Quizzes**: Test your knowledge with multiple-choice, true/false, and fill-in-the-blank questions.
-    - **Notes**: A rich text editor to capture your thoughts and insights, synced with the video.
-- **Interactive Video Experience**:
-    - **Interactive Transcripts**: A full, searchable transcript with clickable timestamps to navigate the video.
-    - **Prerequisite Checker**: Identifies concepts you need to know before watching and provides resources to get you up to speed.
-- **Personalized Learning Dashboard**:
-    - **Activity Tracking**: Visualize your study habits with an activity heatmap and weekly charts.
+    - **Quizzes**: Test your knowledge with multiple-choice questions and track your performance.
+    - **Notes**: A rich text editor to capture your thoughts and insights, synced with the video timeline.
+    - **Mind Maps**: Visualize the relationships between concepts with automatically generated mind maps.
+
+- **🎬 Interactive Video Experience**:
+    - **Interactive Transcripts**: A full, searchable transcript with clickable timestamps to instantly navigate the video.
+    - **Clara, the AI Chatbot**: Ask questions about the video content and get structured, educational answers without leaving the player.
+    - **Prerequisite Checker**: Identifies concepts you should know before watching and provides resources to get you up to speed.
+    - **Real-World Problem-Solving Workspace**: Apply concepts from videos to solve practical problems with AI guidance, hints, and solution tracking.
+
+- **📊 Personalized Learning Dashboard**:
+    - **Activity Tracking**: Visualize your study habits with a GitHub-style activity heatmap and weekly charts.
     - **Progress Overview**: See your performance on quizzes and flashcards at a glance.
-    - **Video Gallery**: A central place for all your processed videos, with search and filtering.
+    - **Learning Insights**: Actionable analytics to optimize your study habits:
+        - **Focus Hours**: Discover your peak productivity times with timezone-aware hourly breakdown
+        - **Activity Funnel**: Identify engagement gaps across chatbot, flashcards, quizzes, and video generation
+        - **Top Videos**: Track your most engaged videos with interaction metrics
+        - **Flashcard Mix**: Visualize the difficulty distribution of your flashcard deck
+        - **Weekly Rhythm**: Analyze consistency patterns across days of the week
+    - **Video Gallery**: A central library for all your processed videos, with powerful search and filtering capabilities.
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Frontend**: Next.js with TypeScript and Tailwind CSS
-- **Database**: MongoDB
-- **LLM Provider**: Groq (gpt-4o-120b model)
+- **Frontend**: [Next.js](https://nextjs.org/) with [TypeScript](https://www.typescriptlang.org/) and [Tailwind CSS](https://tailwindcss.com/)
+- **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
+- **AI/LLM**: [Groq API](https://groq.com/) (gpt-4o-120b model)
 - **Transcript Extraction**: youtube-transcript-plus v1.1.1 with Webshare residential proxies
 - **Authentication**: JWT-based with HTTP-only cookies
 - **Proxy Service**: Webshare residential proxies (bypasses YouTube IP blocking in production)
+- **Deployment**: Vercel
 
-## Getting Started
+## 🏁 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ installed
-- MongoDB instance (local or cloud)
-- API keys for LLM provider (Gemini or Groq)
+- Node.js 18+
+- A MongoDB instance (local or cloud-based)
+- Groq API Key
+- Apify API Token (optional, for enhanced transcript fetching)
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd clarity-ai
-```
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-org/clarity-ai.git
+    cd clarity-ai
+    ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-3. Set up environment variables:
-Create a `.env.local` file with:
-```bash
-MONGODB_URI=your_mongodb_connection_string
-LLM_API_KEY=your_llm_api_key
-NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
-```
+3.  **Set up environment variables:**
+    Create a `.env.local` file in the root of the project and add the following:
+    ```env
+    MONGODB_URI=your_mongodb_connection_string
+    GROQ_API_KEY=your_groq_api_key
+    LLM_MODEL=openai/gpt-oss-120b  # Model identifier for cost tracking (see lib/cost/config.ts for available models)
+    JWT_SECRET=your_jwt_secret_key
+    APIFY_API_TOKEN=your_apify_token_for_transcripts # Optional
+    JWT_EXPIRE_DAYS=1
+    JWT_REMEMBER_DAYS=30
+    ```
 
-4. Run the development server:
-```bash
-npm run dev
-```
+    **LLM_MODEL Configuration:**
+    - The `LLM_MODEL` variable must match a key in the pricing dictionary (`lib/cost/config.ts`)
+    - Available Groq models: `openai/gpt-oss-120b`, `llama-3.3-70b-versatile`, `qwen/qwen3-32b`
+    - To add a new model, update the `costs_per_model` dictionary in `lib/cost/config.ts`
+    - See `docs/cost-tracking.md` for detailed cost tracking documentation
 
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
 
-## Project Status
+5.  Open [http://localhost:3000](http://localhost:3000) in your browser to see the result.
 
-The project has a solid foundation with most core features implemented.
+## 📜 Available Scripts
 
-### Implemented Features:
-- **User Authentication**: Secure sign-up and sign-in.
-- **Video Processing Pipeline**: Enter a YouTube URL and generate a full suite of learning materials.
-- **Interactive Learning Materials**: View and interact with AI-generated flashcards, quizzes, notes, and the video transcript.
-- **Dashboard & Analytics**: A comprehensive dashboard with activity heatmaps, progress tracking, and video gallery.
-- **Search & Filtering**: Easily find videos in your gallery.
+In the project directory, you can run the following commands:
 
-### Future Roadmap:
-- **Q&A Chatbot**: A context-aware AI tutor (using RAG) for asking questions about the video content.
-- **Spaced Repetition System (SRS)**: Integrate an SRS algorithm for flashcard review to optimize long-term retention.
-- **Social Features**: Options to share generated content with others.
-- **Enhanced Analytics**: Deeper insights into learning patterns and performance.
+- **`npm run dev`**: Runs the app in development mode.
+- **`npm run build`**: Builds the app for production.
+- **`npm run start`**: Starts the production server.
+- **`npm run lint`**: Lints the code using ESLint.
 
-## Educational Foundation
+## 🤝 Contributing
 
-This project is grounded in learning science research:
-- **Active Recall**: Strengthens memory through retrieval practice (flashcards, quizzes).
-- **The Testing Effect**: The act of retrieving information improves long-term retention.
-- **Elaboration**: Taking notes and connecting ideas enhances understanding.
-- **Interactivity**: Engaging with materials boosts motivation and focus.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-## Documentation
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
 
-For detailed project planning and architecture decisions, see the `/docs` directory.
+1.  Fork the Project
+2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the Branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
-## Contributing
+We will be introducing a `CONTRIBUTING.md` file with more detailed guidelines soon.
 
-This is an educational project built with best practices in mind. Contributions are welcome!
+## 📜 License
 
-## Learn More About Next.js
+Distributed under the MIT License. See `LICENSE` for more information.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial
 
-## License
+## 💖 Code of Conduct
 
-[Add your license here]
+To ensure a welcoming and inclusive community, we expect all contributors to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it before contributing.
