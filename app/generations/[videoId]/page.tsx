@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus } from 'lucide-react';
+import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target, ArrowLeft } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
 import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
+import MindMapViewer from '@/components/MindMapViewer';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
+import { ChatBot } from '@/components/ChatBot';
 
 interface VideoMaterials {
   video: {
@@ -62,15 +64,49 @@ interface VideoMaterials {
     correctAnswer?: string;
     explanation: string;
   }>;
+  mindMap: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      type: 'root' | 'concept' | 'subconcept' | 'detail';
+      description?: string;
+      level: number;
+      position?: { x: number; y: number };
+    }>;
+    edges: Array<{
+      id: string;
+      source: string;
+      target: string;
+      label?: string;
+      type: 'hierarchy' | 'relation' | 'dependency';
+    }>;
+  };
+  realWorldProblems: Array<{
+    id: string;
+    title: string;
+    scenario: string;
+    hints: string[];
+  }>;
+  notes: {
+    generalNote: string;
+    segmentNotes: Array<{
+      segmentId: string;
+      content: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
 }
 
-type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites';
+type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
 
 const tabs = [
   { id: 'transcript' as TabType, label: 'Learn', icon: Video },
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
   { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
+  { id: 'casestudies' as TabType, label: 'Challenges', icon: Target },
+  { id: 'mindmap' as TabType, label: 'Mind Map', icon: Network },
 ];
 
 export default function VideoMaterialsPage() {
@@ -83,6 +119,7 @@ export default function VideoMaterialsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
+  const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -197,15 +234,47 @@ export default function VideoMaterialsPage() {
     setIsEditorOpen(true);
   };
 
+  const saveNotes = async (updatedNotes: { generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }) => {
+    try {
+      const response = await fetch(`/api/notes/${videoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedNotes)
+      });
+
+      if (response.ok) {
+        setNotes(updatedNotes);
+      } else {
+        throw new Error('Failed to save notes');
+      }
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      throw error; // Re-throw so NotesEditor can handle it
+    }
+  };
+
   useEffect(() => {
-    const fetchMaterials = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/videos/${videoId}/materials`);
-        if (!response.ok) {
+        // Fetch materials and notes in parallel
+        const [materialsResponse, notesResponse] = await Promise.all([
+          fetch(`/api/videos/${videoId}/materials`),
+          fetch(`/api/notes/${videoId}`)
+        ]);
+
+        if (!materialsResponse.ok) {
           throw new Error('Failed to fetch materials');
         }
-        const data = await response.json();
-        setMaterials(data);
+
+        const materialsData = await materialsResponse.json();
+        setMaterials(materialsData);
+
+        if (notesResponse.ok) {
+          const notesData = await notesResponse.json();
+          setNotes(notesData);
+        } else {
+          setNotes({ generalNote: '', segmentNotes: [] });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -214,22 +283,87 @@ export default function VideoMaterialsPage() {
     };
 
     if (videoId) {
-      fetchMaterials();
+      fetchData();
     }
   }, [videoId]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="text-lg text-muted-foreground">Loading your materials...</p>
-          <p className="text-sm text-muted-foreground mt-2">Preparing flashcards, quizzes, and more</p>
-        </motion.div>
+      <div className="min-h-screen bg-background">
+        {/* Header Skeleton */}
+        <div className="border-b border-border bg-card-bg/50 sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-secondary/20 rounded-lg animate-pulse"></div>
+                <div>
+                  <div className="h-5 bg-secondary/20 rounded mb-1 animate-pulse w-64"></div>
+                  <div className="h-4 bg-secondary/20 rounded animate-pulse w-32"></div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-10 h-10 bg-secondary/20 rounded animate-pulse"></div>
+                <div className="w-24 h-8 bg-accent/20 rounded animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Sidebar - Materials Tabs Skeleton */}
+            <div className="lg:col-span-1">
+              <div className="bg-card-bg rounded-xl border border-border p-4">
+                <div className="space-y-2">
+                  {[
+                    'Flashcards',
+                    'Quizzes',
+                    'Video & Transcript',
+                    'Mind Map',
+                    'AI Tutor',
+                  ].map((label, i) => (
+                    <div key={i} className="flex items-center space-x-3 p-3 rounded-lg">
+                      <div className="w-5 h-5 bg-accent/20 rounded animate-pulse"></div>
+                      <div className="h-4 bg-secondary/20 rounded animate-pulse flex-1"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content Area Skeleton */}
+            <div className="lg:col-span-2">
+              <div className="bg-card-bg rounded-xl border border-border p-6">
+                {/* Tab Header Skeleton */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-6 h-6 bg-accent/20 rounded animate-pulse"></div>
+                    <div className="h-6 bg-secondary/20 rounded animate-pulse w-24"></div>
+                  </div>
+                  <div className="h-8 bg-accent/20 rounded animate-pulse w-20"></div>
+                </div>
+
+                {/* Content Skeleton based on tab - simulating flashcards */}
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-background rounded-lg border border-border p-4">
+                      <div className="h-5 bg-secondary/20 rounded mb-2 animate-pulse"></div>
+                      <div className="h-4 bg-secondary/20 rounded animate-pulse w-3/4"></div>
+                      <div className="flex justify-between items-center mt-4">
+                        <div className="flex space-x-2">
+                          <div className="w-16 h-6 bg-accent/20 rounded animate-pulse"></div>
+                          <div className="w-16 h-6 bg-secondary/20 rounded animate-pulse"></div>
+                        </div>
+                        <div className="w-8 h-8 bg-secondary/20 rounded animate-pulse"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -314,6 +448,15 @@ export default function VideoMaterialsPage() {
 
             {/* Right Side: Back + Theme Toggle + Logout */}
             <div className="flex items-center gap-3 shrink-0">
+              <Button
+                onClick={() => router.push('/dashboard/gallery')}
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Back to Materials</span>
+              </Button>
               <ThemeToggle />
               <button
                 onClick={logout}
@@ -369,10 +512,75 @@ export default function VideoMaterialsPage() {
                 transcript={materials.transcript}
                 videoId={materials.video.videoId}
                 youtubeUrl={materials.video.youtubeUrl}
+                notes={notes}
+                onSaveNotes={saveNotes}
               />
             )}
             {activeTab === 'prerequisites' && (
               <PrerequisitesView prerequisites={materials.prerequisites} />
+            )}
+            {activeTab === 'casestudies' && (
+              <div className="space-y-6">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-foreground mb-2">Real-World Challenges</h2>
+                  <p className="text-muted-foreground">
+                    Apply concepts from this video to solve complex, realistic problems.
+                  </p>
+                </div>
+
+                {materials.realWorldProblems && materials.realWorldProblems.length > 0 ? (
+                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+                     {materials.realWorldProblems.map((problem) => (
+                       <motion.div
+                         key={problem.id}
+                         initial={{ y: -4 }}
+                         className="bg-card-bg border border-border rounded-xl p-6 cursor-pointer shadow-lg"
+                         onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}?openClara=true`)}
+                       >
+                        <div className="flex items-start gap-4">
+                          <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
+                            <Briefcase className="w-6 h-6 text-accent" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-foreground mb-2">
+                              {problem.title}
+                            </h3>
+                            <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
+                              {problem.scenario}
+                            </p>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Lightbulb className="w-3.5 h-3.5" />
+                                <span>{problem.hints.length} hints available</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-accent font-medium">Start solving →</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-card-bg border border-border rounded-xl">
+                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      No challenges available
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Challenges will be generated when processing new videos.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {activeTab === 'mindmap' && (
+              <MindMapViewer
+                videoId={videoId}
+                nodes={materials.mindMap.nodes}
+                edges={materials.mindMap.edges}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -400,6 +608,9 @@ export default function VideoMaterialsPage() {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      {/* ChatBot */}
+      <ChatBot videoId={videoId} />
     </div>
   );
 }

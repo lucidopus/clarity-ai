@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -15,6 +15,17 @@ export default function SearchBar({
 }: SearchBarProps) {
   const [query, setQuery] = useState('');
 
+  // Debounced search - call onSearch after user stops typing for 300ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onSearch) {
+        onSearch(query);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [query, onSearch]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSearch) {
@@ -24,9 +35,7 @@ export default function SearchBar({
 
   const handleClear = () => {
     setQuery('');
-    if (onSearch) {
-      onSearch('');
-    }
+    // onSearch will be called by the useEffect
   };
 
   return (

@@ -73,13 +73,22 @@ export default function GalleryPage() {
 
     setIsGenerating(true);
     try {
+      const clientNow = new Date();
+      const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
       console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
       const response = await fetch('/api/videos/process', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ youtubeUrl: url }),
+        body: JSON.stringify({
+          youtubeUrl: url,
+          clientTimestamp: clientNow.toISOString(),
+          timezoneOffsetMinutes,
+          timeZone,
+        }),
       });
 
       console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
@@ -172,11 +181,29 @@ export default function GalleryPage() {
 
       {/* Loading State */}
       {loading && (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading your library...</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="bg-card-bg rounded-xl border border-border overflow-hidden">
+              {/* Thumbnail */}
+              <div className="aspect-video bg-secondary/20 animate-pulse"></div>
+
+              {/* Content */}
+              <div className="p-4">
+                <div className="h-5 bg-secondary/20 rounded mb-2 animate-pulse"></div>
+                <div className="h-4 bg-secondary/20 rounded mb-3 animate-pulse w-3/4"></div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="h-3 bg-secondary/20 rounded animate-pulse w-16"></div>
+                  <div className="h-3 bg-secondary/20 rounded animate-pulse w-12"></div>
+                </div>
+
+                <div className="flex items-center justify-between mt-3">
+                  <div className="h-6 bg-accent/20 rounded animate-pulse w-16"></div>
+                  <div className="w-8 h-8 bg-secondary/20 rounded animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -202,10 +229,12 @@ export default function GalleryPage() {
               id={video.id}
               title={video.title}
               channelName={video.channelName}
+              thumbnailUrl={video.thumbnailUrl}
               duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
               transcriptMinutes={video.transcriptMinutes}
               createdAt={video.createdAt}
               onClick={handleVideoClick}
+              // TODO: Pass flashcardCount and quizCount from the video data to display on the card
             />
           ))}
         </div>

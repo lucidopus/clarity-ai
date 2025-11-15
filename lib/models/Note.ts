@@ -1,24 +1,21 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
+import { INote } from '@/lib/types/notes';
 
-export interface INote extends Document {
-  _id: mongoose.Types.ObjectId;
-  userId: mongoose.Types.ObjectId;
-  videoId: string; // YouTube video ID
-  content: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+const SegmentNoteSchema: Schema = new Schema({
+  segmentId: { type: String, required: true },
+  content: { type: String, required: true },
+}, { timestamps: true });
 
 const NoteSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
-  content: { type: String, default: '' },
+  videoId: { type: String, required: true },
+  generalNote: { type: String, default: '' },
+  segmentNotes: [SegmentNoteSchema],
 }, {
   timestamps: true,
   collection: 'notes',
 });
 
-// Create indexes
-NoteSchema.index({ userId: 1, videoId: 1 }, { unique: true });
+NoteSchema.index({ videoId: 1, userId: 1 }, { unique: true });
 
 export default mongoose.models.Note || mongoose.model<INote>('Note', NoteSchema);

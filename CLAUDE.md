@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Clarity AI is an AI-powered educational platform that transforms passive YouTube video watching into active learning experiences. It automatically generates personalized study materials (flashcards, quizzes, interactive transcripts, prerequisite checks, and Q&A chatbot) from educational videos for undergraduate and graduate students.
+Clarity AI is an AI-powered educational platform that transforms passive YouTube video watching into active learning experiences. It automatically generates personalized study materials (flashcards, quizzes, interactive transcripts, prerequisite checks, and Clara chatbot) from educational videos for undergraduate and graduate students.
 
 **Core Mission**: Remove friction between watching educational videos and mastering their content through evidence-based active learning techniques.
 
@@ -23,14 +23,14 @@ Clarity AI is an AI-powered educational platform that transforms passive YouTube
 
 ```bash
 # Development
-npm run dev          # Start Next.js dev server (http://localhost:3000)
+yarn dev          # Start Next.js dev server (http://localhost:3000)
 
 # Production
-npm run build        # Build for production
-npm start           # Start production server
+yarn build        # Build for production
+yarn start           # Start production server
 
 # Code Quality
-npm run lint        # Run ESLint (uses eslint-config-next)
+yarn lint        # Run ESLint (uses eslint-config-next)
 ```
 
 ## Project Architecture
@@ -67,7 +67,7 @@ This is a Next.js App Router application with the following high-level structure
 2. Quizzes (multiple-choice, true/false, fill-in-blank with explanations)
 3. Timestamps (interactive transcript with video navigation)
 4. Pre-requisite Check (background knowledge assessment with chatbot integration)
-5. Q&A Chatbot (RAG-based, context-aware tutor - Stage 3/4 feature)
+5. Clara (RAG-based, context-aware tutor - Stage 3/4 feature)
 
 ### TypeScript Configuration
 
@@ -230,7 +230,7 @@ The project is broken down into **6 sequential phases**, each with detailed spec
 - Show processing progress and results
 - Status: End-to-end working pipeline - this is where the magic happens
 
-**Phase 6: Q&A Chatbot - Interactive AI Tutor (RAG Implementation)** _(3-4 days)_
+**Phase 6: Clara - Interactive AI Tutor (RAG Implementation)** _(3-4 days)_
 - Set up vector database (Pinecone/Weaviate/Milvus)
 - Implement RAG (Retrieval-Augmented Generation) for context-aware Q&A
 - Create transcript chunking and embedding generation
@@ -279,6 +279,9 @@ WEBSHARE_PROXY_ENABLED=true    # Enable/disable proxy (set to 'false' for local 
 WEBSHARE_PROXY_USERNAME=       # Webshare username from dashboard
 WEBSHARE_PROXY_PASSWORD=       # Webshare password from dashboard
 WEBSHARE_PROXY_URL=            # Full proxy URL: http://username:password@p.webshare.io:80
+
+# Admin Portal
+ADMIN_PASSWORD=           # Password for admin portal access (use a strong password)
 
 # Application
 NODE_ENV=development      # development, production
@@ -347,7 +350,7 @@ NODE_ENV=development      # development, production
      - Full transcript output: `/docs/transcript-output.json`
      - Formatted timestamps: `/docs/transcript-timestamps.json`
 
-7. **Q&A Chatbot**: ⏸️ Post-MVP (Phase 5+)
+7. **Clara**: ⏸️ Post-MVP (Phase 5+)
    - Requires RAG with vector database
    - Integrate after core features stable
    - Pre-implement chatbot context in learning materials generation
@@ -360,6 +363,42 @@ The platform is built on proven learning principles:
 - **Generation Effect**: User-created flashcards enhance learning
 - **Spaced Repetition**: Optimal review timing for memory consolidation
 - **Interactive Engagement**: Boosts motivation and material retention
+
+## Admin Portal
+
+A password-protected admin portal is available at `/admin` for platform monitoring and management.
+
+**Features**:
+- **Analytics Dashboard**: View platform-wide metrics including:
+  - Total users, active users, new registrations
+  - Content statistics (videos, flashcards, quizzes)
+  - Registration timeline charts (week/month/year views)
+  - Activity heatmaps showing engagement patterns
+  - Activity breakdown by type
+
+- **User Management**:
+  - Search and filter users by name, username, or email
+  - View detailed user profiles with full activity history
+  - See generation counts per user (videos, flashcards, quizzes, etc.)
+  - Cascade delete users (removes all associated data)
+  - Delete individual generation items
+
+**Security**:
+- Password-only authentication using `ADMIN_PASSWORD` environment variable
+- JWT-based session management (24-hour tokens)
+- Rate limiting: Max 5 failed login attempts per IP in 15 minutes
+- Audit logging of all login attempts
+- HTTP-only secure cookies
+
+**Access**:
+- Login URL: `/admin`
+- Dashboard: `/admin/dashboard` (analytics)
+- User Management: `/admin/dashboard/users`
+
+**Setup**:
+1. Set `ADMIN_PASSWORD` environment variable to a strong password
+2. Navigate to `/admin` and enter the password
+3. Access admin dashboard and user management features
 
 ## Design Philosophy
 
@@ -413,7 +452,7 @@ The platform is built on proven learning principles:
 | 3 | `/docs/phases/PHASE_3_DASHBOARD_SKELETON.md` | 1-2 days | Dashboard layout |
 | 4 | `/docs/phases/PHASE_4_DASHBOARD_FEATURES.md` | 3-4 days | Interactive components |
 | 5 | `/docs/phases/PHASE_5_VIDEO_PIPELINE.md` | 3-4 days | Full video processing |
-| **6** | **`/docs/phases/PHASE_6_QA_CHATBOT.md`** | **3-4 days** | **Q&A Chatbot (RAG)** |
+| **6** | **`/docs/phases/PHASE_6_QA_CHATBOT.md`** | **3-4 days** | **Clara (RAG)** |
 | — | — | — | — |
 | **0-5** | **All MVP phases** | **11-17 days** | **Production-ready MVP** |
 | **0-6** | **All phases** | **14-21 days** | **Full product with chatbot** |
@@ -448,6 +487,7 @@ The platform is built on proven learning principles:
 - **Progress Tracker**: `/docs/PHASE_TRACKER.md` (track your work)
 - **Design Principles**: `/docs/context/design-principles.md` (CRITICAL - follow strictly)
 - **Project Plan**: `/docs/PROJECT_PLAN.md` (full vision and context)
+- **Changelog**: `CHANGELOG.md` (a log of all notable changes to the project)
 - **Groq Docs**: https://console.groq.com/docs/quickstart and https://console.groq.com/docs/structured-outputs
 - **Next.js Docs**: https://nextjs.org/docs
 - **Tailwind CSS v4**: https://tailwindcss.com/docs

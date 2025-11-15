@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Bot, Sparkles } from 'lucide-react';
 import Button from './Button';
 import MaterialsTabs from './MaterialsTabs';
 import FlashcardViewer from './FlashcardViewer';
@@ -12,6 +13,7 @@ import QuizReview from './QuizReview';
 import TranscriptViewer from './TranscriptViewer';
 import PrerequisiteChecker from './PrerequisiteChecker';
 import { logActivity } from '@/lib/activityLogger';
+import { CHATBOT_NAME } from '@/lib/config';
 
 interface Question {
   id: string;
@@ -82,7 +84,7 @@ export default function VideoMaterialsView({
 
   const tabs = [
     { id: 'materials', label: 'Materials', count: video.flashcards.length + video.quizzes.length },
-    { id: 'chatbot', label: 'Q&A Chatbot', disabled: true }
+    { id: 'chatbot', label: 'Ask ' + CHATBOT_NAME, disabled: true }
   ];
 
   const handleCreateFlashcard = (question: string, answer: string) => {
@@ -300,30 +302,41 @@ export default function VideoMaterialsView({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="text-center py-12"
+            className="text-center py-16"
           >
-            <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-8 h-8 text-accent"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00-.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-                />
-              </svg>
+            <div className="relative mx-auto mb-6 w-fit">
+              <div className="relative">
+                {/* Main bot icon with gradient background */}
+                <div className="w-20 h-20 bg-linear-to-br from-accent/20 to-accent/10 rounded-2xl flex items-center justify-center shadow-lg border border-accent/20">
+                  <Bot className="w-10 h-10 text-accent" />
+                </div>
+
+                {/* Sparkle decoration */}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-accent/15 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-accent" />
+                </div>
+              </div>
+
+              {/* Animated pulse ring */}
+              <div className="absolute inset-0 rounded-2xl bg-accent/10 animate-pulse"></div>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">
-              Q&A Chatbot Coming Soon
-            </h3>
-            <p className="text-muted-foreground">
-              Interactive AI tutor will be available in Phase 6
-            </p>
+
+            <div className="space-y-3">
+              <h3 className="text-2xl font-bold text-foreground">
+                Meet {CHATBOT_NAME}
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+                Your AI learning companion is coming soon! {CHATBOT_NAME} will help you understand complex topics,
+                answer questions about your videos, and guide you through challenging concepts.
+              </p>
+
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <div className="flex items-center gap-2 px-4 py-2 bg-accent/5 rounded-full border border-accent/20">
+                  <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-accent">Coming in Phase 6</span>
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

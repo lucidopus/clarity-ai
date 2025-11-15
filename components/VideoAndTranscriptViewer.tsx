@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Trash2, FileText } from 'lucide-react';
 import Button from './Button';
 import NotesEditor from './NotesEditor';
+import Tooltip from './Tooltip';
 
 interface TranscriptSegment {
   text: string;
@@ -15,6 +19,24 @@ interface VideoAndTranscriptViewerProps {
   transcript: TranscriptSegment[];
   videoId: string;
   youtubeUrl: string;
+  notes: {
+    generalNote: string;
+    segmentNotes: Array<{
+      segmentId: string;
+      content: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
+  onSaveNotes: (notes: {
+    generalNote: string;
+    segmentNotes: Array<{
+      segmentId: string;
+      content: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  }) => Promise<void>;
 }
 
 // Extend Window interface for YouTube IFrame API
@@ -22,6 +44,7 @@ interface YTPlayer {
   getCurrentTime(): number;
   seekTo(time: number, allowSeekAhead: boolean): void;
   playVideo(): void;
+  pauseVideo(): void;
 }
 
 declare global {
@@ -40,16 +63,50 @@ declare global {
 export default function VideoAndTranscriptViewer({
   transcript,
   videoId,
-  youtubeUrl
+  youtubeUrl,
+  notes,
+  onSaveNotes
 }: VideoAndTranscriptViewerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
+  const [editingSegment, setEditingSegment] = useState<number | null>(null);
+  const [activeSegmentNote, setActiveSegmentNote] = useState<string>('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const segmentRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isManualClick = useRef(false);
   const prevSelectedRef = useRef<number | null>(null);
+
+  const getActiveSegmentNote = useCallback((segmentIndex: number) => {
+    const segmentId = `segment-${segmentIndex}`;
+    const segmentNote = notes.segmentNotes.find(note => note.segmentId === segmentId);
+    return segmentNote?.content || '';
+  }, [notes.segmentNotes]);
+
+  const deleteActiveSegmentNote = useCallback(async () => {
+    if (selectedSegment === null) return;
+
+    setIsDeleting(true);
+    try {
+      const segmentId = `segment-${selectedSegment}`;
+      const updatedNotes = {
+        ...notes,
+        segmentNotes: notes.segmentNotes.filter(note => note.segmentId !== segmentId)
+      };
+
+      await onSaveNotes(updatedNotes);
+      setActiveSegmentNote('');
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Error deleting segment note:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [selectedSegment, notes, onSaveNotes]);
 
   // Load YouTube IFrame API
   useEffect(() => {
@@ -112,11 +169,10 @@ export default function VideoAndTranscriptViewer({
 
     if (activeIndex !== -1 && activeIndex !== prevSelectedRef.current) {
       prevSelectedRef.current = activeIndex;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSegment(activeIndex);
 
-      // Scroll to active segment with smooth animation
-      if (segmentRefs.current[activeIndex]) {
+      // Scroll to active segment with smooth animation (only if auto-scroll is enabled)
+      if (autoScrollEnabled && segmentRefs.current[activeIndex]) {
         segmentRefs.current[activeIndex]?.scrollIntoView({
           behavior: 'smooth',
           block: 'center',
@@ -124,7 +180,10 @@ export default function VideoAndTranscriptViewer({
         });
       }
     }
-  }, [currentTime, transcript]);
+
+    // Get note for active segment
+    setActiveSegmentNote(getActiveSegmentNote(activeIndex));
+  }, [currentTime, transcript, getActiveSegmentNote, autoScrollEnabled]);
 
   const formatTimestamp = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
@@ -225,7 +284,11 @@ export default function VideoAndTranscriptViewer({
           </div>
 
           {/* Notes Section */}
-          <NotesEditor videoId={videoId} />
+          <NotesEditor
+            videoId={videoId}
+            notes={notes}
+            onSaveNotes={onSaveNotes}
+          />
         </div>
 
         {/* Transcript Section */}
@@ -244,9 +307,10 @@ export default function VideoAndTranscriptViewer({
             </div>
           ) : (
             <>
-              {/* Search Bar */}
+              {/* Search Bar and Auto-scroll Toggle */}
               <div>
-                <div className="relative">
+                <div className="flex gap-3">
+                <div className="relative flex-1">
                   <input
                     type="text"
                     value={searchQuery}
@@ -270,6 +334,19 @@ export default function VideoAndTranscriptViewer({
                       />
                     </svg>
                   </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-2 bg-background/50 rounded-lg">
+                  <span className="text-xs font-medium text-muted-foreground">Auto-scroll</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={autoScrollEnabled}
+                      onChange={() => setAutoScrollEnabled(!autoScrollEnabled)}
+                    />
+                    <div className="w-9 h-5 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-px after:left-px after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent"></div>
+                  </label>
+                </div>
                 </div>
                 {searchQuery && (
                   <div className="flex items-center justify-between mt-3">
@@ -306,9 +383,11 @@ export default function VideoAndTranscriptViewer({
                       exit={{ opacity: 0 }}
                       className="space-y-3"
                     >
-                      {filteredSegments.map((segment, index) => {
-                        const originalIndex = transcript.indexOf(segment);
-                        const isSelected = selectedSegment === originalIndex;
+                       {filteredSegments.map((segment, index) => {
+                         const originalIndex = transcript.indexOf(segment);
+                         const isSelected = selectedSegment === originalIndex;
+                         const isEditing = editingSegment === originalIndex;
+                         const hasNotes = getActiveSegmentNote(originalIndex).trim().length > 0;
 
                         return (
                           <motion.div
@@ -317,31 +396,98 @@ export default function VideoAndTranscriptViewer({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03 }}
-                            className={`p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
-                              isSelected
-                                ? 'border-accent bg-accent/5 shadow-lg shadow-accent/10'
-                                : 'border-border hover:border-accent/50 bg-background/50'
-                            }`}
-                            onClick={() => handleTimestampClick(segment.start, originalIndex)}
+                             className={`transition-all duration-200 ${
+                               isEditing
+                                 ? 'border-accent/20 bg-accent/5 dark:border-gray-600/30 dark:bg-gray-800/10'
+                                 : isSelected
+                                 ? 'border-accent/20 bg-accent/5 dark:border-gray-600/30 dark:bg-gray-800/10'
+                                 : 'border-border/30 hover:border-accent/40 bg-background/30 dark:border-gray-700/20 dark:bg-gray-800/5 dark:hover:border-gray-600/30'
+                             }`}
                           >
-                            <div className="flex items-start gap-3">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleTimestampClick(segment.start, originalIndex);
-                                }}
-                                className={`shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border transition-colors ${
-                                  isSelected
-                                    ? 'border-accent bg-accent text-white'
-                                    : 'border-border bg-card-bg text-muted-foreground hover:border-accent hover:text-accent'
-                                }`}
-                              >
-                                {formatTimestamp(segment.start)}
-                              </button>
-                              <div className="flex-1 leading-relaxed text-sm text-foreground">
-                                {highlightText(segment.text, searchQuery)}
-                              </div>
+                              <div className="p-3 rounded-xl border cursor-pointer" onClick={() => handleTimestampClick(segment.start, originalIndex)}>
+                                <div className="flex items-start gap-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleTimestampClick(segment.start, originalIndex);
+                                    }}
+                                    className={`shrink-0 px-2.5 py-1 text-xs font-mono rounded-lg border transition-colors ${
+                                      isSelected
+                                        ? 'border-accent bg-accent text-white'
+                                        : 'border-border bg-card-bg text-muted-foreground hover:border-accent hover:text-accent'
+                                    }`}
+                                  >
+                                    {formatTimestamp(segment.start)}
+                                  </button>
+                                 <div className="flex-1 leading-relaxed text-sm text-foreground">
+                                   {highlightText(segment.text, searchQuery)}
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                    {hasNotes && (
+                                      <Tooltip
+                                        title="You have a note on this section"
+                                        trigger={
+                                          <div className="shrink-0" aria-label="Note present">
+                                            <FileText className="w-4 h-4 text-accent hover:text-accent/80 transition-colors cursor-pointer" />
+                                          </div>
+                                        }
+                                        position="left"
+                                      >
+                                        Click the edit button to view or modify note.
+                                      </Tooltip>
+                                    )}
+                                   <button
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       const willStartEditing = !isEditing;
+                                       if (willStartEditing && playerRef.current) {
+                                         playerRef.current.pauseVideo();
+                                       } else if (!willStartEditing && playerRef.current) {
+                                         playerRef.current.playVideo();
+                                       }
+                                       setEditingSegment(isEditing ? null : originalIndex);
+                                     }}
+                                   className={`shrink-0 p-2 cursor-pointer rounded-lg transition-colors ${
+                                     isEditing
+                                       ? 'bg-accent text-white'
+                                       : 'hover:bg-background border border-border text-muted-foreground hover:text-accent'
+                                   }`}
+                                   title={
+                                     isEditing
+                                       ? 'Close note editor'
+                                       : hasNotes
+                                       ? 'Edit your note'
+                                       : 'Add a note for this segment'
+                                   }
+                                 >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                   </button>
+                                 </div>
+                               </div>
                             </div>
+                            {/* Inline Notes Editor */}
+                            <AnimatePresence>
+                              {isEditing && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.3 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="px-3 pb-3">
+                                     <NotesEditor
+                                       videoId={videoId}
+                                       segmentId={`segment-${originalIndex}`}
+                                       notes={notes}
+                                       onSaveNotes={onSaveNotes}
+                                     />
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </motion.div>
                         );
                       })}
@@ -368,11 +514,150 @@ export default function VideoAndTranscriptViewer({
                     `Showing ${filteredSegments.length} of ${transcript.length} segments`
                   )}
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+               )}
+             </>
+           )}
+
+           {/* Active Segment Note Card */}
+           <AnimatePresence>
+             {selectedSegment !== null && activeSegmentNote.trim() && (
+               <motion.div
+                 initial={{ opacity: 0, x: 300 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 exit={{ opacity: 0, x: 300 }}
+                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                 className="fixed top-1/2 right-6 transform -translate-y-1/2 z-50"
+               >
+                 <div className="bg-card-bg border-2 border-accent rounded-2xl p-4 max-w-sm shadow-xl">
+                   <div className="flex items-center justify-between gap-2 mb-3">
+                     <div className="flex items-center gap-2">
+                       <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                       </svg>
+                       <h4 className="text-sm font-semibold text-foreground">Segment Notes</h4>
+                     </div>
+                     <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         setShowDeleteConfirm(true);
+                       }}
+                       disabled={isDeleting}
+                       className="p-1.5 cursor-pointer rounded-lg text-red-500 hover:bg-red-500/10 border border-border hover:border-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                       title="Delete this segment note"
+                     >
+                       <Trash2 className="w-4 h-4" />
+                     </button>
+                   </div>
+                    <div className="text-sm text-muted-foreground leading-relaxed">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          // Custom styling for markdown elements
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                          del: ({ children }) => <del className="line-through text-muted-foreground">{children}</del>,
+                          u: ({ children }) => <span className="underline">{children}</span>,
+                          ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                          li: ({ children }) => <li className="ml-2">{children}</li>,
+                          h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-2 first:mt-0">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-sm font-bold mb-2 mt-2 first:mt-0">{children}</h3>,
+                          code: ({ children }) => (
+                            <code className="bg-muted/30 px-1 py-0.5 rounded text-xs font-mono text-accent">
+                              {children}
+                            </code>
+                          ),
+                          pre: ({ children }) => (
+                            <pre className="bg-muted/30 p-2 rounded-lg overflow-x-auto mb-2 text-xs">
+                              {children}
+                            </pre>
+                          ),
+                          blockquote: ({ children }) => (
+                            <blockquote className="border-l-4 border-accent pl-3 italic text-muted-foreground mb-2">
+                              {children}
+                            </blockquote>
+                          ),
+                          hr: () => <hr className="border-border my-2" />,
+                          a: ({ children, href }) => (
+                            <a href={href} className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
+                        {activeSegmentNote}
+                      </ReactMarkdown>
+                    </div>
+                 </div>
+               </motion.div>
+             )}
+           </AnimatePresence>
+         </div>
+       </div>
+
+       {/* Delete Confirmation Modal */}
+       <AnimatePresence>
+         {showDeleteConfirm && (
+           <motion.div
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 bg-black/50 flex items-center justify-center z-60"
+             onClick={() => setShowDeleteConfirm(false)}
+           >
+             <motion.div
+               initial={{ scale: 0.9, opacity: 0 }}
+               animate={{ scale: 1, opacity: 1 }}
+               exit={{ scale: 0.9, opacity: 0 }}
+               onClick={(e) => e.stopPropagation()}
+               className="bg-card-bg border-2 border-border rounded-2xl p-6 max-w-md mx-4"
+             >
+               <div className="flex items-start gap-3 mb-4">
+                 <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                   <Trash2 className="w-5 h-5 text-red-500" />
+                 </div>
+                 <div>
+                   <h3 className="text-lg font-semibold text-foreground mb-1">
+                     Delete Segment Note?
+                   </h3>
+                   <p className="text-sm text-muted-foreground">
+                     This will permanently delete this note. This action cannot be undone.
+                   </p>
+                 </div>
+               </div>
+
+               <div className="flex gap-3 justify-end">
+                 <button
+                   onClick={() => setShowDeleteConfirm(false)}
+                   disabled={isDeleting}
+                   className="px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-lg hover:bg-muted/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   onClick={deleteActiveSegmentNote}
+                   disabled={isDeleting}
+                   className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                 >
+                   {isDeleting ? (
+                     <>
+                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                       Deleting...
+                     </>
+                   ) : (
+                     <>
+                       <Trash2 className="w-4 h-4" />
+                       Delete
+                     </>
+                   )}
+                 </button>
+               </div>
+             </motion.div>
+           </motion.div>
+         )}
+       </AnimatePresence>
+     </div>
+   );
+ }

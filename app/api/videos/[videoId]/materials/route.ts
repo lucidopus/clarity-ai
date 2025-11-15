@@ -3,9 +3,10 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Video, { type ITranscriptSegment } from '@/lib/models/Video';
-import LearningMaterial, { type IPrerequisite } from '@/lib/models/LearningMaterial';
+import LearningMaterial, { type IPrerequisite, type IRealWorldProblem } from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
+import { MindMap } from '@/lib/models';
 import Progress from '@/lib/models/Progress';
 
 interface DecodedToken {
@@ -81,6 +82,9 @@ export async function GET(
       userId: decoded.userId
     });
 
+    // Fetch mind map
+    const mindMap = await MindMap.findOne({ videoId: videoId, userId: decoded.userId });
+
     // Format response
     const materials = {
       video: {
@@ -119,7 +123,20 @@ export async function GET(
         description: `Understanding of ${prereq.topic} (${prereq.difficulty} level)`,
         required: prereq.difficulty === 'beginner' || prereq.difficulty === 'intermediate'
       })) || [],
-      prerequisiteQuiz: [] // TODO: Add prerequisite quiz questions if needed
+      prerequisiteQuiz: [], // TODO: Add prerequisite quiz questions if needed
+      mindMap: mindMap ? {
+        nodes: mindMap.nodes,
+        edges: mindMap.edges,
+      } : {
+        nodes: [],
+        edges: [],
+      },
+      realWorldProblems: learningMaterial?.realWorldProblems?.map((problem: IRealWorldProblem) => ({
+        id: problem.id,
+        title: problem.title,
+        scenario: problem.scenario,
+        hints: problem.hints
+      })) || [],
     };
 
     return NextResponse.json(materials);

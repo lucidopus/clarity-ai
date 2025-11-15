@@ -1,31 +1,57 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IUserPreferences {
-  role: 'Student' | 'Teacher' | 'Professional Learner' | 'Content Creator';
+// Learning-specific preferences (from onboarding flow)
+export interface ILearningPreferences {
+  // Step 1: Learning Goals & Context
+  role?: 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator';
   learningGoals: string[];
-  preferredContentTypes: {
-    type: 'Videos' | 'Flashcards' | 'Quizzes' | 'Transcripts' | 'Interactive Summaries';
-    frequency: 'Daily' | 'Weekly' | 'Monthly' | 'As needed';
-  }[];
-  subjects: string[];
-  expertiseLevel: 'Beginner' | 'Intermediate' | 'Advanced';
-  learningStyle: ('Visual' | 'Auditory' | 'Reading/Writing' | 'Kinesthetic')[];
-  technicalComfort: 'Beginner' | 'Intermediate' | 'Advanced';
-  accessibility: {
-    largerText: boolean;
-    voiceNarration: boolean;
-    simplifiedInterface: boolean;
+  learningGoalText?: string;
+
+  // Step 2: Learning Challenges
+  learningChallenges?: string[];
+  learningChallengesText?: string;
+
+  // Step 3 & 4: Personality Profile (research-backed traits, 1-7 scale)
+  personalityProfile?: {
+    conscientiousness: number;
+    emotionalStability: number;
+    selfEfficacy: number;
+    masteryOrientation: number;
+    performanceOrientation: number;
   };
-  timePreferences: {
-    availableTimePerDay: number; // hours
-    availableTimePerWeek: number; // hours
-    preferredSessionLength: number; // minutes
-    notificationsEnabled: boolean;
+
+  // Step 5: Material & Time Preferences
+  preferredMaterialsRanked?: string[]; // Max 3 items, ordered
+  dailyTimeMinutes?: number;
+}
+
+// General app preferences (from Settings page)
+export interface IGeneralPreferences {
+  emailNotifications?: boolean;
+  studyReminders?: boolean;
+  autoplayVideos?: boolean;
+}
+
+// Root preferences interface
+export interface IUserPreferences {
+  learning?: ILearningPreferences;
+  general?: IGeneralPreferences;
+
+  // Flat fields for onboarding flow compatibility (will be mapped to learning.*)
+  role?: 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator';
+  learningGoals?: string[];
+  learningGoalText?: string;
+  learningChallenges?: string[];
+  learningChallengesText?: string;
+  personalityProfile?: {
+    conscientiousness: number;
+    emotionalStability: number;
+    selfEfficacy: number;
+    masteryOrientation: number;
+    performanceOrientation: number;
   };
-  additionalPreferences: {
-    collaborationEnabled: boolean;
-    dataPrivacyLevel: 'Standard' | 'Enhanced';
-  };
+  preferredMaterialsRanked?: string[];
+  dailyTimeMinutes?: number;
 }
 
 export interface IUser extends Document {
@@ -55,30 +81,29 @@ const UserSchema: Schema = new Schema({
   customUserType: { type: String, required: function(this: IUser) { return this.userType === 'Other'; } },
   email: { type: String, required: true },
   preferences: {
-    role: { type: String, enum: ['Student', 'Teacher', 'Professional Learner', 'Content Creator'] },
-    learningGoals: [{ type: String }],
-    preferredContentTypes: [{
-      type: { type: String, enum: ['Videos', 'Flashcards', 'Quizzes', 'Transcripts', 'Interactive Summaries'] },
-      frequency: { type: String, enum: ['Daily', 'Weekly', 'Monthly', 'As needed'] },
-    }],
-    subjects: [{ type: String }],
-    expertiseLevel: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-    learningStyle: [{ type: String, enum: ['Visual', 'Auditory', 'Reading/Writing', 'Kinesthetic'] }],
-    technicalComfort: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced'] },
-    accessibility: {
-      largerText: { type: Boolean, default: false },
-      voiceNarration: { type: Boolean, default: false },
-      simplifiedInterface: { type: Boolean, default: false },
+    // Learning preferences (from onboarding)
+    learning: {
+      role: { type: String, enum: ['Student', 'Teacher', 'Working Professional', 'Content Creator'] },
+      learningGoals: [{ type: String }],
+      learningGoalText: { type: String },
+      learningChallenges: [{ type: String }],
+      learningChallengesText: { type: String },
+      personalityProfile: {
+        conscientiousness: { type: Number, min: 1, max: 7 },
+        emotionalStability: { type: Number, min: 1, max: 7 },
+        selfEfficacy: { type: Number, min: 1, max: 7 },
+        masteryOrientation: { type: Number, min: 1, max: 7 },
+        performanceOrientation: { type: Number, min: 1, max: 7 },
+      },
+      preferredMaterialsRanked: [{ type: String }],
+      dailyTimeMinutes: { type: Number, min: 0 },
     },
-    timePreferences: {
-      availableTimePerDay: { type: Number, min: 0 },
-      availableTimePerWeek: { type: Number, min: 0 },
-      preferredSessionLength: { type: Number, min: 5 },
-      notificationsEnabled: { type: Boolean, default: true },
-    },
-    additionalPreferences: {
-      collaborationEnabled: { type: Boolean, default: false },
-      dataPrivacyLevel: { type: String, enum: ['Standard', 'Enhanced'], default: 'Standard' },
+
+    // General app preferences (from Settings page)
+    general: {
+      emailNotifications: { type: Boolean, default: true },
+      studyReminders: { type: Boolean, default: true },
+      autoplayVideos: { type: Boolean, default: false },
     },
   },
   // Streak tracking fields with defaults

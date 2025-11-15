@@ -80,7 +80,7 @@ export default function FlashcardCreator({
                   className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-background rounded-lg"
                   disabled={isLoading}
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 cursor-pointer" />
                 </button>
               </div>
 

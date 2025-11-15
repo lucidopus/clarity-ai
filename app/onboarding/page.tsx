@@ -10,26 +10,133 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('Onboarding useEffect - loading:', loading, 'user:', user ? 'exists' : 'null');
     if (!loading) {
       if (!user) {
+        console.log('Onboarding - No user, redirecting to signin');
         router.push('/auth/signin');
-      } else if (user.preferences) {
-        router.push('/dashboard');
+      } else {
+        // Check if learning preferences exist AND have actual meaningful data
+        console.log('Onboarding - user.preferences:', JSON.stringify(user.preferences, null, 2));
+
+        const hasLearningPreferences = !!(
+          user.preferences?.learning &&
+          (
+            // Check if any of these fields have actual data
+            (user.preferences.learning.role) ||
+            (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+            (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+            (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+            (user.preferences.learning.personalityProfile &&
+             Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+             Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+          )
+        );
+
+        console.log('Onboarding - hasLearningPreferences:', hasLearningPreferences);
+
+        if (hasLearningPreferences) {
+          // User has completed onboarding, redirect to dashboard
+          console.log('Onboarding - Has learning preferences, redirecting to dashboard');
+          router.push('/dashboard');
+        } else {
+          console.log('Onboarding - No learning preferences, staying on onboarding page');
+        }
       }
     }
   }, [user, loading, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-accent"></div>
+      <div className="min-h-screen bg-background">
+        {/* Header Skeleton */}
+        <div className="border-b border-border bg-card-bg/50">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="h-6 bg-secondary/20 rounded animate-pulse w-32"></div>
+              <div className="flex space-x-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="w-8 h-2 bg-secondary/20 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Skeleton */}
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="max-w-2xl mx-auto">
+            {/* Step Title Skeleton */}
+            <div className="text-center mb-8">
+              <div className="h-8 bg-secondary/20 rounded mb-2 animate-pulse w-48 mx-auto"></div>
+              <div className="h-4 bg-secondary/20 rounded animate-pulse w-64 mx-auto"></div>
+            </div>
+
+            {/* Step Content Skeleton */}
+            <div className="bg-card-bg rounded-xl border border-border p-8">
+              <div className="space-y-6">
+                {/* Form fields simulation */}
+                <div>
+                  <div className="h-4 bg-secondary/20 rounded mb-2 animate-pulse w-24"></div>
+                  <div className="h-10 bg-background border border-border rounded-lg animate-pulse"></div>
+                </div>
+
+                <div>
+                  <div className="h-4 bg-secondary/20 rounded mb-2 animate-pulse w-32"></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[1, 2].map((i) => (
+                      <div key={i} className="h-10 bg-background border border-border rounded-lg animate-pulse"></div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="h-4 bg-secondary/20 rounded mb-3 animate-pulse w-28"></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="flex items-center space-x-3">
+                        <div className="w-5 h-5 bg-accent/20 rounded animate-pulse"></div>
+                        <div className="h-4 bg-secondary/20 rounded animate-pulse flex-1"></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Skeleton */}
+              <div className="flex justify-between mt-8">
+                <div className="h-10 bg-secondary/20 rounded-lg animate-pulse w-20"></div>
+                <div className="h-10 bg-accent/20 rounded-lg animate-pulse w-24"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!user || user.preferences) {
+  // Don't render if user is not logged in or has already completed onboarding
+  const hasLearningPreferences = !!(
+    user?.preferences?.learning &&
+    (
+      // Check if any of these fields have actual data
+      (user.preferences.learning.role) ||
+      (user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0) ||
+      (user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0) ||
+      (user.preferences.learning.dailyTimeMinutes && user.preferences.learning.dailyTimeMinutes > 0) ||
+      (user.preferences.learning.personalityProfile &&
+       Object.keys(user.preferences.learning.personalityProfile).length > 0 &&
+       Object.values(user.preferences.learning.personalityProfile).some(v => v !== undefined))
+    )
+  );
+
+  console.log('Onboarding render - user:', user ? 'exists' : 'null', 'hasLearningPreferences:', hasLearningPreferences);
+
+  if (!user || hasLearningPreferences) {
+    console.log('Onboarding render - Returning null (will redirect)');
     return null; // Will redirect
   }
 
+  console.log('Onboarding render - Rendering OnboardingFlow');
   return <OnboardingFlow />;
 }

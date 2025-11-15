@@ -4,69 +4,170 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Eye, Edit3 } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, List, ListOrdered, Eye, Edit3, Trash2 } from 'lucide-react';
 
 interface NotesEditorProps {
   videoId: string;
+  segmentId?: string; // Optional for segment-specific notes
+  notes?: {
+    generalNote: string;
+    segmentNotes: Array<{
+      segmentId: string;
+      content: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  };
+  onSaveNotes?: (notes: {
+    generalNote: string;
+    segmentNotes: Array<{
+      segmentId: string;
+      content: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  }) => Promise<void>;
 }
 
-export default function NotesEditor({ videoId }: NotesEditorProps) {
+export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: NotesEditorProps) {
   const [content, setContent] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initializedRef = useRef(false);
+  const lastSavedContentRef = useRef('');
 
-  // Fetch existing notes on mount
+  // Initialize content from props or fetch if not provided (ONLY ONCE)
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const response = await fetch(`/api/notes?videoId=${videoId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setContent(data.content || '');
-          if (data.updatedAt) {
-            setLastSaved(new Date(data.updatedAt));
+    // Only run on initial mount
+    if (initializedRef.current) return;
+
+    if (notes && segmentId) {
+      // Find segment note
+      const segmentNote = notes.segmentNotes.find(note => note.segmentId === segmentId);
+      const initialContent = segmentNote?.content || '';
+      setContent(initialContent);
+      lastSavedContentRef.current = initialContent;
+      setIsLoading(false);
+      initializedRef.current = true;
+    } else if (notes && !segmentId) {
+      // Use general note
+      const initialContent = notes.generalNote || '';
+      setContent(initialContent);
+      lastSavedContentRef.current = initialContent;
+      setIsLoading(false);
+      initializedRef.current = true;
+    } else {
+      // Fallback to old API for backward compatibility
+      const fetchNotes = async () => {
+        try {
+          const url = segmentId
+            ? `/api/videos/${videoId}/segments/${segmentId}/notes`
+            : `/api/notes?videoId=${videoId}`;
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            const initialContent = data.content || '';
+            setContent(initialContent);
+            lastSavedContentRef.current = initialContent;
           }
+        } catch (error) {
+          console.error('Error fetching notes:', error);
+        } finally {
+          setIsLoading(false);
+          initializedRef.current = true;
         }
-      } catch (error) {
-        console.error('Error fetching notes:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    fetchNotes();
-  }, [videoId]);
+      fetchNotes();
+    }
+  }, [videoId, segmentId, notes]);
 
-  const saveNotes = useCallback(async () => {
+  const saveNotes = useCallback(async (contentToSave: string) => {
     setIsSaving(true);
     try {
-      const response = await fetch('/api/notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ videoId, content }),
-      });
+      if (onSaveNotes && notes) {
+        // Use new callback-based saving
+        const updatedNotes = { ...notes };
+        if (segmentId) {
+          // Update or add segment note
+          const existingIndex = updatedNotes.segmentNotes.findIndex(note => note.segmentId === segmentId);
+          const now = new Date();
+          if (existingIndex >= 0) {
+            updatedNotes.segmentNotes[existingIndex] = {
+              ...updatedNotes.segmentNotes[existingIndex],
+              content: contentToSave,
+              updatedAt: now
+            };
+          } else {
+            updatedNotes.segmentNotes.push({
+              segmentId,
+              content: contentToSave,
+              createdAt: now,
+              updatedAt: now
+            });
+          }
+        } else {
+          // Update general note
+          updatedNotes.generalNote = contentToSave;
+        }
+        await onSaveNotes(updatedNotes);
+      } else {
+        // Fallback to old API
+        const url = segmentId
+          ? `/api/videos/${videoId}/segments/${segmentId}/notes`
+          : '/api/notes';
+        const body = segmentId
+          ? JSON.stringify({ content: contentToSave })
+          : JSON.stringify({ videoId, content: contentToSave });
 
-      if (response.ok) {
-        const data = await response.json();
-        setLastSaved(new Date(data.updatedAt));
+        await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: body,
+        });
       }
+      // Update last saved content after successful save
+      lastSavedContentRef.current = contentToSave;
     } catch (error) {
       console.error('Error saving notes:', error);
     } finally {
       setIsSaving(false);
     }
-  }, [videoId, content]);
+  }, [videoId, segmentId, notes, onSaveNotes]);
+
+  const deleteSegmentNote = useCallback(async () => {
+    if (!segmentId || !notes || !onSaveNotes) return;
+
+    setIsDeleting(true);
+    try {
+      // Filter out the segment note to delete
+      const updatedNotes = {
+        ...notes,
+        segmentNotes: notes.segmentNotes.filter(note => note.segmentId !== segmentId)
+      };
+
+      await onSaveNotes(updatedNotes);
+      setContent(''); // Clear local content
+      lastSavedContentRef.current = ''; // Update last saved content
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Error deleting segment note:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [segmentId, notes, onSaveNotes]);
 
   // Auto-save with debounce
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && initializedRef.current && content !== lastSavedContentRef.current) {
       // Clear existing timeout
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
@@ -74,7 +175,7 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
 
       // Set new timeout for auto-save (2 seconds after user stops typing)
       saveTimeoutRef.current = setTimeout(() => {
-        saveNotes();
+        saveNotes(content);
       }, 2000);
 
       return () => {
@@ -90,7 +191,7 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const isMac = navigator.userAgent.toUpperCase().indexOf('MAC') >= 0;
     const modKey = isMac ? e.metaKey : e.ctrlKey;
 
     // Cmd/Ctrl + B for bold
@@ -247,21 +348,6 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
     }
   };
 
-  const formatLastSaved = () => {
-    if (!lastSaved) return 'Never';
-    const now = new Date();
-    const diffMs = now.getTime() - lastSaved.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    const diffHours = Math.floor(diffMins / 60);
-
-    if (diffSecs < 10) return 'Just now';
-    if (diffSecs < 60) return `${diffSecs} seconds ago`;
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return lastSaved.toLocaleDateString();
-  };
-
   if (isLoading) {
     return (
       <div className="bg-card-bg border-2 border-border rounded-2xl p-4">
@@ -281,10 +367,12 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
           <svg className="w-5 h-5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          <h3 className="text-sm font-semibold text-foreground">Your Notes</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            {segmentId ? 'Segment Notes' : 'Your Notes'}
+          </h3>
         </div>
 
-        {/* View Mode Toggle and Save Status */}
+        {/* View Mode Toggle, Delete Button, and Save Status */}
         <div className="flex items-center gap-3">
           {/* View Mode Toggle */}
           <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
@@ -314,34 +402,48 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
             </button>
           </div>
 
+          {/* Delete Button (only for segment notes) */}
+          {segmentId && content.trim() && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isDeleting}
+              className="p-2 rounded-lg cursor-pointer text-red-500 hover:bg-red-500/10 border border-border hover:border-red-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Delete this segment note"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Save Status */}
-          <AnimatePresence mode="wait">
-            {isSaving ? (
-              <motion.div
-                key="saving"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center gap-2 text-xs text-muted-foreground"
-              >
-                <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
-                <span>Saving...</span>
-              </motion.div>
-            ) : lastSaved ? (
-              <motion.div
-                key="saved"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground"
-              >
-                <svg className="w-3.5 h-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Saved {formatLastSaved()}</span>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <AnimatePresence mode="wait">
+              {isSaving ? (
+                <motion.div
+                  key="saving"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="flex items-center gap-1.5"
+                >
+                  <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                  <span>Saving...</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="auto-save"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Auto-saves</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -521,6 +623,68 @@ export default function NotesEditor({ videoId }: NotesEditorProps) {
                 <p className="text-sm">No content to preview. Switch to Edit mode to start writing.</p>
               </div>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card-bg border-2 border-border rounded-2xl p-6 max-w-md mx-4"
+            >
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-1">
+                    Delete Segment Note?
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    This will permanently delete this note. This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-foreground bg-background border border-border rounded-lg hover:bg-muted/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteSegmentNote}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

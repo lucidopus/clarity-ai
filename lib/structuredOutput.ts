@@ -1,6 +1,8 @@
+import { CHATBOT_NAME } from './config';
+
 export const LEARNING_MATERIALS_SCHEMA = {
-  type: 'object',
-  properties: {
+   type: 'object',
+   properties: {
     title: { type: 'string' },
     flashcards: {
       type: 'array',
@@ -58,9 +60,60 @@ export const LEARNING_MATERIALS_SCHEMA = {
         additionalProperties: false,
       },
     },
-    chatbotContext: { type: 'string' },
+    realWorldProblems: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          title: { type: 'string' },
+          scenario: { type: 'string' },
+          hints: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['id', 'title', 'scenario', 'hints'],
+        additionalProperties: false,
+      },
+    },
+    videoSummary: { type: 'string', description: `A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context.` },
+    mindMap: {
+      type: 'object',
+      properties: {
+        nodes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              label: { type: 'string' },
+              type: { type: 'string', enum: ['root', 'concept', 'subconcept', 'detail'] },
+              description: { type: 'string' },
+              level: { type: 'integer' },
+            },
+            required: ['id', 'label', 'type', 'description', 'level'],
+            additionalProperties: false,
+          },
+        },
+        edges: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              source: { type: 'string' },
+              target: { type: 'string' },
+              label: { type: 'string' },
+              type: { type: 'string', enum: ['hierarchy', 'relation', 'dependency'] },
+            },
+            required: ['id', 'source', 'target', 'label', 'type'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['nodes', 'edges'],
+      additionalProperties: false,
+    },
   },
-  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'chatbotContext'],
+  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'realWorldProblems', 'videoSummary', 'mindMap'],
   additionalProperties: false,
 } as const;
 
@@ -90,7 +143,29 @@ export interface LearningMaterials {
     topic: string;
     difficulty: 'beginner' | 'intermediate' | 'advanced';
   }>;
-  chatbotContext: string;
+  realWorldProblems: Array<{
+    id: string;
+    title: string;
+    scenario: string;
+    hints: string[];
+  }>;
+  videoSummary: string;
+  mindMap: {
+    nodes: Array<{
+      id: string;
+      label: string;
+      type: 'root' | 'concept' | 'subconcept' | 'detail';
+      description: string;
+      level: number;
+    }>;
+    edges: Array<{
+      id: string;
+      source: string;
+      target: string;
+      label: string;
+      type: 'hierarchy' | 'relation' | 'dependency';
+    }>;
+  };
 }
 
 
