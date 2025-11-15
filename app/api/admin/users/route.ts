@@ -36,10 +36,12 @@ export async function GET(request: NextRequest) {
     const joinDateBefore = searchParams.get('joinDateBefore');
 
     // Build search query
-    const searchQuery: {
-      $or?: Array<Record<string, any>>;
+    interface SearchQuery {
+      $or?: Array<Record<string, { $regex: string; $options: string }>>;
       createdAt?: Record<string, Date>;
-    } = {};
+    }
+
+    const searchQuery: SearchQuery = {};
 
     if (search) {
       searchQuery.$or = [
@@ -64,17 +66,32 @@ export async function GET(request: NextRequest) {
     // Get total count
     const totalUsers = await User.countDocuments(searchQuery);
 
-    let users: Record<string, any>[];
+    interface UserData {
+      _id: mongoose.Types.ObjectId;
+      username: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      createdAt: Date;
+      lastLoginDate?: Date;
+      loginStreak?: number;
+    }
+
+    interface UserWithVideoCount extends UserData {
+      videoCount: number;
+    }
+
+    let users: Array<UserData | UserWithVideoCount>;
 
     if (sortBy === 'videos') {
       // For video sorting, we need to get all users and sort by video count
-      const allUsers = await User.find(searchQuery)
+      const allUsers = (await User.find(searchQuery)
         .select('_id username email firstName lastName createdAt lastLoginDate loginStreak')
-        .lean();
+        .lean()) as unknown as UserData[];
 
       // Get video counts for all users
       const usersWithVideoCounts = await Promise.all(
-        allUsers.map(async (user: Record<string, any>) => {
+        allUsers.map(async (user: UserData) => {
           const userObjectId = new mongoose.Types.ObjectId(user._id);
           const videoCount = await Video.countDocuments({ userId: userObjectId });
           return { ...user, videoCount };
@@ -88,11 +105,11 @@ export async function GET(request: NextRequest) {
       });
 
       // Apply pagination
-      users = usersWithVideoCounts.slice((page - 1) * limit, page * limit);
+      users = usersWithVideoCounts.slice((page - 1) * limit, page * limit) as UserWithVideoCount[];
     } else {
       // Build sort object for other sorts
       const order = sortOrder === 'asc' ? 1 : -1;
-      let sortObj: any;
+      let sortObj: Record<string, number>;
 
       switch (sortBy) {
         case 'name':
@@ -105,22 +122,22 @@ export async function GET(request: NextRequest) {
       }
 
       // Get paginated users
-      users = await User.find(searchQuery)
+      users = (await User.find(searchQuery)
         .select('_id username email firstName lastName createdAt lastLoginDate loginStreak')
-        .sort(sortObj)
+        .sort(sortObj as unknown as Record<string, 1 | -1>)
         .skip((page - 1) * limit)
         .limit(limit)
-        .lean();
+        .lean()) as unknown as UserData[];
     }
 
     // Get generation counts for each user
     const usersWithCounts = await Promise.all(
-      users.map(async (user: Record<string, any>) => {
+      users.map(async (user) => {
         // Convert userId to ObjectId for proper comparison
         const userObjectId = new mongoose.Types.ObjectId(user._id);
 
         // For video sort, videoCount is already calculated
-        const videoCount = sortBy === 'videos' ? user.videoCount : await Video.countDocuments({ userId: userObjectId });
+        const videoCount = sortBy === 'videos' && 'videoCount' in user ? user.videoCount : await Video.countDocuments({ userId: userObjectId });
 
         const [flashcardCount, quizCount, activityCount] = await Promise.all([
           Flashcard.countDocuments({ userId: userObjectId }),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Search, Trash2, ChevronLeft, ChevronRight, X, Filter, Calendar, ArrowUpDown, ChevronDown, Video, CreditCard, FileQuestion, Activity, TrendingUp, Flame } from 'lucide-react';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
@@ -611,10 +612,12 @@ export default function AdminUsersPage() {
                         <div key={video.id} className="bg-background rounded-xl border border-border p-4 hover:border-accent/50 transition-colors">
                           <div className="flex gap-4">
                             {video.thumbnail && (
-                              <img
+                              <Image
                                 src={video.thumbnail}
                                 alt={video.title}
-                                className="w-32 h-20 rounded-lg object-cover"
+                                width={128}
+                                height={80}
+                                className="rounded-lg object-cover"
                               />
                             )}
                             <div className="flex-1 min-w-0">

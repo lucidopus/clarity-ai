@@ -47,9 +47,25 @@ export async function GET(
     await dbConnect();
 
     // Get user details
-    const user: any = await User.findById(userId)
+    interface UserDocument {
+      _id: mongoose.Types.ObjectId;
+      username: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      userType: string;
+      customUserType?: string;
+      preferences?: Record<string, unknown>;
+      createdAt: Date;
+      updatedAt: Date;
+      lastLoginDate?: Date;
+      loginStreak?: number;
+      longestStreak?: number;
+    }
+
+    const user = await User.findById(userId)
       .select('-passwordHash')
-      .lean();
+      .lean() as UserDocument | null;
 
     if (!user) {
       return NextResponse.json(
@@ -62,14 +78,23 @@ export async function GET(
     }
 
     // Get all videos with details
-    const videos = await Video.find({ userId })
+    interface VideoDocument {
+      _id: mongoose.Types.ObjectId;
+      videoId: string;
+      title: string;
+      thumbnail?: string;
+      createdAt: Date;
+      processingStatus: string;
+    }
+
+    const videos = (await Video.find({ userId })
       .select('_id videoId title thumbnail createdAt processingStatus')
       .sort({ createdAt: -1 })
-      .lean();
+      .lean()) as unknown as VideoDocument[];
 
     // Get generation counts by video
     const videosWithCounts = await Promise.all(
-      videos.map(async (video: any) => {
+      videos.map(async (video) => {
         const [flashcardCount, quizCount, hasLearningMaterial, hasMindMap, hasNotes] = await Promise.all([
           Flashcard.countDocuments({ userId, videoId: video.videoId }),
           Quiz.countDocuments({ userId, videoId: video.videoId }),
