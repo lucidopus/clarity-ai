@@ -37,6 +37,7 @@ interface VideoAndTranscriptViewerProps {
       updatedAt: Date;
     }>;
   }) => Promise<void>;
+  autoplayVideos?: boolean;
 }
 
 // Extend Window interface for YouTube IFrame API
@@ -65,7 +66,8 @@ export default function VideoAndTranscriptViewer({
   videoId,
   youtubeUrl,
   notes,
-  onSaveNotes
+  onSaveNotes,
+  autoplayVideos = false
 }: VideoAndTranscriptViewerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
@@ -126,6 +128,15 @@ export default function VideoAndTranscriptViewer({
         playerRef.current = new window.YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
+              // Auto-play video if user preference is enabled
+              if (autoplayVideos && playerRef.current && typeof playerRef.current.playVideo === 'function') {
+                try {
+                  playerRef.current.playVideo();
+                } catch (e) {
+                  console.error('Error auto-playing video:', e);
+                }
+              }
+
               // Start tracking video time
               const interval = setInterval(() => {
                 if (playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
@@ -150,7 +161,7 @@ export default function VideoAndTranscriptViewer({
     } else {
       window.onYouTubeIframeAPIReady = initPlayer;
     }
-  }, []);
+  }, [autoplayVideos]);
 
   // Auto-select segment based on current playback time
   useEffect(() => {

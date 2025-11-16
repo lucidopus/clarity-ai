@@ -127,6 +127,7 @@ export default function VideoMaterialsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
   const [showWarning, setShowWarning] = useState(!!warningType);
+  const [autoplayVideos, setAutoplayVideos] = useState(false);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -263,10 +264,11 @@ export default function VideoMaterialsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch materials and notes in parallel
-        const [materialsResponse, notesResponse] = await Promise.all([
+        // Fetch materials, notes, and user preferences in parallel
+        const [materialsResponse, notesResponse, preferencesResponse] = await Promise.all([
           fetch(`/api/videos/${videoId}/materials`),
-          fetch(`/api/notes/${videoId}`)
+          fetch(`/api/notes/${videoId}`),
+          fetch(`/api/preferences/general`)
         ]);
 
         if (!materialsResponse.ok) {
@@ -281,6 +283,12 @@ export default function VideoMaterialsPage() {
           setNotes(notesData);
         } else {
           setNotes({ generalNote: '', segmentNotes: [] });
+        }
+
+        // Fetch user's autoplay preference
+        if (preferencesResponse.ok) {
+          const preferencesData = await preferencesResponse.json();
+          setAutoplayVideos(preferencesData.preferences?.autoplayVideos ?? false);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -521,6 +529,7 @@ export default function VideoMaterialsPage() {
                 youtubeUrl={materials.video.youtubeUrl}
                 notes={notes}
                 onSaveNotes={saveNotes}
+                autoplayVideos={autoplayVideos}
               />
             )}
             {activeTab === 'prerequisites' && (
