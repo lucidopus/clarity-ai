@@ -14,6 +14,7 @@ import { calculateLLMCost, calculateApifyCost, getCurrentModelInfo } from '@/lib
 import { logGenerationCost, calculateTotalCost, formatCost } from '@/lib/cost/logger';
 import type { IServiceUsage } from '@/lib/models/Cost';
 import { CostSource } from '@/lib/models/Cost';
+import { ApiError, InvalidURLError, DuplicateVideoError } from '@/lib/errors/ApiError';
 
 interface DecodedToken {
   userId: string;
@@ -55,9 +56,10 @@ export async function POST(request: NextRequest) {
     console.log('🔍 [VIDEO PROCESS] Step 3: Validating YouTube URL format...');
     if (!isValidYouTubeUrl(youtubeUrl)) {
       console.log(`❌ [VIDEO PROCESS] URL validation failed: ${youtubeUrl}`);
+      const invalidUrlError = new InvalidURLError();
       return NextResponse.json(
-        { error: 'Invalid YouTube URL format' },
-        { status: 400 }
+        { error: invalidUrlError.message, errorType: invalidUrlError.code },
+        { status: invalidUrlError.statusCode }
       );
     }
     console.log('✅ [VIDEO PROCESS] URL format valid');
@@ -78,12 +80,14 @@ export async function POST(request: NextRequest) {
 
     if (existingVideo) {
       console.log(`♻️ [VIDEO PROCESS] Video already processed: ${existingVideo.videoId}`);
+      const duplicateError = new DuplicateVideoError();
       return NextResponse.json(
         {
-          videoId: existingVideo.videoId, // YouTube video ID
-          message: 'Video already processed',
+          error: duplicateError.message,
+          errorType: duplicateError.code,
+          videoId: existingVideo.videoId, // YouTube video ID for redirect
         },
-        { status: 200 }
+        { status: duplicateError.statusCode }
       );
     }
     console.log('✅ [VIDEO PROCESS] No duplicate found, proceeding with new video');
@@ -158,28 +162,45 @@ export async function POST(request: NextRequest) {
       console.log('✅ [VIDEO PROCESS] Transcript and metadata saved to database');
     } catch (error) {
       console.error('❌ [VIDEO PROCESS] Transcript extraction failed:', error);
+
+      // Extract error code and status from ApiError
+      let errorCode = 'UNKNOWN_ERROR';
+      let statusCode = 500;
+      let errorMessage = 'Failed to extract transcript';
+
+      if (error instanceof ApiError) {
+        errorCode = error.code;
+        statusCode = error.statusCode;
+        errorMessage = error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      // Update video record with error information
       await Video.findByIdAndUpdate(videoDoc._id, {
         processingStatus: 'failed',
-        errorMessage: `Transcript extraction failed: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
+        errorType: errorCode,
+        errorMessage: `Transcript extraction failed: ${errorMessage}`,
       });
+
       return NextResponse.json(
         {
-          error: `Failed to extract transcript: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`,
+          error: errorMessage,
+          errorType: errorCode,
         },
-        { status: 400 }
+        { status: statusCode }
       );
     }
 
     // 6. Generate learning materials
     console.log('🤖 [VIDEO PROCESS] Step 7: Generating learning materials with LLM...');
     console.log(`📊 [VIDEO PROCESS] Sending ${transcriptResult.text.length} characters to Groq LLM...`);
-    let materials;
-    let llmUsage;
+    let materials = null;
+    let llmUsage = null;
+    let llmError = null;
+    let llmErrorCode = null;
     const modelInfo = getCurrentModelInfo();
+
     try {
       console.log(`🤖 [VIDEO PROCESS] Using model: ${modelInfo.model} (input: $${modelInfo.inputCostPerMillion}/M, output: $${modelInfo.outputCostPerMillion}/M)`);
 
@@ -217,126 +238,143 @@ export async function POST(request: NextRequest) {
       console.log(`💰 [COST] LLM (${modelInfo.model}): ${llmUsage.promptTokens} input + ${llmUsage.completionTokens} output tokens = ${formatCost(llmCost)}`);
     } catch (error) {
       console.error('❌ [VIDEO PROCESS] LLM generation failed:', error);
-      await Video.findByIdAndUpdate(videoDoc._id, {
-        processingStatus: 'failed',
-        errorMessage: `LLM generation failed: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }`,
-      });
-      return NextResponse.json(
-        {
-          error: `Failed to generate materials: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`,
-        },
-        { status: 500 }
-      );
+      llmError = error;
+
+      // Extract error code from ApiError
+      if (error instanceof ApiError) {
+        llmErrorCode = error.code;
+      } else {
+        llmErrorCode = 'LLM_PARTIAL_FAILURE';
+      }
+
+      console.log('⚠️ [VIDEO PROCESS] LLM failed but transcript is available - will save as partial success');
     }
 
-    // 7. Save learning materials to database
-    console.log('💾 [VIDEO PROCESS] Step 8: Saving learning materials to database...');
+    // 7. Save learning materials to database (only if LLM succeeded)
+    if (materials) {
+      console.log('💾 [VIDEO PROCESS] Step 8: Saving learning materials to database...');
 
-    // Save flashcards
-    console.log(`💾 [VIDEO PROCESS] Saving ${materials.flashcards.length} flashcards...`);
-    await Flashcard.insertMany(
-      materials.flashcards.map((fc) => ({
-        userId: decoded.userId,
+      // Save flashcards
+      console.log(`💾 [VIDEO PROCESS] Saving ${materials.flashcards.length} flashcards...`);
+      await Flashcard.insertMany(
+        materials.flashcards.map((fc) => ({
+          userId: decoded.userId,
+          videoId: videoId, // YouTube video ID
+          question: fc.question,
+          answer: fc.answer,
+          difficulty: fc.difficulty,
+          generationType: 'ai',
+        }))
+      );
+      console.log('✅ [VIDEO PROCESS] Flashcards saved');
+
+      // Save quizzes
+      console.log(`💾 [VIDEO PROCESS] Saving ${materials.quizzes.length} quizzes...`);
+      await Quiz.insertMany(
+        materials.quizzes.map((quiz) => ({
+          userId: decoded.userId,
+          videoId: videoId, // YouTube video ID
+          questionText: quiz.questionText,
+          options: quiz.options,
+          correctAnswerIndex: quiz.correctAnswerIndex,
+          explanation: quiz.explanation,
+          difficulty: 'medium', // Default difficulty
+          generationType: 'ai',
+        }))
+      );
+      console.log('✅ [VIDEO PROCESS] Quizzes saved');
+
+      // Save mind map to database (upsert if already exists)
+      console.log('💾 [VIDEO PROCESS] Saving mind map...');
+      await MindMap.findOneAndUpdate(
+        {
+          userId: decoded.userId,
+          videoId: videoId,
+        },
+        {
+          userId: decoded.userId,
+          videoId: videoId,
+          nodes: materials.mindMap.nodes,
+          edges: materials.mindMap.edges,
+          metadata: {
+            generatedBy: 'ai',
+            generatedAt: new Date(),
+          },
+        },
+        { upsert: true, new: true }
+      );
+      console.log(`✅ [VIDEO PROCESS] Mind map saved with ${materials.mindMap.nodes.length} nodes and ${materials.mindMap.edges.length} edges`);
+
+      // Save timestamps, prerequisites, and real-world problems in learning materials collection
+      console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps, ${materials.prerequisites.length} prerequisites, and ${materials.realWorldProblems.length} real-world problems...`);
+      await LearningMaterial.create({
         videoId: videoId, // YouTube video ID
-        question: fc.question,
-        answer: fc.answer,
-        difficulty: fc.difficulty,
-        generationType: 'ai',
-      }))
-    );
-    console.log('✅ [VIDEO PROCESS] Flashcards saved');
-
-    // Save quizzes
-    console.log(`💾 [VIDEO PROCESS] Saving ${materials.quizzes.length} quizzes...`);
-    await Quiz.insertMany(
-      materials.quizzes.map((quiz) => ({
         userId: decoded.userId,
-        videoId: videoId, // YouTube video ID
-        questionText: quiz.questionText,
-        options: quiz.options,
-        correctAnswerIndex: quiz.correctAnswerIndex,
-        explanation: quiz.explanation,
-        difficulty: 'medium', // Default difficulty
-        generationType: 'ai',
-      }))
-    );
-    console.log('✅ [VIDEO PROCESS] Quizzes saved');
-
-    // Save mind map to database (upsert if already exists)
-    console.log('💾 [VIDEO PROCESS] Saving mind map...');
-    await MindMap.findOneAndUpdate(
-      {
-        userId: decoded.userId,
-        videoId: videoId,
-      },
-      {
-        userId: decoded.userId,
-        videoId: videoId,
-        nodes: materials.mindMap.nodes,
-        edges: materials.mindMap.edges,
+        timestamps: materials.timestamps,
+        prerequisites: materials.prerequisites,
+        realWorldProblems: materials.realWorldProblems,
+        videoSummary: materials.videoSummary,
         metadata: {
-          generatedBy: 'ai',
+          generatedBy: modelInfo.model,
           generatedAt: new Date(),
         },
-      },
-      { upsert: true, new: true }
-    );
-    console.log(`✅ [VIDEO PROCESS] Mind map saved with ${materials.mindMap.nodes.length} nodes and ${materials.mindMap.edges.length} edges`);
-
-    // Save timestamps, prerequisites, and real-world problems in learning materials collection
-    console.log(`💾 [VIDEO PROCESS] Saving ${materials.timestamps.length} timestamps, ${materials.prerequisites.length} prerequisites, and ${materials.realWorldProblems.length} real-world problems...`);
-    await LearningMaterial.create({
-      videoId: videoId, // YouTube video ID
-      userId: decoded.userId,
-      timestamps: materials.timestamps,
-      prerequisites: materials.prerequisites,
-      realWorldProblems: materials.realWorldProblems,
-      videoSummary: materials.videoSummary,
-      metadata: {
-        generatedBy: modelInfo.model,
-        generatedAt: new Date(),
-      },
-    });
-    console.log('✅ [VIDEO PROCESS] Learning materials saved');
-
-    // 8. Update video with generated title and status: completed
-    console.log('✅ [VIDEO PROCESS] Step 9: Updating video with generated title and marking as completed...');
-    await Video.findByIdAndUpdate(videoDoc._id, {
-      title: materials.title,
-      processingStatus: 'completed',
-      processedAt: new Date(),
-    });
-    console.log('✅ [VIDEO PROCESS] Video marked as completed');
-
-    // 9. Log video generation activity
-    console.log('📊 [VIDEO PROCESS] Step 10: Logging video generation activity...');
-    try {
-      const { now: logTimestamp, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
-      await ActivityLog.create({
-        userId: decoded.userId,
-        activityType: 'video_generated',
-        videoId: videoId,
-        date: startOfDay,
-        timestamp: logTimestamp,
-        metadata: {
-          flashcardsGenerated: materials.flashcards.length,
-          quizzesGenerated: materials.quizzes.length,
-          timestampsGenerated: materials.timestamps.length,
-          prerequisitesGenerated: materials.prerequisites.length,
-          mindMapNodesGenerated: materials.mindMap.nodes.length,
-          mindMapEdgesGenerated: materials.mindMap.edges.length,
-          ...(timeZone ? { clientTimeZone: timeZone } : {}),
-          ...(typeof timezoneOffsetMinutes === 'number' ? { clientTimezoneOffsetMinutes: timezoneOffsetMinutes } : {}),
-        },
       });
-      console.log('✅ [VIDEO PROCESS] Activity logged successfully');
-    } catch (activityError) {
-      console.error('⚠️ [VIDEO PROCESS] Failed to log activity (non-critical):', activityError);
-      // Don't fail the entire request if activity logging fails
+      console.log('✅ [VIDEO PROCESS] Learning materials saved');
+    } else {
+      console.log('⚠️ [VIDEO PROCESS] Skipping learning materials save - LLM generation failed');
+    }
+
+    // 8. Update video with status
+    console.log('✅ [VIDEO PROCESS] Step 9: Updating video status...');
+    if (llmError) {
+      // LLM failed but transcript succeeded - partial success
+      await Video.findByIdAndUpdate(videoDoc._id, {
+        title: `Video ${videoId}`, // Keep temporary title
+        processingStatus: 'completed_with_warning',
+        errorType: llmErrorCode,
+        errorMessage: llmError instanceof Error ? llmError.message : 'LLM generation failed',
+        processedAt: new Date(),
+      });
+      console.log('⚠️ [VIDEO PROCESS] Video marked as completed_with_warning');
+    } else {
+      // Full success
+      await Video.findByIdAndUpdate(videoDoc._id, {
+        title: materials!.title,
+        processingStatus: 'completed',
+        processedAt: new Date(),
+      });
+      console.log('✅ [VIDEO PROCESS] Video marked as completed');
+    }
+
+    // 9. Log video generation activity (only if materials generated)
+    if (materials) {
+      console.log('📊 [VIDEO PROCESS] Step 10: Logging video generation activity...');
+      try {
+        const { now: logTimestamp, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
+        await ActivityLog.create({
+          userId: decoded.userId,
+          activityType: 'video_generated',
+          videoId: videoId,
+          date: startOfDay,
+          timestamp: logTimestamp,
+          metadata: {
+            flashcardsGenerated: materials.flashcards.length,
+            quizzesGenerated: materials.quizzes.length,
+            timestampsGenerated: materials.timestamps.length,
+            prerequisitesGenerated: materials.prerequisites.length,
+            mindMapNodesGenerated: materials.mindMap.nodes.length,
+            mindMapEdgesGenerated: materials.mindMap.edges.length,
+            ...(timeZone ? { clientTimeZone: timeZone } : {}),
+            ...(typeof timezoneOffsetMinutes === 'number' ? { clientTimezoneOffsetMinutes: timezoneOffsetMinutes } : {}),
+          },
+        });
+        console.log('✅ [VIDEO PROCESS] Activity logged successfully');
+      } catch (activityError) {
+        console.error('⚠️ [VIDEO PROCESS] Failed to log activity (non-critical):', activityError);
+        // Don't fail the entire request if activity logging fails
+      }
+    } else {
+      console.log('⚠️ [VIDEO PROCESS] Skipping activity log - no materials generated');
     }
 
     // 10. Log API usage costs
@@ -357,21 +395,49 @@ export async function POST(request: NextRequest) {
     }
 
     // 11. Return success with YouTube videoId
-    console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! YouTube Video ID: ${videoId}`);
-    return NextResponse.json({
-      success: true,
-      videoId: videoId, // YouTube video ID (e.g., "dQw4w9WgXcQ")
-      message: 'Video processed successfully',
-    });
+    if (llmError) {
+      // Partial success - transcript available but LLM failed
+      console.log(`⚠️ [VIDEO PROCESS] Pipeline completed with warnings! YouTube Video ID: ${videoId}`);
+      return NextResponse.json({
+        success: true,
+        videoId: videoId, // YouTube video ID (e.g., "dQw4w9WgXcQ")
+        warning: {
+          type: llmErrorCode,
+          message: llmError instanceof Error ? llmError.message : 'Some materials could not be generated',
+        },
+      }, { status: 200 });
+    } else {
+      // Full success
+      console.log(`🎉 [VIDEO PROCESS] Pipeline completed successfully! YouTube Video ID: ${videoId}`);
+      return NextResponse.json({
+        success: true,
+        videoId: videoId, // YouTube video ID (e.g., "dQw4w9WgXcQ")
+        message: 'Video processed successfully',
+      }, { status: 201 });
+    }
   } catch (error) {
     console.error('💥 [VIDEO PROCESS] FATAL ERROR: Unexpected error in pipeline:', error);
     console.error('💥 [VIDEO PROCESS] Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });
+
+    // Extract error information if it's an ApiError
+    let errorCode = 'UNKNOWN_ERROR';
+    let statusCode = 500;
+    let errorMessage = 'Internal server error';
+
+    if (error instanceof ApiError) {
+      errorCode = error.code;
+      statusCode = error.statusCode;
+      errorMessage = error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: errorMessage, errorType: errorCode },
+      { status: statusCode }
     );
   }
 }
