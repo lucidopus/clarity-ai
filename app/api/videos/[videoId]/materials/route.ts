@@ -148,6 +148,8 @@ export async function GET(
       })) || [],
       // Include processing status and error info
       processingStatus: video.processingStatus,
+      materialsStatus: video.materialsStatus || 'generating',
+      incompleteMaterials: video.incompleteMaterials || [],
       hasAllMaterials: Object.values(hasMaterials).every(v => v),
       availableMaterials: hasMaterials,
       error: video.errorMessage ? {
