@@ -11,7 +11,9 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import Note from '@/lib/models/Note';
 import MindMap from '@/lib/models/MindMap';
 import Solution from '@/lib/models/Solution';
+import Cost from '@/lib/models/Cost';
 import mongoose from 'mongoose';
+import { startOfDay, subDays } from 'date-fns';
 
 export async function GET(
   request: NextRequest,
@@ -148,6 +150,61 @@ export async function GET(
       Solution.countDocuments({ userId: userObjectId }),
     ]);
 
+    // Get cost data
+    const costData = await Cost.aggregate([
+      { $match: { userId: userObjectId } },
+      {
+        $group: {
+          _id: null,
+          totalCost: { $sum: '$totalCost' },
+          operations: { $sum: 1 },
+        }
+      }
+    ]);
+
+    const totalCost = costData.length > 0 ? parseFloat(costData[0].totalCost.toFixed(6)) : 0;
+    const totalCostOperations = costData.length > 0 ? costData[0].operations : 0;
+
+    // Calculate daily average for last 7 days
+    const last7Days = startOfDay(subDays(new Date(), 7));
+    const dailyCosts = await Cost.aggregate([
+      {
+        $match: {
+          userId: userObjectId,
+          createdAt: { $gte: last7Days }
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          dailyCost: { $sum: '$totalCost' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const avgDailyCost = dailyCosts.length > 0
+      ? dailyCosts.reduce((sum, day) => sum + day.dailyCost, 0) / dailyCosts.length
+      : 0;
+
+    // Get cost breakdown by source
+    const costBySource = await Cost.aggregate([
+      { $match: { userId: userObjectId } },
+      {
+        $group: {
+          _id: '$source',
+          count: { $sum: 1 },
+          totalCost: { $sum: '$totalCost' }
+        }
+      }
+    ]);
+
+    const recentOperations = costBySource.map(item => ({
+      source: item._id,
+      count: item.count,
+      cost: parseFloat(item.totalCost.toFixed(6))
+    }));
+
     return NextResponse.json({
       success: true,
       user: {
@@ -175,6 +232,16 @@ export async function GET(
         totalSolutions,
         totalActivities,
         activityBreakdown: activityStats,
+      },
+      cost: {
+        totalCost,
+        operations: totalCostOperations,
+        avgDailyCost: parseFloat(avgDailyCost.toFixed(6)),
+        last7Days: dailyCosts.map(day => ({
+          date: day._id,
+          cost: parseFloat(day.dailyCost.toFixed(6))
+        })),
+        recentOperations,
       },
     });
   } catch (error) {
@@ -246,6 +313,7 @@ export async function DELETE(
       Note.deleteMany({ userId }),
       MindMap.deleteMany({ userId }),
       Solution.deleteMany({ userId }),
+      Cost.deleteMany({ userId }),
       User.findByIdAndDelete(userId),
     ]);
 

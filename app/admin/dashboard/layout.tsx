@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { BarChart3, Users, LogOut } from 'lucide-react';
+import { BarChart3, Users, DollarSign, LogOut } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 
@@ -102,6 +102,11 @@ export default function AdminDashboardLayout({
       icon: <BarChart3 className="w-5 h-5" />,
     },
     {
+      href: '/admin/dashboard/costs',
+      label: 'Costs',
+      icon: <DollarSign className="w-5 h-5" />,
+    },
+    {
       href: '/admin/dashboard/users',
       label: 'User Management',
       icon: <Users className="w-5 h-5" />,
@@ -154,9 +159,6 @@ export default function AdminDashboardLayout({
            {/* Admin Header */}
            <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">
              <div className="flex items-center space-x-3">
-               <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                 <span className="text-white font-bold text-xl">C</span>
-               </div>
                <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
              </div>
              <div className="flex items-center space-x-4">

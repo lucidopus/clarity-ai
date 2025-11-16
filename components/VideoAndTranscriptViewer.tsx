@@ -212,7 +212,7 @@ export default function VideoAndTranscriptViewer({
     if (!searchQuery.trim()) return transcript;
 
     return transcript.filter(segment =>
-      segment.text.toLowerCase().includes(searchQuery.toLowerCase())
+      segment.text && segment.text.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [transcript, searchQuery]);
 
@@ -505,7 +505,7 @@ export default function VideoAndTranscriptViewer({
                       {transcript.length > 0 && (
                         <span className="ml-2">
                           • Total duration: {formatTimestamp(
-                            transcript.reduce((total, seg) => total + seg.duration, 0)
+                            Math.max(...transcript.map(seg => seg.start + seg.duration))
                           )}
                         </span>
                       )}

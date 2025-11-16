@@ -21,6 +21,10 @@ interface User {
     quizzes: number;
     activities: number;
   };
+  cost?: {
+    totalCost: number;
+    operations: number;
+  };
 }
 
 interface UserDetailsResponse {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Check if proxy is configured
     const proxyEnabled = process.env.WEBSHARE_PROXY_ENABLED === 'true';
@@ -20,11 +20,11 @@ export async function GET(req: NextRequest) {
 
     // Test proxy connection
     console.log('🧪 [TEST] Testing Webshare proxy connection...');
-    const proxyAgent = new (HttpsProxyAgent as any)(proxyUrl);
+    const proxyAgent = new HttpsProxyAgent(proxyUrl);
 
     // Test 1: Check external IP
     const ipResponse = await fetch('https://api.ipify.org?format=json', {
-      // @ts-ignore
+      // @ts-expect-error - Node.js fetch doesn't have agent in types but supports it at runtime
       agent: proxyAgent,
       signal: AbortSignal.timeout(10000), // 10 second timeout
     });
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     // Test 2: Try fetching a YouTube page (simulate transcript fetch)
     const youtubeTestUrl = 'https://www.youtube.com/watch?v=S9aWBbVypeU';
     const youtubeResponse = await fetch(youtubeTestUrl, {
-      // @ts-ignore
+      // @ts-expect-error - Node.js fetch doesn't have agent in types but supports it at runtime
       agent: proxyAgent,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
