@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -13,7 +13,12 @@ import {
 } from 'chart.js';
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+// Register Chart.js plugins and components once - safe to call multiple times
+try {
+  ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+} catch {
+  // Already registered, ignore
+}
 
 interface ServiceData {
   service: string;
@@ -26,6 +31,7 @@ export default function ServiceEfficiencyChart() {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef(null);
 
   useEffect(() => {
     fetchServices();
@@ -187,8 +193,8 @@ export default function ServiceEfficiencyChart() {
 
       <div className="bg-card-bg border border-border rounded-xl p-6">
         {/* Chart */}
-        <div className="h-[300px] mb-6">
-          <Bar data={chartData} options={chartOptions} />
+        <div className="h-[300px] mb-6" ref={chartRef}>
+          <Bar key={`chart-${services.length}`} data={chartData} options={chartOptions} />
         </div>
 
         {/* Table - Unique Metrics Only */}
