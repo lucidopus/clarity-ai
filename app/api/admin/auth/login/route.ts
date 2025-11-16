@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import {
-  createAdminToken,
-  getClientIP,
-  checkRateLimit,
-  logLoginAttempt,
-} from '@/lib/adminAuth';
+import { createAdminToken } from '@/lib/adminAuth';
 
 const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
@@ -13,32 +8,11 @@ const loginSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP for rate limiting
-    const ipAddress = getClientIP(request);
-    const userAgent = request.headers.get('user-agent') || undefined;
-
-    // Check rate limit
-    const { allowed, remainingAttempts } = await checkRateLimit(ipAddress);
-
-    if (!allowed) {
-      // Log the blocked attempt
-      await logLoginAttempt(ipAddress, false, userAgent);
-
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Too many failed login attempts. Please try again later.',
-        },
-        { status: 429 }
-      );
-    }
-
     // Parse and validate request body
     const body = await request.json();
     const validation = loginSchema.safeParse(body);
 
     if (!validation.success) {
-      await logLoginAttempt(ipAddress, false, userAgent);
       return NextResponse.json(
         {
           success: false,
@@ -68,21 +42,14 @@ export async function POST(request: NextRequest) {
     const isValid = password === adminPassword;
 
     if (!isValid) {
-      // Log failed attempt
-      await logLoginAttempt(ipAddress, false, userAgent);
-
       return NextResponse.json(
         {
           success: false,
           message: 'Invalid password',
-          remainingAttempts: remainingAttempts - 1,
         },
         { status: 401 }
       );
     }
-
-    // Log successful attempt
-    await logLoginAttempt(ipAddress, true, userAgent);
 
     // Create admin JWT token
     const token = createAdminToken();
