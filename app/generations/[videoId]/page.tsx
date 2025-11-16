@@ -98,6 +98,20 @@ interface VideoMaterials {
       updatedAt: Date;
     }>;
   };
+  // New fields for material availability tracking
+  processingStatus?: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
+  hasAllMaterials?: boolean;
+  availableMaterials?: {
+    flashcards: boolean;
+    quizzes: boolean;
+    prerequisites: boolean;
+    mindmap: boolean;
+    casestudies: boolean;
+  };
+  error?: {
+    type?: string;
+    message?: string;
+  } | null;
 }
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
@@ -127,6 +141,8 @@ export default function VideoMaterialsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
   const [showWarning, setShowWarning] = useState(!!warningType);
+  const [showMaterialsWarning, setShowMaterialsWarning] = useState(false);
+  const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
   const [autoplayVideos, setAutoplayVideos] = useState(false);
 
   // Flashcard creator/editor state
@@ -277,6 +293,22 @@ export default function VideoMaterialsPage() {
 
         const materialsData = await materialsResponse.json();
         setMaterials(materialsData);
+
+        // Check for incomplete materials
+        if (materialsData.processingStatus === 'completed_with_warning' || materialsData.processingStatus === 'failed') {
+          const missing: string[] = [];
+          if (materialsData.availableMaterials) {
+            if (!materialsData.availableMaterials.flashcards) missing.push('Flashcards');
+            if (!materialsData.availableMaterials.quizzes) missing.push('Quizzes');
+            if (!materialsData.availableMaterials.prerequisites) missing.push('Prerequisites');
+            if (!materialsData.availableMaterials.mindmap) missing.push('Mind Map');
+            if (!materialsData.availableMaterials.casestudies) missing.push('Challenges');
+          }
+          if (missing.length > 0) {
+            setIncompleteMaterials(missing);
+            setShowMaterialsWarning(true);
+          }
+        }
 
         if (notesResponse.ok) {
           const notesData = await notesResponse.json();
@@ -634,6 +666,19 @@ export default function VideoMaterialsPage() {
           variant={getErrorConfig(warningType).variant}
           title={getErrorConfig(warningType).title}
           message={getErrorConfig(warningType).message}
+          confirmText="I Understand"
+        />
+      )}
+
+      {/* Dialog for Incomplete Materials */}
+      {showMaterialsWarning && incompleteMaterials.length > 0 && (
+        <Dialog
+          isOpen={showMaterialsWarning}
+          onClose={() => setShowMaterialsWarning(false)}
+          type="alert"
+          variant="warning"
+          title="Some Learning Materials Unavailable"
+          message={`We were unable to generate the following materials for this video: ${incompleteMaterials.join(', ')}. This can sometimes happen with longer videos or during high-traffic periods. We are actively working on improving our generation process and will add the missing materials as soon as they are ready. You will be notified once they are available. In the meantime, you can still learn from the video transcript and any other available materials.`}
           confirmText="I Understand"
         />
       )}

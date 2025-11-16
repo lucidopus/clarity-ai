@@ -85,6 +85,15 @@ export async function GET(
     // Fetch mind map
     const mindMap = await MindMap.findOne({ videoId: videoId, userId: decoded.userId });
 
+    // Determine which materials are available/generated
+    const hasMaterials = {
+      flashcards: flashcards.length > 0,
+      quizzes: quizzes.length > 0,
+      prerequisites: (learningMaterial?.prerequisites?.length ?? 0) > 0,
+      mindmap: mindMap && mindMap.nodes && mindMap.nodes.length > 0,
+      casestudies: (learningMaterial?.realWorldProblems?.length ?? 0) > 0
+    };
+
     // Format response
     const materials = {
       video: {
@@ -137,6 +146,14 @@ export async function GET(
         scenario: problem.scenario,
         hints: problem.hints
       })) || [],
+      // Include processing status and error info
+      processingStatus: video.processingStatus,
+      hasAllMaterials: Object.values(hasMaterials).every(v => v),
+      availableMaterials: hasMaterials,
+      error: video.errorMessage ? {
+        type: video.errorType,
+        message: video.errorMessage
+      } : null
     };
 
     return NextResponse.json(materials);
