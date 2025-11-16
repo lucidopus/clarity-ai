@@ -18,8 +18,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 interface ServiceData {
   service: string;
   totalCost: number;
-  operations: number;
-  avgCostPerOperation: number;
   successRate: number;
   efficiencyScore: number;
 }
@@ -55,12 +53,10 @@ export default function ServiceEfficiencyChart() {
     }
   };
 
-  const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
-
   const getServiceName = (service: string) => {
     const names: Record<string, string> = {
-      groq_llm: 'Groq LLM',
-      apify_transcript: 'Apify Transcript',
+      groq_llm: 'Large Language Model (LLM)',
+      apify_transcript: 'Transcript Extraction',
     };
     return names[service] || service;
   };
@@ -107,15 +103,21 @@ export default function ServiceEfficiencyChart() {
     );
   }
 
-  // Chart data
+  // Chart data - Show Efficiency Score (0-100)
+  // Using theme-aware colors: accent cyan for high, muted for medium, accent for emphasis
   const chartData = {
     labels: services.map((s) => getServiceName(s.service)),
     datasets: [
       {
-        label: 'Avg Cost per Operation ($)',
-        data: services.map((s) => s.avgCostPerOperation),
-        backgroundColor: 'rgba(6, 182, 212, 0.9)',
-        borderColor: 'rgba(6, 182, 212, 1)',
+        label: 'Efficiency Score',
+        data: services.map((s) => s.efficiencyScore),
+        backgroundColor: services.map((s) => {
+          // Use accent cyan for excellent scores, teal for good, and muted for acceptable
+          if (s.efficiencyScore >= 95) return 'rgba(6, 182, 212, 0.9)'; // Accent cyan (excellent)
+          if (s.efficiencyScore >= 80) return 'rgba(20, 184, 166, 0.7)'; // Teal (good)
+          return 'rgba(107, 114, 128, 0.6)'; // Muted gray (acceptable)
+        }),
+        borderColor: 'rgba(0, 0, 0, 0.05)',
         borderWidth: 1,
       },
     ],
@@ -136,14 +138,11 @@ export default function ServiceEfficiencyChart() {
         borderColor: 'rgba(6, 182, 212, 0.5)',
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
+          label: (context: { dataIndex: number }) => {
             const service = services[context.dataIndex];
             return [
-              `Avg Cost/Op: ${formatCost(service.avgCostPerOperation)}`,
-              `Total Cost: ${formatCost(service.totalCost)}`,
-              `Operations: ${service.operations.toLocaleString()}`,
+              `Efficiency Score: ${service.efficiencyScore.toFixed(1)}/100`,
               `Success Rate: ${service.successRate.toFixed(1)}%`,
-              `Efficiency: ${service.efficiencyScore.toFixed(1)}/100`,
             ];
           },
         },
@@ -152,25 +151,31 @@ export default function ServiceEfficiencyChart() {
     scales: {
       y: {
         beginAtZero: true,
+        max: 100,
         grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
+          color: 'rgba(156, 163, 175, 0.08)',
+          drawBorder: false,
         },
         ticks: {
-          color: 'rgba(107, 114, 128, 0.8)',
-          callback: (value: any) => `$${value.toFixed(4)}`,
+          color: 'rgba(107, 114, 128, 0.7)',
+          callback: (value: number | string) => typeof value === 'number' ? `${value.toFixed(0)}` : value,
         },
         title: {
           display: true,
-          text: 'Average Cost per Operation',
+          text: 'Efficiency Score (0-100)',
           color: 'rgba(107, 114, 128, 0.8)',
+          font: {
+            size: 12,
+          },
         },
       },
       x: {
         grid: {
           display: false,
+          drawBorder: false,
         },
         ticks: {
-          color: 'rgba(107, 114, 128, 0.8)',
+          color: 'rgba(107, 114, 128, 0.7)',
         },
       },
     },
@@ -178,7 +183,7 @@ export default function ServiceEfficiencyChart() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Service Efficiency Comparison</h3>
+      <h3 className="text-lg font-semibold text-foreground">Service Health & Reliability</h3>
 
       <div className="bg-card-bg border border-border rounded-xl p-6">
         {/* Chart */}
@@ -186,32 +191,20 @@ export default function ServiceEfficiencyChart() {
           <Bar data={chartData} options={chartOptions} />
         </div>
 
-        {/* Table */}
+        {/* Table - Unique Metrics Only */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left text-sm font-medium text-muted-foreground pb-3">Service</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Total Cost</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Operations</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Avg Cost/Op</th>
                 <th className="text-right text-sm font-medium text-muted-foreground pb-3">Success Rate</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Efficiency</th>
+                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Efficiency Score</th>
               </tr>
             </thead>
             <tbody>
               {services.map((service, idx) => (
                 <tr key={idx} className="border-b border-border last:border-0">
                   <td className="py-3 text-sm text-foreground font-medium">{getServiceName(service.service)}</td>
-                  <td className="py-3 text-sm text-right text-foreground">
-                    {formatCost(service.totalCost)}
-                  </td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    {service.operations.toLocaleString()}
-                  </td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    {formatCost(service.avgCostPerOperation)}
-                  </td>
                   <td className="py-3 text-sm text-right text-muted-foreground">
                     {service.successRate.toFixed(1)}%
                   </td>
@@ -219,7 +212,7 @@ export default function ServiceEfficiencyChart() {
                     <div className="flex items-center justify-end space-x-1">
                       {getEfficiencyIcon(service.efficiencyScore)}
                       <span className={`font-medium ${getEfficiencyColor(service.efficiencyScore)}`}>
-                        {service.efficiencyScore.toFixed(1)}
+                        {service.efficiencyScore.toFixed(1)}/100
                       </span>
                     </div>
                   </td>

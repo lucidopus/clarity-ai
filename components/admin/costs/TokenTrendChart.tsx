@@ -35,6 +35,7 @@ export default function TokenTrendChart() {
 
   useEffect(() => {
     fetchTrends();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [days]);
 
   const fetchTrends = async () => {
@@ -151,7 +152,7 @@ export default function TokenTrendChart() {
         borderColor: 'rgba(6, 182, 212, 0.5)',
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
+          label: (context: { dataIndex: number; datasetIndex: number }) => {
             const trend = trends[context.dataIndex];
             if (context.datasetIndex === 0) {
               return `Input: ${trend.inputTokens.toLocaleString()} tokens`;
@@ -161,7 +162,7 @@ export default function TokenTrendChart() {
               return `7-Day Avg: ${formatCost(trend.movingAverage7d)}`;
             }
           },
-          afterBody: (context: any) => {
+          afterBody: (context: Array<{ dataIndex: number }>) => {
             const trend = trends[context[0].dataIndex];
             return [
               `Total: ${trend.totalTokens.toLocaleString()} tokens`,
@@ -183,7 +184,7 @@ export default function TokenTrendChart() {
         },
         ticks: {
           color: 'rgba(107, 114, 128, 0.8)',
-          callback: (value: any) => `${(value / 1000).toFixed(0)}K`,
+          callback: (value: number | string) => typeof value === 'number' ? `${(value / 1000).toFixed(0)}K` : value,
         },
         title: {
           display: true,
@@ -201,7 +202,7 @@ export default function TokenTrendChart() {
         },
         ticks: {
           color: 'rgba(239, 68, 68, 0.6)',
-          callback: (value: any) => `$${(value / 1000).toFixed(2)}`,
+          callback: (value: number | string) => typeof value === 'number' ? `$${(value / 1000).toFixed(2)}` : value,
         },
         title: {
           display: true,

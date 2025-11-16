@@ -10,6 +10,7 @@ import {
   Title,
   Tooltip,
   Legend,
+  TooltipItem,
 } from 'chart.js';
 import { AlertCircle } from 'lucide-react';
 
@@ -21,9 +22,7 @@ interface ModelData {
   inputTokens: number;
   outputTokens: number;
   totalTokens: number;
-  operations: number;
   costPerToken: number;
-  costPerOperation: number;
 }
 
 export default function ModelComparisonChart() {
@@ -89,15 +88,22 @@ export default function ModelComparisonChart() {
     );
   }
 
-  // Chart data
-  const chartData = {
+  // Chart data - Input and Output Tokens side-by-side
+  const tokensChartData = {
     labels: models.map((m) => m.model.split('/').pop() || m.model),
     datasets: [
       {
-        label: 'Total Cost ($)',
-        data: models.map((m) => m.totalCost),
-        backgroundColor: 'rgba(6, 182, 212, 0.9)', // Accent cyan
-        borderColor: 'rgba(6, 182, 212, 1)',
+        label: 'Input Tokens',
+        data: models.map((m) => m.inputTokens),
+        backgroundColor: 'rgba(251, 191, 36, 0.9)', // Vibrant yellow
+        borderColor: 'rgba(251, 191, 36, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Output Tokens',
+        data: models.map((m) => m.outputTokens),
+        backgroundColor: 'rgba(34, 197, 94, 0.9)', // Vibrant green
+        borderColor: 'rgba(34, 197, 94, 1)',
         borderWidth: 1,
       },
     ],
@@ -108,6 +114,15 @@ export default function ModelComparisonChart() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        display: true,
+        position: 'top' as const,
+        labels: {
+          color: 'rgba(107, 114, 128, 0.8)',
+          padding: 15,
+          usePointStyle: true,
+        },
+      },
+      datalabels: {
         display: false,
       },
       title: {
@@ -121,14 +136,13 @@ export default function ModelComparisonChart() {
         borderColor: 'rgba(6, 182, 212, 0.5)',
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
+          label: (context: TooltipItem<'bar'>) => {
+            const value = context.parsed.y || 0;
+            return `${context.dataset.label || 'Unknown'}: ${value.toLocaleString()}`;
+          },
+          afterLabel: (context: TooltipItem<'bar'>) => {
             const model = models[context.dataIndex];
-            return [
-              `Cost: ${formatCost(model.totalCost)}`,
-              `Operations: ${model.operations.toLocaleString()}`,
-              `Tokens: ${model.totalTokens.toLocaleString()}`,
-              `Cost/Token: ${model.costPerToken.toFixed(10)}`,
-            ];
+            return `Total Cost: ${formatCost(model.totalCost)}`;
           },
         },
       },
@@ -141,7 +155,15 @@ export default function ModelComparisonChart() {
         },
         ticks: {
           color: 'rgba(107, 114, 128, 0.8)',
-          callback: (value: any) => `$${value.toFixed(2)}`,
+          callback: (value: number | string) => typeof value === 'number' ? `${(value / 1000).toFixed(0)}k` : value,
+        },
+        title: {
+          display: true,
+          text: 'Tokens',
+          color: 'rgba(107, 114, 128, 0.8)',
+          font: {
+            size: 12,
+          },
         },
       },
       x: {
@@ -153,15 +175,16 @@ export default function ModelComparisonChart() {
         },
       },
     },
+    barPercentage: 1.0,
+    categoryPercentage: 1.0,
   };
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Model Usage & Efficiency</h3>
-
+    <div className="space-y-4 my-10">
       <div className="bg-card-bg border border-border rounded-xl p-6">
-        <div className="h-[300px] mb-6">
-          <Bar data={chartData} options={chartOptions} />
+        <h3 className="text-lg font-semibold text-foreground mb-4">Token Usage by Model</h3>
+        <div className="h-[350px] mb-6">
+          <Bar data={tokensChartData} options={chartOptions} />
         </div>
 
         {/* Table View */}
@@ -171,10 +194,8 @@ export default function ModelComparisonChart() {
               <tr className="border-b border-border">
                 <th className="text-left text-sm font-medium text-muted-foreground pb-3">Model</th>
                 <th className="text-right text-sm font-medium text-muted-foreground pb-3">Total Cost</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Operations</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Total Tokens</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Cost/Token</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Cost/Op</th>
+                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Input Tokens</th>
+                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Output Tokens</th>
               </tr>
             </thead>
             <tbody>
@@ -185,16 +206,10 @@ export default function ModelComparisonChart() {
                     {formatCost(model.totalCost)}
                   </td>
                   <td className="py-3 text-sm text-right text-muted-foreground">
-                    {model.operations.toLocaleString()}
+                    {model.inputTokens.toLocaleString()}
                   </td>
                   <td className="py-3 text-sm text-right text-muted-foreground">
-                    {model.totalTokens.toLocaleString()}
-                  </td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    ${model.costPerToken.toFixed(10)}
-                  </td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    {formatCost(model.costPerOperation)}
+                    {model.outputTokens.toLocaleString()}
                   </td>
                 </tr>
               ))}

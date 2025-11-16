@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: '$source',
           cost: { $sum: '$totalCost' },
-          operations: { $sum: 1 },
         }
       },
       { $sort: { cost: -1 } }
@@ -50,7 +49,6 @@ export async function GET(request: NextRequest) {
     const sources = sourceStats.map(source => ({
       source: source._id,
       cost: parseFloat(source.cost.toFixed(6)),
-      operations: source.operations,
       percentage: totalCost > 0
         ? parseFloat(((source.cost / totalCost) * 100).toFixed(2))
         : 0,
