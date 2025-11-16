@@ -11,6 +11,7 @@ import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
 import MindMapViewer from '@/components/MindMapViewer';
+import MaterialsWarningBanner from '@/components/MaterialsWarningBanner';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
@@ -100,6 +101,8 @@ interface VideoMaterials {
   };
   // New fields for material availability tracking
   processingStatus?: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
+  materialsStatus?: 'complete' | 'incomplete' | 'generating';
+  incompleteMaterials?: ('flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
   hasAllMaterials?: boolean;
   availableMaterials?: {
     flashcards: boolean;
@@ -141,8 +144,8 @@ export default function VideoMaterialsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
   const [showWarning, setShowWarning] = useState(!!warningType);
-  const [showMaterialsWarning, setShowMaterialsWarning] = useState(false);
   const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
+  const [bannedDismissed, setBannerDismissed] = useState(false);
   const [autoplayVideos, setAutoplayVideos] = useState(false);
 
   // Flashcard creator/editor state
@@ -162,6 +165,24 @@ export default function VideoMaterialsPage() {
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  // Load banner dismissal state from localStorage
+  useEffect(() => {
+    const dismissedBannersKey = 'dismissedMaterialsBanners';
+    const dismissedBanners = JSON.parse(localStorage.getItem(dismissedBannersKey) || '{}');
+    if (dismissedBanners[videoId]) {
+      setBannerDismissed(true);
+    }
+  }, [videoId]);
+
+  // Handle banner dismissal
+  const handleBannerDismiss = () => {
+    setBannerDismissed(true);
+    const dismissedBannersKey = 'dismissedMaterialsBanners';
+    const dismissedBanners = JSON.parse(localStorage.getItem(dismissedBannersKey) || '{}');
+    dismissedBanners[videoId] = true;
+    localStorage.setItem(dismissedBannersKey, JSON.stringify(dismissedBanners));
   };
 
   const refreshMaterials = async () => {
@@ -294,8 +315,8 @@ export default function VideoMaterialsPage() {
         const materialsData = await materialsResponse.json();
         setMaterials(materialsData);
 
-        // Check for incomplete materials
-        if (materialsData.processingStatus === 'completed_with_warning' || materialsData.processingStatus === 'failed') {
+        // Check for incomplete materials based on materialsStatus
+        if (materialsData.materialsStatus === 'incomplete') {
           const missing: string[] = [];
           if (materialsData.availableMaterials) {
             if (!materialsData.availableMaterials.flashcards) missing.push('Flashcards');
@@ -306,7 +327,6 @@ export default function VideoMaterialsPage() {
           }
           if (missing.length > 0) {
             setIncompleteMaterials(missing);
-            setShowMaterialsWarning(true);
           }
         }
 
@@ -519,6 +539,13 @@ export default function VideoMaterialsPage() {
 
       {/* Content Area */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Materials Warning Banner */}
+        <MaterialsWarningBanner
+          incompleteMaterials={incompleteMaterials}
+          isVisible={!bannedDismissed && incompleteMaterials.length > 0}
+          onDismiss={handleBannerDismiss}
+        />
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -666,19 +693,6 @@ export default function VideoMaterialsPage() {
           variant={getErrorConfig(warningType).variant}
           title={getErrorConfig(warningType).title}
           message={getErrorConfig(warningType).message}
-          confirmText="I Understand"
-        />
-      )}
-
-      {/* Dialog for Incomplete Materials */}
-      {showMaterialsWarning && incompleteMaterials.length > 0 && (
-        <Dialog
-          isOpen={showMaterialsWarning}
-          onClose={() => setShowMaterialsWarning(false)}
-          type="alert"
-          variant="warning"
-          title="Some Learning Materials Unavailable"
-          message={`We were unable to generate the following materials for this video: ${incompleteMaterials.join(', ')}. This can sometimes happen with longer videos or during high-traffic periods. We are actively working on improving our generation process and will add the missing materials as soon as they are ready. You will be notified once they are available. In the meantime, you can still learn from the video transcript and any other available materials.`}
           confirmText="I Understand"
         />
       )}

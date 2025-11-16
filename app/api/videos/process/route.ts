@@ -328,22 +328,29 @@ export async function POST(request: NextRequest) {
     console.log('✅ [VIDEO PROCESS] Step 9: Updating video status...');
     if (llmError) {
       // LLM failed but transcript succeeded - partial success
+      // Determine which materials are incomplete
+      const incompleteMaterials = ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'];
+
       await Video.findByIdAndUpdate(videoDoc._id, {
         title: `Video ${videoId}`, // Keep temporary title
         processingStatus: 'completed_with_warning',
+        materialsStatus: 'incomplete',
+        incompleteMaterials: incompleteMaterials, // Store array for later regeneration
         errorType: llmErrorCode,
         errorMessage: llmError instanceof Error ? llmError.message : 'LLM generation failed',
         processedAt: new Date(),
       });
-      console.log('⚠️ [VIDEO PROCESS] Video marked as completed_with_warning');
+      console.log('⚠️ [VIDEO PROCESS] Video marked as completed_with_warning with incomplete materials:', incompleteMaterials);
     } else {
       // Full success
       await Video.findByIdAndUpdate(videoDoc._id, {
         title: materials!.title,
         processingStatus: 'completed',
+        materialsStatus: 'complete',
+        incompleteMaterials: [], // Clear incomplete materials when successful
         processedAt: new Date(),
       });
-      console.log('✅ [VIDEO PROCESS] Video marked as completed');
+      console.log('✅ [VIDEO PROCESS] Video marked as completed with complete materials');
     }
 
     // 9. Log video generation activity (only if materials generated)
