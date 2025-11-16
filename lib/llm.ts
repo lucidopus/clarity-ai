@@ -1,6 +1,11 @@
 import { groq } from './sdk';
 import { LEARNING_MATERIALS_PROMPT } from './prompts';
 import { LEARNING_MATERIALS_SCHEMA, LearningMaterials } from './structuredOutput';
+import {
+  LLMTokenLimitError,
+  LLMRateLimitError,
+  LLMServiceError,
+} from './errors/ApiError';
 
 /**
  * Response type that includes both learning materials and token usage data
@@ -82,6 +87,14 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     return { materials, usage };
   } catch (error) {
     console.error('❌ [LLM] Generation failed:', error);
+
+    // Check if it's already one of our custom errors
+    if (error instanceof LLMTokenLimitError ||
+        error instanceof LLMRateLimitError ||
+        error instanceof LLMServiceError) {
+      throw error;
+    }
+
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error(`❌ [LLM] Error details: ${errorMessage}`);
 
@@ -89,7 +102,33 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
       console.error(`❌ [LLM] Stack trace:`, error.stack);
     }
 
-    throw new Error(`Failed to generate learning materials: ${errorMessage}`);
+    // Check for specific error patterns in the error message
+    const errorStr = errorMessage.toLowerCase();
+
+    // Check for rate limit errors
+    if (errorStr.includes('rate limit') || errorStr.includes('429')) {
+      throw new LLMRateLimitError();
+    }
+
+    // Check for token limit errors
+    if ((errorStr.includes('token') && errorStr.includes('limit')) ||
+        errorStr.includes('maximum context length') ||
+        errorStr.includes('context_length_exceeded')) {
+      throw new LLMTokenLimitError();
+    }
+
+    // Check for authentication errors
+    if (errorStr.includes('auth') || errorStr.includes('api key') || errorStr.includes('unauthorized')) {
+      throw new LLMServiceError('Invalid API key or authentication failed');
+    }
+
+    // Check for network errors
+    if (error instanceof TypeError && errorStr.includes('fetch')) {
+      throw new LLMServiceError('Network error while connecting to LLM service');
+    }
+
+    // For any other error, wrap in LLMServiceError
+    throw new LLMServiceError(errorMessage);
   }
 }
 

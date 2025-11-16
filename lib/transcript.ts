@@ -1,3 +1,11 @@
+import {
+  TranscriptUnavailableError,
+  TranscriptRateLimitError,
+  TranscriptServiceError,
+  TranscriptTimeoutError,
+  InvalidURLError,
+} from './errors/ApiError';
+
 export interface TranscriptResult {
   text: string;
   videoId: string;
@@ -27,7 +35,7 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     // Get Apify API token
     const apifyToken = process.env.APIFY_API_TOKEN;
     if (!apifyToken) {
-      throw new Error('APIFY_API_TOKEN environment variable is not set');
+      throw new TranscriptServiceError('APIFY_API_TOKEN environment variable is not set');
     }
 
     // Start Apify actor run
@@ -48,7 +56,18 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     if (!runResponse.ok) {
       const errorText = await runResponse.text();
       console.error(`❌ [APIFY] Actor run failed: ${runResponse.status} - ${errorText}`);
-      throw new Error(`Apify actor run failed: ${runResponse.status}`);
+
+      // Check for rate limit
+      if (runResponse.status === 429) {
+        throw new TranscriptRateLimitError();
+      }
+
+      // Check for timeout
+      if (runResponse.status === 408 || runResponse.status === 504) {
+        throw new TranscriptTimeoutError();
+      }
+
+      throw new TranscriptServiceError(`Apify actor run failed: ${runResponse.status}`);
     }
 
     const runData = await runResponse.json();
@@ -57,7 +76,7 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     // Get dataset ID from run
     const datasetId = runData.data.defaultDatasetId;
     if (!datasetId) {
-      throw new Error('No dataset ID returned from Apify actor');
+      throw new TranscriptServiceError('No dataset ID returned from Apify actor');
     }
 
     // Fetch transcript data from dataset
@@ -69,13 +88,19 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     if (!datasetResponse.ok) {
       const errorText = await datasetResponse.text();
       console.error(`❌ [APIFY] Dataset fetch failed: ${datasetResponse.status} - ${errorText}`);
-      throw new Error(`Failed to fetch transcript dataset: ${datasetResponse.status}`);
+
+      // Check for rate limit
+      if (datasetResponse.status === 429) {
+        throw new TranscriptRateLimitError();
+      }
+
+      throw new TranscriptServiceError(`Failed to fetch transcript dataset: ${datasetResponse.status}`);
     }
 
     const datasetItems = await datasetResponse.json();
 
     if (!datasetItems || datasetItems.length === 0) {
-      throw new Error('No transcript data returned from Apify');
+      throw new TranscriptUnavailableError();
     }
 
     // Extract data array from first item
@@ -83,10 +108,15 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     const transcriptSegments = transcriptData.data;
 
     if (!transcriptSegments || !Array.isArray(transcriptSegments)) {
-      throw new Error('Invalid transcript format returned from Apify');
+      throw new TranscriptServiceError('Invalid transcript format returned from Apify');
     }
 
     console.log(`📜 [TRANSCRIPT] Received ${transcriptSegments.length} transcript segments`);
+
+    // Check for empty transcript
+    if (transcriptSegments.length === 0) {
+      throw new TranscriptUnavailableError();
+    }
 
     // Transform Apify format to our TranscriptResult format
     const segments = transcriptSegments.map((segment: { text: string; start: string; dur: string }) => ({
@@ -99,6 +129,11 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     const text = segments.map((segment) => segment.text).join(' ');
     console.log(`📜 [TRANSCRIPT] Combined text length: ${text.length} characters`);
 
+    // Additional check for empty text
+    if (!text || text.trim().length === 0) {
+      throw new TranscriptUnavailableError();
+    }
+
     console.log('✅ [TRANSCRIPT] Transcript extraction completed successfully via Apify');
     return {
       text,
@@ -107,20 +142,32 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     };
   } catch (error) {
     console.error('❌ [TRANSCRIPT] Extraction failed via Apify:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`❌ [TRANSCRIPT] Error details: ${errorMessage}`);
 
-    // Throw descriptive error for user
-    throw new Error(
-      `Failed to extract transcript. The video may not have captions available, or there was an issue with the transcript service. Please try again in a few moments. (${errorMessage})`
-    );
+    // If it's already one of our custom errors, re-throw it
+    if (error instanceof TranscriptUnavailableError ||
+        error instanceof TranscriptRateLimitError ||
+        error instanceof TranscriptServiceError ||
+        error instanceof TranscriptTimeoutError) {
+      throw error;
+    }
+
+    // Check for network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('❌ [TRANSCRIPT] Network error detected');
+      throw new TranscriptServiceError('Network error while connecting to transcript service');
+    }
+
+    // For any other unexpected error, wrap in TranscriptServiceError
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`❌ [TRANSCRIPT] Unexpected error: ${errorMessage}`);
+    throw new TranscriptServiceError(errorMessage);
   }
 }
 
 export function extractVideoId(url: string): string {
   const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
   const match = url.match(regex);
-  if (!match) throw new Error('Invalid YouTube URL');
+  if (!match) throw new InvalidURLError();
   return match[1];
 }
 

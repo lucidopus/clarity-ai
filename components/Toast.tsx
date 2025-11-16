@@ -17,31 +17,31 @@ interface ToastProps {
 const toastConfig = {
   success: {
     icon: CheckCircle2,
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/30',
-    textColor: 'text-green-600 dark:text-green-400',
-    iconColor: 'text-green-500',
+    bgColor: 'bg-emerald-400 dark:bg-emerald-950/50',
+    borderColor: 'border-emerald-500 dark:border-emerald-800',
+    textColor: 'text-slate-950 dark:text-emerald-100',
+    iconColor: 'text-emerald-700 dark:text-emerald-300',
   },
   error: {
     icon: XCircle,
-    bgColor: 'bg-red-500/10',
-    borderColor: 'border-red-500/30',
-    textColor: 'text-red-600 dark:text-red-400',
-    iconColor: 'text-red-500',
+    bgColor: 'bg-red-400 dark:bg-red-950/50',
+    borderColor: 'border-red-500 dark:border-red-800',
+    textColor: 'text-slate-950 dark:text-red-100',
+    iconColor: 'text-red-700 dark:text-red-300',
   },
   warning: {
     icon: AlertTriangle,
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/30',
-    textColor: 'text-amber-600 dark:text-amber-400',
-    iconColor: 'text-amber-500',
+    bgColor: 'bg-amber-400 dark:bg-amber-950/50',
+    borderColor: 'border-amber-500 dark:border-amber-800',
+    textColor: 'text-slate-950 dark:text-amber-100',
+    iconColor: 'text-amber-700 dark:text-amber-300',
   },
   info: {
     icon: Info,
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/30',
-    textColor: 'text-blue-600 dark:text-blue-400',
-    iconColor: 'text-blue-500',
+    bgColor: 'bg-blue-400 dark:bg-blue-950/50',
+    borderColor: 'border-blue-500 dark:border-blue-800',
+    textColor: 'text-slate-950 dark:text-blue-100',
+    iconColor: 'text-blue-700 dark:text-blue-300',
   },
 };
 
@@ -99,7 +99,7 @@ export default function Toast({
         initial={{ scaleX: 1 }}
         animate={{ scaleX: 0 }}
         transition={{ duration: duration / 1000, ease: 'linear' }}
-        className={`absolute bottom-0 left-0 h-1 ${config.iconColor.replace('text-', 'bg-')} rounded-b-xl origin-left`}
+        className={`absolute bottom-0 left-0 h-1 ${config.iconColor.replace('text-', 'bg-').replace('dark:', '')} rounded-b-xl origin-left`}
         style={{ width: '100%' }}
       />
     </motion.div>

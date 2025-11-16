@@ -18,7 +18,10 @@ export interface IVideo extends Document {
   duration?: number;
   transcript: ITranscriptSegment[];
   language: string;
-  processingStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  processingStatus: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
+  materialsStatus: 'complete' | 'incomplete' | 'generating';
+  incompleteMaterials?: ('flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
+  errorType?: string;
   errorMessage?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -42,7 +45,10 @@ const VideoSchema: Schema = new Schema({
   duration: { type: Number },
   transcript: [TranscriptSegmentSchema],
   language: { type: String, default: 'en' },
-  processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'failed'] },
+  processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'completed_with_warning', 'failed'] },
+  materialsStatus: { type: String, enum: ['complete', 'incomplete', 'generating'], default: 'generating' },
+  incompleteMaterials: [{ type: String, enum: ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'] }],
+  errorType: { type: String },
   errorMessage: { type: String },
   processedAt: { type: Date },
 }, {

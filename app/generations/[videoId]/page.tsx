@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target, ArrowLeft } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
@@ -11,11 +11,14 @@ import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
 import MindMapViewer from '@/components/MindMapViewer';
+import MaterialsWarningBanner from '@/components/MaterialsWarningBanner';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
+import Dialog from '@/components/Dialog';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { ChatBot } from '@/components/ChatBot';
+import { getErrorConfig } from '@/lib/errorMessages';
 
 interface VideoMaterials {
   video: {
@@ -96,6 +99,22 @@ interface VideoMaterials {
       updatedAt: Date;
     }>;
   };
+  // New fields for material availability tracking
+  processingStatus?: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
+  materialsStatus?: 'complete' | 'incomplete' | 'generating';
+  incompleteMaterials?: ('flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
+  hasAllMaterials?: boolean;
+  availableMaterials?: {
+    flashcards: boolean;
+    quizzes: boolean;
+    prerequisites: boolean;
+    mindmap: boolean;
+    casestudies: boolean;
+  };
+  error?: {
+    type?: string;
+    message?: string;
+  } | null;
 }
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
@@ -112,14 +131,22 @@ const tabs = [
 export default function VideoMaterialsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const videoId = params.videoId as string;
   const { logout } = useAuth();
+
+  // Check for warning parameter in URL
+  const warningType = searchParams.get('warning');
 
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
+  const [showWarning, setShowWarning] = useState(!!warningType);
+  const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
+  const [bannedDismissed, setBannerDismissed] = useState(false);
+  const [autoplayVideos, setAutoplayVideos] = useState(false);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -138,6 +165,24 @@ export default function VideoMaterialsPage() {
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
+
+  // Load banner dismissal state from localStorage
+  useEffect(() => {
+    const dismissedBannersKey = 'dismissedMaterialsBanners';
+    const dismissedBanners = JSON.parse(localStorage.getItem(dismissedBannersKey) || '{}');
+    if (dismissedBanners[videoId]) {
+      setBannerDismissed(true);
+    }
+  }, [videoId]);
+
+  // Handle banner dismissal
+  const handleBannerDismiss = () => {
+    setBannerDismissed(true);
+    const dismissedBannersKey = 'dismissedMaterialsBanners';
+    const dismissedBanners = JSON.parse(localStorage.getItem(dismissedBannersKey) || '{}');
+    dismissedBanners[videoId] = true;
+    localStorage.setItem(dismissedBannersKey, JSON.stringify(dismissedBanners));
   };
 
   const refreshMaterials = async () => {
@@ -256,10 +301,11 @@ export default function VideoMaterialsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch materials and notes in parallel
-        const [materialsResponse, notesResponse] = await Promise.all([
+        // Fetch materials, notes, and user preferences in parallel
+        const [materialsResponse, notesResponse, preferencesResponse] = await Promise.all([
           fetch(`/api/videos/${videoId}/materials`),
-          fetch(`/api/notes/${videoId}`)
+          fetch(`/api/notes/${videoId}`),
+          fetch(`/api/preferences/general`)
         ]);
 
         if (!materialsResponse.ok) {
@@ -269,11 +315,32 @@ export default function VideoMaterialsPage() {
         const materialsData = await materialsResponse.json();
         setMaterials(materialsData);
 
+        // Check for incomplete materials based on materialsStatus
+        if (materialsData.materialsStatus === 'incomplete') {
+          const missing: string[] = [];
+          if (materialsData.availableMaterials) {
+            if (!materialsData.availableMaterials.flashcards) missing.push('Flashcards');
+            if (!materialsData.availableMaterials.quizzes) missing.push('Quizzes');
+            if (!materialsData.availableMaterials.prerequisites) missing.push('Prerequisites');
+            if (!materialsData.availableMaterials.mindmap) missing.push('Mind Map');
+            if (!materialsData.availableMaterials.casestudies) missing.push('Challenges');
+          }
+          if (missing.length > 0) {
+            setIncompleteMaterials(missing);
+          }
+        }
+
         if (notesResponse.ok) {
           const notesData = await notesResponse.json();
           setNotes(notesData);
         } else {
           setNotes({ generalNote: '', segmentNotes: [] });
+        }
+
+        // Fetch user's autoplay preference
+        if (preferencesResponse.ok) {
+          const preferencesData = await preferencesResponse.json();
+          setAutoplayVideos(preferencesData.preferences?.autoplayVideos ?? false);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -472,6 +539,13 @@ export default function VideoMaterialsPage() {
 
       {/* Content Area */}
       <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Materials Warning Banner */}
+        <MaterialsWarningBanner
+          incompleteMaterials={incompleteMaterials}
+          isVisible={!bannedDismissed && incompleteMaterials.length > 0}
+          onDismiss={handleBannerDismiss}
+        />
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -514,6 +588,7 @@ export default function VideoMaterialsPage() {
                 youtubeUrl={materials.video.youtubeUrl}
                 notes={notes}
                 onSaveNotes={saveNotes}
+                autoplayVideos={autoplayVideos}
               />
             )}
             {activeTab === 'prerequisites' && (
@@ -608,6 +683,19 @@ export default function VideoMaterialsPage() {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      {/* Warning Dialog for LLM Partial Failures */}
+      {showWarning && warningType && (
+        <Dialog
+          isOpen={showWarning}
+          onClose={() => setShowWarning(false)}
+          type="alert"
+          variant={getErrorConfig(warningType).variant}
+          title={getErrorConfig(warningType).title}
+          message={getErrorConfig(warningType).message}
+          confirmText="I Understand"
+        />
+      )}
 
       {/* ChatBot */}
       <ChatBot videoId={videoId} />
