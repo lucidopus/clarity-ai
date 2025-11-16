@@ -33,8 +33,6 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: '$userId',
           totalCost: { $sum: '$totalCost' },
-          operations: { $sum: 1 },
-          avgCostPerOperation: { $avg: '$totalCost' },
         }
       },
       { $sort: { totalCost: -1 } },
@@ -48,7 +46,16 @@ export async function GET(request: NextRequest) {
       .lean();
 
     // Create user map for quick lookup
-    const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
+    interface UserData {
+      _id: { toString: () => string };
+      firstName: string;
+      lastName: string;
+      email: string;
+    }
+    const userMap = new Map(users.map((u) => {
+      const userData = u as unknown as UserData;
+      return [userData._id.toString(), userData];
+    }));
 
     // Combine cost data with user details
     const topUsers = userCosts.map(uc => {
@@ -58,8 +65,6 @@ export async function GET(request: NextRequest) {
         userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
         email: user?.email || 'N/A',
         totalCost: parseFloat(uc.totalCost.toFixed(6)),
-        operations: uc.operations,
-        avgCostPerOperation: parseFloat(uc.avgCostPerOperation.toFixed(6)),
       };
     });
 

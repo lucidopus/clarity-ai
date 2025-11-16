@@ -1,20 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { AlertCircle, TrendingUp } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 interface UserCost {
   userId: string;
   userName: string;
   email: string;
   totalCost: number;
-  operations: number;
-  avgCostPerOperation: number;
 }
 
 export default function TopUsersByCostreTable() {
-  const router = useRouter();
   const [users, setUsers] = useState<UserCost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +18,7 @@ export default function TopUsersByCostreTable() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [limit]);
 
   const fetchUsers = async () => {
@@ -56,10 +53,6 @@ export default function TopUsersByCostreTable() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  const handleUserClick = (userId: string) => {
-    router.push(`/admin/dashboard/users/${userId}`);
-  };
-
   if (loading) {
     return (
       <div className="bg-card-bg border border-border rounded-xl p-6">
@@ -84,7 +77,7 @@ export default function TopUsersByCostreTable() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-foreground">Top Users by Cost</h3>
+        <h3 className="text-lg font-semibold text-foreground">Top Spenders</h3>
         <select
           value={limit}
           onChange={(e) => setLimit(parseInt(e.target.value))}
@@ -108,16 +101,13 @@ export default function TopUsersByCostreTable() {
                   <th className="text-left text-xs font-medium text-muted-foreground py-3 px-6">Rank</th>
                   <th className="text-left text-xs font-medium text-muted-foreground py-3 px-6">User</th>
                   <th className="text-right text-xs font-medium text-muted-foreground py-3 px-6">Total Cost</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground py-3 px-6">Operations</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground py-3 px-6">Avg Cost/Op</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user, idx) => (
                   <tr
                     key={user.userId}
-                    onClick={() => handleUserClick(user.userId)}
-                    className="border-t border-border hover:bg-background/50 cursor-pointer transition-colors duration-200"
+                    className="border-t border-border"
                   >
                     <td className="py-4 px-6">
                       <div className="flex items-center">
@@ -143,12 +133,6 @@ export default function TopUsersByCostreTable() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <span className="text-sm font-semibold text-foreground">{formatCost(user.totalCost)}</span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <span className="text-sm text-muted-foreground">{user.operations.toLocaleString()}</span>
-                    </td>
-                    <td className="py-4 px-6 text-right">
-                      <span className="text-sm text-muted-foreground">{formatCost(user.avgCostPerOperation)}</span>
                     </td>
                   </tr>
                 ))}

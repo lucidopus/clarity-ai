@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/adminAuth';
 import dbConnect from '@/lib/mongodb';
-import CostAggregation from '@/lib/models/CostAggregation';
+import Cost from '@/lib/models/Cost';
 import { startOfDay, subDays } from 'date-fns';
 
 /**
@@ -28,27 +28,37 @@ export async function GET(request: NextRequest) {
     const days = parseInt(searchParams.get('days') || '30', 10);
 
     // Calculate date range
-    const endDate = startOfDay(new Date());
-    const startDate = startOfDay(subDays(endDate, days));
+    const endDate = new Date(); // Include today's data up to now
+    const startDate = startOfDay(subDays(new Date(), days));
 
-    // Get aggregations for the date range
-    const aggregations = await CostAggregation.find({
-      date: { $gte: startDate, $lt: endDate }
-    })
-      .select('date dailyTotalCost')
-      .sort({ date: 1 })
-      .lean();
+    // Aggregate data from costs collection by day
+    const aggregations = await Cost.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate, $lt: endDate }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
+          },
+          dailyTotalCost: { $sum: '$totalCost' }
+        }
+      },
+      { $sort: { '_id': 1 } }
+    ]);
 
     // Calculate min/max for color scale
-    const costs = aggregations.map(a => a.dailyTotalCost);
+    const costs = aggregations.map((a: { dailyTotalCost: number }) => a.dailyTotalCost);
     const minCost = costs.length > 0 ? Math.min(...costs) : 0;
     const maxCost = costs.length > 0 ? Math.max(...costs) : 0;
 
     // Format heatmap data
-    const heatmap = aggregations.map(agg => {
-      const date = new Date(agg.date);
+    const heatmap = aggregations.map((agg: { _id: string; dailyTotalCost: number }) => {
+      const date = new Date(agg._id + 'T00:00:00Z');
       return {
-        date: agg.date.toISOString().split('T')[0], // YYYY-MM-DD
+        date: agg._id, // YYYY-MM-DD
         dayOfWeek: date.getDay(), // 0 = Sunday, 6 = Saturday
         cost: parseFloat(agg.dailyTotalCost.toFixed(6)),
         // Normalize cost to 0-1 scale for color intensity
@@ -65,8 +75,8 @@ export async function GET(request: NextRequest) {
       const previousWeek = aggregations.slice(-14, -7);
 
       if (previousWeek.length >= 7) {
-        const recentAvg = recentWeek.reduce((sum, a) => sum + a.dailyTotalCost, 0) / 7;
-        const previousAvg = previousWeek.reduce((sum, a) => sum + a.dailyTotalCost, 0) / 7;
+        const recentAvg = recentWeek.reduce((sum: number, a: { dailyTotalCost: number }) => sum + a.dailyTotalCost, 0) / 7;
+        const previousAvg = previousWeek.reduce((sum: number, a: { dailyTotalCost: number }) => sum + a.dailyTotalCost, 0) / 7;
 
         if (recentAvg > previousAvg * 1.1) {
           trendIndicator = 'up';
@@ -83,7 +93,7 @@ export async function GET(request: NextRequest) {
         minCost: parseFloat(minCost.toFixed(6)),
         maxCost: parseFloat(maxCost.toFixed(6)),
         avgCost: aggregations.length > 0
-          ? parseFloat((costs.reduce((a, b) => a + b, 0) / costs.length).toFixed(6))
+          ? parseFloat((costs.reduce((a: number, b: number) => a + b, 0) / costs.length).toFixed(6))
           : 0,
         trendIndicator,
       },

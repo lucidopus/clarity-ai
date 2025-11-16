@@ -26,6 +26,7 @@ export default function SpendingHeatmap() {
 
   useEffect(() => {
     fetchHeatmap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [days]);
 
   const fetchHeatmap = async () => {

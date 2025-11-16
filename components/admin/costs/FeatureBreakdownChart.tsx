@@ -3,20 +3,21 @@
 import { useEffect, useState } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { AlertCircle } from 'lucide-react';
+
+ChartJS.register(ChartDataLabels);
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface SourceData {
   source: string;
   cost: number;
-  operations: number;
   percentage: number;
 }
 
 export default function FeatureBreakdownChart() {
   const [sources, setSources] = useState<SourceData[]>([]);
-  const [totalCost, setTotalCost] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +37,6 @@ export default function FeatureBreakdownChart() {
       const data = await response.json();
       if (data.success) {
         setSources(data.sources);
-        setTotalCost(data.totalCost);
       } else {
         throw new Error(data.message || 'Failed to load data');
       }
@@ -120,6 +120,19 @@ export default function FeatureBreakdownChart() {
       legend: {
         display: false,
       },
+      datalabels: {
+        color: '#fff',
+        font: {
+          weight: 'bold' as const,
+          size: 14,
+        },
+        formatter: (_value: number | string, context: { dataIndex: number }) => {
+          const source = sources[context.dataIndex];
+          return `${source.percentage.toFixed(1)}%`;
+        },
+        anchor: 'center' as const,
+        align: 'center' as const,
+      },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         padding: 12,
@@ -128,12 +141,11 @@ export default function FeatureBreakdownChart() {
         borderColor: 'rgba(6, 182, 212, 0.5)',
         borderWidth: 1,
         callbacks: {
-          label: (context: any) => {
+          label: (context: { dataIndex: number }) => {
             const source = sources[context.dataIndex];
             return [
               `${source.percentage.toFixed(1)}% of total`,
               `Cost: ${formatCost(source.cost)}`,
-              `Operations: ${source.operations.toLocaleString()}`,
             ];
           },
         },
@@ -148,8 +160,8 @@ export default function FeatureBreakdownChart() {
       <div className="bg-card-bg border border-border rounded-xl p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Chart */}
-          <div className="h-[300px] flex items-center justify-center">
-            <div className="w-full max-w-[280px]">
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="w-[350px] h-[350px]">
               <Doughnut data={chartData} options={chartOptions} />
             </div>
           </div>
@@ -164,26 +176,11 @@ export default function FeatureBreakdownChart() {
                       className="w-4 h-4 rounded"
                       style={{ backgroundColor: getSourceColor(idx) }}
                     ></div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{getSourceName(source.source)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {source.operations.toLocaleString()} operations
-                      </p>
-                    </div>
+                    <p className="text-sm font-medium text-foreground">{getSourceName(source.source)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-foreground">{formatCost(source.cost)}</p>
-                    <p className="text-xs text-accent font-medium">{source.percentage.toFixed(1)}%</p>
-                  </div>
+                  <p className="text-sm font-semibold text-foreground">{formatCost(source.cost)}</p>
                 </div>
               ))}
-            </div>
-
-            <div className="pt-4 border-t border-border">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Total</span>
-                <span className="text-lg font-bold text-foreground">{formatCost(totalCost)}</span>
-              </div>
             </div>
           </div>
         </div>

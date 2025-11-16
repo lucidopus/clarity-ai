@@ -165,18 +165,8 @@ export async function GET(
     const totalCost = costData.length > 0 ? parseFloat(costData[0].totalCost.toFixed(6)) : 0;
     const totalCostOperations = costData.length > 0 ? costData[0].operations : 0;
 
-    // Get recent costs (last 7 days)
-    const last7Days = startOfDay(subDays(new Date(), 7));
-    const recentCosts = await Cost.find({
-      userId: userObjectId,
-      createdAt: { $gte: last7Days }
-    })
-      .select('source totalCost createdAt')
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .lean();
-
     // Calculate daily average for last 7 days
+    const last7Days = startOfDay(subDays(new Date(), 7));
     const dailyCosts = await Cost.aggregate([
       {
         $match: {

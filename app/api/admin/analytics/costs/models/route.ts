@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
           inputTokens: { $sum: '$services.usage.unitDetails.inputTokens' },
           outputTokens: { $sum: '$services.usage.unitDetails.outputTokens' },
           totalTokens: { $sum: '$services.usage.unitDetails.totalTokens' },
-          operations: { $sum: 1 },
         }
       },
       { $sort: { totalCost: -1 } }
@@ -50,11 +49,9 @@ export async function GET(request: NextRequest) {
       inputTokens: model.inputTokens || 0,
       outputTokens: model.outputTokens || 0,
       totalTokens: model.totalTokens || 0,
-      operations: model.operations,
       costPerToken: model.totalTokens > 0
         ? parseFloat((model.totalCost / model.totalTokens).toFixed(10))
         : 0,
-      costPerOperation: parseFloat((model.totalCost / model.operations).toFixed(6)),
     }));
 
     return NextResponse.json({

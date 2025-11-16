@@ -6,14 +6,10 @@ import { DollarSign, TrendingUp, Activity, AlertCircle } from 'lucide-react';
 interface ServiceSummary {
   service: string;
   totalCost: number;
-  operations: number;
-  avgCostPerOperation: number;
 }
 
 interface CostSummary {
   totalCost: number;
-  totalOperations: number;
-  avgCostPerOperation: number;
   byService: ServiceSummary[];
 }
 
@@ -60,8 +56,8 @@ export default function CostSummaryCards() {
 
   const getServiceName = (service: string) => {
     const names: Record<string, string> = {
-      groq_llm: 'Groq LLM',
-      apify_transcript: 'Apify Transcript',
+      groq_llm: 'Large Language Model (LLM)',
+      apify_transcript: 'Transcript Extraction',
     };
     return names[service] || service;
   };
@@ -94,35 +90,16 @@ export default function CostSummaryCards() {
 
   return (
     <div className="space-y-4 my-10">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
         {/* Total Cost Card */}
         <div className="bg-card-bg border border-border rounded-xl p-6 hover:shadow-lg transition-shadow duration-200">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm text-muted-foreground mb-1">Total Cost</p>
               <p className="text-3xl font-bold text-foreground">{formatCost(summary.totalCost)}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                {summary.totalOperations.toLocaleString()} operations
-              </p>
             </div>
             <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-accent" />
-            </div>
-          </div>
-        </div>
-
-        {/* Average Cost Card */}
-        <div className="bg-card-bg border border-border rounded-xl p-6 hover:shadow-lg transition-shadow duration-200">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground mb-1">Avg Cost/Op</p>
-              <p className="text-3xl font-bold text-foreground">{formatCost(summary.avgCostPerOperation)}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Per operation
-              </p>
-            </div>
-            <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-accent" />
             </div>
           </div>
         </div>
@@ -137,9 +114,6 @@ export default function CostSummaryCards() {
               <div>
                 <p className="text-sm text-muted-foreground mb-1">{getServiceName(service.service)}</p>
                 <p className="text-2xl font-bold text-foreground">{formatCost(service.totalCost)}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {service.operations.toLocaleString()} ops • {formatCost(service.avgCostPerOperation)}/op
-                </p>
               </div>
               <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
                 <span className="text-accent">{getServiceIcon(service.service)}</span>

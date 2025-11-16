@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: '$services.service',
           totalCost: { $sum: '$services.usage.cost' },
-          operations: { $sum: 1 },
           successCount: {
             $sum: {
               $cond: [{ $eq: ['$services.status', 'success'] }, 1, 0]
             }
           },
+          totalCount: { $sum: 1 },
         }
       },
       { $sort: { totalCost: -1 } }
@@ -42,18 +42,15 @@ export async function GET(request: NextRequest) {
 
     // Format service data
     const services = serviceStats.map(service => {
-      const avgCostPerOp = service.totalCost / service.operations;
-      const successRate = (service.successCount / service.operations) * 100;
+      const successRate = (service.successCount / service.totalCount) * 100;
 
-      // Calculate efficiency score (lower cost per op + higher success rate = better)
+      // Calculate efficiency score (based on success rate)
       // Normalize: 0-100 scale where 100 is best
       const efficiencyScore = successRate; // Simple version, can be enhanced
 
       return {
         service: service._id,
         totalCost: parseFloat(service.totalCost.toFixed(6)),
-        operations: service.operations,
-        avgCostPerOperation: parseFloat(avgCostPerOp.toFixed(6)),
         successRate: parseFloat(successRate.toFixed(2)),
         efficiencyScore: parseFloat(efficiencyScore.toFixed(2)),
       };
@@ -62,11 +59,11 @@ export async function GET(request: NextRequest) {
     // Sort by efficiency (best first)
     services.sort((a, b) => {
       // Primary: efficiency score (higher better)
-      // Secondary: cost per operation (lower better)
+      // Secondary: total cost (lower better)
       if (Math.abs(a.efficiencyScore - b.efficiencyScore) > 5) {
         return b.efficiencyScore - a.efficiencyScore;
       }
-      return a.avgCostPerOperation - b.avgCostPerOperation;
+      return a.totalCost - b.totalCost;
     });
 
     return NextResponse.json({

@@ -1,17 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { DollarSign, TrendingUp, Activity, Server, Users as UsersIcon } from 'lucide-react';
 
-// Import components (to be created)
+// Import components
 import CostSummaryCards from '@/components/admin/costs/CostSummaryCards';
 import ModelComparisonChart from '@/components/admin/costs/ModelComparisonChart';
 import TopUsersByCostreTable from '@/components/admin/costs/TopUsersByCostreTable';
 import FeatureBreakdownChart from '@/components/admin/costs/FeatureBreakdownChart';
-import TokenTrendChart from '@/components/admin/costs/TokenTrendChart';
+import DailyCostChart from '@/components/admin/costs/DailyCostChart';
 import ServiceEfficiencyChart from '@/components/admin/costs/ServiceEfficiencyChart';
-import SpendingHeatmap from '@/components/admin/costs/SpendingHeatmap';
-import OperationLegend from '@/components/admin/costs/OperationLegend';
 
 export default function CostsPage() {
   const [activeTab, setActiveTab] = useState<string>('summary');
@@ -19,7 +17,7 @@ export default function CostsPage() {
   const tabs = [
     { id: 'summary', label: 'Summary', icon: <DollarSign className="w-4 h-4" /> },
     { id: 'models', label: 'Models', icon: <Activity className="w-4 h-4" /> },
-    { id: 'users', label: 'Users', icon: <UsersIcon className="w-4 h-4" /> },
+    { id: 'users', label: 'Top Spenders', icon: <UsersIcon className="w-4 h-4" /> },
     { id: 'services', label: 'Services', icon: <Server className="w-4 h-4" /> },
     { id: 'trends', label: 'Trends', icon: <TrendingUp className="w-4 h-4" /> },
   ];
@@ -52,7 +50,6 @@ export default function CostsPage() {
           <>
             <CostSummaryCards />
             <FeatureBreakdownChart />
-            <OperationLegend />
           </>
         )}
 
@@ -76,8 +73,7 @@ export default function CostsPage() {
 
         {activeTab === 'trends' && (
           <>
-            <TokenTrendChart />
-            <SpendingHeatmap />
+            <DailyCostChart />
           </>
         )}
       </div>

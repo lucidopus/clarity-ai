@@ -28,13 +28,11 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: null,
           totalCost: { $sum: '$totalCost' },
-          totalOperations: { $sum: 1 },
         }
       }
     ]);
 
     const totalCost = totalCostResult.length > 0 ? totalCostResult[0].totalCost : 0;
-    const totalOperations = totalCostResult.length > 0 ? totalCostResult[0].totalOperations : 0;
 
     // Get breakdown by service
     const byService = await Cost.aggregate([
@@ -43,8 +41,6 @@ export async function GET(request: NextRequest) {
         $group: {
           _id: '$services.service',
           totalCost: { $sum: '$services.usage.cost' },
-          operations: { $sum: 1 },
-          avgCostPerOperation: { $avg: '$services.usage.cost' },
         }
       },
       { $sort: { totalCost: -1 } }
@@ -54,16 +50,12 @@ export async function GET(request: NextRequest) {
     const services = byService.map(service => ({
       service: service._id,
       totalCost: parseFloat(service.totalCost.toFixed(6)),
-      operations: service.operations,
-      avgCostPerOperation: parseFloat(service.avgCostPerOperation.toFixed(6)),
     }));
 
     return NextResponse.json({
       success: true,
       summary: {
         totalCost: parseFloat(totalCost.toFixed(6)),
-        totalOperations,
-        avgCostPerOperation: totalOperations > 0 ? parseFloat((totalCost / totalOperations).toFixed(6)) : 0,
         byService: services,
       }
     });
