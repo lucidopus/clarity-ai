@@ -60,9 +60,12 @@ export default function FeatureBreakdownChart() {
 
   const getSourceColor = (index: number) => {
     const colors = [
-      'rgba(6, 182, 212, 0.9)', // Accent cyan
-      'rgba(107, 114, 128, 0.7)', // Muted gray
-      'rgba(156, 163, 175, 0.5)', // Light gray
+      'rgba(6, 182, 212, 0.9)',   // Vibrant cyan (primary accent)
+      'rgba(139, 92, 246, 0.8)',  // Vibrant purple
+      'rgba(34, 197, 94, 0.8)',   // Vibrant green
+      'rgba(249, 115, 22, 0.8)',  // Vibrant orange
+      'rgba(236, 72, 153, 0.8)',  // Vibrant pink
+      'rgba(59, 130, 246, 0.8)',  // Vibrant blue
     ];
     return colors[index % colors.length];
   };

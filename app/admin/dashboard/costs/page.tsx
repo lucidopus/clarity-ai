@@ -11,7 +11,7 @@ import FeatureBreakdownChart from '@/components/admin/costs/FeatureBreakdownChar
 import TokenTrendChart from '@/components/admin/costs/TokenTrendChart';
 import ServiceEfficiencyChart from '@/components/admin/costs/ServiceEfficiencyChart';
 import SpendingHeatmap from '@/components/admin/costs/SpendingHeatmap';
-import AlertsPanel from '@/components/admin/costs/AlertsPanel';
+import OperationLegend from '@/components/admin/costs/OperationLegend';
 
 export default function CostsPage() {
   const [activeTab, setActiveTab] = useState<string>('summary');
@@ -25,20 +25,7 @@ export default function CostsPage() {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Cost Analytics</h2>
-          <p className="text-muted-foreground mt-1">
-            Monitor spending, detect anomalies, and optimize resource usage
-          </p>
-        </div>
-      </div>
-
-      {/* Alerts Panel */}
-      <AlertsPanel />
-
+    <div className="">
       {/* Tab Navigation */}
       <div className="border-b border-border">
         <div className="flex space-x-1">
@@ -46,7 +33,7 @@ export default function CostsPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors duration-200 ${
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors duration-200 cursor-pointer ${
                 activeTab === tab.id
                   ? 'border-accent text-accent font-medium'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -65,6 +52,7 @@ export default function CostsPage() {
           <>
             <CostSummaryCards />
             <FeatureBreakdownChart />
+            <OperationLegend />
           </>
         )}
 
