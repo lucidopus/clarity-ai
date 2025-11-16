@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,7 +14,12 @@ import {
 } from 'chart.js';
 import { AlertCircle } from 'lucide-react';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+// Register Chart.js plugins and components once - safe to call multiple times
+try {
+  ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+} catch {
+  // Already registered, ignore
+}
 
 interface ModelData {
   model: string;
@@ -29,6 +34,7 @@ export default function ModelComparisonChart() {
   const [models, setModels] = useState<ModelData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef(null);
 
   useEffect(() => {
     fetchModels();
@@ -183,8 +189,8 @@ export default function ModelComparisonChart() {
     <div className="space-y-4 my-10">
       <div className="bg-card-bg border border-border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Token Usage by Model</h3>
-        <div className="h-[350px] mb-6">
-          <Bar data={tokensChartData} options={chartOptions} />
+        <div className="h-[350px] mb-6" ref={chartRef}>
+          <Bar key={`chart-${models.length}`} data={tokensChartData} options={chartOptions} />
         </div>
 
         {/* Table View */}

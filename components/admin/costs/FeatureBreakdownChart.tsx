@@ -1,14 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { AlertCircle } from 'lucide-react';
 
-ChartJS.register(ChartDataLabels);
-
-ChartJS.register(ArcElement, Tooltip, Legend);
+// Register Chart.js plugins and components once - safe to call multiple times
+try {
+  ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
+} catch {
+  // Already registered, ignore
+}
 
 interface SourceData {
   source: string;
@@ -20,6 +23,7 @@ export default function FeatureBreakdownChart() {
   const [sources, setSources] = useState<SourceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const chartRef = useRef(null);
 
   useEffect(() => {
     fetchSources();
@@ -161,8 +165,8 @@ export default function FeatureBreakdownChart() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Chart */}
           <div className="h-[400px] flex items-center justify-center">
-            <div className="w-[350px] h-[350px]">
-              <Doughnut data={chartData} options={chartOptions} />
+            <div className="w-[350px] h-[350px]" ref={chartRef}>
+              <Doughnut key={`chart-${sources.length}`} data={chartData} options={chartOptions} />
             </div>
           </div>
 
