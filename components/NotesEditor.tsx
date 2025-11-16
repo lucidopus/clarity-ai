@@ -378,7 +378,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
           <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
             <button
               onClick={() => setViewMode('edit')}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
+              className={`flex cursor-pointer items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
                 viewMode === 'edit'
                   ? 'bg-accent text-white'
                   : 'text-muted-foreground hover:text-foreground'
@@ -390,7 +390,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
             </button>
             <button
               onClick={() => setViewMode('preview')}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
+              className={`flex cursor-pointer items-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-all duration-200 ${
                 viewMode === 'preview'
                   ? 'bg-accent text-white'
                   : 'text-muted-foreground hover:text-foreground'
@@ -452,28 +452,28 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         <div className="mb-3 flex items-center gap-1 flex-wrap pb-3 border-b border-border">
           <button
             onClick={handleBold}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="Bold (⌘/Ctrl+B)"
           >
             <Bold className="w-4 h-4" />
           </button>
           <button
             onClick={handleItalic}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="Italic (⌘/Ctrl+I)"
           >
             <Italic className="w-4 h-4" />
           </button>
           <button
             onClick={handleUnderline}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="Underline (⌘/Ctrl+U)"
           >
             <Underline className="w-4 h-4" />
           </button>
           <button
             onClick={handleStrikethrough}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="Strikethrough (⌘/Ctrl+K)"
           >
             <Strikethrough className="w-4 h-4" />
@@ -481,14 +481,14 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
           <div className="w-px h-6 bg-border mx-1" />
           <button
             onClick={handleBulletList}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="Bullet List"
           >
             <List className="w-4 h-4" />
           </button>
           <button
             onClick={handleNumberedList}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="Numbered List"
           >
             <ListOrdered className="w-4 h-4" />
@@ -496,7 +496,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
           <div className="w-px h-6 bg-border mx-1" />
           <button
             onClick={() => setShowShortcuts(!showShortcuts)}
-            className="p-2 rounded-lg hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+            className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
             title="View keyboard shortcuts"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
