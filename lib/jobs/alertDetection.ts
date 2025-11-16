@@ -136,7 +136,7 @@ async function detectUserCostSpikes(targetDate: Date): Promise<void> {
 
     if (userDailyCost > threshold) {
       // Get user details
-      const user = await User.findById(userId).select('firstName lastName email').lean();
+      const user = await User.findById(userId).select('firstName lastName email').lean() as any;
       if (!user) continue;
 
       const userName = `${user.firstName} ${user.lastName}`;

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       .lean();
 
     // Create user map for quick lookup
-    const userMap = new Map(users.map(u => [u._id.toString(), u]));
+    const userMap = new Map(users.map((u: any) => [u._id.toString(), u]));
 
     // Combine cost data with user details
     const topUsers = userCosts.map(uc => {

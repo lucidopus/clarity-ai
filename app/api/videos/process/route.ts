@@ -131,10 +131,15 @@ export async function POST(request: NextRequest) {
       console.log(`💰 [COST] Apify transcript extraction: ${formatCost(apifyCost)} (${transcriptDuration}ms)`);
 
       // Calculate total video duration from transcript segments
-      const totalDuration = transcriptResult.segments.length > 0
-        ? Math.max(...transcriptResult.segments.map(s => s.offset + s.duration))
-        : 0;
-      console.log(`📊 [VIDEO PROCESS] Calculated video duration: ${totalDuration} seconds`);
+      // Use the end of the last segment (offset + duration) as video duration
+      let totalDuration = 0;
+      if (transcriptResult.segments.length > 0) {
+        // Find the segment that ends the latest
+        totalDuration = Math.max(
+          ...transcriptResult.segments.map(s => s.offset + s.duration)
+        );
+      }
+      console.log(`📊 [VIDEO PROCESS] Calculated video duration: ${totalDuration} seconds (${Math.floor(totalDuration / 60)}:${String(Math.floor(totalDuration % 60)).padStart(2, '0')})`);
 
       // Update video with transcript and metadata
       console.log('💾 [VIDEO PROCESS] Saving transcript to database...');

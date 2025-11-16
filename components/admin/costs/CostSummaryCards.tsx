@@ -93,9 +93,7 @@ export default function CostSummaryCards() {
   if (!summary) return null;
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-foreground">Cost Overview</h3>
-
+    <div className="space-y-4 my-10">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Cost Card */}
         <div className="bg-card-bg border border-border rounded-xl p-6 hover:shadow-lg transition-shadow duration-200">
