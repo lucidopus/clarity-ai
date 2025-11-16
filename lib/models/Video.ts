@@ -18,7 +18,8 @@ export interface IVideo extends Document {
   duration?: number;
   transcript: ITranscriptSegment[];
   language: string;
-  processingStatus: 'pending' | 'processing' | 'completed' | 'failed';
+  processingStatus: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
+  errorType?: string;
   errorMessage?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -42,7 +43,8 @@ const VideoSchema: Schema = new Schema({
   duration: { type: Number },
   transcript: [TranscriptSegmentSchema],
   language: { type: String, default: 'en' },
-  processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'failed'] },
+  processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'completed_with_warning', 'failed'] },
+  errorType: { type: String },
   errorMessage: { type: String },
   processedAt: { type: Date },
 }, {

@@ -17,6 +17,7 @@ import ActivityFunnelCard from '@/components/ActivityFunnelCard';
 import VideoEngagementList from '@/components/VideoEngagementList';
 import FlashcardDifficultyDonut from '@/components/FlashcardDifficultyDonut';
 import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
+import { getErrorConfig } from '@/lib/errorMessages';
 
 interface StatsResponse {
   totalVideos: number;
@@ -57,10 +58,11 @@ export default function DashboardHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
-  const [errorDialog, setErrorDialog] = useState<{ show: boolean; message: string }>({
-    show: false,
-    message: '',
-  });
+  const [errorState, setErrorState] = useState<{
+    show: boolean;
+    errorType: string;
+    videoId?: string;
+  } | null>(null);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -146,6 +148,7 @@ export default function DashboardHomePage() {
     console.log(`🎬 [FRONTEND] YouTube URL: ${youtubeUrl}`);
 
     setIsGenerating(true);
+    setErrorState(null); // Clear any previous errors
     try {
       const clientNow = new Date();
       const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
@@ -167,27 +170,50 @@ export default function DashboardHomePage() {
 
       console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
 
+      const data = await response.json();
+
+      // Case 1: Apify/validation failed → show error dialog, stay on home
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ [FRONTEND] API error response:', errorData);
-        throw new Error(errorData.error || 'Failed to generate materials');
+        console.error('❌ [FRONTEND] API error response:', data);
+        setErrorState({
+          show: true,
+          errorType: data.errorType || 'UNKNOWN_ERROR',
+          videoId: data.videoId, // For duplicate video errors
+        });
+        setShowGenerateModal(false);
+        return;
       }
 
-      const data = await response.json();
+      // Case 2: Success (with or without warnings)
       console.log('✅ [FRONTEND] Generation successful:', data);
       setShowGenerateModal(false);
 
-      // Redirect to the generation page
+      // Case 2a: LLM failed (partial success) → redirect with warning
+      if (data.warning) {
+        console.log(`⚠️ [FRONTEND] Redirecting to /generations/${data.videoId}?warning=${data.warning.type}`);
+        window.location.href = `/generations/${data.videoId}?warning=${data.warning.type}`;
+        return;
+      }
+
+      // Case 2b: Full success → redirect normally
       if (data.videoId) {
         console.log(`🎬 [FRONTEND] Redirecting to /generations/${data.videoId}`);
         window.location.href = `/generations/${data.videoId}`;
       } else {
         console.error('❌ [FRONTEND] No videoId in response');
+        setErrorState({
+          show: true,
+          errorType: 'UNKNOWN_ERROR',
+        });
       }
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation error:', error);
-      const message = error instanceof Error ? error.message : 'An error occurred';
-      setErrorDialog({ show: true, message });
+      // Network error or other unexpected error
+      setErrorState({
+        show: true,
+        errorType: 'NETWORK_ERROR',
+      });
+      setShowGenerateModal(false);
     } finally {
       setIsGenerating(false);
       console.log('🎬 [FRONTEND] Generation flow completed');
@@ -363,15 +389,26 @@ export default function DashboardHomePage() {
       />
 
       {/* Error Dialog */}
-      <Dialog
-        isOpen={errorDialog.show}
-        onClose={() => setErrorDialog({ show: false, message: '' })}
-        type="alert"
-        variant="error"
-        title="Generation Failed"
-        message={errorDialog.message}
-        confirmText="OK"
-      />
+      {errorState && (
+        <Dialog
+          isOpen={errorState.show}
+          onClose={() => setErrorState(null)}
+          onConfirm={() => {
+            // Handle special actions for specific error types
+            if (errorState.errorType === 'DUPLICATE_VIDEO' && errorState.videoId) {
+              // Redirect to existing video
+              window.location.href = `/generations/${errorState.videoId}`;
+            } else {
+              setErrorState(null);
+            }
+          }}
+          type="alert"
+          variant={getErrorConfig(errorState.errorType).variant}
+          title={getErrorConfig(errorState.errorType).title}
+          message={getErrorConfig(errorState.errorType).message}
+          confirmText={errorState.errorType === 'DUPLICATE_VIDEO' ? 'View Existing' : 'OK'}
+        />
+      )}
     </div>
     </DashboardInsightsProvider>
   );

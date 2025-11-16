@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target, ArrowLeft } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
@@ -13,9 +13,11 @@ import PrerequisitesView from '@/components/PrerequisitesView';
 import MindMapViewer from '@/components/MindMapViewer';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
+import Dialog from '@/components/Dialog';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { ChatBot } from '@/components/ChatBot';
+import { getErrorConfig } from '@/lib/errorMessages';
 
 interface VideoMaterials {
   video: {
@@ -112,14 +114,19 @@ const tabs = [
 export default function VideoMaterialsPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const videoId = params.videoId as string;
   const { logout } = useAuth();
+
+  // Check for warning parameter in URL
+  const warningType = searchParams.get('warning');
 
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
+  const [showWarning, setShowWarning] = useState(!!warningType);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -608,6 +615,19 @@ export default function VideoMaterialsPage() {
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      {/* Warning Dialog for LLM Partial Failures */}
+      {showWarning && warningType && (
+        <Dialog
+          isOpen={showWarning}
+          onClose={() => setShowWarning(false)}
+          type="alert"
+          variant={getErrorConfig(warningType).variant}
+          title={getErrorConfig(warningType).title}
+          message={getErrorConfig(warningType).message}
+          confirmText="I Understand"
+        />
+      )}
 
       {/* ChatBot */}
       <ChatBot videoId={videoId} />
