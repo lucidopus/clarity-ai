@@ -12,6 +12,7 @@ import QuizInterface from './QuizInterface';
 import QuizReview from './QuizReview';
 import TranscriptViewer from './TranscriptViewer';
 import PrerequisiteChecker from './PrerequisiteChecker';
+import ChapterMiniMap from './ChapterMiniMap';
 import { logActivity } from '@/lib/activityLogger';
 import { CHATBOT_NAME } from '@/lib/config';
 
@@ -23,6 +24,13 @@ interface Question {
   correctAnswerIndex?: number;
   correctAnswer?: string;
   explanation: string;
+}
+
+interface Chapter {
+  id: string;
+  timeSeconds: number;
+  topic: string;
+  description: string;
 }
 
 interface VideoMaterials {
@@ -45,6 +53,7 @@ interface VideoMaterials {
     start: number;
     duration: number;
   }>;
+  chapters: Chapter[];
   prerequisites: Array<{
     id: string;
     title: string;
@@ -76,6 +85,9 @@ export default function VideoMaterialsView({
   const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<(number | string | null)[]>([]);
   const [quizSummary, setQuizSummary] = useState<{ score: number; total: number } | null>(null);
+  const [currentChapterId, setCurrentChapterId] = useState<string | undefined>(
+    video.chapters && video.chapters.length > 0 ? video.chapters[0].id : undefined
+  );
 
   useEffect(() => {
     // Log page/materials view
@@ -119,8 +131,29 @@ export default function VideoMaterialsView({
 
   const quizCompleted = Boolean(quizSummary);
 
+  const handleChapterClick = (chapter: Chapter) => {
+    setCurrentChapterId(chapter.id);
+    // Log chapter navigation activity
+    logActivity('chapter_navigated', video.id, {
+      chapterId: chapter.id,
+      chapterTopic: chapter.topic,
+      timeSeconds: chapter.timeSeconds
+    }).catch(() => {});
+
+    // TODO: Implement video player seeking to chapter.timeSeconds
+    console.log(`Jump to chapter: ${chapter.topic} at ${chapter.timeSeconds}s`);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
+      {/* Chapter Mini-Map */}
+      {video.chapters && video.chapters.length > 0 && (
+        <ChapterMiniMap
+          chapters={video.chapters}
+          currentChapterId={currentChapterId}
+          onChapterClick={handleChapterClick}
+        />
+      )}
       {/* Header */}
       <div className="mb-8">
         {onBack && (
