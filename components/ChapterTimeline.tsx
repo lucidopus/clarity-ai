@@ -137,7 +137,7 @@ export default function ChapterTimeline({
                 onMouseEnter={() => setHoveredChapter(chapter.id)}
                 onMouseLeave={() => setHoveredChapter(null)}
                 className={`
-                  w-full text-left p-4 rounded-xl border transition-all duration-200
+                  w-full text-left p-4 rounded-xl border transition-all duration-200 cursor-pointer
                   ${
                     isInProgress
                       ? 'bg-accent/10 border-accent shadow-lg shadow-accent/10'
@@ -225,24 +225,6 @@ export default function ChapterTimeline({
             </motion.div>
           );
         })}
-      </div>
-
-      {/* Overall Progress */}
-      <div className="pt-2 border-t border-border">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground">Overall Progress</span>
-          <span className="text-xs font-medium text-accent">
-            {formatTime(currentTime)} / {formatTime(duration)}
-          </span>
-        </div>
-        <div className="h-2 bg-background rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-accent rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ type: 'spring', damping: 30, stiffness: 100 }}
-          />
-        </div>
       </div>
     </div>
   );

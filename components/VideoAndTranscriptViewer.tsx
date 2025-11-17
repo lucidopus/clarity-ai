@@ -8,7 +8,7 @@ import { Trash2, FileText } from 'lucide-react';
 import Button from './Button';
 import NotesEditor from './NotesEditor';
 import Tooltip from './Tooltip';
-import ChapterTimeline from './ChapterTimeline';
+import ChapterButton from './ChapterButton';
 
 interface TranscriptSegment {
   text: string;
@@ -28,6 +28,7 @@ interface VideoAndTranscriptViewerProps {
   videoId: string;
   youtubeUrl: string;
   chapters?: Chapter[];
+  videoTitle?: string;
   notes: {
     generalNote: string;
     segmentNotes: Array<{
@@ -76,6 +77,7 @@ export default function VideoAndTranscriptViewer({
   videoId,
   youtubeUrl,
   chapters = [],
+  videoTitle,
   notes,
   onSaveNotes,
   autoplayVideos = false
@@ -281,6 +283,16 @@ export default function VideoAndTranscriptViewer({
 
   return (
     <div className="max-w-7xl mx-auto">
+      {/* Floating Chapter Button */}
+      {chapters && chapters.length > 0 && (
+        <ChapterButton
+          chapters={chapters}
+          currentTime={currentTime}
+          playerRef={playerRef}
+          videoTitle={videoTitle}
+        />
+      )}
+
       {/* Video and Transcript Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
         {/* Video Player */}
@@ -305,17 +317,6 @@ export default function VideoAndTranscriptViewer({
               )}
             </div>
           </div>
-
-          {/* Chapter Timeline */}
-          {chapters && chapters.length > 0 && (
-            <div className="bg-card-bg border-2 border-border rounded-2xl p-4">
-              <ChapterTimeline
-                chapters={chapters}
-                currentTime={currentTime}
-                playerRef={playerRef}
-              />
-            </div>
-          )}
 
 
           {/* Notes Section */}
