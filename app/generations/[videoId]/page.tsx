@@ -602,6 +602,7 @@ export default function VideoMaterialsPage() {
                   videoId={materials.video.videoId}
                   youtubeUrl={materials.video.youtubeUrl}
                   chapters={materials.chapters}
+                  videoTitle={materials.video.title}
                   notes={notes}
                   onSaveNotes={saveNotes}
                   autoplayVideos={autoplayVideos}

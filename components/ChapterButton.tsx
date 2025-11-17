@@ -2,39 +2,66 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, X } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+import { ListOrdered, X } from 'lucide-react';
+import ChapterTimeline from './ChapterTimeline';
 
-interface VideoSummaryButtonProps {
-  summary: string;
+interface Chapter {
+  id: string;
+  timeSeconds: number;
+  topic: string;
+  description: string;
+}
+
+interface YTPlayer {
+  getCurrentTime(): number;
+  getDuration(): number;
+  seekTo(time: number, allowSeekAhead: boolean): void;
+  playVideo(): void;
+  pauseVideo(): void;
+}
+
+interface ChapterButtonProps {
+  chapters: Chapter[];
+  currentTime: number;
+  playerRef: React.MutableRefObject<YTPlayer | null>;
   videoTitle?: string;
 }
 
-export default function VideoSummaryButton({ summary, videoTitle }: VideoSummaryButtonProps) {
+export default function ChapterButton({
+  chapters,
+  currentTime,
+  playerRef,
+  videoTitle
+}: ChapterButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
-      {/* Corner Button - Top Right */}
+      {/* Corner Button - Top Right (below summary button) */}
       <motion.button
         initial={{ opacity: 0, x: 10 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 10 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="fixed top-24 right-6 z-20 group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-accent/5 dark:hover:bg-accent/10 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
-        title="View summary (keyboard: ?)"
-        aria-label="View video summary"
+        className="fixed top-36 right-6 z-20 group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-accent/5 dark:hover:bg-accent/10 hover:border-accent text-accent dark:text-secondary hover:text-accent"
+        title="View chapters"
+        aria-label="View video chapters"
       >
-        <BookOpen className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+        <ListOrdered className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
+
+        {/* Badge showing chapter count */}
+        <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-accent text-white text-[10px] font-semibold rounded-full">
+          {chapters.length}
+        </span>
 
         {/* Tooltip on Hover */}
         <div className="absolute top-full mt-2 px-3 py-2 bg-card-bg border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md z-50">
-          View Summary
+          View Chapters
         </div>
       </motion.button>
 
-      {/* Summary Modal */}
+      {/* Chapter Modal */}
       <AnimatePresence>
         {isOpen && (
           <>
@@ -65,11 +92,11 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                 <div className="sticky top-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-card-bg">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="shrink-0 w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-accent" />
+                      <ListOrdered className="w-5 h-5 text-accent" />
                     </div>
                     <div className="min-w-0">
                       <h2 className="text-lg font-semibold text-foreground truncate">
-                        Summary
+                        Chapters
                       </h2>
                       {videoTitle && (
                         <p className="text-xs text-muted-foreground truncate">
@@ -81,19 +108,19 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                   <button
                     onClick={() => setIsOpen(false)}
                     className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
-                    aria-label="Close summary"
+                    aria-label="Close chapters"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                {/* Content */}
+                {/* Content - Chapter Timeline */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 pr-4">
-                  <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-em:text-foreground prose-code:text-foreground prose-code:bg-muted prose-code:px-2 prose-code:py-1 prose-code:rounded prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:text-foreground prose-a:text-accent prose-a:hover:text-accent/80 prose-li:text-foreground prose-blockquote:text-muted-foreground prose-blockquote:border-accent">
-                    <ReactMarkdown>
-                      {summary}
-                    </ReactMarkdown>
-                  </div>
+                  <ChapterTimeline
+                    chapters={chapters}
+                    currentTime={currentTime}
+                    playerRef={playerRef}
+                  />
                 </div>
 
                 {/* Footer */}
@@ -102,7 +129,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                     onClick={() => setIsOpen(false)}
                     className="px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors cursor-pointer"
                   >
-                    Got it
+                    Close
                   </button>
                 </div>
               </motion.div>
