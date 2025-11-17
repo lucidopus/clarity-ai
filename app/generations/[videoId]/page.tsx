@@ -53,6 +53,12 @@ interface VideoMaterials {
     start: number;
     duration: number;
   }>;
+  chapters: Array<{
+    id: string;
+    timeSeconds: number;
+    topic: string;
+    description: string;
+  }>;
   prerequisites: Array<{
     id: string;
     title: string;
@@ -595,6 +601,7 @@ export default function VideoMaterialsPage() {
                   transcript={materials.transcript}
                   videoId={materials.video.videoId}
                   youtubeUrl={materials.video.youtubeUrl}
+                  chapters={materials.chapters}
                   notes={notes}
                   onSaveNotes={saveNotes}
                   autoplayVideos={autoplayVideos}

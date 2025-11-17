@@ -8,6 +8,7 @@ import { Trash2, FileText } from 'lucide-react';
 import Button from './Button';
 import NotesEditor from './NotesEditor';
 import Tooltip from './Tooltip';
+import ChapterTimeline from './ChapterTimeline';
 
 interface TranscriptSegment {
   text: string;
@@ -15,10 +16,18 @@ interface TranscriptSegment {
   duration: number; // in seconds
 }
 
+interface Chapter {
+  id: string;
+  timeSeconds: number;
+  topic: string;
+  description: string;
+}
+
 interface VideoAndTranscriptViewerProps {
   transcript: TranscriptSegment[];
   videoId: string;
   youtubeUrl: string;
+  chapters?: Chapter[];
   notes: {
     generalNote: string;
     segmentNotes: Array<{
@@ -43,6 +52,7 @@ interface VideoAndTranscriptViewerProps {
 // Extend Window interface for YouTube IFrame API
 interface YTPlayer {
   getCurrentTime(): number;
+  getDuration(): number;
   seekTo(time: number, allowSeekAhead: boolean): void;
   playVideo(): void;
   pauseVideo(): void;
@@ -65,6 +75,7 @@ export default function VideoAndTranscriptViewer({
   transcript,
   videoId,
   youtubeUrl,
+  chapters = [],
   notes,
   onSaveNotes,
   autoplayVideos = false
@@ -274,6 +285,7 @@ export default function VideoAndTranscriptViewer({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
         {/* Video Player */}
         <div className="space-y-4 lg:sticky lg:top-6">
+          {/* Video Player */}
           <div className="bg-card-bg border-2 border-border rounded-2xl p-4">
             <div className="aspect-video bg-black rounded-xl overflow-hidden">
               {embedUrl ? (
@@ -293,6 +305,18 @@ export default function VideoAndTranscriptViewer({
               )}
             </div>
           </div>
+
+          {/* Chapter Timeline */}
+          {chapters && chapters.length > 0 && (
+            <div className="bg-card-bg border-2 border-border rounded-2xl p-4">
+              <ChapterTimeline
+                chapters={chapters}
+                currentTime={currentTime}
+                playerRef={playerRef}
+              />
+            </div>
+          )}
+
 
           {/* Notes Section */}
           <NotesEditor

@@ -58,7 +58,7 @@ export async function GET(
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // Fetch learning materials (timestamps and prerequisites)
+    // Fetch learning materials (chapters and prerequisites)
     const learningMaterial = await LearningMaterial.findOne({
       videoId: videoId, // YouTube video ID
       userId: decoded.userId
@@ -126,6 +126,12 @@ export async function GET(
         start: t.offset,
         duration: t.duration
       })),
+      chapters: learningMaterial?.chapters?.map((chapter) => ({
+        id: chapter.id,
+        timeSeconds: chapter.timeSeconds,
+        topic: chapter.topic,
+        description: chapter.description
+      })) || [],
       prerequisites: learningMaterial?.prerequisites.map((prereq: IPrerequisite) => ({
         id: prereq.id,
         title: prereq.topic,
