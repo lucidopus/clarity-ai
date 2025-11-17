@@ -1,6 +1,6 @@
 export { default as User, type IUser } from './User';
 export { default as Video, type IVideo, type ITranscriptSegment } from './Video';
-export { default as LearningMaterial, type ILearningMaterial, type ITimestamp, type IPrerequisite, type IRealWorldProblem } from './LearningMaterial';
+export { default as LearningMaterial, type ILearningMaterial, type IChapter, type IPrerequisite, type IRealWorldProblem } from './LearningMaterial';
 export { default as Flashcard, type IFlashcard } from './Flashcard';
 export { default as Quiz, type IQuiz } from './Quiz';
 export { default as Progress, type IProgress, type IQuizAttempt } from './Progress';

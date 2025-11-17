@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
           metadata: {
             flashcardsGenerated: materials.flashcards.length,
             quizzesGenerated: materials.quizzes.length,
-            timestampsGenerated: materials.timestamps.length,
+            chaptersGenerated: materials.chapters.length,
             prerequisitesGenerated: materials.prerequisites.length,
             mindMapNodesGenerated: materials.mindMap.nodes.length,
             mindMapEdgesGenerated: materials.mindMap.edges.length,
