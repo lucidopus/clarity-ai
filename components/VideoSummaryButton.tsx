@@ -61,7 +61,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                 {/* Header */}
                 <div className="sticky top-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-card-bg">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <div className="shrink-0 w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                       <BookOpen className="w-5 h-5 text-accent" />
                     </div>
                     <div className="min-w-0">
@@ -77,7 +77,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                    className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                     aria-label="Close summary"
                   >
                     <X className="w-5 h-5" />
