@@ -146,6 +146,7 @@ export async function GET(
         scenario: problem.scenario,
         hints: problem.hints
       })) || [],
+      videoSummary: learningMaterial?.videoSummary || undefined,
       // Include processing status and error info
       processingStatus: video.processingStatus,
       materialsStatus: video.materialsStatus || 'generating',

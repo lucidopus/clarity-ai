@@ -11,6 +11,7 @@ import QuizInterface from '@/components/QuizInterface';
 import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
 import MindMapViewer from '@/components/MindMapViewer';
+import VideoSummaryButton from '@/components/VideoSummaryButton';
 import MaterialsWarningBanner from '@/components/MaterialsWarningBanner';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
@@ -90,6 +91,7 @@ interface VideoMaterials {
     scenario: string;
     hints: string[];
   }>;
+  videoSummary?: string;
   notes: {
     generalNote: string;
     segmentNotes: Array<{
@@ -582,14 +584,22 @@ export default function VideoMaterialsPage() {
               <QuizInterface quizzes={materials.quizzes} videoId={videoId} />
             )}
             {activeTab === 'transcript' && (
-              <VideoAndTranscriptViewer
-                transcript={materials.transcript}
-                videoId={materials.video.videoId}
-                youtubeUrl={materials.video.youtubeUrl}
-                notes={notes}
-                onSaveNotes={saveNotes}
-                autoplayVideos={autoplayVideos}
-              />
+              <>
+                {materials.videoSummary && (
+                  <VideoSummaryButton
+                    summary={materials.videoSummary}
+                    videoTitle={materials.video.title}
+                  />
+                )}
+                <VideoAndTranscriptViewer
+                  transcript={materials.transcript}
+                  videoId={materials.video.videoId}
+                  youtubeUrl={materials.video.youtubeUrl}
+                  notes={notes}
+                  onSaveNotes={saveNotes}
+                  autoplayVideos={autoplayVideos}
+                />
+              </>
             )}
             {activeTab === 'prerequisites' && (
               <PrerequisitesView prerequisites={materials.prerequisites} />
