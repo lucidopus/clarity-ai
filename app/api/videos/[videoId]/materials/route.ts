@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Video, { type ITranscriptSegment } from '@/lib/models/Video';
-import LearningMaterial, { type IPrerequisite, type IRealWorldProblem } from '@/lib/models/LearningMaterial';
+import LearningMaterial, { type IPrerequisite, type IRealWorldProblem, type IChapter } from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import { MindMap } from '@/lib/models';
@@ -126,7 +126,7 @@ export async function GET(
         start: t.offset,
         duration: t.duration
       })),
-      chapters: learningMaterial?.chapters?.map((chapter) => ({
+      chapters: learningMaterial?.chapters?.map((chapter: IChapter) => ({
         id: chapter.id,
         timeSeconds: chapter.timeSeconds,
         topic: chapter.topic,
