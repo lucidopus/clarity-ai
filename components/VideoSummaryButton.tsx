@@ -22,7 +22,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
         exit={{ opacity: 0, x: 10 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="fixed top-24 right-6 z-20 group cursor-pointer flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-accent dark:hover:bg-accent/20 hover:border-accent text-accent dark:text-secondary hover:text-white dark:hover:text-accent animate-pulse-subtle"
+        className="fixed top-24 right-6 z-20 group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-accent/5 dark:hover:bg-accent/10 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
         title="View summary (keyboard: ?)"
         aria-label="View video summary"
       >
@@ -61,7 +61,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                 {/* Header */}
                 <div className="sticky top-0 flex items-center justify-between gap-4 px-6 py-4 border-b border-border bg-card-bg">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="shrink-0 w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
                       <BookOpen className="w-5 h-5 text-accent" />
                     </div>
                     <div className="min-w-0">
@@ -77,7 +77,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                   </div>
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                     aria-label="Close summary"
                   >
                     <X className="w-5 h-5" />
