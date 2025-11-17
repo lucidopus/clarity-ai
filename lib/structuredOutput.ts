@@ -33,7 +33,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
         additionalProperties: false,
       },
     },
-    timestamps: {
+    chapters: {
       type: 'array',
       items: {
         type: 'object',
@@ -113,7 +113,7 @@ export const LEARNING_MATERIALS_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ['title', 'flashcards', 'quizzes', 'timestamps', 'prerequisites', 'realWorldProblems', 'videoSummary', 'mindMap'],
+  required: ['title', 'flashcards', 'quizzes', 'chapters', 'prerequisites', 'realWorldProblems', 'videoSummary', 'mindMap'],
   additionalProperties: false,
 } as const;
 
@@ -132,7 +132,7 @@ export interface LearningMaterials {
     correctAnswerIndex: number;
     explanation: string;
   }>;
-  timestamps: Array<{
+  chapters: Array<{
     id: string;
     timeSeconds: number;
     topic: string;
