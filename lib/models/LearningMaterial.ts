@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface ITimestamp {
+export interface IChapter {
   id: string;
   timeSeconds: number;
   topic: string;
@@ -24,7 +24,7 @@ export interface ILearningMaterial extends Document {
   _id: mongoose.Types.ObjectId;
   videoId: string; // YouTube video ID
   userId: mongoose.Types.ObjectId;
-  timestamps: ITimestamp[];
+  chapters: IChapter[];
   prerequisites: IPrerequisite[];
   realWorldProblems: IRealWorldProblem[];
   videoSummary: string;
@@ -36,7 +36,7 @@ export interface ILearningMaterial extends Document {
   updatedAt: Date;
 }
 
-const TimestampSchema: Schema = new Schema({
+const ChapterSchema: Schema = new Schema({
   id: { type: String, required: true },
   timeSeconds: { type: Number, required: true },
   topic: { type: String, required: true },
@@ -59,7 +59,7 @@ const RealWorldProblemSchema: Schema = new Schema({
 const LearningMaterialSchema: Schema = new Schema({
   videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  timestamps: [TimestampSchema],
+  chapters: [ChapterSchema],
   prerequisites: [PrerequisiteSchema],
   realWorldProblems: [RealWorldProblemSchema],
   videoSummary: { type: String, required: true },

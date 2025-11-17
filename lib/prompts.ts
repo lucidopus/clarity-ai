@@ -8,7 +8,7 @@ Generate 7 learning components based on this transcript:
 1. Generate a very short, relevant title for the video
 2. Extract key flashcards covering all important concepts. The number should be proportional to the content's density, typically between 5 and 15.
 3. Create multiple-choice quiz questions to test understanding of the main topics. The number should be based on the material, usually between and 10 to 15.
-4. Identify 3-5 key moments (timestamps + summaries)
+4. Identify 3-5 key moments (video chapters with time markers + summaries)
 5. List 2-3 prerequisite topics needed
 6. **Generate ONE high-quality real-world problem (case study)** where the video's primary topic is applied
 7. Generate a 200-300 word summary of the video for the AI tutor to use as context
@@ -99,7 +99,7 @@ Generate 7 learning components based on this transcript:
 - Title: Concise, descriptive, and engaging (based on the main topic)
 - Flashcards: Simple, testable, foundational concepts with clear questions and answers
 - Quizzes: Variety (multiple choice), medium difficulty, 4 options per question
-- Timestamps: Specific time codes from the video with topic summaries
+- Chapters: Specific time codes from the video with topic summaries (key navigational moments)
 - Prerequisites: Real knowledge gaps needed to understand this content, not obvious basics
 - Real-World Problem: ONE complex, realistic case study (see detailed requirements above)
 - Video Summary: A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context

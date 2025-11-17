@@ -71,7 +71,7 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     console.log(`✅ [LLM] Generated materials summary:`);
     console.log(`   - Flashcards: ${materials.flashcards.length}`);
     console.log(`   - Quizzes: ${materials.quizzes.length}`);
-    console.log(`   - Timestamps: ${materials.timestamps.length}`);
+    console.log(`   - Chapters: ${materials.chapters.length}`);
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
      console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
 
