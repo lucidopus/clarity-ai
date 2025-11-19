@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Play, Clock } from 'lucide-react';
 
@@ -33,18 +33,19 @@ export default function ChapterTimeline({
   playerRef
 }: ChapterTimelineProps) {
   const [hoveredChapter, setHoveredChapter] = useState<string | null>(null);
+  const [duration, setDuration] = useState(0);
 
-  // Get video duration from player
-  const duration = useMemo(() => {
+  // Get video duration from player (use effect to avoid ref access during render)
+  useEffect(() => {
     if (playerRef.current && typeof playerRef.current.getDuration === 'function') {
       try {
-        return playerRef.current.getDuration();
+        const videoDuration = playerRef.current.getDuration();
+        setDuration(videoDuration);
       } catch {
-        return 0;
+        setDuration(0);
       }
     }
-    return 0;
-  }, [playerRef]);
+  }, [playerRef, currentTime]); // Update when currentTime changes (player is ready)
 
   // Format time helper
   const formatTime = (seconds: number): string => {
@@ -102,9 +103,6 @@ export default function ChapterTimeline({
         return <Clock className="w-4 h-4" />;
     }
   };
-
-  // Calculate current progress percentage
-  const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
     <div className="w-full space-y-4">
