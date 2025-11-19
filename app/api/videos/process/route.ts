@@ -208,6 +208,16 @@ export async function POST(request: NextRequest) {
       materials = llmResponse.materials;
       llmUsage = llmResponse.usage;
 
+      // Transform problem IDs to be globally unique (prepend videoId)
+      // This prevents cross-video contamination in guide chatbot
+      if (materials.realWorldProblems && materials.realWorldProblems.length > 0) {
+        materials.realWorldProblems = materials.realWorldProblems.map(problem => ({
+          ...problem,
+          id: `${videoId}_${problem.id}` // Transform "rp1" → "videoId_rp1"
+        }));
+        console.log(`🔄 [VIDEO PROCESS] Transformed ${materials.realWorldProblems.length} problem IDs to include videoId prefix`);
+      }
+
       console.log('✅ [VIDEO PROCESS] LLM generation successful!');
       console.log(`📚 [VIDEO PROCESS] Generated: ${materials.flashcards.length} flashcards, ${materials.quizzes.length} quizzes, ${materials.chapters.length} chapters, ${materials.prerequisites.length} prerequisites, ${materials.realWorldProblems.length} case studies`);
 

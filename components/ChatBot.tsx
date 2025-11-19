@@ -14,7 +14,9 @@ interface ChatBotProps {
 export function ChatBot({ videoId }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const { messages, isStreaming, sendMessage, clearMessages } = useChatBot(videoId);
+  const { messages, isStreaming, sendMessage, clearMessages } = useChatBot(videoId, {
+    channel: 'chatbot', // Specify channel to ensure clear only deletes chatbot messages
+  });
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);
   const hasInitializedScrollRef = useRef(false);
