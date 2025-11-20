@@ -587,7 +587,7 @@ export default function CaseStudyWorkspacePage() {
                 animate={{ opacity: 1, width: '320px' }}
                 exit={{ opacity: 0, width: 0 }}
                 transition={{ duration: 0.3 }}
-                className="shrink-0 relative"
+                className="shrink-0 relative border-r border-border/60 dark:border-border/30"
                 style={{ width: '320px' }}
               >
                 <div className="space-y-6 pr-4">
@@ -763,7 +763,7 @@ export default function CaseStudyWorkspacePage() {
                  animate={{ opacity: 1, width: '500px' }}
                  exit={{ opacity: 0, width: 0 }}
                  transition={{ duration: 0.3 }}
-                 className="shrink-0 relative"
+                 className="shrink-0 relative border-l border-border/60 dark:border-border/30"
                  style={{ width: '500px' }}
                >
                  <div className="pl-4">
