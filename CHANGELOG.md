@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reorganized "Danger Zone" section with clearer warnings
   - Improved overall visual hierarchy, spacing, and component organization
   - Better empty states with icons and helpful messages
+- Enhanced case study workspace with panel borders for better visual separation
 
 ### Fixed
 
