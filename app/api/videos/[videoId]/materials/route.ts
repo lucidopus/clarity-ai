@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Video, { type ITranscriptSegment } from '@/lib/models/Video';
@@ -110,7 +111,7 @@ export async function GET(
         id: fc._id.toString(),
         question: fc.question,
         answer: fc.answer,
-        isMastered: progress?.masteredFlashcardIds?.some((id) => id.toString() === fc._id.toString()) || false,
+        isMastered: progress?.masteredFlashcardIds?.some((id: mongoose.Types.ObjectId) => id.toString() === fc._id.toString()) || false,
         isUserCreated: fc.generationType === 'human'
       })),
       quizzes: quizzes.map(quiz => ({
