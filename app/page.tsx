@@ -401,7 +401,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Pricing Section - Commented out */}
+      {false && (
       <section id="pricing" className="py-20 bg-card-bg/30 relative overflow-hidden">
         {/* Background Elements */}
         <div className="absolute inset-0 bg-linear-to-br from-accent/5 via-transparent to-accent/10"></div>
@@ -539,6 +540,7 @@ export default function Home() {
            </div>
          </div>
        </section>
+      )}
 
        {/* CTA Section */}
        <section className="py-20 relative overflow-hidden">
