@@ -273,7 +273,7 @@ export default function FlashcardViewer({
           variant={masteredCards.has(currentCard.id) ? 'primary' : 'secondary'}
           onClick={handleMastered}
           disabled={isUpdatingMastery}
-          className="px-4 min-w-[120px]"
+          className="px-4 min-w-[140px]"
         >
           <motion.div
             className="flex items-center justify-center"
@@ -283,7 +283,13 @@ export default function FlashcardViewer({
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
             <Check className={`w-4 h-4 mr-2 ${masteredCards.has(currentCard.id) ? '' : 'opacity-60'}`} />
-            <span className="font-medium">{isUpdatingMastery ? 'Saving...' : 'Mastered'}</span>
+            <span className="font-medium">
+              {isUpdatingMastery
+                ? 'Saving...'
+                : masteredCards.has(currentCard.id)
+                  ? 'Mastered'
+                  : 'Mark Mastered'}
+            </span>
           </motion.div>
         </Button>
 
