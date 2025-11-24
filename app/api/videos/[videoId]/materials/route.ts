@@ -110,7 +110,7 @@ export async function GET(
         id: fc._id.toString(),
         question: fc.question,
         answer: fc.answer,
-        isMastered: progress?.flashcardProgress?.get(fc._id.toString())?.isMastered || false,
+        isMastered: progress?.masteredFlashcardIds?.some((id) => id.toString() === fc._id.toString()) || false,
         isUserCreated: fc.generationType === 'human'
       })),
       quizzes: quizzes.map(quiz => ({
