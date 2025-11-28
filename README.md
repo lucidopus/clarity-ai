@@ -67,7 +67,7 @@ Clarity AI is packed with features designed to enhance your learning, all genera
 - Groq API Key
 - Apify API Token (optional, for enhanced transcript fetching)
 
-### Installation
+### Installation Guide
 
 1.  **Clone the repository:**
     ```bash
