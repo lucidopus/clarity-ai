@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw } from 'lucide-react';
+import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw, Trash2 } from 'lucide-react';
 import Button from './Button';
 import { logActivity } from '@/lib/activityLogger';
 
@@ -34,6 +34,41 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<number>>(new Set());
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetProgress = async () => {
+    try {
+      setIsResetting(true);
+
+      const response = await fetch('/api/learning/quizzes/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to reset quiz progress:', await response.text());
+        return;
+      }
+
+      // Reset local state (same as retake)
+      setCurrentQuestionIndex(0);
+      setSelectedAnswers(new Array(quizzes.length).fill(null));
+      setSubmitted(false);
+      setShowFeedback(false);
+      setQuizCompleted(false);
+      setFinalScore(0);
+      setSubmittedQuestions(new Set());
+    } catch (error) {
+      console.error('Error resetting quiz progress:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   if (!quizzes || quizzes.length === 0) {
     return (
@@ -241,9 +276,19 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
               setSubmittedQuestions(new Set());
             }}
             className="px-8"
+            disabled={isResetting}
           >
             <RotateCw className="w-4 h-4 mr-2" />
             Retake Quiz
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleResetProgress}
+            className="px-8"
+            disabled={isResetting}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {isResetting ? 'Resetting...' : 'Reset Progress'}
           </Button>
         </motion.div>
       </div>
@@ -275,7 +320,7 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
     setSubmittedQuestions(prev => new Set([...prev, currentQuestionIndex]));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < quizzes.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       const nextIndex = currentQuestionIndex + 1;
@@ -297,7 +342,37 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
         correctAnswers: score,
       });
 
-      // TODO: API call to save quiz results
+      // Save quiz results to database
+      try {
+        const results = quizzes.map((quiz, index) => {
+          const answer = selectedAnswers[index];
+          const isCorrect = quiz.type === 'fill-in-blank'
+            ? answer === quiz.correctAnswer
+            : answer === quiz.correctAnswerIndex;
+
+          return {
+            quizId: quiz.id,
+            isCorrect: isCorrect
+          };
+        });
+
+        const response = await fetch('/api/learning/quizzes/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoId,
+            results
+          })
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save quiz results:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error saving quiz results:', error);
+      }
     }
   };
 
