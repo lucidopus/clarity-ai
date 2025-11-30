@@ -1,11 +1,12 @@
-import { groq } from './sdk';
+import { llm } from './sdk';
 import { LEARNING_MATERIALS_PROMPT } from './prompts';
-import { LEARNING_MATERIALS_SCHEMA, LearningMaterials } from './structuredOutput';
+import { LearningMaterialsSchema, LearningMaterials } from './structuredOutput';
 import {
   LLMTokenLimitError,
   LLMRateLimitError,
   LLMServiceError,
 } from './errors/ApiError';
+import { HumanMessage } from '@langchain/core/messages';
 
 /**
  * Response type that includes both learning materials and token usage data
@@ -27,60 +28,51 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     const prompt = LEARNING_MATERIALS_PROMPT.replace('[TRANSCRIPT_HERE]', transcript);
     console.log(`🤖 [LLM] Prompt prepared, total length: ${prompt.length} characters`);
 
-    // Call Groq with structured output (function calling)
-    // Per Groq docs: https://console.groq.com/docs/structured-outputs
-    console.log('🤖 [LLM] Calling Groq API with model: openai/gpt-oss-120b');
-    console.log('🤖 [LLM] Temperature: 0.7, Max tokens: 32768');
+    // Use LangChain's withStructuredOutput for provider-agnostic structured generation
+    console.log('🤖 [LLM] Calling LLM with LangChain structured output');
 
-    const response = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 32768, // 32K tokens - safe limit supported by most providers, prevents truncation
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'learning_materials',
-          schema: LEARNING_MATERIALS_SCHEMA,
-          strict: true,
-        },
-      },
+    const structuredLLM = llm.withStructuredOutput(LearningMaterialsSchema, {
+      name: 'learning_materials',
     });
 
-    console.log('✅ [LLM] Received response from Groq API');
-    console.log(`🤖 [LLM] Response tokens: ${response.usage?.completion_tokens || 'N/A'}`);
+    const response = await structuredLLM.invoke([
+      new HumanMessage(prompt)
+    ]);
 
-    // Parse response
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.error('❌ [LLM] No content in response');
-      throw new Error('No response from LLM');
-    }
+    // LangChain automatically parses and validates the response using Zod
+    const materials = response as LearningMaterials;
 
-    console.log(`🤖 [LLM] Response content length: ${content.length} characters`);
-    console.log('🤖 [LLM] Parsing JSON response...');
-
-    const materials = JSON.parse(content) as LearningMaterials;
-
-    console.log('✅ [LLM] JSON parsed successfully');
+    console.log('✅ [LLM] Received and validated response');
     console.log(`✅ [LLM] Generated materials summary:`);
     console.log(`   - Flashcards: ${materials.flashcards.length}`);
     console.log(`   - Quizzes: ${materials.quizzes.length}`);
     console.log(`   - Chapters: ${materials.chapters.length}`);
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
-     console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
+    console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
 
-    // Extract usage data from response
+    // Extract usage data from response metadata
+    // Note: Usage tracking in LangChain is available via response metadata
+    // We need to make a separate call to get usage or use callbacks
     const usage = {
-      promptTokens: response.usage?.prompt_tokens || 0,
-      completionTokens: response.usage?.completion_tokens || 0,
-      totalTokens: response.usage?.total_tokens || 0,
+      promptTokens: 0, // Will be populated via callback in production
+      completionTokens: 0,
+      totalTokens: 0,
     };
+
+    // For now, we'll use a workaround by making a second call to get usage
+    // In production, use LangChain callbacks for accurate token tracking
+    try {
+      const rawResponse = await llm.invoke([new HumanMessage(prompt)]);
+      const metadata = rawResponse.response_metadata as any;
+      if (metadata?.tokenUsage) {
+        const tokenUsage = metadata.tokenUsage;
+        usage.promptTokens = tokenUsage.promptTokens || 0;
+        usage.completionTokens = tokenUsage.completionTokens || 0;
+        usage.totalTokens = tokenUsage.totalTokens || 0;
+      }
+    } catch (usageError) {
+      console.warn('⚠️ [LLM] Could not extract token usage (non-critical)');
+    }
 
     console.log(`🤖 [LLM] Token usage: ${usage.promptTokens} input + ${usage.completionTokens} output = ${usage.totalTokens} total`);
 
@@ -131,4 +123,3 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     throw new LLMServiceError(errorMessage);
   }
 }
-
