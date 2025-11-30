@@ -19,7 +19,7 @@ Clarity AI is an AI-powered educational platform that turns passive YouTube vide
 
 ## 🚀 Live Demo
 
-**Experience Clarity AI in action: [clarityml.vercel.app](https://clarityml.vercel.app/)**
+**See Clarity AI in action: [clarityml.vercel.app](https://clarityml.vercel.app/)**
 
 ## ✨ Features
 
@@ -67,7 +67,7 @@ Clarity AI is packed with features designed to enhance your learning, all genera
 - Groq API Key
 - Apify API Token (optional, for enhanced transcript fetching)
 
-### Installation
+### Installation Guide
 
 1.  **Clone the repository:**
     ```bash
