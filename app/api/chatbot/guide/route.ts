@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import { llm } from '@/lib/sdk';
+import { groqLlm, GROQ_MODEL_NAME } from '@/lib/sdk';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
 import { AI_GUIDE_SYSTEM_PROMPT } from '@/lib/prompts';
 import { LearningMaterial, Solution } from '@/lib/models';
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     let promptTokens = 0;
     let completionTokens = 0;
 
-    const stream = await llm.stream(langchainMessages, {
+    const stream = await groqLlm.stream(langchainMessages, {
       callbacks: [
         {
           handleLLMEnd: (output) => {
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
 
           // 13. Log cost after streaming completes
           try {
-            const modelInfo = getCurrentModelInfo();
+            const modelInfo = getCurrentModelInfo(GROQ_MODEL_NAME);
             let isEstimated = false;
 
              // Estimate tokens if not available from stream callback
@@ -220,10 +220,8 @@ export async function POST(request: NextRequest) {
             }
 
             if (promptTokens > 0 || completionTokens > 0) {
-              const llmCost = calculateLLMCost(promptTokens, completionTokens);
-              const serviceType = modelInfo.model.includes('gemini') || modelInfo.model.includes('google')
-                ? ServiceType.GEMINI_LLM
-                : ServiceType.GROQ_LLM;
+              const llmCost = calculateLLMCost(promptTokens, completionTokens, GROQ_MODEL_NAME);
+              const serviceType = ServiceType.GROQ_LLM;
 
               const services: IServiceUsage[] = [
                 {

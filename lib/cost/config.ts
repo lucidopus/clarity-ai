@@ -3,7 +3,7 @@
  *
  * This file defines pricing rates for different LLM models and services.
  * The model-based pricing dictionary supports any LLM provider (Groq, OpenAI, Anthropic, Google, etc.)
- * with zero code changes - just update the dictionary and set the LLM_MODEL environment variable.
+ * with zero code changes - just update the dictionary and set the CONTENT_GENERATION_MODEL or CHATBOT_MODEL environment variable.
  */
 
 /**
@@ -23,7 +23,7 @@ export interface ITokenCostConfig {
  *
  * To add a new model:
  * 1. Add an entry to this dictionary with the model's pricing
- * 2. Set LLM_MODEL environment variable to the key
+ * 2. Set CONTENT_GENERATION_MODEL or CHATBOT_MODEL environment variable to the key
  * 3. No code changes needed!
  *
  * Current Groq Models (as of 2025):
@@ -86,8 +86,7 @@ export const APIFY_FIXED_COST = 0.005;
  * This should map to a key in costs_per_model
  */
 export const getCurrentLLMModel = (): string => {
-  const model = process.env.LLM_MODEL || 'gemini-2.0-flash';
-  return model;
+  return process.env.CONTENT_GENERATION_MODEL!;
 };
 
 /**

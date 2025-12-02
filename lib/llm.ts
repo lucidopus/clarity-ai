@@ -1,4 +1,4 @@
-import { llm } from './sdk';
+import { geminiLlm } from './sdk';
 import { LEARNING_MATERIALS_PROMPT } from './prompts';
 import { LearningMaterialsSchema, LearningMaterials } from './structuredOutput';
 import {
@@ -31,7 +31,7 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     // Use LangChain's withStructuredOutput for provider-agnostic structured generation
     console.log('🤖 [LLM] Calling LLM with LangChain structured output');
 
-    const structuredLLM = llm.withStructuredOutput(LearningMaterialsSchema, {
+    const structuredLLM = geminiLlm.withStructuredOutput(LearningMaterialsSchema, {
       name: 'learning_materials',
     });
 
