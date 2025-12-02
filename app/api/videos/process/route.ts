@@ -9,6 +9,7 @@ import { MindMap, ServiceType } from '@/lib/models';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
+import { GEMINI_MODEL_NAME } from '@/lib/sdk';
 import { resolveClientDay } from '@/lib/date.utils';
 import { calculateLLMCost, calculateApifyCost, getCurrentModelInfo } from '@/lib/cost/calculator';
 import { logGenerationCost, calculateTotalCost, formatCost } from '@/lib/cost/logger';
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
       console.log('❌ [VIDEO PROCESS] Authentication failed: No token found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    // ... (rest of the file remains same until cost calculation)
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     console.log(`✅ [VIDEO PROCESS] Authentication successful for user: ${decoded.userId}`);
@@ -199,7 +201,7 @@ export async function POST(request: NextRequest) {
     let llmUsage = null;
     let llmError = null;
     let llmErrorCode = null;
-    const modelInfo = getCurrentModelInfo();
+    const modelInfo = getCurrentModelInfo(GEMINI_MODEL_NAME);
 
     try {
       console.log(`🤖 [VIDEO PROCESS] Using model: ${modelInfo.model} (input: $${modelInfo.inputCostPerMillion}/M, output: $${modelInfo.outputCostPerMillion}/M)`);
@@ -222,10 +224,8 @@ export async function POST(request: NextRequest) {
       console.log(`📚 [VIDEO PROCESS] Generated: ${materials.flashcards.length} flashcards, ${materials.quizzes.length} quizzes, ${materials.chapters.length} chapters, ${materials.prerequisites.length} prerequisites, ${materials.realWorldProblems.length} case studies`);
 
       // Track LLM cost
-      const llmCost = calculateLLMCost(llmUsage.promptTokens, llmUsage.completionTokens);
-      const serviceType = modelInfo.model.includes('gemini') || modelInfo.model.includes('google')
-        ? ServiceType.GEMINI_LLM
-        : ServiceType.GROQ_LLM;
+      const llmCost = calculateLLMCost(llmUsage.promptTokens, llmUsage.completionTokens, GEMINI_MODEL_NAME);
+      const serviceType = ServiceType.GEMINI_LLM;
 
       services.push({
         service: serviceType,
