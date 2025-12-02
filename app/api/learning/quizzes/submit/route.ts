@@ -3,7 +3,8 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import Progress from '@/lib/models/Progress';
+import Progress, { IQuizAttempt } from '@/lib/models/Progress';
+import Quiz from '@/lib/models/Quiz';
 
 interface DecodedToken {
   userId: string;
@@ -16,7 +17,8 @@ interface DecodedToken {
 
 interface QuizResult {
   quizId: string; // MongoDB ObjectId as string
-  isCorrect: boolean;
+  userAnswerIndex: number;
+  isCorrect?: boolean; // Optional for backward compatibility/frontend convenience
 }
 
 interface SubmitQuizRequest {
@@ -72,31 +74,58 @@ export async function POST(request: NextRequest) {
     // Update lastAccessedAt
     progress.lastAccessedAt = new Date();
 
+    // Fetch all quizzes involved in the submission for validation
+    const quizIds = results.map(r => r.quizId);
+    const quizzes = await Quiz.find({ _id: { $in: quizIds } });
+    const quizMap = new Map(quizzes.map(q => [q._id.toString(), q]));
+
+    let correctCount = 0;
+
     // Process each quiz result
     for (const result of results) {
       const quizObjectId = new mongoose.Types.ObjectId(result.quizId);
+      const quiz = quizMap.get(result.quizId);
+      
+      let isCorrect = false;
+      // If backend validation is possible (quiz found), use it. 
+      // Otherwise fallback to client provided isCorrect (legacy support)
+      if (quiz) {
+        isCorrect = quiz.correctAnswerIndex === result.userAnswerIndex;
+      } else if (typeof result.isCorrect === 'boolean') {
+        isCorrect = result.isCorrect;
+      }
 
-      // Calculate attempt number for this quiz
-      const previousAttempts = progress.quizAttempts.filter(
-        (attempt: any) => attempt.quizId.toString() === result.quizId
+      if (isCorrect) correctCount++;
+
+      // Check for existing attempt
+      const existingAttemptIndex = progress.quizAttempts.findIndex(
+        (attempt: IQuizAttempt) => attempt.quizId.toString() === result.quizId
       );
-      const attemptNumber = previousAttempts.length + 1;
 
-      // Add quiz attempt (score: 100 for correct, 0 for incorrect)
-      progress.quizAttempts.push({
-        quizId: quizObjectId,
-        score: result.isCorrect ? 100 : 0,
-        attemptNumber: attemptNumber,
-        completedAt: new Date()
-      } as any);
+      if (existingAttemptIndex > -1) {
+        // Update existing attempt
+        progress.quizAttempts[existingAttemptIndex].score = isCorrect ? 100 : 0;
+        progress.quizAttempts[existingAttemptIndex].userAnswerIndex = result.userAnswerIndex;
+        progress.quizAttempts[existingAttemptIndex].completedAt = new Date();
+        progress.quizAttempts[existingAttemptIndex].attemptNumber += 1;
+      } else {
+        // Add new quiz attempt
+        progress.quizAttempts.push({
+          quizId: quizObjectId,
+          score: isCorrect ? 100 : 0,
+          attemptNumber: 1,
+          userAnswerIndex: result.userAnswerIndex,
+          completedAt: new Date()
+        });
+      }
 
       // Update masteredQuizIds if correct
-      if (result.isCorrect) {
+      if (isCorrect) {
         const alreadyMastered = progress.masteredQuizIds.some(
-          (id: any) => id.toString() === result.quizId
+          (id: mongoose.Types.ObjectId) => id.toString() === result.quizId
         );
         if (!alreadyMastered) {
-          progress.masteredQuizIds.push(quizObjectId as any);
+          progress.masteredQuizIds.push(quizObjectId);
         }
       }
     }
@@ -105,15 +134,14 @@ export async function POST(request: NextRequest) {
 
     // Calculate overall statistics for response
     const totalQuestions = results.length;
-    const correctAnswers = results.filter(r => r.isCorrect).length;
-    const percentage = Math.round((correctAnswers / totalQuestions) * 100);
+    const percentage = Math.round((correctCount / totalQuestions) * 100);
 
     return NextResponse.json({
       success: true,
       message: 'Quiz results saved successfully',
       stats: {
         totalQuestions,
-        correctAnswers,
+        correctAnswers: correctCount,
         percentage,
         masteredCount: progress.masteredQuizIds.length
       }

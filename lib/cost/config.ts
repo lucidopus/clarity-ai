@@ -58,15 +58,21 @@ export const costs_per_model: Record<string, ITokenCostConfig> = {
     outputTokensCost: 0.59,
   },
 
-  // Example: Add future models here
-  // 'anthropic/claude-3-opus': {
-  //   inputTokensCost: 15.0,
-  //   outputTokensCost: 75.0,
-  // },
-  // 'google/gemini-2.0-flash': {
-  //   inputTokensCost: 0.075,
-  //   outputTokensCost: 0.30,
-  // },
+  // Google Gemini 2.0 Flash
+  // Input: $0.075 per million tokens (approx based on 1.5 Flash)
+  // Output: $0.30 per million tokens
+  'gemini-2.0-flash': {
+    inputTokensCost: 0.075,
+    outputTokensCost: 0.30,
+  },
+
+  // Google Gemini 3.0 Pro Preview (Hypothetical/Experimental)
+  // Input: $3.50 per million tokens (Estimated based on Pro tier)
+  // Output: $10.50 per million tokens
+  'gemini-3-pro-preview': {
+    inputTokensCost: 3.50,
+    outputTokensCost: 10.50,
+  },
 };
 
 /**
@@ -80,13 +86,7 @@ export const APIFY_FIXED_COST = 0.005;
  * This should map to a key in costs_per_model
  */
 export const getCurrentLLMModel = (): string => {
-  const model = process.env.LLM_MODEL;
-  if (!model) {
-    throw new Error(
-      'LLM_MODEL environment variable is not set. ' +
-      'Please set it to a valid model identifier from the pricing dictionary.'
-    );
-  }
+  const model = process.env.LLM_MODEL || 'gemini-2.0-flash';
   return model;
 };
 

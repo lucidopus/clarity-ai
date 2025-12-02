@@ -24,6 +24,11 @@ interface DecodedToken {
   exp: number;
 }
 
+interface IChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
@@ -98,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Convert to LangChain message format
     const langchainMessages = [
       new SystemMessage(systemPrompt),
-      ...(conversationHistory || []).slice(-6).map((msg: any) => {
+      ...(conversationHistory || []).slice(-6).map((msg: IChatMessage) => {
         if (msg.role === 'user') return new HumanMessage(msg.content);
         if (msg.role === 'assistant') return new AIMessage(msg.content);
         return new SystemMessage(msg.content);
@@ -107,17 +112,28 @@ export async function POST(request: NextRequest) {
     ];
 
     // 9. Call LLM with streaming using LangChain
-    const stream = await llm.stream(langchainMessages);
+    let promptTokens = 0;
+    let completionTokens = 0;
+
+    const stream = await llm.stream(langchainMessages, {
+      callbacks: [
+        {
+          handleLLMEnd: (output) => {
+            const tokenUsage = output.llmOutput?.tokenUsage;
+            if (tokenUsage) {
+              promptTokens = tokenUsage.promptTokens || 0;
+              completionTokens = tokenUsage.completionTokens || 0;
+            }
+          },
+        },
+      ],
+    });
 
     // 10. Create streaming response and accumulate assistant response
     let assistantResponse = '';
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          // Track usage (will be extracted after streaming completes)
-          let promptTokens = 0;
-          let completionTokens = 0;
-
           for await (const chunk of stream) {
             const content = chunk.content as string;
             if (content) {
@@ -147,24 +163,28 @@ export async function POST(request: NextRequest) {
           }
 
           // 13. Log cost after streaming completes
-          // Note: Token usage tracking with LangChain streaming requires callbacks
-          // For now, we'll estimate based on message length or make a separate call
           try {
             const modelInfo = getCurrentModelInfo();
+            let isEstimated = false;
 
-            // Estimate tokens if not available from stream
+            // Estimate tokens if not available from stream callback
             if (promptTokens === 0 && completionTokens === 0) {
               // Rough estimation: ~4 chars per token
               promptTokens = Math.ceil(message.length / 4);
               completionTokens = Math.ceil(assistantResponse.length / 4);
-              console.warn('⚠️ [CHATBOT] Using token estimation (LangChain streaming does not provide usage)');
+              isEstimated = true;
+              console.warn('⚠️ [CHATBOT] Using token estimation (LangChain callback did not provide usage)');
             }
 
             if (promptTokens > 0 || completionTokens > 0) {
               const llmCost = calculateLLMCost(promptTokens, completionTokens);
+              const serviceType = modelInfo.model.includes('gemini') || modelInfo.model.includes('google')
+                ? ServiceType.GEMINI_LLM
+                : ServiceType.GROQ_LLM;
+
               const services: IServiceUsage[] = [
                 {
-                  service: ServiceType.GROQ_LLM,
+                  service: serviceType,
                   usage: {
                     cost: llmCost,
                     unitDetails: {
@@ -175,7 +195,7 @@ export async function POST(request: NextRequest) {
                         model: modelInfo.model,
                         messageLength: message.length,
                         responseLength: assistantResponse.length,
-                        estimated: true, // Mark as estimated
+                        estimated: isEstimated,
                       },
                     },
                   },

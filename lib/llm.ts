@@ -35,9 +35,36 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
       name: 'learning_materials',
     });
 
-    const response = await structuredLLM.invoke([
-      new HumanMessage(prompt)
-    ]);
+    // Track usage via callbacks
+    const usage = {
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+    };
+
+    const response = await structuredLLM.invoke(
+      [new HumanMessage(prompt)],
+      {
+        callbacks: [
+          {
+            handleLLMEnd: (output) => {
+              const tokenUsage = output.llmOutput?.tokenUsage;
+              if (tokenUsage) {
+                usage.promptTokens = tokenUsage.promptTokens || 0;
+                usage.completionTokens = tokenUsage.completionTokens || 0;
+                usage.totalTokens = tokenUsage.totalTokens || 0;
+              } else if (output.llmOutput?.estimatedTokenUsage) {
+                 // Some providers might put it elsewhere
+                 const est = output.llmOutput.estimatedTokenUsage;
+                 usage.promptTokens = est.promptTokens || 0;
+                 usage.completionTokens = est.completionTokens || 0;
+                 usage.totalTokens = est.totalTokens || 0;
+              }
+            },
+          },
+        ],
+      }
+    );
 
     // LangChain automatically parses and validates the response using Zod
     const materials = response as LearningMaterials;
@@ -49,30 +76,6 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     console.log(`   - Chapters: ${materials.chapters.length}`);
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
     console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
-
-    // Extract usage data from response metadata
-    // Note: Usage tracking in LangChain is available via response metadata
-    // We need to make a separate call to get usage or use callbacks
-    const usage = {
-      promptTokens: 0, // Will be populated via callback in production
-      completionTokens: 0,
-      totalTokens: 0,
-    };
-
-    // For now, we'll use a workaround by making a second call to get usage
-    // In production, use LangChain callbacks for accurate token tracking
-    try {
-      const rawResponse = await llm.invoke([new HumanMessage(prompt)]);
-      const metadata = rawResponse.response_metadata as any;
-      if (metadata?.tokenUsage) {
-        const tokenUsage = metadata.tokenUsage;
-        usage.promptTokens = tokenUsage.promptTokens || 0;
-        usage.completionTokens = tokenUsage.completionTokens || 0;
-        usage.totalTokens = tokenUsage.totalTokens || 0;
-      }
-    } catch (usageError) {
-      console.warn('⚠️ [LLM] Could not extract token usage (non-critical)');
-    }
 
     console.log(`🤖 [LLM] Token usage: ${usage.promptTokens} input + ${usage.completionTokens} output = ${usage.totalTokens} total`);
 
