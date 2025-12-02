@@ -5,17 +5,30 @@ import type { BaseChatModel } from '@langchain/core/language_models/chat_models'
 
 /**
  * The active LLM instance used throughout the application.
- * To switch providers, simply change this export to a different ChatModel instance.
- *
- * Examples:
- * - Groq: new ChatGroq({ model: 'openai/gpt-oss-120b', apiKey: process.env.GROQ_API_KEY })
- * - Gemini: new ChatGoogleGenerativeAI({ model: 'gemini-1.5-pro', apiKey: process.env.GEMINI_API_KEY })
+ * Automatically selects the provider based on the LLM_MODEL environment variable.
  */
-export const llm: BaseChatModel = new ChatGroq({
-  model: 'openai/gpt-oss-120b',
-  apiKey: process.env.GROQ_API_KEY,
-  temperature: 0.7,
-});
+const modelName = process.env.LLM_MODEL || 'gemini-2.0-flash'; // Default to Gemini if not set
+
+let llmInstance: BaseChatModel;
+
+if (modelName.includes('gemini') || modelName.includes('google')) {
+  console.log(`🔌 [SDK] Initializing Google Gemini provider with model: ${modelName}`);
+  llmInstance = new ChatGoogleGenerativeAI({
+    model: modelName,
+    apiKey: process.env.GEMINI_API_KEY,
+    temperature: 0.7,
+    streamUsage: true, // REQUIRED for accurate token tracking during streaming
+  });
+} else {
+  console.log(`🔌 [SDK] Initializing Groq provider with model: ${modelName}`);
+  llmInstance = new ChatGroq({
+    model: modelName,
+    apiKey: process.env.GROQ_API_KEY,
+    temperature: 0.7,
+  });
+}
+
+export const llm = llmInstance;
 
 /**
  * Legacy Groq SDK (kept for backward compatibility during migration)
@@ -26,9 +39,4 @@ export const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-// To switch to Gemini, uncomment this and comment out the Groq llm above:
-// export const llm: BaseChatModel = new ChatGoogleGenerativeAI({
-//   model: 'gemini-1.5-pro',
-//   apiKey: process.env.GEMINI_API_KEY,
-//   temperature: 0.7,
-// });
+// To switch back to Groq, uncomment the ChatGroq export above and comment out the Gemini one.

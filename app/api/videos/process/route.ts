@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
 
     // 6. Generate learning materials
     console.log('🤖 [VIDEO PROCESS] Step 7: Generating learning materials with LLM...');
-    console.log(`📊 [VIDEO PROCESS] Sending ${transcriptResult.text.length} characters to Groq LLM...`);
+    console.log(`📊 [VIDEO PROCESS] Sending ${transcriptResult.text.length} characters to LLM...`);
     let materials = null;
     let llmUsage = null;
     let llmError = null;
@@ -223,8 +223,12 @@ export async function POST(request: NextRequest) {
 
       // Track LLM cost
       const llmCost = calculateLLMCost(llmUsage.promptTokens, llmUsage.completionTokens);
+      const serviceType = modelInfo.model.includes('gemini') || modelInfo.model.includes('google')
+        ? ServiceType.GEMINI_LLM
+        : ServiceType.GROQ_LLM;
+
       services.push({
-        service: ServiceType.GROQ_LLM,
+        service: serviceType,
         usage: {
           cost: llmCost,
           unitDetails: {

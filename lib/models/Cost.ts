@@ -5,6 +5,7 @@ import mongoose, { Document, Schema } from 'mongoose';
  */
 export enum ServiceType {
   GROQ_LLM = 'groq_llm',
+  GEMINI_LLM = 'gemini_llm',
   APIFY_TRANSCRIPT = 'apify_transcript',
 }
 
