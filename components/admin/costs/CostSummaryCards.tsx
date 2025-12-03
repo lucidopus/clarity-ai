@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { DollarSign, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { getServiceLabel, getServiceIcon } from '@/lib/service-utils';
 
 interface ServiceSummary {
   service: string;
@@ -48,18 +49,21 @@ export default function CostSummaryCards() {
     return `$${cost.toFixed(4)}`;
   };
 
-  const getServiceIcon = (service: string) => {
-    if (service.includes('llm')) return <Activity className="w-5 h-5" />;
-    if (service.includes('transcript')) return <TrendingUp className="w-5 h-5" />;
-    return <DollarSign className="w-5 h-5" />;
-  };
-
-  const getServiceName = (service: string) => {
-    const names: Record<string, string> = {
-      groq_llm: 'Large Language Model (LLM)',
-      apify_transcript: 'Transcript Extraction',
-    };
-    return names[service] || service;
+  const getIconComponent = (serviceId: string) => {
+    const iconType = getServiceIcon(serviceId);
+    switch (iconType) {
+      case 'llm':
+        return <Activity className="w-5 h-5" />;
+      case 'transcript':
+        return <TrendingUp className="w-5 h-5" />;
+      case 'video':
+        return <Activity className="w-5 h-5" />;
+      case 'chat':
+        return <Activity className="w-5 h-5" />;
+      case 'dollar':
+      default:
+        return <DollarSign className="w-5 h-5" />;
+    }
   };
 
   if (loading) {
@@ -112,11 +116,11 @@ export default function CostSummaryCards() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-muted-foreground mb-1">{getServiceName(service.service)}</p>
+                <p className="text-sm text-muted-foreground mb-1">{getServiceLabel(service.service)}</p>
                 <p className="text-2xl font-bold text-foreground">{formatCost(service.totalCost)}</p>
               </div>
               <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                <span className="text-accent">{getServiceIcon(service.service)}</span>
+                <span className="text-accent">{getIconComponent(service.service)}</span>
               </div>
             </div>
           </div>
