@@ -129,13 +129,13 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
   if (quizCompleted) {
     const correctCount = finalScore;
 
-    const getAnswerText = (quiz: Quiz, answer: number | string | null) => {
-      if (answer === null) return 'No answer';
+    const getAnswerText = (quiz: Quiz, answer: number | string | null | undefined) => {
+      if (answer === null || answer === undefined) return 'No answer';
       if (quiz.type === 'fill-in-blank') return answer as string;
       return quiz.options?.[answer as number] || 'Unknown';
     };
 
-    const isAnswerCorrect = (quiz: Quiz, answer: number | string | null) => {
+    const isAnswerCorrect = (quiz: Quiz, answer: number | string | null | undefined) => {
       if (quiz.type === 'fill-in-blank') {
         return answer === quiz.correctAnswer;
       }
