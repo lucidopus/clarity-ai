@@ -15,6 +15,7 @@ interface VideoCardProps {
   quizCount?: number;
   transcriptMinutes?: number;
   createdAt: Date | string;
+  progress?: number;
   onClick?: (id: string) => void;
   onDelete?: () => void;
 }
@@ -28,6 +29,7 @@ export default function VideoCard({
   flashcardCount,
   quizCount,
   createdAt,
+  progress = 0,
   onClick,
   onDelete
 }: VideoCardProps) {
@@ -44,7 +46,10 @@ export default function VideoCard({
     return `${Math.ceil(diffDays / 30)} months ago`;
   };
 
-  
+  // Circular Progress Ring Logic
+  const radius = 18;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
     <motion.div
@@ -61,9 +66,50 @@ export default function VideoCard({
             src={thumbnailUrl}
             alt={`${title} thumbnail`}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
+          {/* Progress Ring Overlay */}
+          <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full p-1 flex items-center justify-center shadow-xl">
+             <div className="relative w-12 h-12 flex items-center justify-center">
+                {/* Background Circle */}
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+                  <circle
+                    cx="22"
+                    cy="22"
+                    r={radius}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    className="text-white/20"
+                  />
+                  {/* Progress Circle */}
+                  <circle
+                    cx="22"
+                    cy="22"
+                    r={radius}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    className={`transition-all duration-1000 ease-out ${
+                      progress === 100 ? 'text-green-500' : 'text-accent'
+                    }`}
+                  />
+                </svg>
+                {/* Percentage Text */}
+                <span className={`absolute text-[10px] font-bold ${
+                  progress === 100 ? 'text-green-400' : 'text-white'
+                }`}>
+                  {progress}%
+                </span>
+             </div>
+          </div>
+          
+          {/* Overlay Gradient */}
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-60" />
         </div>
       )}
 
