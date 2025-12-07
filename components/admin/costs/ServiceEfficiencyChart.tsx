@@ -12,6 +12,7 @@ import {
   Legend,
 } from 'chart.js';
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { getServiceLabel } from '@/lib/service-utils';
 
 // Register Chart.js plugins and components once - safe to call multiple times
 try {
@@ -59,14 +60,6 @@ export default function ServiceEfficiencyChart() {
     }
   };
 
-  const getServiceName = (service: string) => {
-    const names: Record<string, string> = {
-      groq_llm: 'Large Language Model (LLM)',
-      apify_transcript: 'Transcript Extraction',
-    };
-    return names[service] || service;
-  };
-
   const getEfficiencyIcon = (score: number) => {
     if (score >= 95) return <TrendingUp className="w-4 h-4 text-green-500" />;
     if (score >= 80) return <Minus className="w-4 h-4 text-yellow-500" />;
@@ -112,7 +105,7 @@ export default function ServiceEfficiencyChart() {
   // Chart data - Show Efficiency Score (0-100)
   // Using theme-aware colors: accent cyan for high, muted for medium, accent for emphasis
   const chartData = {
-    labels: services.map((s) => getServiceName(s.service)),
+    labels: services.map((s) => getServiceLabel(s.service)),
     datasets: [
       {
         label: 'Efficiency Score',
@@ -210,7 +203,7 @@ export default function ServiceEfficiencyChart() {
             <tbody>
               {services.map((service, idx) => (
                 <tr key={idx} className="border-b border-border last:border-0">
-                  <td className="py-3 text-sm text-foreground font-medium">{getServiceName(service.service)}</td>
+                  <td className="py-3 text-sm text-foreground font-medium">{getServiceLabel(service.service)}</td>
                   <td className="py-3 text-sm text-right text-muted-foreground">
                     {service.successRate.toFixed(1)}%
                   </td>

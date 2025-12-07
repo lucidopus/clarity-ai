@@ -4,6 +4,7 @@ export interface IQuizAttempt {
   quizId: mongoose.Types.ObjectId;
   score: number;
   attemptNumber: number;
+  userAnswerIndex?: number;
   completedAt: Date;
 }
 
@@ -24,6 +25,7 @@ const QuizAttemptSchema: Schema = new Schema({
   quizId: { type: Schema.Types.ObjectId, ref: 'Quiz', required: true },
   score: { type: Number, required: true, min: 0, max: 100 },
   attemptNumber: { type: Number, required: true },
+  userAnswerIndex: { type: Number },
   completedAt: { type: Date, required: true },
 }, { _id: false });
 

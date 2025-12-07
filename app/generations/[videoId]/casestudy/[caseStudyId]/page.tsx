@@ -796,12 +796,6 @@ export default function CaseStudyWorkspacePage() {
                     ))}
                   </div>
                 )}
-                {isStreaming && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <div className="w-2 h-2 bg-accent rounded-full animate-pulse" />
-                    Clara is thinking...
-                  </div>
-                )}
               </div>
               <div className="border-t border-border pt-4">
                 <form

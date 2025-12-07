@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { getServiceLabel } from '@/lib/service-utils';
 
 interface ServiceCost {
   service: string;
@@ -49,16 +50,6 @@ export default function CostDriversTable() {
   };
 
   const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
-  const getSourceLabel = (source: string) => {
-    const labels: Record<string, string> = {
-      learning_material_generation: 'Video Processing',
-      learning_chatbot: 'Learning Chatbot',
-      challenge_chatbot: 'Challenge Chatbot',
-      groq_llm: 'Groq LLM',
-      apify_transcript: 'Apify Transcript',
-    };
-    return labels[source] || source;
-  };
 
   if (loading) {
     return (
@@ -102,7 +93,7 @@ export default function CostDriversTable() {
             <div key={driver.service} className={`px-6 py-4 ${index !== drivers.length - 1 ? 'border-b border-border' : ''}`}>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <p className="font-medium text-foreground">{getSourceLabel(driver.service)}</p>
+                  <p className="font-medium text-foreground">{getServiceLabel(driver.service)}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-foreground">{formatCost(driver.totalCost)}</p>
