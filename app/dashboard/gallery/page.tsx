@@ -25,6 +25,9 @@ interface Video {
   duration: number;
   transcriptMinutes: number;
   createdAt: Date | string;
+  progress?: number;
+  flashcardCount?: number;
+  quizCount?: number;
 }
 
 export default function GalleryPage() {
@@ -146,7 +149,8 @@ export default function GalleryPage() {
     }
 
     if (filterValue === 'most-studied') {
-      return [...result].sort((a, b) => b.transcriptMinutes - a.transcriptMinutes);
+      // Use progress or transcriptMinutes for sorting
+      return [...result].sort((a, b) => (b.progress || 0) - (a.progress || 0));
     }
 
     return result;
@@ -233,8 +237,10 @@ export default function GalleryPage() {
               duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
               transcriptMinutes={video.transcriptMinutes}
               createdAt={video.createdAt}
+              progress={video.progress}
+              flashcardCount={video.flashcardCount}
+              quizCount={video.quizCount}
               onClick={handleVideoClick}
-              // TODO: Pass flashcardCount and quizCount from the video data to display on the card
             />
           ))}
         </div>

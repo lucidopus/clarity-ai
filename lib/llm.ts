@@ -1,11 +1,12 @@
-import { groq } from './sdk';
+import { geminiLlm } from './sdk';
 import { LEARNING_MATERIALS_PROMPT } from './prompts';
-import { LEARNING_MATERIALS_SCHEMA, LearningMaterials } from './structuredOutput';
+import { LearningMaterialsSchema, LearningMaterials } from './structuredOutput';
 import {
   LLMTokenLimitError,
   LLMRateLimitError,
   LLMServiceError,
 } from './errors/ApiError';
+import { HumanMessage } from '@langchain/core/messages';
 
 /**
  * Response type that includes both learning materials and token usage data
@@ -27,60 +28,54 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     const prompt = LEARNING_MATERIALS_PROMPT.replace('[TRANSCRIPT_HERE]', transcript);
     console.log(`🤖 [LLM] Prompt prepared, total length: ${prompt.length} characters`);
 
-    // Call Groq with structured output (function calling)
-    // Per Groq docs: https://console.groq.com/docs/structured-outputs
-    console.log('🤖 [LLM] Calling Groq API with model: openai/gpt-oss-120b');
-    console.log('🤖 [LLM] Temperature: 0.7, Max tokens: 32768');
+    // Use LangChain's withStructuredOutput for provider-agnostic structured generation
+    console.log('🤖 [LLM] Calling LLM with LangChain structured output');
 
-    const response = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 32768, // 32K tokens - safe limit supported by most providers, prevents truncation
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'learning_materials',
-          schema: LEARNING_MATERIALS_SCHEMA,
-          strict: true,
-        },
-      },
+    const structuredLLM = geminiLlm.withStructuredOutput(LearningMaterialsSchema, {
+      name: 'learning_materials',
     });
 
-    console.log('✅ [LLM] Received response from Groq API');
-    console.log(`🤖 [LLM] Response tokens: ${response.usage?.completion_tokens || 'N/A'}`);
+    // Track usage via callbacks
+    const usage = {
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+    };
 
-    // Parse response
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.error('❌ [LLM] No content in response');
-      throw new Error('No response from LLM');
-    }
+    const response = await structuredLLM.invoke(
+      [new HumanMessage(prompt)],
+      {
+        callbacks: [
+          {
+            handleLLMEnd: (output) => {
+              const tokenUsage = output.llmOutput?.tokenUsage;
+              if (tokenUsage) {
+                usage.promptTokens = tokenUsage.promptTokens || 0;
+                usage.completionTokens = tokenUsage.completionTokens || 0;
+                usage.totalTokens = tokenUsage.totalTokens || 0;
+              } else if (output.llmOutput?.estimatedTokenUsage) {
+                 // Some providers might put it elsewhere
+                 const est = output.llmOutput.estimatedTokenUsage;
+                 usage.promptTokens = est.promptTokens || 0;
+                 usage.completionTokens = est.completionTokens || 0;
+                 usage.totalTokens = est.totalTokens || 0;
+              }
+            },
+          },
+        ],
+      }
+    );
 
-    console.log(`🤖 [LLM] Response content length: ${content.length} characters`);
-    console.log('🤖 [LLM] Parsing JSON response...');
+    // LangChain automatically parses and validates the response using Zod
+    const materials = response as LearningMaterials;
 
-    const materials = JSON.parse(content) as LearningMaterials;
-
-    console.log('✅ [LLM] JSON parsed successfully');
+    console.log('✅ [LLM] Received and validated response');
     console.log(`✅ [LLM] Generated materials summary:`);
     console.log(`   - Flashcards: ${materials.flashcards.length}`);
     console.log(`   - Quizzes: ${materials.quizzes.length}`);
     console.log(`   - Chapters: ${materials.chapters.length}`);
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
-     console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
-
-    // Extract usage data from response
-    const usage = {
-      promptTokens: response.usage?.prompt_tokens || 0,
-      completionTokens: response.usage?.completion_tokens || 0,
-      totalTokens: response.usage?.total_tokens || 0,
-    };
+    console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
 
     console.log(`🤖 [LLM] Token usage: ${usage.promptTokens} input + ${usage.completionTokens} output = ${usage.totalTokens} total`);
 
@@ -131,4 +126,3 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     throw new LLMServiceError(errorMessage);
   }
 }
-

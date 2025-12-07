@@ -23,6 +23,7 @@ todo.md
 
 docs/
 .claude/
+settings.json
 
 # production
 /build

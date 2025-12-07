@@ -47,6 +47,7 @@ interface VideoMaterials {
     correctAnswerIndex?: number;
     correctAnswer?: string;
     explanation: string;
+    isMastered?: boolean;
   }>;
   transcript: Array<{
     text: string;

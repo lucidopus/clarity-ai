@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import { groq } from '@/lib/sdk';
+import { groqLlm, GROQ_MODEL_NAME } from '@/lib/sdk';
 import { getChatbotContext } from '@/lib/chatbot-context';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
 import { CHATBOT_SYSTEM_PROMPT } from '@/lib/prompts';
@@ -13,6 +13,7 @@ import { calculateLLMCost, getCurrentModelInfo } from '@/lib/cost/calculator';
 import { logGenerationCost, formatCost } from '@/lib/cost/logger';
 import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
+import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
 
 interface DecodedToken {
   userId: string;
@@ -21,6 +22,11 @@ interface DecodedToken {
   lastName: string;
   iat: number;
   exp: number;
+}
+
+interface IChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -94,41 +100,45 @@ export async function POST(request: NextRequest) {
     const systemPrompt = CHATBOT_SYSTEM_PROMPT(context);
 
     // 8. Prepare conversation history (last 3 exchanges = 6 messages)
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...(conversationHistory || []).slice(-6),
-      { role: 'user', content: message }
+    // Convert to LangChain message format
+    const langchainMessages = [
+      new SystemMessage(systemPrompt),
+      ...(conversationHistory || []).slice(-6).map((msg: IChatMessage) => {
+        if (msg.role === 'user') return new HumanMessage(msg.content);
+        if (msg.role === 'assistant') return new AIMessage(msg.content);
+        return new SystemMessage(msg.content);
+      }),
+      new HumanMessage(message)
     ];
 
-    // 9. Call Groq with streaming
-    const response = await groq.chat.completions.create({
-      model: 'openai/gpt-oss-120b',
-      messages,
-      temperature: 0.7,
-      max_tokens: 1024,
-      stream: true,
+    // 9. Call LLM with streaming using LangChain
+    let promptTokens = 0;
+    let completionTokens = 0;
+
+    const stream = await groqLlm.stream(langchainMessages, {
+      callbacks: [
+        {
+          handleLLMEnd: (output) => {
+            const tokenUsage = output.llmOutput?.tokenUsage;
+            if (tokenUsage) {
+              promptTokens = tokenUsage.promptTokens || 0;
+              completionTokens = tokenUsage.completionTokens || 0;
+            }
+          },
+        },
+      ],
     });
 
     // 10. Create streaming response and accumulate assistant response
     let assistantResponse = '';
-    const stream = new ReadableStream({
+    const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          // Track usage from response headers (if available)
-          let promptTokens = 0;
-          let completionTokens = 0;
-
-          for await (const chunk of response) {
-            const content = chunk.choices[0]?.delta?.content;
+          for await (const chunk of stream) {
+            const content = chunk.content as string;
             if (content) {
               assistantResponse += content;
               controller.enqueue(new TextEncoder().encode(content));
-            }
-            // Capture usage data from chunk if available
-            const chunkWithUsage = chunk as unknown as { usage?: { prompt_tokens?: number; completion_tokens?: number } };
-            if (chunkWithUsage.usage) {
-              promptTokens = chunkWithUsage.usage.prompt_tokens || 0;
-              completionTokens = chunkWithUsage.usage.completion_tokens || 0;
             }
           }
           controller.close();
@@ -154,12 +164,25 @@ export async function POST(request: NextRequest) {
 
           // 13. Log cost after streaming completes
           try {
-            const modelInfo = getCurrentModelInfo();
+            const modelInfo = getCurrentModelInfo(GROQ_MODEL_NAME);
+            let isEstimated = false;
+
+            // Estimate tokens if not available from stream callback
+            if (promptTokens === 0 && completionTokens === 0) {
+              // Rough estimation: ~4 chars per token
+              promptTokens = Math.ceil(message.length / 4);
+              completionTokens = Math.ceil(assistantResponse.length / 4);
+              isEstimated = true;
+              console.warn('⚠️ [CHATBOT] Using token estimation (LangChain callback did not provide usage)');
+            }
+
             if (promptTokens > 0 || completionTokens > 0) {
-              const llmCost = calculateLLMCost(promptTokens, completionTokens);
+              const llmCost = calculateLLMCost(promptTokens, completionTokens, GROQ_MODEL_NAME);
+              const serviceType = ServiceType.GROQ_LLM;
+
               const services: IServiceUsage[] = [
                 {
-                  service: ServiceType.GROQ_LLM,
+                  service: serviceType,
                   usage: {
                     cost: llmCost,
                     unitDetails: {
@@ -170,6 +193,7 @@ export async function POST(request: NextRequest) {
                         model: modelInfo.model,
                         messageLength: message.length,
                         responseLength: assistantResponse.length,
+                        estimated: isEstimated,
                       },
                     },
                   },
@@ -185,7 +209,7 @@ export async function POST(request: NextRequest) {
                 totalCost: llmCost,
               });
 
-              console.log(`💰 [COST] Learning chatbot (${modelInfo.model}): ${promptTokens} input + ${completionTokens} output tokens = ${formatCost(llmCost)}`);
+              console.log(`💰 [COST] Learning chatbot (${modelInfo.model}): ${promptTokens} input + ${completionTokens} output tokens = ${formatCost(llmCost)} (estimated)`);
             }
           } catch (costError) {
             console.error('⚠️ [CHATBOT] Failed to log cost (non-critical):', costError);
@@ -218,7 +242,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 12. Return streaming response
-    return new NextResponse(stream, {
+    return new NextResponse(readableStream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'X-RateLimit-Remaining': rateLimit.remaining.toString(),
