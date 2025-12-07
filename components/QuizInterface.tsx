@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw } from 'lucide-react';
+import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw, Trash2 } from 'lucide-react';
 import Button from './Button';
 import { logActivity } from '@/lib/activityLogger';
 
@@ -16,6 +16,8 @@ export interface Quiz {
   correctAnswerIndex?: number;
   correctAnswer?: string;
   explanation: string;
+  isMastered?: boolean;
+  userAnswer?: number;
 }
 
 interface QuizInterfaceProps {
@@ -24,16 +26,89 @@ interface QuizInterfaceProps {
 }
 
 export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<(number | string | null)[]>(
-    new Array(quizzes.length).fill(null)
+  // Construct initial selected answers based on user history or mastery
+  const initialAnswers = quizzes.map(q => {
+    if (q.userAnswer !== undefined && q.userAnswer !== null) return q.userAnswer;
+    // Fallback to correct answer if mastered but no specific user answer stored (legacy)
+    return q.isMastered ? (q.type === 'fill-in-blank' ? q.correctAnswer : q.correctAnswerIndex) : null;
+  });
+  
+  const initialSubmitted = new Set(
+    quizzes.map((q, i) => {
+      if (q.userAnswer !== undefined && q.userAnswer !== null) return i;
+      return q.isMastered ? i : -1;
+    }).filter(i => i !== -1)
   );
-  const [submitted, setSubmitted] = useState(false);
+
+  const allAttempted = quizzes.length > 0 && initialSubmitted.size === quizzes.length;
+
+  // Calculate initial score based on restored answers
+  const calculateInitialScore = () => {
+    return quizzes.reduce((score, quiz, index) => {
+      if (!initialSubmitted.has(index)) return score;
+      const answer = initialAnswers[index];
+      if (answer === null || answer === undefined) return score;
+
+      if (quiz.type === 'fill-in-blank') {
+        return answer === quiz.correctAnswer ? score + 1 : score;
+      } else {
+        return answer === quiz.correctAnswerIndex ? score + 1 : score;
+      }
+    }, 0);
+  };
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<(number | string | null | undefined)[]>(
+    initialAnswers
+  );
+  // We don't want to show feedback immediately for restored sessions unless we're reviewing
+  const [submitted, setSubmitted] = useState(false); 
   const [showFeedback, setShowFeedback] = useState(false);
   const [fillInAnswer, setFillInAnswer] = useState('');
-  const [quizCompleted, setQuizCompleted] = useState(false);
-  const [finalScore, setFinalScore] = useState(0);
-  const [submittedQuestions, setSubmittedQuestions] = useState<Set<number>>(new Set());
+  const [quizCompleted, setQuizCompleted] = useState(allAttempted);
+  const [finalScore, setFinalScore] = useState(calculateInitialScore());
+  const [submittedQuestions, setSubmittedQuestions] = useState<Set<number>>(initialSubmitted);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetProgress = async () => {
+    try {
+      setIsResetting(true);
+
+      const response = await fetch('/api/learning/quizzes/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          videoId
+        })
+      });
+
+      if (!response.ok) {
+        console.error('Failed to reset quiz progress:', await response.text());
+        return;
+      }
+
+      // Reset local state (same as retake)
+      setCurrentQuestionIndex(0);
+      setSelectedAnswers(new Array(quizzes.length).fill(null));
+      setSubmitted(false);
+      setShowFeedback(false);
+      setQuizCompleted(false);
+      setFinalScore(0);
+      setSubmittedQuestions(new Set());
+      
+      // Force refresh of the page data to clear "isMastered" from upstream? 
+      // Or just rely on local state until reload. 
+      // Since `quizzes` prop comes from parent, if we don't reload, `allMastered` might be re-calculated 
+      // if we re-render this component. But we are inside the component.
+      // The `useState` initializers only run once. So we are good resetting state here.
+    } catch (error) {
+      console.error('Error resetting quiz progress:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   if (!quizzes || quizzes.length === 0) {
     return (
@@ -241,9 +316,19 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
               setSubmittedQuestions(new Set());
             }}
             className="px-8"
+            disabled={isResetting}
           >
             <RotateCw className="w-4 h-4 mr-2" />
             Retake Quiz
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleResetProgress}
+            className="px-8"
+            disabled={isResetting}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {isResetting ? 'Resetting...' : 'Reset Progress'}
           </Button>
         </motion.div>
       </div>
@@ -275,7 +360,7 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
     setSubmittedQuestions(prev => new Set([...prev, currentQuestionIndex]));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < quizzes.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       const nextIndex = currentQuestionIndex + 1;
@@ -297,7 +382,38 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
         correctAnswers: score,
       });
 
-      // TODO: API call to save quiz results
+      // Save quiz results to database
+      try {
+        const results = quizzes.map((quiz, index) => {
+          const answer = selectedAnswers[index];
+          const isCorrect = quiz.type === 'fill-in-blank'
+            ? answer === quiz.correctAnswer
+            : answer === quiz.correctAnswerIndex;
+
+          return {
+            quizId: quiz.id,
+            isCorrect: isCorrect,
+            userAnswerIndex: typeof answer === 'number' ? answer : undefined
+          };
+        });
+
+        const response = await fetch('/api/learning/quizzes/submit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            videoId,
+            results
+          })
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save quiz results:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error saving quiz results:', error);
+      }
     }
   };
 
@@ -317,6 +433,8 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
       if (!submittedQuestions.has(index)) return score;
 
       const answer = selectedAnswers[index];
+      if (answer === null || answer === undefined) return score;
+
       if (quiz.type === 'fill-in-blank') {
         return answer === quiz.correctAnswer ? score + 1 : score;
       } else {

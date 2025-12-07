@@ -85,16 +85,25 @@ Clarity AI is packed with features designed to enhance your learning, all genera
     ```env
     MONGODB_URI=your_mongodb_connection_string
     GROQ_API_KEY=your_groq_api_key
-    LLM_MODEL=openai/gpt-oss-120b  # Model identifier for cost tracking (see lib/cost/config.ts for available models)
+    CONTENT_GENERATION_MODEL=gemini-3-pro-preview  # Model for video material generation
+CHATBOT_MODEL=openai/gpt-oss-120b  # Model for chatbots (Groq)
+
+# See lib/cost/config.ts for available models and pricing
     JWT_SECRET=your_jwt_secret_key
     APIFY_API_TOKEN=your_apify_token_for_transcripts # Optional
     JWT_EXPIRE_DAYS=1
     JWT_REMEMBER_DAYS=30
     ```
 
-    **LLM_MODEL Configuration:**
-    - The `LLM_MODEL` variable must match a key in the pricing dictionary (`lib/cost/config.ts`)
-    - Available Groq models: `openai/gpt-oss-120b`, `llama-3.3-70b-versatile`, `qwen/qwen3-32b`
+    **Model Configuration:**
+
+    - `CONTENT_GENERATION_MODEL`: Model used for generating learning materials (e.g., `gemini-3-pro-preview`)
+
+    - `CHATBOT_MODEL`: Model used for interactive chatbots (e.g., `openai/gpt-oss-120b`)
+
+    - These variables must match keys in the pricing dictionary (`lib/cost/config.ts`)
+
+    
     - To add a new model, update the `costs_per_model` dictionary in `lib/cost/config.ts`
     - See `docs/cost-tracking.md` for detailed cost tracking documentation
 

@@ -1,171 +1,94 @@
+import { z } from 'zod';
 import { CHATBOT_NAME } from './config';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
-export const LEARNING_MATERIALS_SCHEMA = {
-   type: 'object',
-   properties: {
-    title: { type: 'string' },
-    flashcards: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          question: { type: 'string' },
-          answer: { type: 'string' },
-          difficulty: { type: 'string', enum: ['easy', 'medium', 'hard'] },
-        },
-        required: ['id', 'question', 'answer', 'difficulty'],
-        additionalProperties: false,
-      },
-    },
-    quizzes: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          questionText: { type: 'string' },
-          options: { type: 'array', items: { type: 'string' } },
-          correctAnswerIndex: { type: 'integer' },
-          explanation: { type: 'string' },
-        },
-        required: ['id', 'questionText', 'options', 'correctAnswerIndex', 'explanation'],
-        additionalProperties: false,
-      },
-    },
-    chapters: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          timeSeconds: { type: 'integer' },
-          topic: { type: 'string' },
-          description: { type: 'string' },
-        },
-        required: ['id', 'timeSeconds', 'topic', 'description'],
-        additionalProperties: false,
-      },
-    },
-    prerequisites: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          topic: { type: 'string' },
-          difficulty: { type: 'string', enum: ['beginner', 'intermediate', 'advanced'] },
-        },
-        required: ['id', 'topic', 'difficulty'],
-        additionalProperties: false,
-      },
-    },
-    realWorldProblems: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          title: { type: 'string' },
-          scenario: { type: 'string' },
-          hints: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['id', 'title', 'scenario', 'hints'],
-        additionalProperties: false,
-      },
-    },
-    videoSummary: { type: 'string', description: `A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context.` },
-    mindMap: {
-      type: 'object',
-      properties: {
-        nodes: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              label: { type: 'string' },
-              type: { type: 'string', enum: ['root', 'concept', 'subconcept', 'detail'] },
-              description: { type: 'string' },
-              level: { type: 'integer' },
-            },
-            required: ['id', 'label', 'type', 'description', 'level'],
-            additionalProperties: false,
-          },
-        },
-        edges: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string' },
-              source: { type: 'string' },
-              target: { type: 'string' },
-              label: { type: 'string' },
-              type: { type: 'string', enum: ['hierarchy', 'relation', 'dependency'] },
-            },
-            required: ['id', 'source', 'target', 'label', 'type'],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ['nodes', 'edges'],
-      additionalProperties: false,
-    },
-  },
-  required: ['title', 'flashcards', 'quizzes', 'chapters', 'prerequisites', 'realWorldProblems', 'videoSummary', 'mindMap'],
-  additionalProperties: false,
-} as const;
+/**
+ * Zod schema for learning materials generation.
+ * Provides both runtime validation and TypeScript type inference.
+ */
+export const LearningMaterialsSchema = z.object({
+  title: z.string().describe('Concise, descriptive title for the video'),
 
-export interface LearningMaterials {
-  title: string;
-  flashcards: Array<{
-    id: string;
-    question: string;
-    answer: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-  }>;
-  quizzes: Array<{
-    id: string;
-    questionText: string;
-    options: string[];
-    correctAnswerIndex: number;
-    explanation: string;
-  }>;
-  chapters: Array<{
-    id: string;
-    timeSeconds: number;
-    topic: string;
-    description: string;
-  }>;
-  prerequisites: Array<{
-    id: string;
-    topic: string;
-    difficulty: 'beginner' | 'intermediate' | 'advanced';
-  }>;
-  realWorldProblems: Array<{
-    id: string;
-    title: string;
-    scenario: string;
-    hints: string[];
-  }>;
-  videoSummary: string;
-  mindMap: {
-    nodes: Array<{
-      id: string;
-      label: string;
-      type: 'root' | 'concept' | 'subconcept' | 'detail';
-      description: string;
-      level: number;
-    }>;
-    edges: Array<{
-      id: string;
-      source: string;
-      target: string;
-      label: string;
-      type: 'hierarchy' | 'relation' | 'dependency';
-    }>;
-  };
-}
+  flashcards: z.array(
+    z.object({
+      id: z.string(),
+      question: z.string(),
+      answer: z.string(),
+      difficulty: z.enum(['easy', 'medium', 'hard']),
+    })
+  ).describe('Flash cards covering important concepts (5-15 cards)'),
 
+  quizzes: z.array(
+    z.object({
+      id: z.string(),
+      questionText: z.string(),
+      options: z.array(z.string()),
+      correctAnswerIndex: z.number().int(),
+      explanation: z.string(),
+    })
+  ).describe('Multiple-choice quiz questions (10-15 questions)'),
 
+  chapters: z.array(
+    z.object({
+      id: z.string(),
+      timeSeconds: z.number().int(),
+      topic: z.string(),
+      description: z.string(),
+    })
+  ).describe('Key moments in the video with time markers (3-5 chapters)'),
+
+  prerequisites: z.array(
+    z.object({
+      id: z.string(),
+      topic: z.string(),
+      difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
+    })
+  ).describe('Prerequisite topics needed to understand this content (2-3 topics)'),
+
+  realWorldProblems: z.array(
+    z.object({
+      id: z.string(),
+      title: z.string(),
+      scenario: z.string(),
+      hints: z.array(z.string()),
+    })
+  ).describe('Real-world case study applying the video concepts'),
+
+  videoSummary: z.string().describe(`200-300 word summary for ${CHATBOT_NAME} to use as context`),
+
+  mindMap: z.object({
+    nodes: z.array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        type: z.enum(['root', 'concept', 'subconcept', 'detail']),
+        description: z.string(),
+        level: z.number().int(),
+      })
+    ),
+    edges: z.array(
+      z.object({
+        id: z.string(),
+        source: z.string(),
+        target: z.string(),
+        label: z.string(),
+        type: z.enum(['hierarchy', 'relation', 'dependency']),
+      })
+    ),
+  }).describe('Hierarchical mind map showing concept relationships'),
+});
+
+/**
+ * TypeScript type inferred from the Zod schema.
+ * This ensures type safety and eliminates drift between runtime validation and compile-time types.
+ */
+export type LearningMaterials = z.infer<typeof LearningMaterialsSchema>;
+
+/**
+ * JSON Schema version for LLM structured output.
+ * Groq and other providers require JSON Schema format.
+ */
+export const LEARNING_MATERIALS_SCHEMA = zodToJsonSchema(LearningMaterialsSchema, {
+  name: 'learning_materials',
+  $refStrategy: 'none', // Inline all definitions
+});

@@ -95,6 +95,16 @@ export async function GET(
       casestudies: (learningMaterial?.realWorldProblems?.length ?? 0) > 0
     };
 
+    // Create a map of latest quiz attempts
+    const latestAttempts = new Map();
+    if (progress?.quizAttempts) {
+      for (const attempt of progress.quizAttempts) {
+        const qId = attempt.quizId.toString();
+        // Since we now update in place, there is only one entry per quizId
+        latestAttempts.set(qId, attempt);
+      }
+    }
+
     // Format response
     const materials = {
       video: {
@@ -114,14 +124,22 @@ export async function GET(
         isMastered: progress?.masteredFlashcardIds?.some((id: mongoose.Types.ObjectId) => id.toString() === fc._id.toString()) || false,
         isUserCreated: fc.generationType === 'human'
       })),
-      quizzes: quizzes.map(quiz => ({
-        id: quiz._id.toString(),
-        questionText: quiz.questionText,
-        type: 'multiple-choice',
-        options: quiz.options,
-        correctAnswerIndex: quiz.correctAnswerIndex,
-        explanation: quiz.explanation || ''
-      })),
+      quizzes: quizzes.map(quiz => {
+        const qId = quiz._id.toString();
+        const isMastered = progress?.masteredQuizIds?.some((id: mongoose.Types.ObjectId) => id.toString() === qId) || false;
+        const latestAttempt = latestAttempts.get(qId);
+
+        return {
+          id: qId,
+          questionText: quiz.questionText,
+          type: 'multiple-choice',
+          options: quiz.options,
+          correctAnswerIndex: quiz.correctAnswerIndex,
+          explanation: quiz.explanation || '',
+          isMastered,
+          userAnswer: latestAttempt?.userAnswerIndex
+        };
+      }),
       transcript: video.transcript.map((t: ITranscriptSegment) => ({
         text: t.text,
         start: t.offset,
