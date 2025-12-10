@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, Lightbulb, Target, ArrowLeft } from 'lucide-react';
+import { 
+  BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, 
+  Lightbulb, Target, ArrowLeft, ChevronLeft, Menu 
+} from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
@@ -108,7 +111,6 @@ interface VideoMaterials {
       updatedAt: Date;
     }>;
   };
-  // New fields for material availability tracking
   processingStatus?: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
   materialsStatus?: 'complete' | 'incomplete' | 'generating';
   incompleteMaterials?: ('flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
@@ -143,8 +145,6 @@ export default function VideoMaterialsPage() {
   const searchParams = useSearchParams();
   const videoId = params.videoId as string;
   const { logout } = useAuth();
-
-  // Check for warning parameter in URL
   const warningType = searchParams.get('warning');
 
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
@@ -156,6 +156,9 @@ export default function VideoMaterialsPage() {
   const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
   const [bannedDismissed, setBannerDismissed] = useState(false);
   const [autoplayVideos, setAutoplayVideos] = useState(false);
+
+  // Layout UI State
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -176,7 +179,6 @@ export default function VideoMaterialsPage() {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  // Load banner dismissal state from localStorage
   useEffect(() => {
     const dismissedBannersKey = 'dismissedMaterialsBanners';
     const dismissedBanners = JSON.parse(localStorage.getItem(dismissedBannersKey) || '{}');
@@ -185,7 +187,6 @@ export default function VideoMaterialsPage() {
     }
   }, [videoId]);
 
-  // Handle banner dismissal
   const handleBannerDismiss = () => {
     setBannerDismissed(true);
     const dismissedBannersKey = 'dismissedMaterialsBanners';
@@ -212,23 +213,15 @@ export default function VideoMaterialsPage() {
       const response = await fetch('/api/learning/userFlashcards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          videoId: videoId,
-          question: question,
-          answer: answer
-        })
+        body: JSON.stringify({ videoId, question, answer })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to create flashcard');
-      }
+      if (!response.ok) throw new Error('Failed to create flashcard');
 
-      // Refresh materials to show new flashcard
       await refreshMaterials();
       setIsCreatorOpen(false);
       showToast('Flashcard created successfully!', 'success');
     } catch (error) {
-      console.error('Error creating flashcard:', error);
       showToast('Failed to create flashcard. Please try again.', 'error');
     } finally {
       setIsCreating(false);
@@ -241,24 +234,16 @@ export default function VideoMaterialsPage() {
       const response = await fetch('/api/learning/userFlashcards', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          flashcardId: flashcardId,
-          question: question,
-          answer: answer
-        })
+        body: JSON.stringify({ flashcardId, question, answer })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to edit flashcard');
-      }
+      if (!response.ok) throw new Error('Failed to edit flashcard');
 
-      // Refresh materials to show updated flashcard
       await refreshMaterials();
       setIsEditorOpen(false);
       setEditingFlashcard(null);
       showToast('Flashcard updated successfully!', 'success');
     } catch (error) {
-      console.error('Error editing flashcard:', error);
       showToast('Failed to edit flashcard. Please try again.', 'error');
     } finally {
       setIsEditing(false);
@@ -270,16 +255,10 @@ export default function VideoMaterialsPage() {
       const response = await fetch(`/api/learning/userFlashcards?id=${flashcardId}`, {
         method: 'DELETE'
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete flashcard');
-      }
-
-      // Refresh materials to remove deleted flashcard
+      if (!response.ok) throw new Error('Failed to delete flashcard');
       await refreshMaterials();
     } catch (error) {
-      console.error('Error deleting flashcard:', error);
-      throw error; // Re-throw so FlashcardViewer can handle it
+      throw error;
     }
   };
 
@@ -295,36 +274,30 @@ export default function VideoMaterialsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedNotes)
       });
-
       if (response.ok) {
         setNotes(updatedNotes);
       } else {
         throw new Error('Failed to save notes');
       }
     } catch (error) {
-      console.error('Error saving notes:', error);
-      throw error; // Re-throw so NotesEditor can handle it
+      throw error;
     }
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch materials, notes, and user preferences in parallel
         const [materialsResponse, notesResponse, preferencesResponse] = await Promise.all([
           fetch(`/api/videos/${videoId}/materials`),
           fetch(`/api/notes/${videoId}`),
           fetch(`/api/preferences/general`)
         ]);
 
-        if (!materialsResponse.ok) {
-          throw new Error('Failed to fetch materials');
-        }
+        if (!materialsResponse.ok) throw new Error('Failed to fetch materials');
 
         const materialsData = await materialsResponse.json();
         setMaterials(materialsData);
 
-        // Check for incomplete materials based on materialsStatus
         if (materialsData.materialsStatus === 'incomplete') {
           const missing: string[] = [];
           if (materialsData.availableMaterials) {
@@ -334,9 +307,7 @@ export default function VideoMaterialsPage() {
             if (!materialsData.availableMaterials.mindmap) missing.push('Mind Map');
             if (!materialsData.availableMaterials.casestudies) missing.push('Challenges');
           }
-          if (missing.length > 0) {
-            setIncompleteMaterials(missing);
-          }
+          if (missing.length > 0) setIncompleteMaterials(missing);
         }
 
         if (notesResponse.ok) {
@@ -346,7 +317,6 @@ export default function VideoMaterialsPage() {
           setNotes({ generalNote: '', segmentNotes: [] });
         }
 
-        // Fetch user's autoplay preference
         if (preferencesResponse.ok) {
           const preferencesData = await preferencesResponse.json();
           setAutoplayVideos(preferencesData.preferences?.autoplayVideos ?? false);
@@ -358,365 +328,316 @@ export default function VideoMaterialsPage() {
       }
     };
 
-    if (videoId) {
-      fetchData();
-    }
+    if (videoId) fetchData();
   }, [videoId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        {/* Header Skeleton */}
-        <div className="border-b border-border bg-card-bg/50 sticky top-0 z-40">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-secondary/20 rounded-lg animate-pulse"></div>
-                <div>
-                  <div className="h-5 bg-secondary/20 rounded mb-1 animate-pulse w-64"></div>
-                  <div className="h-4 bg-secondary/20 rounded animate-pulse w-32"></div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-10 h-10 bg-secondary/20 rounded animate-pulse"></div>
-                <div className="w-24 h-8 bg-accent/20 rounded animate-pulse"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Skeleton */}
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Sidebar - Materials Tabs Skeleton */}
-            <div className="lg:col-span-1">
-              <div className="bg-card-bg rounded-xl border border-border p-4">
-                <div className="space-y-2">
-                  {[
-                    'Flashcards',
-                    'Quizzes',
-                    'Video & Transcript',
-                    'Mind Map',
-                    'AI Tutor',
-                  ].map((label, i) => (
-                    <div key={i} className="flex items-center space-x-3 p-3 rounded-lg">
-                      <div className="w-5 h-5 bg-accent/20 rounded animate-pulse"></div>
-                      <div className="h-4 bg-secondary/20 rounded animate-pulse flex-1"></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Main Content Area Skeleton */}
-            <div className="lg:col-span-2">
-              <div className="bg-card-bg rounded-xl border border-border p-6">
-                {/* Tab Header Skeleton */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-6 h-6 bg-accent/20 rounded animate-pulse"></div>
-                    <div className="h-6 bg-secondary/20 rounded animate-pulse w-24"></div>
-                  </div>
-                  <div className="h-8 bg-accent/20 rounded animate-pulse w-20"></div>
-                </div>
-
-                {/* Content Skeleton based on tab - simulating flashcards */}
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-background rounded-lg border border-border p-4">
-                      <div className="h-5 bg-secondary/20 rounded mb-2 animate-pulse"></div>
-                      <div className="h-4 bg-secondary/20 rounded animate-pulse w-3/4"></div>
-                      <div className="flex justify-between items-center mt-4">
-                        <div className="flex space-x-2">
-                          <div className="w-16 h-6 bg-accent/20 rounded animate-pulse"></div>
-                          <div className="w-16 h-6 bg-secondary/20 rounded animate-pulse"></div>
-                        </div>
-                        <div className="w-8 h-8 bg-secondary/20 rounded animate-pulse"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+     return (
+       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+         <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+         <p className="mt-4 text-muted-foreground">Loading specific materials...</p>
+       </div>
+     );
   }
 
   if (error || !materials) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-md"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
             <span className="text-3xl">⚠️</span>
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-2">Oops! Something went wrong</h2>
           <p className="text-muted-foreground mb-6">{error || 'Materials not found'}</p>
-          <Button variant="primary" onClick={() => router.push('/dashboard/gallery')}>
-            Back to Gallery
-          </Button>
+          <Button variant="primary" onClick={() => router.push('/dashboard/gallery')}>Back to Gallery</Button>
         </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Unified Navigation Bar */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card-bg border-b border-border sticky top-0 z-50 backdrop-blur-sm"
+    <div className="flex h-screen bg-background overflow-hidden relative">
+      
+      {/* Sidebar Navigation */}
+      <motion.aside
+        initial={false}
+        animate={{ width: isSidebarCollapsed ? 80 : 256 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="bg-card-bg border-r border-border shrink-0 z-40 flex flex-col h-full relative"
       >
-        <div className="max-w-full mx-auto px-6 py-4">
-          <div className="flex items-center justify-between gap-6">
-            {/* Left Side: Logo + Video Title */}
-            <div className="flex items-center gap-4 min-w-0 shrink">
-                {/* Logo */}
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
-                >
-                  <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-lg">C</span>
-                  </div>
-                </button>
-
-              {/* Divider */}
-              <div className="w-px h-6 bg-border shrink-0" />
-
-              {/* Video Title */}
-              <div className="flex items-center gap-2 min-w-0">
-                <h1 className="text-sm md:text-base font-semibold text-foreground truncate">
-                  {materials.video.title}
-                </h1>
-              </div>
-            </div>
-
-            {/* Center: Tab Navigation */}
-            <div className="flex gap-1 overflow-x-auto shrink-0">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`relative cursor-pointer px-4 py-2 font-medium text-sm whitespace-nowrap transition-colors rounded-lg ${
-                      isActive
-                        ? 'text-accent bg-accent/10'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Right Side: Back + Theme Toggle + Logout */}
-            <div className="flex items-center gap-3 shrink-0">
-              <Button
-                onClick={() => router.push('/dashboard/gallery')}
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span className="hidden sm:inline">Back to Materials</span>
-              </Button>
-              <ThemeToggle />
+        {/* Sidebar Header: Logo & Toggle */}
+        <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
+           <div className={`flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
               <button
-                onClick={logout}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-background border border-border rounded-lg hover:border-accent transition-all duration-200 cursor-pointer"
-                title="Logout"
+                onClick={() => router.push('/dashboard')}
+                className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
               >
-                <LogOut className="w-4 h-4" />
+                <span className="text-white font-bold text-lg">C</span>
               </button>
-            </div>
-          </div>
+              {!isSidebarCollapsed && (
+                 <span className="font-bold text-lg text-foreground truncate">Clarity</span>
+              )}
+           </div>
+           
+           {!isSidebarCollapsed && (
+             <button 
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-background transition-colors cursor-pointer"
+                title="Collapse Sidebar"
+             >
+                <ChevronLeft className="w-4 h-4" />
+             </button>
+           )}
         </div>
-      </motion.nav>
 
-      {/* Content Area */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Materials Warning Banner */}
-        <MaterialsWarningBanner
-          incompleteMaterials={incompleteMaterials}
-          isVisible={!bannedDismissed && incompleteMaterials.length > 0}
-          onDismiss={handleBannerDismiss}
-        />
+        {/* Navigation Items (Scrollable) */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 gap-2 flex flex-col">
+            {/* If collapsed, show centered expand button at top of list as alternative interaction */}
+            {isSidebarCollapsed && (
+               <button 
+                onClick={() => setIsSidebarCollapsed(false)}
+                className="w-full flex items-center justify-center py-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg mb-2 cursor-pointer"
+                title="Expand Sidebar"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {activeTab === 'flashcards' && (
-              <div className="space-y-6">
-                {/* Add New Flashcard Button */}
-                <div className="flex justify-end">
-                  <Button
-                    variant="primary"
-                    onClick={() => setIsCreatorOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Create New Flashcard
-                  </Button>
-                </div>
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  title={isSidebarCollapsed ? tab.label : ''}
+                  className={`
+                    relative group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 cursor-pointer
+                    ${isActive 
+                      ? 'bg-accent/10 text-accent font-medium' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
+                    }
+                    ${isSidebarCollapsed ? 'justify-center' : ''}
+                  `}
+                >
+                  <Icon className={`shrin-0 ${isActive ? 'w-5 h-5' : 'w-5 h-5 opacity-70'}`} />
+                  
+                  {!isSidebarCollapsed && (
+                     <span className="truncate text-sm">{tab.label}</span>
+                  )}
 
-                {/* Flashcard Viewer */}
-                <FlashcardViewer
-                  flashcards={materials.flashcards}
-                  videoId={videoId}
-                  onEdit={openEditor}
-                  onDelete={handleDeleteFlashcard}
-                  onShowToast={showToast}
-                />
+                  {/* Active Indicator Line for Collapsed Mode (optional visual cue) */}
+                  {isActive && isSidebarCollapsed && (
+                    <motion.div 
+                      layoutId="activeTabIndicator"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-l-full"
+                    />
+                  )}
+                </button>
+              );
+            })}
+        </div>
+        
+        {/* Sidebar Footer: User Controls */}
+        <div className="p-3 border-t border-border shrink-0 space-y-2">
+            {!isSidebarCollapsed && (
+              <div className="mb-2 px-1">
+                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</h3>
               </div>
             )}
-            {activeTab === 'quizzes' && (
-              <QuizInterface quizzes={materials.quizzes} videoId={videoId} />
-            )}
-            {activeTab === 'transcript' && (
-              <>
-                {materials.videoSummary && (
-                  <VideoSummaryButton
-                    summary={materials.videoSummary}
-                    videoTitle={materials.video.title}
-                  />
-                )}
-                <VideoAndTranscriptViewer
-                  transcript={materials.transcript}
-                  videoId={materials.video.videoId}
-                  youtubeUrl={materials.video.youtubeUrl}
-                  chapters={materials.chapters}
-                  videoTitle={materials.video.title}
-                  notes={notes}
-                  onSaveNotes={saveNotes}
-                  autoplayVideos={autoplayVideos}
-                />
-              </>
-            )}
-            {activeTab === 'prerequisites' && (
-              <PrerequisitesView prerequisites={materials.prerequisites} />
-            )}
-            {activeTab === 'casestudies' && (
-              <div className="space-y-6">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-foreground mb-2">Real-World Challenges</h2>
-                  <p className="text-muted-foreground">
-                    Apply concepts from this video to solve complex, realistic problems.
-                  </p>
-                </div>
+            
+            <div className={`flex flex-col gap-2 ${isSidebarCollapsed ? 'items-center' : ''}`}>
+                 <button
+                    onClick={logout}
+                    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors text-red-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                    title="Logout"
+                 >
+                    <LogOut className="w-4 h-4 shrink-0" />
+                    {!isSidebarCollapsed && <span>Logout</span>}
+                 </button>
+            </div>
+        </div>
+      </motion.aside>
 
-                {materials.realWorldProblems && materials.realWorldProblems.length > 0 ? (
-                  <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
-                     {materials.realWorldProblems.map((problem) => (
-                       <motion.div
-                         key={problem.id}
-                         initial={{ y: -4 }}
-                         className="bg-card-bg border border-border rounded-xl p-6 cursor-pointer shadow-lg"
-                         onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}?openClara=true`)}
-                       >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
-                            <Briefcase className="w-6 h-6 text-accent" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-semibold text-foreground mb-2">
-                              {problem.title}
-                            </h3>
-                            <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
-                              {problem.scenario}
-                            </p>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Lightbulb className="w-3.5 h-3.5" />
-                                <span>{problem.hints.length} hints available</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-accent font-medium">Start solving →</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-card-bg border border-border rounded-xl">
-                    <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      No challenges available
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      Challenges will be generated when processing new videos.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-            {activeTab === 'mindmap' && (
-              <MindMapViewer
-                videoId={videoId}
-                nodes={materials.mindMap.nodes}
-                edges={materials.mindMap.edges}
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-full relative">
+        {/* Minimal Header (Title) - Sticky */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm z-30 shrink-0 gap-4">
+             <h1 className="text-lg font-semibold text-foreground truncate min-w-0">
+                 {materials.video.title}
+             </h1>
+
+             <div className="flex items-center gap-3 shrink-0">
+                <Button
+                  onClick={() => router.push('/dashboard/gallery')}
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Back to Gallery</span>
+                </Button>
+                <div className="w-px h-6 bg-border mx-1"></div>
+                <ThemeToggle />
+             </div>
+        </div>
+
+        {/* Content Scroll Area */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth will-change-transform">
+           
+           {/* Responsive Container - Using flex to allow child to expand */}
+           <div className="w-full h-full flex flex-col">
+              
+              {/* Materials Warning Banner */}
+              <MaterialsWarningBanner
+                incompleteMaterials={incompleteMaterials}
+                isVisible={!bannedDismissed && incompleteMaterials.length > 0}
+                onDismiss={handleBannerDismiss}
               />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
 
-      {/* Flashcard Creator Modal */}
-      <FlashcardCreator
-        isOpen={isCreatorOpen}
-        onClose={() => setIsCreatorOpen(false)}
-        onCreate={handleCreateFlashcard}
-        isLoading={isCreating}
-      />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1 flex flex-col min-h-0" 
+                >
+                  {activeTab === 'transcript' && (
+                    <div className="flex flex-col gap-6">
+                       {materials.videoSummary && (
+                          <div className="shrink-0">
+                             <VideoSummaryButton
+                              summary={materials.videoSummary}
+                              videoTitle={materials.video.title}
+                            />
+                          </div>
+                        )}
+                        {/* Video Viewer now takes full remaining space if needed, or flows naturally */}
+                        <div className="flex-1 min-h-0">
+                           <VideoAndTranscriptViewer
+                              transcript={materials.transcript}
+                              videoId={materials.video.videoId}
+                              youtubeUrl={materials.video.youtubeUrl}
+                              chapters={materials.chapters}
+                              videoTitle={materials.video.title}
+                              notes={notes}
+                              onSaveNotes={saveNotes}
+                              autoplayVideos={autoplayVideos}
+                            />
+                        </div>
+                    </div>
+                  )}
 
-      {/* Flashcard Editor Modal */}
-      <FlashcardEditor
-        isOpen={isEditorOpen}
-        onClose={() => {
-          setIsEditorOpen(false);
-          setEditingFlashcard(null);
-        }}
-        onEdit={handleEditFlashcard}
-        initialData={editingFlashcard}
-        isLoading={isEditing}
-      />
+                  {activeTab === 'flashcards' && (
+                    <div className="space-y-6 max-w-7xl mx-auto w-full">
+                      <div className="flex justify-end">
+                        <Button
+                          variant="primary"
+                          onClick={() => setIsCreatorOpen(true)}
+                          className="flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Create New Flashcard
+                        </Button>
+                      </div>
+                      <FlashcardViewer
+                        flashcards={materials.flashcards}
+                        videoId={videoId}
+                        onEdit={openEditor}
+                        onDelete={handleDeleteFlashcard}
+                        onShowToast={showToast}
+                      />
+                    </div>
+                  )}
 
-      {/* Toast Notifications */}
+                  {activeTab === 'quizzes' && (
+                     <div className="max-w-5xl mx-auto w-full">
+                        <QuizInterface quizzes={materials.quizzes} videoId={videoId} />
+                     </div>
+                  )}
+
+                  {activeTab === 'prerequisites' && (
+                    <div className="max-w-7xl mx-auto w-full">
+                        <PrerequisitesView prerequisites={materials.prerequisites} />
+                    </div>
+                  )}
+
+                  {activeTab === 'casestudies' && (
+                      <div className="space-y-6 max-w-7xl mx-auto w-full">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold text-foreground mb-2">Real-World Challenges</h2>
+                          <p className="text-muted-foreground">
+                            Apply concepts from this video to solve complex, realistic problems.
+                          </p>
+                        </div>
+                        {materials.realWorldProblems && materials.realWorldProblems.length > 0 ? (
+                          <div className="grid gap-6 md:grid-cols-1">
+                             {materials.realWorldProblems.map((problem) => (
+                               <motion.div
+                                 key={problem.id}
+                                 initial={{ y: -4 }}
+                                 className="bg-card-bg border border-border rounded-xl p-6 cursor-pointer shadow-lg hover:border-accent/50 transition-colors"
+                                 onClick={() => router.push(`/generations/${videoId}/casestudy/${problem.id}?openClara=true`)}
+                               >
+                                <div className="flex items-start gap-4">
+                                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
+                                    <Briefcase className="w-6 h-6 text-accent" />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="text-lg font-semibold text-foreground mb-2">{problem.title}</h3>
+                                    <p className="text-sm text-muted-foreground line-clamp-3 mb-4">{problem.scenario}</p>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <div className="flex items-center gap-1">
+                                        <Lightbulb className="w-3.5 h-3.5" />
+                                        <span>{problem.hints.length} hints available</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-accent font-medium">Start solving →</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-12 bg-card-bg border border-border rounded-xl">
+                            <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+                            <h3 className="text-lg font-semibold text-foreground mb-2">No challenges available</h3>
+                            <p className="text-muted-foreground text-sm">Challenges will be generated when processing new videos.</p>
+                          </div>
+                        )}
+                      </div>
+                  )}
+
+                  {activeTab === 'mindmap' && (
+                     <div className="h-[calc(100vh-140px)] w-full -mt-4 border border-border rounded-xl overflow-hidden bg-card-bg">
+                        <MindMapViewer
+                          videoId={videoId}
+                          nodes={materials.mindMap.nodes}
+                          edges={materials.mindMap.edges}
+                        />
+                     </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+           </div>
+        </div>
+      </main>
+
+      {/* Modals */}
+      <FlashcardCreator isOpen={isCreatorOpen} onClose={() => setIsCreatorOpen(false)} onCreate={handleCreateFlashcard} isLoading={isCreating} />
+      <FlashcardEditor isOpen={isEditorOpen} onClose={() => { setIsEditorOpen(false); setEditingFlashcard(null); }} onEdit={handleEditFlashcard} initialData={editingFlashcard} isLoading={isEditing} />
+      
       <ToastContainer toasts={toasts} onClose={removeToast} />
-
-      {/* Warning Dialog for LLM Partial Failures */}
+      
       {showWarning && warningType && (
-        <Dialog
-          isOpen={showWarning}
-          onClose={() => setShowWarning(false)}
-          type="alert"
-          variant={getErrorConfig(warningType).variant}
-          title={getErrorConfig(warningType).title}
-          message={getErrorConfig(warningType).message}
-          confirmText="I Understand"
-        />
+        <Dialog isOpen={showWarning} onClose={() => setShowWarning(false)} type="alert" variant={getErrorConfig(warningType).variant} title={getErrorConfig(warningType).title} message={getErrorConfig(warningType).message} confirmText="I Understand" />
       )}
-
-      {/* ChatBot */}
+      
       <ChatBot videoId={videoId} />
     </div>
   );

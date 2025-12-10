@@ -88,6 +88,7 @@ export type LearningMaterials = z.infer<typeof LearningMaterialsSchema>;
  * JSON Schema version for LLM structured output.
  * Groq and other providers require JSON Schema format.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const LEARNING_MATERIALS_SCHEMA = zodToJsonSchema(LearningMaterialsSchema as any, {
   name: 'learning_materials',
   $refStrategy: 'none', // Inline all definitions
