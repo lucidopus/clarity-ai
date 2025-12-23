@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
 import Switch from './Switch';
-import { Clock, Layers, HelpCircle, User, Stars } from 'lucide-react';
+import { Clock, Layers, HelpCircle, User, Stars, Globe, Share2 } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -132,22 +132,32 @@ export default function VideoCard({
           </div>
           <div className="flex items-center gap-2">
             {onVisibilityChange && (
-               <div 
-                 className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
+               <button
                  onClick={(e) => {
                    e.stopPropagation();
                    onVisibilityChange(visibility === 'public' ? 'private' : 'public');
                  }}
+                 className={`
+                   flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 shadow-sm cursor-pointer
+                   ${visibility === 'public'
+                     ? 'bg-accent hover:bg-accent/90 text-white border border-transparent shadow-accent/20'
+                     : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 hover:border-gray-300'
+                   }
+                 `}
+                 title={visibility === 'public' ? 'Publicly visible' : 'Private to you'}
                >
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground select-none">
-                    {visibility === 'public' ? 'Public' : 'Private'}
-                  </span>
-                  <Switch
-                    checked={visibility === 'public'}
-                    onChange={() => {}} // Controlled by parent div click
-                    className="pointer-events-none" // Let parent handle interaction
-                  />
-               </div>
+                  {visibility === 'public' ? (
+                    <>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Public</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share</span>
+                    </>
+                  )}
+               </button>
             )}
             {onDelete && (
               <button
