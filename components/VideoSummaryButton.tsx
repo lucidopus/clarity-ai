@@ -14,6 +14,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 
