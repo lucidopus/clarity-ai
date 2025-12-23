@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
+import Switch from './Switch';
 import { Clock, Layers, HelpCircle, User, Stars } from 'lucide-react';
 
 interface VideoCardProps {
@@ -16,8 +17,10 @@ interface VideoCardProps {
   transcriptMinutes?: number;
   createdAt: Date | string;
   progress?: number;
+  visibility?: 'private' | 'public';
   onClick?: (id: string) => void;
   onDelete?: () => void;
+  onVisibilityChange?: (visibility: 'private' | 'public') => void;
 }
 
 export default function VideoCard({
@@ -30,8 +33,10 @@ export default function VideoCard({
   quizCount,
   createdAt,
   progress = 0,
+  visibility = 'private',
   onClick,
-  onDelete
+  onDelete,
+  onVisibilityChange
 }: VideoCardProps) {
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -125,18 +130,38 @@ export default function VideoCard({
               </div>
             )}
           </div>
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              aria-label="Delete video"
-              className="px-2.5 h-8 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
-            >
-              Delete
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onVisibilityChange && (
+               <div 
+                 className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   onVisibilityChange(visibility === 'public' ? 'private' : 'public');
+                 }}
+               >
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground select-none">
+                    {visibility === 'public' ? 'Public' : 'Private'}
+                  </span>
+                  <Switch
+                    checked={visibility === 'public'}
+                    onChange={() => {}} // Controlled by parent div click
+                    className="pointer-events-none" // Let parent handle interaction
+                  />
+               </div>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                aria-label="Delete video"
+                className="px-2.5 h-8 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
         {/* Stats, minimal inline items (no pills) */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-5 text-xs text-muted-foreground">

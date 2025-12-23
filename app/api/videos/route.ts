@@ -89,7 +89,8 @@ export async function GET(request: NextRequest) {
           createdAt: video.createdAt,
           progress,
           flashcardCount: totalFlashcards,
-          quizCount: totalQuizzes
+          quizCount: totalQuizzes,
+          visibility: video.visibility || 'private'
         };
       })
     });
