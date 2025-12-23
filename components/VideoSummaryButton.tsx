@@ -32,7 +32,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
         <BookOpen className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
 
         {/* Tooltip on Hover */}
-        <div className="absolute top-full mt-2 px-3 py-2 bg-card-bg border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md z-50">
+        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-3 py-2 bg-card-bg border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md z-50">
           View Summary
         </div>
       </motion.button>
