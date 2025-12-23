@@ -28,6 +28,7 @@ interface Video {
   progress?: number;
   flashcardCount?: number;
   quizCount?: number;
+  visibility?: 'private' | 'public';
 }
 
 export default function GalleryPage() {
@@ -40,6 +41,15 @@ export default function GalleryPage() {
   const [errorDialog, setErrorDialog] = useState<{ show: boolean; message: string }>({
     show: false,
     message: '',
+  });
+  const [confirmDialog, setConfirmDialog] = useState<{
+    show: boolean;
+    videoId: string;
+    newVisibility: 'private' | 'public';
+  }>({
+    show: false,
+    videoId: '',
+    newVisibility: 'private',
   });
 
   // Fetch videos on mount
@@ -128,6 +138,40 @@ export default function GalleryPage() {
   const handleVideoClick = (videoId: string) => {
     // Open in new tab
     window.open(`/generations/${videoId}`, '_blank');
+  };
+
+  const handleVisibilityChange = async (videoId: string, newVisibility: 'private' | 'public') => {
+      // Open confirmation dialog first
+      setConfirmDialog({
+        show: true,
+        videoId,
+        newVisibility,
+      });
+  };
+
+  const confirmVisibilityChange = async () => {
+      const { videoId, newVisibility } = confirmDialog;
+      setConfirmDialog({ ...confirmDialog, show: false });
+
+      // Optimistic update
+      setVideos(videos.map(v => v.id === videoId ? { ...v, visibility: newVisibility } : v));
+
+      try {
+        const response = await fetch(`/api/videos/${videoId}/visibility`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visibility: newVisibility }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update visibility');
+        }
+      } catch (error) {
+        console.error('Error updating visibility:', error);
+        // Revert on error
+        setVideos(videos.map(v => v.id === videoId ? { ...v, visibility: v.visibility === 'public' ? 'private' : 'public' } : v));
+        setErrorDialog({ show: true, message: 'Failed to update visibility' });
+      }
   };
 
   const filteredVideos = useMemo(() => {
@@ -240,6 +284,8 @@ export default function GalleryPage() {
               progress={video.progress}
               flashcardCount={video.flashcardCount}
               quizCount={video.quizCount}
+              visibility={video.visibility}
+              onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
               onClick={handleVideoClick}
             />
           ))}
@@ -263,6 +309,22 @@ export default function GalleryPage() {
         title="Generation Failed"
         message={errorDialog.message}
         confirmText="OK"
+      />
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        isOpen={confirmDialog.show}
+        onClose={() => setConfirmDialog({ ...confirmDialog, show: false })}
+        onConfirm={confirmVisibilityChange}
+        type="confirm"
+        variant="warning"
+        title={`Make Video ${confirmDialog.newVisibility === 'public' ? 'Public' : 'Private'}?`}
+        message={
+          confirmDialog.newVisibility === 'public'
+            ? "Making this video public will allow anyone in the community to discover and learn from it. Are you sure you want to share it?"
+            : "Making this video private will remove it from the Discover feed. Only you will be able to see it."
+        }
+        confirmText={confirmDialog.newVisibility === 'public' ? 'Make Public' : 'Make Private'}
       />
     </div>
   );

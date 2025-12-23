@@ -48,6 +48,7 @@ const VideoSchema: Schema = new Schema({
   processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'completed_with_warning', 'failed'] },
   materialsStatus: { type: String, enum: ['complete', 'incomplete', 'generating'], default: 'generating' },
   incompleteMaterials: [{ type: String, enum: ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'] }],
+  visibility: { type: String, enum: ['private', 'public'], default: 'private' },
   errorType: { type: String },
   errorMessage: { type: String },
   processedAt: { type: Date },
@@ -60,5 +61,6 @@ const VideoSchema: Schema = new Schema({
 VideoSchema.index({ userId: 1, createdAt: -1 });
 VideoSchema.index({ videoId: 1 });
 VideoSchema.index({ userId: 1, videoId: 1 }, { unique: true });
+VideoSchema.index({ visibility: 1, createdAt: -1 }); // Index for Discover feed queries
 
 export default mongoose.models.Video || mongoose.model<IVideo>('Video', VideoSchema);
