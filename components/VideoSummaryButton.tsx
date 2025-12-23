@@ -22,7 +22,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
         exit={{ opacity: 0, x: 10 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="fixed top-24 right-6 z-20 group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-accent/5 dark:hover:bg-accent/10 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
+        className="fixed right-6 z-20 group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-accent/5 dark:hover:bg-accent/10 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
         title="View summary (keyboard: ?)"
         aria-label="View video summary"
       >

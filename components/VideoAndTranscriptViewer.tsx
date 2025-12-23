@@ -282,7 +282,7 @@ export default function VideoAndTranscriptViewer({
   const embedUrl = getEmbedUrl(youtubeUrl);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full -mt-30">
       {/* Floating Chapter Button */}
       {chapters && chapters.length > 0 && (
         <ChapterButton
