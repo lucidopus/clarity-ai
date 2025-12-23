@@ -3,7 +3,8 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
-import { Clock, Layers, HelpCircle, User, Stars } from 'lucide-react';
+import Switch from './Switch';
+import { Clock, Layers, HelpCircle, User, Stars, Globe, Share2 } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -16,8 +17,10 @@ interface VideoCardProps {
   transcriptMinutes?: number;
   createdAt: Date | string;
   progress?: number;
+  visibility?: 'private' | 'public';
   onClick?: (id: string) => void;
   onDelete?: () => void;
+  onVisibilityChange?: (visibility: 'private' | 'public') => void;
 }
 
 export default function VideoCard({
@@ -30,8 +33,10 @@ export default function VideoCard({
   quizCount,
   createdAt,
   progress = 0,
+  visibility = 'private',
   onClick,
-  onDelete
+  onDelete,
+  onVisibilityChange
 }: VideoCardProps) {
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -125,18 +130,48 @@ export default function VideoCard({
               </div>
             )}
           </div>
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              aria-label="Delete video"
-              className="px-2.5 h-8 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
-            >
-              Delete
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {onVisibilityChange && (
+               <button
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   onVisibilityChange(visibility === 'public' ? 'private' : 'public');
+                 }}
+                 className={`
+                   flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 shadow-sm cursor-pointer
+                   ${visibility === 'public'
+                     ? 'bg-accent hover:bg-accent/90 text-white border border-transparent shadow-accent/20'
+                     : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 hover:border-gray-300'
+                   }
+                 `}
+                 title={visibility === 'public' ? 'Publicly visible' : 'Private to you'}
+               >
+                  {visibility === 'public' ? (
+                    <>
+                      <Globe className="w-3.5 h-3.5" />
+                      <span>Public</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Share</span>
+                    </>
+                  )}
+               </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                aria-label="Delete video"
+                className="px-2.5 h-8 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+              >
+                Delete
+              </button>
+            )}
+          </div>
         </div>
         {/* Stats, minimal inline items (no pills) */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-5 text-xs text-muted-foreground">

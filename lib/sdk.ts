@@ -67,7 +67,7 @@ export const getGroqLlm = () => {
 export const geminiLlm = new Proxy({} as ChatGoogleGenerativeAI, {
   get: (_target, prop) => {
     const instance = getGeminiLlm();
-    // @ts-ignore
+    // @ts-expect-error -- Safe proxy binding
     return typeof instance[prop] === 'function' ? instance[prop].bind(instance) : instance[prop];
   }
 });
@@ -75,7 +75,7 @@ export const geminiLlm = new Proxy({} as ChatGoogleGenerativeAI, {
 export const groqLlm = new Proxy({} as ChatGroq, {
   get: (_target, prop) => {
     const instance = getGroqLlm();
-    // @ts-ignore
+    // @ts-expect-error -- Safe proxy binding
     return typeof instance[prop] === 'function' ? instance[prop].bind(instance) : instance[prop];
   }
 });
@@ -97,7 +97,7 @@ export const groq = new Proxy({} as Groq, {
                 apiKey: process.env.GROQ_API_KEY || 'dummy-key-for-build',
             });
         }
-        // @ts-ignore
+        // @ts-expect-error -- Safe proxy binding
         return typeof _groq[prop] === 'function' ? _groq[prop].bind(_groq) : _groq[prop];
     }
 });
