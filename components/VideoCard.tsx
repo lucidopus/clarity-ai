@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
-import Switch from './Switch';
+
 import { Clock, Layers, HelpCircle, User, Stars, Globe, Share2 } from 'lucide-react';
 
 interface VideoCardProps {

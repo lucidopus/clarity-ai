@@ -15,7 +15,7 @@ export default function Switch({ checked, onChange, disabled = false, className 
       type="button"
       role="switch"
       aria-checked={checked}
-      onClick={(e) => {
+      onClick={() => {
         // If controlled by parent wrapping click, we might want to stop propagation here or let parent handle it.
         // But here we just want basic switch behavior. 
         if (!disabled) {
