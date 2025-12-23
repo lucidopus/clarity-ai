@@ -11,7 +11,7 @@ Generate 7 learning components based on this transcript:
 4. Identify 3-5 key moments (video chapters with time markers + summaries)
 5. List 2-3 prerequisite topics needed
 6. **Generate ONE high-quality real-world problem (case study)** where the video's primary topic is applied
-7. Generate a 200-300 word summary of the video for the AI tutor to use as context
+7. Generate a comprehensive formatted summary of the video. Use Markdown. Use H2 (##) for main sections, bolding for key terms, and bullet points for lists. It should be structured and readable.
 8. **Generate a hierarchical mind map showing concept relationships**
 
 ## Mind Map Requirements:
@@ -102,7 +102,7 @@ Generate 7 learning components based on this transcript:
 - Chapters: Specific time codes from the video with topic summaries (key navigational moments)
 - Prerequisites: Real knowledge gaps needed to understand this content, not obvious basics
 - Real-World Problem: ONE complex, realistic case study (see detailed requirements above)
-- Video Summary: A 200-300 word summary of the video, written for ${CHATBOT_NAME} to use as context
+- Video Summary: A comprehensive Markdown-formatted summary with headers and bullet points, written for the AI tutor and user context
 - Mind Map: Clear hierarchical structure showing how concepts connect
 
 ## Transcript:
