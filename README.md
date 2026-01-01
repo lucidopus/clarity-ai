@@ -23,7 +23,7 @@ Clarity AI is an AI-powered educational platform that turns passive YouTube vide
 
 ## ✨ Features
 
-Clarity AI is packed with features designed to improve your learning, all generated automatically from a single YouTube link:
+Clarity AI is filled with features designed to improve your learning, all generated automatically from a single YouTube link:
 
 - **🧠 AI-Generated Learning Materials**:
     - **Flashcards**: Reinforce key concepts with AI-generated and user-created flashcards.
