@@ -18,6 +18,41 @@ This document lists all available GitHub labels for this repository and provides
 - **cancelled** - This will not be worked on
 - **duplicate** - This issue or pull request already exists
 
+## Priority Tags
+
+### Urgency levels
+- **priority: critical** - Immediate attention, blocks release
+- **priority: high** - Must have for next release
+- **priority: medium** - Nice to have
+- **priority: low** - Deferrable
+
+## Size / Effort Tags
+
+### Estimated workload
+- **size: XS** - Trivial change, <1 hr
+- **size: S** - Small change, <1 day
+- **size: M** - Medium change, 2-3 days
+- **size: L** - Large change, <1 week
+- **size: XL** - Major refactor/feature, >1 week
+
+## Area Tags
+
+### Technical Layer
+- **area: frontend** - UI/UX, Components, Pages
+- **area: backend** - API, Database, Server Actions
+- **area: infra** - DevOps, Deployment, Config
+- **area: design** - Visual specs, Assets
+- **area: ai** - LLM integration, Prompts, Chains
+
+## Component Tags
+
+### Project Specific
+- **comp: study-tools** - Flashcards, Quizzes, Mindmaps
+- **comp: video-player** - Video playback, Transcripts, Summaries
+- **comp: dashboard** - Analytics, Charts, Stats
+- **comp: chat** - Chatbot, RAG flow
+- **comp: auth** - Login, Signup, User Profile
+
 ## Type Tags
 
 ### Issue Classification
