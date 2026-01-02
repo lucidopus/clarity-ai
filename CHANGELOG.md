@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Video Player Enhancements**:
+  - **Refactored Modals (Portals)**: Updated `VideoSummaryButton` and `ChapterButton` to use **React Portals**. This ensures popups break out of the DOM hierarchy and overlay correctly on top of the sidebar/navbar (Issue #71).
+  - **UI Polish**: Fixed clustering of tooltips and optimized z-indexing for smoother hover states in Dark Mode.
+- **Documentation**:
+  - **Tags**: Added comprehensive project tags in `TAGS.md` for better issue tracking.
 - **Admin Portal**: Comprehensive password-protected admin portal at `/admin` for platform monitoring and user management.
   - **Authentication**: Password-only login with JWT-based session management, rate limiting (5 attempts per 15 minutes), and audit logging.
   - **Analytics Dashboard**: Platform-wide metrics including user statistics, content overview, registration timeline charts (week/month/year views), and activity heatmaps.
