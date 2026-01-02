@@ -17,20 +17,11 @@ export default function DashboardLayout({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setIsSearchOpen(true);
-      }
-    };
-    
     const handleCustomEvent = () => setIsSearchOpen(true);
 
-    window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('open-global-search', handleCustomEvent);
     
     return () => {
-        window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('open-global-search', handleCustomEvent);
     };
   }, []);

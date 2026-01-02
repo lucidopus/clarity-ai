@@ -67,97 +67,113 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop with strong blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-background/80 backdrop-blur-md z-[100] transition-all duration-300"
+            className="fixed inset-0 bg-background/60 backdrop-blur-xl z-[100]"
           />
 
           {/* Search Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            initial={{ opacity: 0, scale: 0.98, y: -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, scale: 0.98, y: -10 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed inset-0 z-[101] flex items-start justify-center pt-[15vh] px-4 pointer-events-none"
           >
-            <div className="w-full max-w-2xl bg-card-bg border border-border rounded-xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col max-h-[60vh]">
+            <div className="w-full max-w-3xl bg-card-bg/90 backdrop-blur-2xl border border-white/10 dark:border-white/5 rounded-3xl shadow-2xl overflow-hidden pointer-events-auto flex flex-col max-h-[60vh] ring-1 ring-black/5">
               
-              {/* Search Bar */}
-              <div className="flex items-center px-4 py-4 border-b border-border gap-3">
-                <Search className="w-5 h-5 text-muted-foreground" />
+              {/* Header / Input Area */}
+              <div className="flex items-center px-8 py-6 border-b border-border/50 gap-5 transition-colors focus-within:bg-accent/5">
+                <Search className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Search for topics, videos, concepts..."
+                  placeholder="What do you want to learn today?"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="flex-1 bg-transparent border-none outline-none text-lg text-foreground placeholder:text-muted-foreground/50 h-8"
+                  className="flex-1 bg-transparent border-none outline-none text-xl font-medium text-foreground placeholder:text-muted-foreground/40 h-10"
+                  autoComplete="off"
                 />
-                <div className="flex items-center gap-2">
-                    <kbd className="hidden sm:inline-flex h-6 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-                        <span className="text-xs">ESC</span>
-                    </kbd>
-                    <button onClick={onClose} className="p-1 hover:bg-muted rounded-md transition-colors">
-                        <X className="w-5 h-5 text-muted-foreground" />
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/50 text-[10px] font-mono text-muted-foreground font-medium select-none">
+                        <span>ESC</span>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 -mr-2 hover:bg-muted/50 rounded-full transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
               </div>
 
               {/* Results Area */}
-              <div className="overflow-y-auto custom-scrollbar p-2">
+              <div className="overflow-y-auto custom-scrollbar p-3">
                  {query.trim() === '' ? (
-                     <div className="py-12 flex flex-col items-center justify-center text-center text-muted-foreground">
-                         <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-4">
-                             <Command className="w-6 h-6 text-accent" />
+                     <div className="py-16 flex flex-col items-center justify-center text-center">
+                         <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-accent/20 to-accent/5 flex items-center justify-center mb-5 shadow-inner">
+                             <Sparkles className="w-8 h-8 text-accent" strokeWidth={1.5} />
                          </div>
-                         <p className="text-sm font-medium text-foreground">Focus Mode Search</p>
-                         <p className="text-xs mt-1">Type to find what you need instantly.</p>
+                         <h3 className="text-lg font-semibold text-foreground mb-1">Focus Mode</h3>
+                         <p className="text-sm text-muted-foreground max-w-xs">
+                             Search for videos, topics, or paste a YouTube link to generate new materials immediately.
+                         </p>
                      </div>
                  ) : (
-                    <>
+                    <div className="py-2 px-1">
                         {filtered.length > 0 ? (
                             <div className="space-y-1">
-                                <h3 className="text-xs font-semibold text-muted-foreground px-3 py-2 uppercase tracking-wider">Suggestions</h3>
+                                <h3 className="text-xs font-bold text-muted-foreground/70 px-4 py-2 uppercase tracking-widest text-[10px]">Suggestions</h3>
                                 {filtered.map((item) => (
                                     <button
                                         key={item.id}
                                         onClick={() => {
-                                            // Ensure we close and nav
                                             onClose();
-                                            // Mock nav
                                             console.log(`Navigating to ${item.id}`);
                                         }}
-                                        className="w-full text-left flex items-center justify-between px-3 py-3 rounded-md hover:bg-accent/10 hover:text-accent transition-colors group"
+                                        className="w-full text-left flex items-center justify-between px-4 py-4 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-200 group border border-transparent hover:border-accent/10 cursor-pointer"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <Sparkles className="w-4 h-4 text-muted-foreground group-hover:text-accent" />
-                                            <span className="text-sm font-medium">{item.title}</span>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-xs group-hover:shadow-md transition-shadow">
+                                                <Search className="w-5 h-5 text-muted-foreground group-hover:text-accent" />
+                                            </div>
+                                            <div>
+                                                <span className="text-base font-medium block text-foreground group-hover:text-accent">{item.title}</span>
+                                                <span className="text-xs text-muted-foreground capitalize group-hover:text-accent/70">{item.type}</span>
+                                            </div>
                                         </div>
-                                        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0" />
+                                        <ArrowRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 text-accent" />
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-8 text-center text-muted-foreground text-sm">
-                                No results found for &quot;{query}&quot;
+                            <div className="py-12 text-center">
+                                <p className="text-muted-foreground text-sm">No results found for <span className="text-foreground font-medium">"{query}"</span></p>
                             </div>
                         )}
-                    </>
+                    </div>
                  )}
               </div>
               
               {/* Footer */}
-              <div className="bg-muted/30 border-t border-border px-4 py-2 text-[10px] text-muted-foreground flex justify-between items-center">
-                 <span>ProTip: Search isn't fully hooked up to DB yet.</span>
-                 <div className="flex gap-2">
-                     <span className="flex items-center gap-1">
-                         <Command className="w-3 h-3" />
-                         K to open
+              <div className="bg-muted/20 border-t border-border/50 px-6 py-3 flex justify-between items-center text-xs text-muted-foreground backdrop-blur-sm">
+                 <div className="flex items-center gap-4">
+                     <span className="flex items-center gap-1.5">
+                         <Command className="w-3.5 h-3.5" />
+                         <span className="font-medium">Navigate</span>
                      </span>
+                     <span className="flex items-center gap-1.5">
+                         <ArrowRight className="w-3.5 h-3.5" />
+                         <span className="font-medium">Open</span>
+                     </span>
+                 </div>
+                 <div className="flex items-center gap-2 opacity-70">
+                     <span>ProTip: Try typing "Machine Learning" or "LLMs" to get started. </span>
                  </div>
               </div>
             </div>
