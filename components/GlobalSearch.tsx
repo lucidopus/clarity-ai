@@ -30,15 +30,20 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     setMounted(true);
     
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        if (!isOpen) {
-             // We need to trigger open from parent if strictly controlled, 
-             // but here we just handle Esc. Parent handles Cmd+K usually.
-        }
-      }
+      // Close on Escape
       if (e.key === 'Escape' && isOpen) {
+        e.preventDefault();
         onClose();
+        return;
+      }
+
+      // Close on Cmd+K / Ctrl+K if open (Toggle behavior)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+         if (isOpen) {
+             e.preventDefault();
+             onClose();
+         }
+         // If not open, the parent (Layout/Navbar) handles opening via its own listener
       }
     };
 
