@@ -60,10 +60,6 @@ export default function DiscoverNavbar({ title = "Discover", subtitle }: Discove
         <div className="h-6 w-px bg-border mx-2" />
 
         <ThemeToggle />
-        
-        <Button onClick={logout} variant="ghost" size="icon" aria-label="Logout">
-          <LogOut className="w-5 h-5" />
-        </Button>
       </div>
     </div>
   );

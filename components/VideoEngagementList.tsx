@@ -113,7 +113,7 @@ export default function VideoEngagementList() {
 
       <div className="mt-4 pt-4 border-t border-border text-xs text-muted-foreground">
         <p>
-          💡 <strong>Tip:</strong> Click any video to open its materials and continue learning
+          💡 <strong>Tip:</strong> Click any video to continue learning
         </p>
       </div>
     </div>
