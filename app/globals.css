@@ -175,11 +175,14 @@ html {
 }
 
 /* Hidden scrollbar for chat and other components */
-.scrollbar-hidden {
+.scrollbar-hidden,
+.no-scrollbar {
   scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE 10+ */
 }
 
-.scrollbar-hidden::-webkit-scrollbar {
+.scrollbar-hidden::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none; /* Webkit */
 }
 

@@ -4,6 +4,8 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
+import { useState } from 'react';
+import GlobalSearch from '@/components/GlobalSearch';
 
 export default function DashboardLayout({
   children,
@@ -12,6 +14,26 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    
+    const handleCustomEvent = () => setIsSearchOpen(true);
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-global-search', handleCustomEvent);
+    
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('open-global-search', handleCustomEvent);
+    };
+  }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -134,10 +156,12 @@ export default function DashboardLayout({
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-8 py-8">
+        <div className="max-w-7xl mx-auto px-8 py-6">
           {children}
         </div>
       </main>
+      
+      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </div>
   );
 }
