@@ -48,11 +48,16 @@ Clarity AI is filled with features designed to improve your learning, all genera
         - **Weekly Rhythm**: Analyze consistency patterns across days of the week
     - **Video Gallery**: A central library for all your processed videos, with powerful search and filtering capabilities.
 
+- **🔍 Discover & Explore**:
+    - **Curated Categories**: Explore videos by mood or goal (e.g., "Morning Kickstart", "Weekend Deep Dive").
+    - **Trending**: See what other students are learning.
+
 ## 🛠️ Tech Stack
 
-- **Frontend**: [Next.js](https://nextjs.org/) with [TypeScript](https://www.typescriptlang.org/) and [Tailwind CSS](https://tailwindcss.com/)
+- **Frontend**: [Next.js 16](https://nextjs.org/) with [TypeScript](https://www.typescriptlang.org/) and [Tailwind CSS 4](https://tailwindcss.com/)
 - **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
-- **AI/LLM**: [Groq API](https://groq.com/) (gpt-4o-120b model)
+- **AI/LLM**: [Groq API](https://groq.com/) (Llama 3.3, Qwen 2.5, GPT-OSS) & Google Gemini 2.0
+- **Orchestration**: [LangChain](https://www.langchain.com/)
 - **Transcript Extraction**: youtube-transcript-plus v1.1.1 with Webshare residential proxies
 - **Authentication**: JWT-based with HTTP-only cookies
 - **Proxy Service**: Webshare residential proxies (bypasses YouTube IP blocking in production)
@@ -85,10 +90,10 @@ Clarity AI is filled with features designed to improve your learning, all genera
     ```env
     MONGODB_URI=your_mongodb_connection_string
     GROQ_API_KEY=your_groq_api_key
-    CONTENT_GENERATION_MODEL=gemini-3-pro-preview  # Model for video material generation
-CHATBOT_MODEL=openai/gpt-oss-120b  # Model for chatbots (Groq)
+    CONTENT_GENERATION_MODEL=gemini-2.0-flash  # Model for video material generation
+    CHATBOT_MODEL=llama-3.3-70b-versatile  # Model for chatbots (Groq)
 
-# See lib/cost/config.ts for available models and pricing
+    # See lib/cost/config.ts for available models and pricing
     JWT_SECRET=your_jwt_secret_key
     APIFY_API_TOKEN=your_apify_token_for_transcripts # Optional
     JWT_EXPIRE_DAYS=1
@@ -97,9 +102,9 @@ CHATBOT_MODEL=openai/gpt-oss-120b  # Model for chatbots (Groq)
 
     **Model Configuration:**
 
-    - `CONTENT_GENERATION_MODEL`: Model used for generating learning materials (e.g., `gemini-3-pro-preview`)
+    - `CONTENT_GENERATION_MODEL`: Model used for generating learning materials (e.g., `gemini-2.0-flash` or `gemini-3-pro-preview`)
 
-    - `CHATBOT_MODEL`: Model used for interactive chatbots (e.g., `openai/gpt-oss-120b`)
+    - `CHATBOT_MODEL`: Model used for interactive chatbots (e.g., `llama-3.3-70b-versatile`, `qwen/qwen3-32b`)
 
     - These variables must match keys in the pricing dictionary (`lib/cost/config.ts`)
 
