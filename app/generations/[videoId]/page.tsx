@@ -156,9 +156,21 @@ export default function VideoMaterialsPage() {
   const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
   const [bannedDismissed, setBannerDismissed] = useState(false);
   const [autoplayVideos, setAutoplayVideos] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Loading specific materials...');
 
   // Layout UI State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const messages = [
+      "Distilling key insights from the video...",
+      "Synthesizing complex concepts into study materials...",
+      "Analyzing transcript for core learning objectives...",
+      "Mapping out the knowledge structure...",
+      "Preparing your personalized learning path..."
+    ];
+    setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
+  }, []);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -335,7 +347,7 @@ export default function VideoMaterialsPage() {
      return (
        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-         <p className="mt-4 text-muted-foreground">Loading specific materials...</p>
+         <p className="mt-4 text-muted-foreground">{loadingMessage}</p>
        </div>
      );
   }
