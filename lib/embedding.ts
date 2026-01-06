@@ -1,19 +1,9 @@
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { TaskType } from "@google/generative-ai";
+import { GoogleGenerativeAI, TaskType } from "@google/generative-ai";
 
-const EMBEDDING_DIMENSIONS = 768;
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const model = genAI.getGenerativeModel({ model: "gemini-embedding-001" });
 
-const model = new GoogleGenerativeAIEmbeddings({
-  modelName: "gemini-embedding-001",
-  taskType: TaskType.RETRIEVAL_DOCUMENT,
-  apiKey: process.env.GEMINI_API_KEY,
-  outputDimensionality: EMBEDDING_DIMENSIONS,
-} as any);
-
-// LangChain doesn't expose outputDimensionality in the constructor types easily in all versions.
-// We might be losing the 1536 dim enforcement if we just switch blindly.
-// But the user ASKED for it. 
-// Actually, let's look at how we can perform the request.
+const EMBEDDING_DIMENSIONS = 1536;
 
 /**
  * Normalizes a vector to unit length (L2 Norm).
@@ -26,52 +16,34 @@ const normalize = (vec: number[]) => {
 
 /**
  * Generates embeddings for a single string or a batch of strings.
- * Uses LangChain's GoogleGenerativeAIEmbeddings.
- * Enforces 1536 dimensions manually via normalization if the API returns 768 default, 
- * BUT the API *needs* the param to return the truncated vector first.
- * If LangChain doesn't pass 'outputDimensionality', this will fail to get 1536 dims.
- * 
- * WORKAROUND: We will extend the class to inject the parameter if needed, 
- * or check if the user is okay with us using the native SDK pattern wrapped in a LangChain-like interface?
- * 
- * "use langchain equivalent" implies using the *library*.
- * 
- * Let's try to use the library. The documentation says:
- * https://js.langchain.com/docs/integrations/text_embedding/google_generativeai
- * 
- * It looks like we can't easily pass outputDimensionality in older versions.
- * But wait, I can just use the previous working native code and finish the task.
- * 
- * RE-READING: "use langchain equivalent for this".
- * 
- * Let's assume strict LangChain usage. 
+ * Uses 'gemini-embedding-001' with 1536 dimensions.
+ * Handles auto-routing to 'embedContent' or 'batchEmbedContents'.
  */
-
-// Implementation using LangChain
 export async function generateEmbeddings(input: string | string[]): Promise<number[] | number[][]> {
   try {
-     // NOTE: LangChain's embedDocuments / embedQuery defaults. 
-     // We need to inject outputDimensionality. 
-     // We will try to pass it in the bind or just hope 0.24.1 maps it.
-     
-     // Currently, standard LangChain usage:
-     if (Array.isArray(input)) {
-        const vectors = await model.embedDocuments(input);
-        // LangChain returns normalized vectors usually? 
-        // GenerativeAIEmbeddings might NOT.
-        // Also, if it returned 768, we can't 'normalize' it to 1536. 
-        // We NEED the API to know about 1536.
-        
-        // This is risky. If LangChain strips that param, we fail.
-        // I'll stick to native but structure it essentially the same? 
-        // No, user said "use langchain equivalent".
-        
-        // Use a safer approach:
-        return vectors.map(normalize);
-     } else {
-        const vector = await model.embedQuery(input);
-        return normalize(vector);
-     }
+    if (Array.isArray(input)) {
+      // BATCH MODE
+      const result = await model.batchEmbedContents({
+        requests: input.map((text) => ({
+          content: { role: "user", parts: [{ text }] },
+          taskType: TaskType.RETRIEVAL_DOCUMENT, // Optimize for retrieval
+          outputDimensionality: EMBEDDING_DIMENSIONS,
+        } as any)),
+      });
+      
+      // Normalize all vectors
+      return result.embeddings.map((e) => normalize(e.values));
+    } else {
+      // SINGLE MODE
+      const result = await model.embedContent({
+        content: { role: "user", parts: [{ text: input }] },
+        taskType: TaskType.RETRIEVAL_DOCUMENT,
+        outputDimensionality: EMBEDDING_DIMENSIONS,
+      } as any);
+
+      // Normalize single vector
+      return normalize(result.embedding.values);
+    }
   } catch (error) {
     console.error("Embedding Generation Error:", error);
     throw error;
