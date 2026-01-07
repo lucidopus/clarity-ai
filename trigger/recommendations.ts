@@ -13,7 +13,7 @@ import Video from "../lib/models/Video";
  */
 export const scheduleRecommendationUpdates = schedules.task({
   id: "schedule-recommendation-updates",
-  cron: "0 */6 * * *", // Every 6 hours at minute 0
+  // cron: "0 */6 * * *", // Every 6 hours at minute 0
   run: async (payload) => {
     logger.info("🕒 Starting scheduled recommendation update...", { time: payload.timestamp });
 
