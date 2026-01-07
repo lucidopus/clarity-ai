@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User, { ILearningPreferences } from '@/lib/models/User';
+import { generateEmbeddings } from '@/lib/embedding';
+import { constructUserProfileString } from '@/lib/service-utils';
 
 type LearningPreferencesPayload = Partial<ILearningPreferences> & Record<string, unknown>;
 
@@ -125,6 +127,31 @@ export async function POST(request: NextRequest) {
         'preferences.general.dataPrivacyLevel': '',
       }
     };
+
+    // --- RE-EMBEDDING LOGIC ---
+    // If we are updating learning preferences, we must regenerate the user's vector profile.
+    // This allows the recommendation engine to stay in sync with their latest goals.
+    try {
+      // 1. Construct the new "User Narrative" string
+      const userProfileString = constructUserProfileString(learningPreferences);
+      console.log('Constructed Profile String:', userProfileString); // DEBUG log
+
+      // 2. Generate the 1536-dim vector
+      // Note: This adds a small latency to the onboarding/save step, 
+      // but saves us from complex background job coordination for single users.
+      if (userProfileString) {
+        const embedding = await generateEmbeddings(userProfileString);
+        (updateOperation.$set as any)['preferences.embedding'] = embedding;
+        console.log(`Generated embedding for User ${decoded.userId}. Vector length: ${embedding.length}`);
+      } else {
+        console.log('Skipping embedding: Profile string is empty.');
+      }
+    } catch (embedError) {
+      console.error('Failed to generate user embedding:', embedError);
+      // We do NOT block the save operation if embedding fails. 
+      // The user still expects their settings to be saved.
+      // We should ideally flag this for a retry job, but for now we log it.
+    }
 
     const user = await User.findByIdAndUpdate(
       decoded.userId,
