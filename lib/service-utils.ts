@@ -154,3 +154,134 @@ export function getServiceCategories(serviceIds: string[]): string[] {
   }
   return Array.from(categories);
 }
+
+// ----------------------------------------------------------------------
+// RECOMMENDATION ENGINE UTILITIES
+// ----------------------------------------------------------------------
+
+import { ILearningPreferences } from '@/lib/models/User';
+
+/**
+ * Helper to map 1-7 scale scores to descriptive semantic phrases.
+ */
+const describeTrait = (score: number | undefined, low: string, high: string): string => {
+  if (score === undefined) return '';
+  if (score >= 5) return high;
+  if (score <= 3) return low;
+  return ''; // Middle range (4) is "average/balanced" and doesn't need strong semantic bias
+};
+
+/**
+ * Constructs a High-Fidelity User Narrative for Vector Embedding.
+ * 
+ * This transforms raw JSON data (including numerical personality scores) into a 
+ * detailed, natural-language autobiography of the learner.
+ * 
+ * Structure:
+ * 1. Introduction & Role (Who am I?)
+ * 2. Psychometric Learning Profile (How do I learn?) - Derived from 1-7 scores
+ * 3. Goals & Aspirations (What do I want?)
+ * 4. Pain Points & Challenges (What is stopping me?)
+ * 5. Preferred Methodology (What works for me?)
+ * 6. Semantic Anchors (Keywords)
+ */
+export const constructUserProfileString = (prefs: Partial<ILearningPreferences>): string => {
+  const parts: string[] = [];
+  
+  // --- SECTION 1: IDENTITY ---
+  if (prefs.role) {
+    parts.push(`I am a ${prefs.role}.`);
+  }
+
+  // --- SECTION 2: PSYCHOMETRIC PROFILE (The "How I Learn" Narrative) ---
+  const traits: string[] = [];
+  
+  if (prefs.personalityProfile) {
+    const p = prefs.personalityProfile;
+    
+    // Conscientiousness: Structure vs Flexibility
+    traits.push(describeTrait(p.conscientiousness, 
+      "I prefer flexible, spontaneous exploration over rigid plans.", 
+      "I am highly disciplined, organized, and prefer structured, step-by-step learning paths."
+    ));
+
+    // Emotional Stability: Resilience vs Support Need
+    traits.push(describeTrait(p.emotionalStability, 
+      "I prefer supportive, encouraging content that breaks down complex topics to reduce anxiety.", 
+      "I am resilient and eager to tackle difficult, complex, and stressful challenges."
+    ));
+
+    // Self Efficacy: Confidence
+    traits.push(describeTrait(p.selfEfficacy, 
+      "I benefit from guided instruction, foundational reviews, and confidence-building exercises.", 
+      "I am a confident self-starter who prefers to jump straight into advanced material."
+    ));
+
+    // Mastery Orientation: Depth vs Breadth/Speed
+    traits.push(describeTrait(p.masteryOrientation, 
+      "I prefer practical, quick summaries over deep theoretical dives.",
+      "My primary motivation is deep, fundamental understanding and mastery of the subject matter."
+    ));
+
+    // Performance Orientation: Grades/Competition vs Growth
+    traits.push(describeTrait(p.performanceOrientation, 
+      "I am motivated by personal growth and curiosity rather than external validation.", 
+      "I am driven by achievements, test scores, competition, and benchmarking my skills against others."
+    ));
+  }
+
+  // Filter out empty strings from "middle" scores and join
+  const personalityNarrative = traits.filter(t => t.length > 0).join(' ');
+  if (personalityNarrative) {
+    parts.push(personalityNarrative);
+  }
+
+  // --- SECTION 3: GOALS (The "What" Positive) ---
+  if (prefs.learningGoalText) {
+    parts.push(`My specific goal is to: ${prefs.learningGoalText}.`);
+  }
+  
+  if (prefs.learningGoals && prefs.learningGoals.length > 0) {
+    parts.push(`I am actively looking to acquire knowledge in: ${prefs.learningGoals.join(', ')}.`);
+  }
+
+  // --- SECTION 4: CHALLENGES (The "What" Negative) ---
+  // Problem-solution matching: phrases like "struggling with" align with "solution to" vectors.
+  if (prefs.learningChallengesText) {
+    parts.push(`However, I am currently struggling with: ${prefs.learningChallengesText}.`);
+  }
+
+  if (prefs.learningChallenges && prefs.learningChallenges.length > 0) {
+    parts.push(`I face specific technical hurdles with: ${prefs.learningChallenges.join(', ')}.`);
+  }
+
+  // --- SECTION 5: METHODOLOGY ---
+  if (prefs.preferredMaterialsRanked && prefs.preferredMaterialsRanked.length > 0) {
+    parts.push(`I learn best when the content is presented as: ${prefs.preferredMaterialsRanked.join(', ')}.`);
+  }
+
+  // Time Availability Context - Helps in recommending shorter vs longer videos
+  if (prefs.dailyTimeMinutes) {
+    if (prefs.dailyTimeMinutes <= 15) {
+      parts.push("I have very limited time (under 15 mins) efficiently.");
+    } else if (prefs.dailyTimeMinutes <= 30) {
+      parts.push("I prefer concise sessions around 30 minutes.");
+    } else if (prefs.dailyTimeMinutes >= 60) {
+      parts.push("I have ample time for deep-dive sessions over an hour.");
+    }
+  }
+  
+  // --- SECTION 6: SEMANTIC ANCHORS ---
+  // A raw bag-of-words dump at the end ensures that even if the narrative drift occurs, 
+  // the core topic keywords are present for high-density matching.
+  const keyTerms = [
+    ...(prefs.learningGoals || []), 
+    ...(prefs.learningChallenges || [])
+  ].filter(Boolean).join(' ');
+  
+  if (keyTerms) {
+    parts.push(`Keywords: ${keyTerms}.`);
+  }
+
+  return parts.join(' ');
+};
