@@ -1,151 +1,169 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Home, 
+  Compass, 
+  Library, 
+  Settings, 
+  ChevronLeft, 
+  Menu, 
+  LogOut,
+  User
+} from 'lucide-react';
 
 interface NavItem {
   name: string;
   href: string;
-  icon: React.ReactNode;
+  icon: React.ElementType;
 }
 
 const navItems: NavItem[] = [
   {
     name: 'Home',
     href: '/dashboard/home',
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-5 h-5"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
-        />
-      </svg>
-    ),
+    icon: Home,
   },
   {
     name: 'Discover',
     href: '/dashboard/discover',
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-5 h-5"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418"
-        />
-      </svg>
-    ),
+    icon: Compass,
   },
   {
     name: 'Library',
     href: '/dashboard/gallery',
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-5 h-5"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-        />
-      </svg>
-    ),
+    icon: Library,
   },
   {
     name: 'Settings',
     href: '/dashboard/settings',
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        className="w-5 h-5"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z"
-        />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
+    icon: Settings,
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const router = useRouter();
 
   return (
-    <aside className="w-64 h-screen bg-card-bg border-r border-border flex flex-col sticky top-0">
-      {/* Logo Section */}
-      <div className="p-6 border-b border-border">
-        <Link href="/" className="block">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">C</span>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">Clarity AI</h1>
-              <p className="text-xs text-muted-foreground">Learn Smarter</p>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`
-                flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
-                ${
-                  isActive
-                    ? 'bg-accent/10 text-accent font-medium'
-                    : 'text-muted-foreground hover:bg-background hover:text-foreground'
-                }
-              `}
-            >
-              <span className={isActive ? 'text-accent' : ''}>{item.icon}</span>
-              <span>{item.name}</span>
+    <motion.aside
+      initial={false}
+      animate={{ width: isCollapsed ? 80 : 256 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      className="bg-card-bg border-r border-border shrink-0 z-40 flex flex-col h-screen sticky top-0"
+    >
+      {/* Sidebar Header: Logo & Toggle */}
+      <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
+         <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center w-full' : ''}`}>
+            <Link href="/" className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity">
+                    <span className="text-white font-bold text-lg">C</span>
+                </div>
+                {!isCollapsed && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="font-bold text-lg text-foreground truncate"
+                    >
+                        Clarity
+                    </motion.div>
+                )}
             </Link>
-          );
-        })}
-      </nav>
-
-      {/* Footer - User Section */}
-      <div className="p-4 border-t border-border space-y-4">
-        <div className="text-xs text-muted-foreground text-center">
-          <p>{user?.email}</p>
-        </div>
+         </div>
+         
+         {!isCollapsed && (
+           <button 
+              onClick={() => setIsCollapsed(true)}
+              className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-background transition-colors cursor-pointer"
+              title="Collapse Sidebar"
+           >
+              <ChevronLeft className="w-4 h-4" />
+           </button>
+         )}
       </div>
-    </aside>
+
+      {/* Navigation Items */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 gap-2 flex flex-col">
+          {/* Expand Button (only visible when collapsed) */}
+          {isCollapsed && (
+             <button 
+              onClick={() => setIsCollapsed(false)}
+              className="w-full flex items-center justify-center py-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg mb-2 cursor-pointer transition-colors"
+              title="Expand Sidebar"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
+
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                title={isCollapsed ? item.name : ''}
+                className={`
+                  relative group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 cursor-pointer
+                  ${isActive 
+                    ? 'bg-accent/10 text-accent font-medium' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
+                  }
+                  ${isCollapsed ? 'justify-center' : ''}
+                `}
+              >
+                <Icon className={`shrink-0 ${isActive ? 'w-5 h-5' : 'w-5 h-5 opacity-70'}`} />
+                
+                {!isCollapsed && (
+                   <span className="truncate text-sm">{item.name}</span>
+                )}
+
+                {/* Active Indicator Line for Collapsed Mode */}
+                {isActive && isCollapsed && (
+                  <motion.div 
+                    layoutId="activeTabIndicator"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-l-full"
+                  />
+                )}
+              </Link>
+            );
+          })}
+      </div>
+      
+      {/* Sidebar Footer: User Section */}
+      <div className="p-3 border-t border-border shrink-0 space-y-2">
+          {!isCollapsed && (
+            <div className="mb-2 px-1">
+               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</h3>
+            </div>
+          )}
+           
+          <div className={`flex flex-col gap-2 ${isCollapsed ? 'items-center' : ''}`}>
+               {/* User Info / Profile Link (optional, currently just shows email in old one) */} 
+               {!isCollapsed && user && (
+                   <div className="px-1 py-2 text-xs text-muted-foreground truncate w-full bg-muted/30 rounded-lg mb-1">
+                       {user.email}
+                   </div>
+               )}
+
+               <button
+                  onClick={logout}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors text-red-500/80 hover:text-red-500 hover:bg-red-500/10 cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
+                  title="Logout"
+               >
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  {!isCollapsed && <span>Logout</span>}
+               </button>
+          </div>
+      </div>
+    </motion.aside>
   );
 }

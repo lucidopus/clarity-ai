@@ -144,7 +144,7 @@ export default function VideoMaterialsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const videoId = params.videoId as string;
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const warningType = searchParams.get('warning');
 
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
@@ -156,9 +156,21 @@ export default function VideoMaterialsPage() {
   const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
   const [bannedDismissed, setBannerDismissed] = useState(false);
   const [autoplayVideos, setAutoplayVideos] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('Loading specific materials...');
 
   // Layout UI State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const messages = [
+      "Distilling key insights from the video...",
+      "Synthesizing complex concepts into study materials...",
+      "Analyzing transcript for core learning objectives...",
+      "Mapping out the knowledge structure...",
+      "Preparing your personalized learning path..."
+    ];
+    setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
+  }, []);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -335,7 +347,7 @@ export default function VideoMaterialsPage() {
      return (
        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-         <p className="mt-4 text-muted-foreground">Loading specific materials...</p>
+         <p className="mt-4 text-muted-foreground">{loadingMessage}</p>
        </div>
      );
   }
@@ -448,9 +460,15 @@ export default function VideoMaterialsPage() {
             )}
             
             <div className={`flex flex-col gap-2 ${isSidebarCollapsed ? 'items-center' : ''}`}>
+                 {!isSidebarCollapsed && user && (
+                     <div className="px-1 py-2 text-xs text-muted-foreground truncate w-full bg-muted/30 rounded-lg mb-1">
+                         {user.email}
+                     </div>
+                 )}
+
                  <button
                     onClick={logout}
-                    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors text-red-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors text-red-500/80 hover:text-red-500 hover:bg-red-500/10 cursor-pointer ${isSidebarCollapsed ? 'justify-center' : ''}`}
                     title="Logout"
                  >
                     <LogOut className="w-4 h-4 shrink-0" />
