@@ -9,6 +9,7 @@ import { MindMap, ServiceType } from '@/lib/models';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { getYouTubeTranscript, extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { generateLearningMaterials } from '@/lib/llm';
+import { generateEmbeddings } from '@/lib/embedding';
 import { GEMINI_MODEL_NAME } from '@/lib/sdk';
 import { resolveClientDay } from '@/lib/date.utils';
 import { calculateLLMCost, calculateApifyCost, getCurrentModelInfo } from '@/lib/cost/calculator';
@@ -338,33 +339,61 @@ export async function POST(request: NextRequest) {
       console.log('⚠️ [VIDEO PROCESS] Skipping learning materials save - LLM generation failed');
     }
 
-    // 8. Update video with status
-    console.log('✅ [VIDEO PROCESS] Step 9: Updating video status...');
-    if (llmError) {
-      // LLM failed but transcript succeeded - partial success
-      // Determine which materials are incomplete
-      const incompleteMaterials = ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'];
+    // 8. Update video with status & embedding
+    console.log('✅ [VIDEO PROCESS] Step 9: Updating video using materials & embedding...');
 
+    if (llmError || !materials) {
+      // CASE: LLM Failed
+      const incompleteMaterials = ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'];
       await Video.findByIdAndUpdate(videoDoc._id, {
-        title: `Video ${videoId}`, // Keep temporary title
+        title: `Video ${videoId}`,
         processingStatus: 'completed_with_warning',
         materialsStatus: 'incomplete',
-        incompleteMaterials: incompleteMaterials, // Store array for later regeneration
+        incompleteMaterials: incompleteMaterials,
         errorType: llmErrorCode,
         errorMessage: llmError instanceof Error ? llmError.message : 'LLM generation failed',
         processedAt: new Date(),
       });
-      console.log('⚠️ [VIDEO PROCESS] Video marked as completed_with_warning with incomplete materials:', incompleteMaterials);
+      console.log('⚠️ [VIDEO PROCESS] Video marked as completed_with_warning (No embeddings generated).');
+    
     } else {
-      // Full success
-      await Video.findByIdAndUpdate(videoDoc._id, {
-        title: materials!.title,
+      // CASE: LLM Succeeded -> Generate Embedding & Save Full Data
+      console.log('🧠 [VIDEO PROCESS] Generating embedding...');
+      let embedding: number[] = [];
+      try {
+        const transcriptSnippet = transcriptResult.text.slice(0, 1000);
+        const embeddingContext = `
+          Title: ${materials.title}
+          Category: ${materials.category}
+          Summary: ${materials.videoSummary}
+          Tags: ${materials.tags.join(', ')}
+          Transcript Start: ${transcriptSnippet}
+        `.trim();
+        
+        const embeddingResult = await generateEmbeddings(embeddingContext);
+        embedding = Array.isArray(embeddingResult) && Array.isArray(embeddingResult[0]) 
+          ? (embeddingResult as number[][])[0] 
+          : (embeddingResult as number[]);
+          
+        console.log(`✅ [VIDEO PROCESS] Generated 1536d embedding`);
+      } catch (embError) {
+        console.error('⚠️ [VIDEO PROCESS] Embedding generation failed (non-critical):', embError);
+      }
+
+      const updatePayload = {
+        title: materials.title,
+        category: materials.category,
+        tags: materials.tags,
+        summary: materials.videoSummary,
+        embedding: embedding,
         processingStatus: 'completed',
         materialsStatus: 'complete',
-        incompleteMaterials: [], // Clear incomplete materials when successful
+        incompleteMaterials: [],
         processedAt: new Date(),
-      });
-      console.log('✅ [VIDEO PROCESS] Video marked as completed with complete materials');
+      };
+
+      await Video.findByIdAndUpdate(videoDoc._id, updatePayload);
+      console.log('✅ [VIDEO PROCESS] Video marked as completed with complete materials and embedding');
     }
 
     // 9. Log video generation activity (only if materials generated)
