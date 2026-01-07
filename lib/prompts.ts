@@ -6,7 +6,9 @@ Generate 7 learning components based on this transcript:
 
 ## Instructions:
 1. Generate a very short, relevant title for the video
-2. Extract key flashcards covering all important concepts. The number should be proportional to the content's density, typically between 5 and 15.
+2. **Select the single best Category** from the provided list that fits the content.
+3. **Generate 5-8 specific Tags** (lowercase keywords) that describe the specific topics (e.g. "next.js", "quantum mechanics").
+4. Extract key flashcards covering all important concepts. The number should be proportional to the content's density, typically between 5 and 15.
 3. Create multiple-choice quiz questions to test understanding of the main topics. The number should be based on the material, usually between and 10 to 15.
 4. Identify 3-5 key moments (video chapters with time markers + summaries)
 5. List 2-3 prerequisite topics needed

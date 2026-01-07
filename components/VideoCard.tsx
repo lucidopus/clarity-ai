@@ -21,6 +21,8 @@ interface VideoCardProps {
   onClick?: (id: string) => void;
   onDelete?: () => void;
   onVisibilityChange?: (visibility: 'private' | 'public') => void;
+  className?: string;
+  variant?: 'standard' | 'compact';
 }
 
 export default function VideoCard({
@@ -36,7 +38,9 @@ export default function VideoCard({
   visibility = 'private',
   onClick,
   onDelete,
-  onVisibilityChange
+  onVisibilityChange,
+  className = '',
+  variant = 'standard'
 }: VideoCardProps) {
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -61,7 +65,7 @@ export default function VideoCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-lg cursor-pointer group relative"
+      className={`bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-lg cursor-pointer group relative ${variant === 'compact' ? 'min-w-[240px] w-[240px]' : ''} ${className}`}
       onClick={() => onClick?.(id)}
     >
       {/* Thumbnail */}

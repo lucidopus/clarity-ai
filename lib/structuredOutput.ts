@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CHATBOT_NAME } from './config';
+import { CHATBOT_NAME, VIDEO_CATEGORIES } from './config';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
@@ -8,6 +8,11 @@ import { zodToJsonSchema } from 'zod-to-json-schema';
  */
 export const LearningMaterialsSchema = z.object({
   title: z.string().describe('Concise, descriptive title for the video'),
+
+  category: z.enum(VIDEO_CATEGORIES).describe('The single best category that fits this video content'),
+
+  tags: z.array(z.string())
+    .describe('5-8 specific specific topic keywords (e.g. "Next.js", "Quantum Physics", "Pomodoro Technique"). Lowercase.'),
 
   flashcards: z.array(
     z.object({
