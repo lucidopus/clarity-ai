@@ -3,9 +3,7 @@ import mongoose from "mongoose";
 import { Redis } from "ioredis";
 import User from "../lib/models/User";
 import Video from "../lib/models/Video";
-
-// We need to define the interfaces locally or import them if they are clean
-// Importing constructs from lib should be fine in v3/v4 workers as code is bundled.
+import { RECOMMENDATION_CONSTANTS } from "../lib/config";
 
 /**
  * Scheduled Task: Trigger Recommendation Update for ALL Users
@@ -94,15 +92,14 @@ export const generateUserRecommendations = task({
       const userVector = user.preferences.embedding;
 
       // 3. Perform Vector Search (Logic A)
-      // We start with a candidate pool of ~150 videos
       const pipeline = [
         {
           $vectorSearch: {
-            index: "vector_index", // Must match the index name created in Atlas
+            index: RECOMMENDATION_CONSTANTS.VECTOR_INDEX_NAME, // "vector_index"
             path: "embedding",
             queryVector: userVector,
-            numCandidates: 1000, // Search specific hyperparameter (HNSW efSearch)
-            limit: 150 // Return top 150
+            numCandidates: RECOMMENDATION_CONSTANTS.VECTOR_SEARCH_CANDIDATES, // 1000
+            limit: RECOMMENDATION_CONSTANTS.CANDIDATE_LIMIT // 150
           }
         },
         {
@@ -137,7 +134,7 @@ export const generateUserRecommendations = task({
           }))
       });
 
-      await redis.set(redisKey, cachePayload, 'EX', 60 * 60 * 24); // 1 day expiry
+      await redis.set(redisKey, cachePayload, 'EX', RECOMMENDATION_CONSTANTS.CACHE_TTL_SECONDS);
 
       return { 
         userId, 
