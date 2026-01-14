@@ -38,9 +38,10 @@ export const getGeminiLlm = () => {
     console.log(`🔌 [SDK] Initializing Google Gemini provider with model: ${GEMINI_MODEL_NAME}`);
     _geminiLlm = new ChatGoogleGenerativeAI({
       model: GEMINI_MODEL_NAME,
-      apiKey: apiKey || 'dummy-key-for-build', // Fallback to avoid crash during build
+      apiKey: apiKey || 'dummy-key-for-build',
       temperature: 0.7,
       streamUsage: true,
+      maxRetries: 3, // Retry transient errors
     });
   }
   return _geminiLlm;

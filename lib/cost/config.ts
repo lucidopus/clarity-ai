@@ -73,6 +73,30 @@ export const costs_per_model: Record<string, ITokenCostConfig> = {
     inputTokensCost: 3.50,
     outputTokensCost: 10.50,
   },
+
+  // Google Gemini 2.5 Flash
+  // Input: $0.075 per million tokens
+  // Output: $0.30 per million tokens
+  'gemini-2.5-flash': {
+    inputTokensCost: 0.075,
+    outputTokensCost: 0.30,
+  },
+
+  // Google Gemini 3 Flash Preview
+  // Input: $0.075 per million tokens
+  // Output: $0.30 per million tokens
+  'gemini-3-flash-preview': {
+    inputTokensCost: 0.075,
+    outputTokensCost: 0.30,
+  },
+  
+  // Google Gemini 1.5 Pro
+  // Input: $3.50 per million tokens
+  // Output: $10.50 per million tokens
+  'gemini-1.5-pro': {
+    inputTokensCost: 3.50,
+    outputTokensCost: 10.50,
+  },
 };
 
 /**
