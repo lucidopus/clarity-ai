@@ -1,0 +1,193 @@
+'use client';
+
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Loader2, Play, AlertCircle, ArrowLeft } from 'lucide-react';
+import Image from 'next/image';
+import Button from '@/components/Button';
+import DiscoverNavbar from '@/components/DiscoverNavbar';
+
+interface VideoResult {
+  _id: string;
+  videoId?: string;
+  title: string;
+  description?: string;
+  summary?: string;
+  thumbnail?: string;
+  channelName?: string;
+  category?: string;
+  duration?: number;
+  tags?: string[];
+  score?: number; // Relevance score
+}
+
+function SearchPageContent() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q');
+  const router = useRouter();
+
+  const [results, setResults] = useState<VideoResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query) {
+       setLoading(false);
+       return;
+    }
+
+    async function fetchResults() {
+      try {
+        setLoading(true);
+        setError(null);
+        // Request Semantic Search
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query!)}&mode=semantic`);
+        const data = await res.json();
+
+        if (data.success) {
+          setResults(data.results || []);
+        } else {
+          setError(data.message || 'Failed to search videos.');
+        }
+      } catch (err) {
+        console.error(err);
+        setError('Something went wrong. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchResults();
+  }, [query]);
+
+  if (!query) {
+      return (
+          <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-4">
+              <h2 className="text-xl font-bold mb-2">Search for anything</h2>
+              <p className="text-muted-foreground">Type something in the global search bar to get started.</p>
+          </div>
+      );
+  }
+
+  return (
+    <div className="min-h-screen pb-20">
+      <div className="mb-6">
+        <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-2 pl-0 text-muted-foreground hover:text-foreground"
+            onClick={() => router.push('/dashboard/discover')}
+        >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Discover
+        </Button>
+      </div>
+
+      <DiscoverNavbar 
+        title="Search Results"
+        initialQuery={query || ''}
+      />
+
+      <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          
+          {loading && (
+              <div className="flex flex-col items-center justify-center py-20">
+                  <Loader2 className="w-10 h-10 animate-spin text-accent mb-4" />
+                  <p className="text-muted-foreground animate-pulse">Analyzing semantics...</p>
+              </div>
+          )}
+
+          {error && (
+             <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3 text-destructive">
+                 <AlertCircle className="w-5 h-5" />
+                 <p>{error}</p>
+             </div>
+          )}
+
+          {!loading && !error && results.length === 0 && (
+              <div className="text-center py-20">
+                  <p className="text-xl font-semibold mb-2">No relevant videos found.</p>
+                  <p className="text-muted-foreground">Try searching for broader concepts like "Python" or "History".</p>
+              </div>
+          )}
+
+          {!loading && results.map((video) => (
+              <div 
+                key={video._id} 
+                className="group flex flex-col sm:flex-row gap-4 sm:gap-6 bg-card-bg border border-border p-4 rounded-xl hover:border-accent/40 hover:shadow-lg transition-all duration-300 cursor-pointer"
+                onClick={() => router.push(`/generations/${video.videoId || video._id}`)}
+              >
+                  {/* Thumbnail / Left */}
+                  <div className="relative w-full sm:w-[260px] aspect-video shrink-0 rounded-lg overflow-hidden bg-secondary/10">
+                      {video.thumbnail ? (
+                          <Image
+                              src={video.thumbnail}
+                              alt={video.title}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                      ) : (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                              <Play className="w-10 h-10 text-muted-foreground/30" />
+                          </div>
+                      )}
+                      
+                      {/* Duration Badge */}
+                      {video.duration ? (
+                           <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-white text-[10px] font-bold rounded">
+                               {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                           </div>
+                      ) : null}
+                  </div>
+
+                  {/* Content / Right */}
+                  <div className="flex flex-col flex-1 min-w-0 py-1">
+                      <div className="flex items-start justify-between gap-4">
+                          <h3 className="text-lg font-bold text-foreground leading-snug line-clamp-2 group-hover:text-accent transition-colors">
+                              {video.title}
+                          </h3>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground font-medium">
+                          {video.channelName && (
+                              <span className="hover:text-foreground transition-colors">{video.channelName}</span>
+                          )}
+                          <span>•</span>
+                          <span className="capitalize">{video.category || 'General'}</span>
+                           {video.score && (
+                              <>
+                                <span>•</span>
+                                <span className="text-accent/80 font-mono text-[10px]">
+                                    Match: {(video.score * 100).toFixed(0)}%
+                                </span>
+                              </>
+                          )}
+                      </div>
+
+                      <p className="mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                          {video.summary || video.description || "No description available."}
+                      </p>
+
+                      <div className="mt-auto pt-4 flex flex-wrap gap-2">
+                          {video.tags?.slice(0, 3).map(tag => (
+                              <span key={tag} className="px-2 py-1 bg-secondary/30 text-secondary-foreground text-[10px] rounded-full font-medium">
+                                  #{tag}
+                              </span>
+                          ))}
+                      </div>
+                  </div>
+              </div>
+          ))}
+
+      </div>
+    </div>
+  );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen grid place-items-center"><Loader2 className="animate-spin" /></div>}>
+            <SearchPageContent />
+        </Suspense>
+    );
+}

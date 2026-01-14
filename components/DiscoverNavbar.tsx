@@ -9,11 +9,12 @@ import { LogOut, Search, Command } from 'lucide-react';
 interface DiscoverNavbarProps {
   title?: string;
   subtitle?: string;
+  initialQuery?: string;
 }
 
-export default function DiscoverNavbar({ title = "Discover", subtitle }: DiscoverNavbarProps) {
+export default function DiscoverNavbar({ title = "Discover", subtitle, initialQuery }: DiscoverNavbarProps) {
   const { logout } = useAuth();
-
+  
   const openGlobalSearch = () => {
     window.dispatchEvent(new Event('open-global-search'));
   };
@@ -45,10 +46,12 @@ export default function DiscoverNavbar({ title = "Discover", subtitle }: Discove
         {/* Sleek Search Trigger */}
         <div 
           onClick={openGlobalSearch}
-          className="group relative flex items-center gap-3 px-4 py-2 w-64 bg-secondary/10 hover:bg-secondary/20 border border-transparent hover:border-border rounded-full cursor-pointer transition-all duration-200"
+          className={`group relative flex items-center gap-3 px-4 py-2 w-64 ${initialQuery ? 'bg-accent/10 border-accent/20' : 'bg-secondary/10 hover:bg-secondary/20 border-transparent'} border hover:border-border rounded-full cursor-pointer transition-all duration-200`}
         >
-          <Search className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">Search...</span>
+          <Search className={`w-4 h-4 ${initialQuery ? 'text-accent' : 'text-muted-foreground'} group-hover:text-foreground transition-colors`} />
+          <span className={`text-sm ${initialQuery ? 'text-foreground font-medium truncate' : 'text-muted-foreground'} group-hover:text-foreground transition-colors`}>
+            {initialQuery || 'Search...'}
+          </span>
           
           <div className="absolute right-3 flex items-center gap-1">
              <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded bg-background/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
