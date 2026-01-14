@@ -1,8 +1,8 @@
-import { GoogleGenerativeAI, TaskType } from "@google/generative-ai";
+import { GoogleGenerativeAI, TaskType, GenerativeModel } from "@google/generative-ai";
 
-let model: any = null;
+let model: GenerativeModel | null = null;
 
-function getModel() {
+function getModel(): GenerativeModel {
   if (!model) {
     if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -27,6 +27,7 @@ const normalize = (vec: number[]) => {
  * Uses 'gemini-embedding-001' with 1536 dimensions.
  * Handles auto-routing to 'embedContent' or 'batchEmbedContents'.
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export async function generateEmbeddings(input: string | string[]): Promise<number[] | number[][]> {
   try {
     if (Array.isArray(input)) {
@@ -36,7 +37,7 @@ export async function generateEmbeddings(input: string | string[]): Promise<numb
           content: { role: "user", parts: [{ text }] },
           taskType: TaskType.RETRIEVAL_DOCUMENT, // Optimize for retrieval
           outputDimensionality: EMBEDDING_DIMENSIONS,
-        } as any)),
+        })),
       });
       
       // Normalize all vectors
@@ -44,7 +45,7 @@ export async function generateEmbeddings(input: string | string[]): Promise<numb
     } else {
       // SINGLE MODE
       const result = await getModel().embedContent({
-        content: { role: "user", parts: [{ text: input }] },
+        content: { role: "user", parts: [{ text: input as string }] },
         taskType: TaskType.RETRIEVAL_DOCUMENT,
         outputDimensionality: EMBEDDING_DIMENSIONS,
       } as any);
@@ -57,3 +58,4 @@ export async function generateEmbeddings(input: string | string[]): Promise<numb
     throw error;
   }
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
