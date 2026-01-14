@@ -186,14 +186,14 @@ export default function VideoCard({
             </div>
           )}
 
-          {flashcardCount && flashcardCount > 0 && (
+          {(flashcardCount || 0) > 0 && (
             <div className="inline-flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{flashcardCount} flashcards</span>
             </div>
           )}
 
-          {quizCount && quizCount > 0 && (
+          {(quizCount || 0) > 0 && (
             <div className="inline-flex items-center gap-1.5">
               <HelpCircle className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{quizCount} quizzes</span>

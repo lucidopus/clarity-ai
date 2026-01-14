@@ -36,6 +36,7 @@ export interface IGeneralPreferences {
 export interface IUserPreferences {
   learning?: ILearningPreferences;
   general?: IGeneralPreferences;
+  embedding?: number[];
 
   // Flat fields for onboarding flow compatibility (will be mapped to learning.*)
   role?: 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator';
@@ -97,6 +98,13 @@ const UserSchema: Schema = new Schema({
       },
       preferredMaterialsRanked: [{ type: String }],
       dailyTimeMinutes: { type: Number, min: 0 },
+    },
+    // The vector representation of the user's learning profile (Role + Goals + Challenges)
+    // 1536 dimensions (compatible with text-embedding-3-small or gemini-embedding-001)
+    embedding: {
+      type: [Number],
+      select: false, // Don't return by default for performance
+      index: 'vector', // Atlas Vector Search index will be needed
     },
 
     // General app preferences (from Settings page)
