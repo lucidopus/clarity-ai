@@ -3,8 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Command, ArrowRight, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { Search, X, Command, ArrowRight, Sparkles, Loader2, PlayCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface GlobalSearchProps {
@@ -12,18 +11,24 @@ interface GlobalSearchProps {
   onClose: () => void;
 }
 
-const SUGGESTIONS = [
-  { id: '1', title: 'Introduction to React Hooks', type: 'video' },
-  { id: '2', title: 'Advanced Machine Learning Concepts', type: 'video' },
-  { id: '3', title: 'History of the Roman Empire', type: 'video' },
-  { id: '4', title: 'Calculus I: Limits and Derivatives', type: 'video' },
-  { id: '5', title: 'Effective Public Speaking', type: 'video' },
-];
+interface SearchResult {
+  _id: string;
+  videoId: string;
+  title: string;
+  channelName?: string;
+  thumbnail?: string;
+  duration?: number;
+  category?: string;
+}
 
 export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [query, setQuery] = useState('');
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,7 +48,6 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
              e.preventDefault();
              onClose();
          }
-         // If not open, the parent (Layout/Navbar) handles opening via its own listener
       }
     };
 
@@ -59,14 +63,45 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
       }, 100);
     } else {
         setQuery(''); // Reset on close
+        setResults([]);
     }
   }, [isOpen]);
 
-  if (!mounted) return null;
+  // Debounced Search Logic
+  useEffect(() => {
+    if (query.trim() === '') {
+        setResults([]);
+        setLoading(false);
+        return;
+    }
 
-  const filtered = query.trim() === '' 
-    ? [] 
-    : SUGGESTIONS.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
+    setLoading(true);
+
+    if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (data.success) {
+                setResults(data.results);
+            }
+        } catch (error) {
+            console.error("Search failed", error);
+        } finally {
+            setLoading(false);
+        }
+    }, 400); // 400ms delay
+
+    return () => {
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, [query]);
+
+
+  if (!mounted) return null;
 
   const searchContent = (
     <AnimatePresence>
@@ -94,7 +129,11 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               
               {/* Header / Input Area */}
               <div className="flex items-center px-8 py-6 border-b border-border/50 gap-5 transition-colors focus-within:bg-accent/5">
-                <Search className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
+                {loading ? (
+                    <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                ) : (
+                    <Search className="w-6 h-6 text-muted-foreground" strokeWidth={2} />
+                )}
                 <input
                   ref={inputRef}
                   type="text"
@@ -126,40 +165,53 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                          </div>
                          <h3 className="text-lg font-semibold text-foreground mb-1">Focus Mode</h3>
                          <p className="text-sm text-muted-foreground max-w-xs">
-                             Search for videos, topics, or paste a YouTube link to generate new materials immediately.
+                             Start typing to search our library of public videos.
                          </p>
                      </div>
                  ) : (
                     <div className="py-2 px-1">
-                        {filtered.length > 0 ? (
+                        {results.length > 0 ? (
                             <div className="space-y-1">
-                                <h3 className="text-xs font-bold text-muted-foreground/70 px-4 py-2 uppercase tracking-widest text-[10px]">Suggestions</h3>
-                                {filtered.map((item) => (
+                                <h3 className="text-xs font-bold text-muted-foreground/70 px-4 py-2 uppercase tracking-widest text-[10px]">Results</h3>
+                                {results.map((item) => (
                                     <button
-                                        key={item.id}
+                                        key={item._id}
                                         onClick={() => {
                                             onClose();
-                                            console.log(`Navigating to ${item.id}`);
+                                            router.push(`/generations/${item.videoId || item._id}`);
                                         }}
-                                        className="w-full text-left flex items-center justify-between px-4 py-4 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-200 group border border-transparent hover:border-accent/10 cursor-pointer"
+                                        className="w-full text-left flex items-center justify-between px-4 py-3 rounded-xl hover:bg-accent/10 hover:text-accent transition-all duration-200 group border border-transparent hover:border-accent/10 cursor-pointer"
                                     >
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center shadow-xs group-hover:shadow-md transition-shadow">
-                                                <Search className="w-5 h-5 text-muted-foreground group-hover:text-accent" />
+                                            <div className="w-12 h-12 shrink-0 rounded-lg bg-secondary/20 overflow-hidden relative shadow-sm">
+                                                {item.thumbnail ? (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={item.thumbnail} alt="" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center">
+                                                        <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div>
-                                                <span className="text-base font-medium block text-foreground group-hover:text-accent">{item.title}</span>
-                                                <span className="text-xs text-muted-foreground capitalize group-hover:text-accent/70">{item.type}</span>
+                                            <div className="min-w-0">
+                                                <span className="text-base font-medium block text-foreground group-hover:text-accent truncate pr-4">{item.title}</span>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <span className="capitalize text-accent/70 font-medium">{item.category || 'Video'}</span>
+                                                    <span>•</span>
+                                                    <span>{item.channelName || 'Clarity'}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                        <ArrowRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 text-accent" />
+                                        <ArrowRight className="w-5 h-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 text-accent shrink-0" />
                                     </button>
                                 ))}
                             </div>
                         ) : (
-                            <div className="py-12 text-center">
-                                <p className="text-muted-foreground text-sm">No results found for <span className="text-foreground font-medium">"{query}"</span></p>
-                            </div>
+                            !loading && (
+                                <div className="py-12 text-center">
+                                    <p className="text-muted-foreground text-sm">No videos found for <span className="text-foreground font-medium">"{query}"</span></p>
+                                </div>
+                            )
                         )}
                     </div>
                  )}
@@ -178,7 +230,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                      </span>
                  </div>
                  <div className="flex items-center gap-2 opacity-70">
-                     <span>ProTip: Try typing "Machine Learning" or "LLMs" to get started. </span>
+                     <span>ProTip: Search for keywords like "Python" or "Design".</span>
                  </div>
               </div>
             </div>
