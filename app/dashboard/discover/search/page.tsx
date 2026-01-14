@@ -135,7 +135,7 @@ function SearchPageContent() {
                       {/* Duration Badge */}
                       {video.duration ? (
                            <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 text-white text-[10px] font-bold rounded">
-                               {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                               {Math.floor((video.duration || 0) / 60)}:{Math.round((video.duration || 0) % 60).toString().padStart(2, '0')}
                            </div>
                       ) : null}
                   </div>

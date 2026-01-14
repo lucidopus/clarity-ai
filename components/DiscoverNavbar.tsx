@@ -54,9 +54,11 @@ export default function DiscoverNavbar({ title = "Discover", subtitle, initialQu
           </span>
           
           <div className="absolute right-3 flex items-center gap-1">
-             <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded bg-background/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-               <span className="text-xs">⌘</span>K
-             </kbd>
+             {!initialQuery && (
+               <kbd className="hidden md:inline-flex h-5 items-center gap-1 rounded bg-background/50 px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                 <span className="text-xs">⌘</span>K
+               </kbd>
+             )}
           </div>
         </div>
 

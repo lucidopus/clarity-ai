@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Command, ArrowRight, Sparkles, Loader2, PlayCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface GlobalSearchProps {
   isOpen: boolean;
@@ -55,17 +55,30 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Focus input when opened
+  const searchParams = useSearchParams();
+  const urlQuery = searchParams.get('q');
+
+  // Focus input when opened & Pre-fill
   useEffect(() => {
     if (isOpen) {
+      // If we are opening and have a URL query, pre-fill it IF the local query is empty
+      // This allows "editing" the current search
+      if (urlQuery && query === '') {
+          setQuery(urlQuery);
+      }
+      
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
     } else {
-        setQuery(''); // Reset on close
-        setResults([]);
+        // Only reset if we are NOT on a search page, or maybe just don't reset at all?
+        // Resetting is safer for "fresh" searches from other pages.
+        if (!urlQuery) {
+            setQuery(''); 
+            setResults([]);
+        }
     }
-  }, [isOpen]);
+  }, [isOpen, urlQuery]);
 
   // Debounced Search Logic
   useEffect(() => {
