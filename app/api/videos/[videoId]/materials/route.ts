@@ -51,40 +51,48 @@ export async function GET(
     }
 
     // Fetch video from database using YouTube videoId
-    const video = await Video.findOne({
-      videoId: videoId,
-      userId: decoded.userId
-    });
+    // Fetch video first to determine ownership and visibility
+    const video = await Video.findOne({ videoId });
+
     if (!video) {
-      return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // Fetch learning materials (chapters and prerequisites)
+    // Authorization Check: Must be owner OR video is public
+    const isOwner = video.userId.toString() === decoded.userId;
+    const isPublic = video.visibility === 'public';
+
+    if (!isOwner && !isPublic) {
+        return NextResponse.json({ error: 'Unauthorized access to private video' }, { status: 403 });
+    }
+
+    // Material Owner: Materials belong to the video creator
+    const ownerId = video.userId;
+
+    // Fetch materials using the OWNER ID
     const learningMaterial = await LearningMaterial.findOne({
-      videoId: videoId, // YouTube video ID
-      userId: decoded.userId
+      videoId: videoId, 
+      userId: ownerId
     });
 
-    // Fetch flashcards
     const flashcards = await Flashcard.find({
-      videoId: videoId, // YouTube video ID
-      userId: decoded.userId
+      videoId: videoId, 
+      userId: ownerId
     });
 
-    // Fetch quizzes
     const quizzes = await Quiz.find({
-      videoId: videoId, // YouTube video ID
-      userId: decoded.userId
+      videoId: videoId, 
+      userId: ownerId
     });
 
-    // Fetch user progress
+    // Fetch user progress using the VIEWER ID (decoded.userId)
     const progress = await Progress.findOne({
-      videoId: videoId, // YouTube video ID
-      userId: decoded.userId
+      videoId: videoId, 
+      userId: decoded.userId 
     });
 
-    // Fetch mind map
-    const mindMap = await MindMap.findOne({ videoId: videoId, userId: decoded.userId });
+    // Fetch mind map (Owner's)
+    const mindMap = await MindMap.findOne({ videoId: videoId, userId: ownerId });
 
     // Determine which materials are available/generated
     const hasMaterials = {

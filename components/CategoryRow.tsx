@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import VideoCard from './VideoCard';
 import { motion } from 'framer-motion';
 
-// Temporary define IVideo here if not global yet, but sticking to props mostly
 interface VideoItem {
-  _id: string; // or string
+  _id: string; 
+  videoId?: string; // YouTube ID
   title: string;
   channelName?: string;
   thumbnail?: string;
@@ -15,16 +16,16 @@ interface VideoItem {
   createdAt: string | Date;
   flashcardCount?: number;
   quizCount?: number;
-  // ... other props
 }
 
 interface CategoryRowProps {
   title: string;
-  items: any[]; // Using any[] to be flexible with the Video interface for placeholder phase
-  categoryId: string; // for analytics
+  items: any[];
+  categoryId: string;
 }
 
 export default function CategoryRow({ title, items, categoryId }: CategoryRowProps) {
+  const router = useRouter(); // Initialize router
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -42,7 +43,7 @@ export default function CategoryRow({ title, items, categoryId }: CategoryRowPro
     if (rowRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
         setShowLeftArrow(scrollLeft > 0);
-        setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10); // 10px buffer
+        setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
     }
   };
 
@@ -88,21 +89,23 @@ export default function CategoryRow({ title, items, categoryId }: CategoryRowPro
                         id={video._id}
                         title={video.title}
                         channelName={video.channelName || 'Unknown Channel'}
-                        thumbnailUrl={video.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60'} // Fallback
-                        duration={video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : '10:00'}
+                        thumbnailUrl={video.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60'}
+                        duration={video.duration ? `${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}` : '10:00'}
                         createdAt={video.createdAt}
                         flashcardCount={video.flashcardCount || 0}
                         quizCount={video.quizCount || 0}
                         onClick={() => {
-                            console.log(`Clicked video ${video._id} in category ${categoryId}`);
-                            // TODO: Add ActivityLog call here
+                            // Prefer YouTube ID for navigation, fallback to Mongo ID
+                            const targetId = video.videoId || video._id;
+                            console.log(`Navigating to video ${targetId}`);
+                            router.push(`/generations/${targetId}`);
                         }}
                         className="w-full"
                         variant="standard" 
                     />
                  </div>
              ))}
-             {/* Spacer at the end for comfortable scrolling */}
+             {/* Spacer */}
              <div className="w-4 sm:w-8 flex-shrink-0" />
           </div>
       </div>
