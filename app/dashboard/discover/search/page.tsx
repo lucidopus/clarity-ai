@@ -71,21 +71,9 @@ function SearchPageContent() {
 
   return (
     <div className="min-h-screen pb-20">
-      <div className="mb-6">
-        <Button 
-            variant="ghost" 
-            size="sm" 
-            className="gap-2 pl-0 text-muted-foreground hover:text-foreground"
-            onClick={() => router.push('/dashboard/discover')}
-        >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Discover
-        </Button>
-      </div>
-
       <DiscoverNavbar 
-        title="Search Results"
         initialQuery={query || ''}
+        showBackButton={true}
       />
 
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
