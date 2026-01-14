@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
 
     console.log(`User ${userId}: ${candidates.length} candidates -> ${freshCandidates.length} fresh (removed ${candidates.length - freshCandidates.length} watched)`);
 
-    // 4. Logic C: Categorization & Row Population
 
     // 4. Logic C: Hydration & Smart Categorization 
 
@@ -99,22 +98,26 @@ export async function GET(request: NextRequest) {
             .sort((a: any, b: any) => b.score - a.score);
         
         if (matches.length > 0) {
+            const selectedVideos = matches.slice(0, limit);
+            selectedVideos.forEach((v: any) => usedVideoIds.add(v.videoId)); // Track used IDs
+
             rows.push({
                 name,
-                videos: matches.slice(0, limit),
+                videos: selectedVideos,
                 weight: baseWeight
             });
-            // We do NOT strictly dedup (commented out) to ensure fullness, 
-            // but for specific highly-constrained rows we might want to?
-            // Let's stick to allowing duplicates for maximum feed density.
         }
     };
 
     // --- ROW 1: "For You" ---
     // Always top priority
+    // Always top priority
+    const forYouVideos = richCandidates.sort((a: any, b: any) => b.score - a.score).slice(0, 10);
+    forYouVideos.forEach((v: any) => usedVideoIds.add(v.videoId));
+    
     rows.push({
         name: "For You",
-        videos: richCandidates.sort((a: any, b: any) => b.score - a.score).slice(0, 10),
+        videos: forYouVideos,
         weight: 1000 // Ensure #1
     });
 
