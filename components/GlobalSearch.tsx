@@ -140,6 +140,12 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                   placeholder="What do you want to learn today?"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                      if (e.key === 'Enter' && query.trim() !== '') {
+                          onClose();
+                          router.push(`/dashboard/discover/search?q=${encodeURIComponent(query)}`);
+                      }
+                  }}
                   className="flex-1 bg-transparent border-none outline-none text-xl font-medium text-foreground placeholder:text-muted-foreground/40 h-10"
                   autoComplete="off"
                 />
@@ -159,20 +165,14 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               {/* Results Area */}
               <div className="overflow-y-auto custom-scrollbar p-3">
                  {query.trim() === '' ? (
-                     <div className="py-16 flex flex-col items-center justify-center text-center">
-                         <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-accent/20 to-accent/5 flex items-center justify-center mb-5 shadow-inner">
-                             <Sparkles className="w-8 h-8 text-accent" strokeWidth={1.5} />
-                         </div>
-                         <h3 className="text-lg font-semibold text-foreground mb-1">Focus Mode</h3>
-                         <p className="text-sm text-muted-foreground max-w-xs">
-                             Start typing to search our library of public videos.
-                         </p>
+                     <div className="py-16 flex flex-col items-center justify-center text-center opacity-60">
+                         <p className="text-sm font-medium">Type to search...</p>
                      </div>
                  ) : (
                     <div className="py-2 px-1">
                         {results.length > 0 ? (
                             <div className="space-y-1">
-                                <h3 className="text-xs font-bold text-muted-foreground/70 px-4 py-2 uppercase tracking-widest text-[10px]">Results</h3>
+                                <h3 className="text-xs font-bold text-muted-foreground/70 px-4 py-2 uppercase tracking-widest text-[10px]">Suggestions</h3>
                                 {results.map((item) => (
                                     <button
                                         key={item._id}
@@ -208,9 +208,17 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                             </div>
                         ) : (
                             !loading && (
-                                <div className="py-12 text-center">
-                                    <p className="text-muted-foreground text-sm">No videos found for <span className="text-foreground font-medium">"{query}"</span></p>
-                                </div>
+                                <button 
+                                    onClick={() => {
+                                        onClose();
+                                        router.push(`/dashboard/discover/search?q=${encodeURIComponent(query)}`);
+                                    }}
+                                    className="w-full py-12 text-center group cursor-pointer"
+                                >
+                                    <p className="text-muted-foreground text-sm group-hover:text-foreground transition-colors">
+                                        <span className="font-medium text-accent">Press Enter</span> to search.
+                                    </p>
+                                </button>
                             )
                         )}
                     </div>
@@ -221,16 +229,16 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
               <div className="bg-muted/20 border-t border-border/50 px-6 py-3 flex justify-between items-center text-xs text-muted-foreground backdrop-blur-sm">
                  <div className="flex items-center gap-4">
                      <span className="flex items-center gap-1.5">
-                         <Command className="w-3.5 h-3.5" />
-                         <span className="font-medium">Navigate</span>
+                         <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded border border-border/50">↵</kbd>
+                         <span className="font-medium">Search</span>
                      </span>
                      <span className="flex items-center gap-1.5">
-                         <ArrowRight className="w-3.5 h-3.5" />
-                         <span className="font-medium">Open</span>
+                         <kbd className="font-mono bg-muted px-1.5 py-0.5 rounded border border-border/50">ESC</kbd>
+                         <span className="font-medium">Close</span>
                      </span>
                  </div>
                  <div className="flex items-center gap-2 opacity-70">
-                     <span>ProTip: Search for keywords like "Python" or "Design".</span>
+                     <span>ProTip: Describe what you want to learn, e.g. "How to build a startup".</span>
                  </div>
               </div>
             </div>
