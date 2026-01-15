@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User, { ILearningPreferences } from '@/lib/models/User';
 import { generateEmbeddings } from '@/lib/embedding';
 import { constructUserProfileString } from '@/lib/service-utils';
+import { generateUserRecommendations } from '@/trigger/recommendations';
 
 type LearningPreferencesPayload = Partial<ILearningPreferences> & Record<string, unknown>;
 
@@ -153,6 +154,8 @@ export async function POST(request: NextRequest) {
       // We should ideally flag this for a retry job, but for now we log it.
     }
 
+
+
     const user = await User.findByIdAndUpdate(
       decoded.userId,
       updateOperation,
@@ -161,6 +164,20 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+    }
+
+    // --- TRIGGER RECOMMENDATION UPDATE ---
+    // Now that the user has a new embedding/preferences, we immediately trigger 
+    // the recommendation engine so they see content right away (instead of waiting for the 6h cron).
+    try {
+       await generateUserRecommendations.trigger({
+         userId: user._id.toString(),
+         username: user.username || 'User' 
+       });
+       console.log(`🚀 Triggered immediate recommendation update for ${user.username}`);
+    } catch (triggerError) {
+       console.error('Failed to trigger recommendation task:', triggerError);
+       // Non-blocking: we still return success to the UI
     }
 
     return NextResponse.json({
