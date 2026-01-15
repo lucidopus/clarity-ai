@@ -51,6 +51,16 @@ export default function GalleryPage() {
     videoId: '',
     newVisibility: 'private',
   });
+  const [deleteDialog, setDeleteDialog] = useState<{
+    show: boolean;
+    videoId: string;
+    videoTitle: string;
+  }>({
+    show: false,
+    videoId: '',
+    videoTitle: '',
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch videos on mount
   useEffect(() => {
@@ -174,6 +184,40 @@ export default function GalleryPage() {
       }
   };
 
+  const handleDelete = (videoId: string, videoTitle: string) => {
+    setDeleteDialog({
+      show: true,
+      videoId,
+      videoTitle,
+    });
+  };
+
+  const confirmDeleteVideo = async () => {
+    const { videoId } = deleteDialog;
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/videos/${videoId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete video');
+      }
+
+      // Remove from local state
+      setVideos(videos.filter(v => v.id !== videoId));
+      setDeleteDialog({ show: false, videoId: '', videoTitle: '' });
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      const message = error instanceof Error ? error.message : 'Failed to delete video';
+      setErrorDialog({ show: true, message });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredVideos = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch = (video: Video) =>
@@ -286,6 +330,7 @@ export default function GalleryPage() {
               quizCount={video.quizCount}
               visibility={video.visibility}
               onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
+              onDelete={() => handleDelete(video.id, video.title)}
               onClick={handleVideoClick}
             />
           ))}
@@ -325,6 +370,18 @@ export default function GalleryPage() {
             : "Making this video private will remove it from the Discover feed. Only you will be able to see it."
         }
         confirmText={confirmDialog.newVisibility === 'public' ? 'Make Public' : 'Make Private'}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        isOpen={deleteDialog.show}
+        onClose={() => setDeleteDialog({ show: false, videoId: '', videoTitle: '' })}
+        onConfirm={confirmDeleteVideo}
+        type="confirm"
+        variant="error"
+        title="Delete Video?"
+        message={`This will permanently delete "${deleteDialog.videoTitle}" and all associated data including flashcards, quizzes, notes, and progress. This action cannot be undone.`}
+        confirmText={isDeleting ? 'Deleting...' : 'Delete'}
       />
     </div>
   );

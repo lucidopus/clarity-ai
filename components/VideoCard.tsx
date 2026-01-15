@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
 
-import { Clock, Layers, HelpCircle, User, Stars, Globe, Share2 } from 'lucide-react';
+import { Clock, Layers, HelpCircle, User, Stars, Globe, Share2, Trash2 } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -170,9 +170,9 @@ export default function VideoCard({
                   onDelete();
                 }}
                 aria-label="Delete video"
-                className="px-2.5 h-8 rounded-full bg-red-500/90 hover:bg-red-500 text-white text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white transition-all duration-200 cursor-pointer"
               >
-                Delete
+                <Trash2 className="w-4 h-4" />
               </button>
             )}
           </div>
