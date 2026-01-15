@@ -27,7 +27,7 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
         exit={{ opacity: 0, x: 10 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="fixed right-6 z-[60] group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
+        className="fixed top-10 right-6 z-[60] group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
         aria-label="View video summary"
       >
         <BookOpen className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
