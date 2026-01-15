@@ -1,4 +1,10 @@
-import { task, schedules, logger, wait } from "@trigger.dev/sdk";
+import { task, schedules, logger, wait, auth } from "@trigger.dev/sdk";
+
+// Explicitly configure authentication to ensure client-side triggering works
+auth.configure({
+  secretKey: process.env.TRIGGER_SECRET_KEY,
+});
+
 import mongoose from "mongoose";
 import { Redis } from "ioredis";
 import User from "../lib/models/User";
