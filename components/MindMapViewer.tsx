@@ -42,6 +42,7 @@ interface MindMapViewerProps {
     label?: string;
     type: 'hierarchy' | 'relation' | 'dependency';
   }>;
+  readOnly?: boolean;
 }
 
 const nodeTypes = {
@@ -52,7 +53,7 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
-export default function MindMapViewer({ videoId, nodes: initialNodes, edges: initialEdges }: MindMapViewerProps) {
+export default function MindMapViewer({ videoId, nodes: initialNodes, edges: initialEdges, readOnly = false }: MindMapViewerProps) {
   const [layoutDirection, setLayoutDirection] = useState<'TB' | 'LR'>('TB');
   const [isSaving, setIsSaving] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -343,7 +344,8 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
             size="sm"
             onClick={handleAddNode}
             className="flex items-center gap-2"
-            title="Add a new concept to the mind map"
+            title={readOnly ? "You can't edit shared content" : 'Add a new concept to the mind map'}
+            disabled={readOnly}
           >
             <Plus className="w-4 h-4" />
             Add Node
@@ -352,9 +354,9 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
              variant="primary"
              size="sm"
              onClick={handleSave}
-             disabled={isSaving}
+             disabled={isSaving || readOnly}
              className="flex items-center gap-2"
-             title="Save the current state of your mind map"
+             title={readOnly ? "You can't save changes to shared content" : 'Save the current state of your mind map'}
            >
              <Save className="w-4 h-4" />
              {isSaving ? 'Saving...' : 'Save Changes'}

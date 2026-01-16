@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import { LearningMaterial, Solution, Video } from '@/lib/models';
+import { LearningMaterial, Solution, Video, User } from '@/lib/models';
 import Note from '@/lib/models/Note';
 
 interface DecodedToken {
@@ -16,6 +16,7 @@ interface DecodedToken {
 /**
  * GET /api/casestudy/[videoId]/[caseStudyId]
  * Fetch case study data including problem, video info, notes, and existing solution
+ * Supports public video access with read-only mode for non-owners
  */
 export async function GET(
   request: NextRequest,
@@ -34,10 +35,34 @@ export async function GET(
 
     const { videoId, caseStudyId } = await params;
 
-    // 2. Fetch learning material to get the problem
+    // 2. Fetch video first to check ownership and visibility
+    const video = await Video.findOne({ videoId });
+
+    if (!video) {
+      return NextResponse.json(
+        { error: 'Video not found' },
+        { status: 404 }
+      );
+    }
+
+    // 3. Authorization: Must be owner OR video is public
+    const isOwner = video.userId.toString() === decoded.userId;
+    const isPublic = video.visibility === 'public';
+
+    if (!isOwner && !isPublic) {
+      return NextResponse.json(
+        { error: 'Unauthorized access to private video' },
+        { status: 403 }
+      );
+    }
+
+    const isReadOnly = !isOwner;
+    const ownerId = video.userId;
+
+    // 4. Fetch learning material using OWNER's ID (not viewer's)
     const learningMaterial = await LearningMaterial.findOne({
       videoId,
-      userId: decoded.userId,
+      userId: ownerId,
     });
 
     if (!learningMaterial) {
@@ -47,7 +72,7 @@ export async function GET(
       );
     }
 
-    // 3. Find the specific problem
+    // 5. Find the specific problem
     const problem = learningMaterial.realWorldProblems?.find(
       (p: { id: string }) => p.id === caseStudyId
     );
@@ -59,30 +84,36 @@ export async function GET(
       );
     }
 
-    // 4. Fetch video info
-    const video = await Video.findOne({ videoId, userId: decoded.userId });
-
-    if (!video) {
-      return NextResponse.json(
-        { error: 'Video not found' },
-        { status: 404 }
-      );
-    }
-
-    // 5. Fetch user's notes for this video
+    // 6. Fetch viewer's notes (notes are personal to each user)
     const notes = await Note.findOne({
       videoId,
       userId: decoded.userId,
     });
 
-    // 6. Fetch existing solution if available
+    // 7. Fetch viewer's existing solution
     const existingSolution = await Solution.findOne({
       userId: decoded.userId,
       videoId,
       problemId: caseStudyId,
     });
 
-    // 7. Construct response
+    // 8. Fetch author's solution if viewer is not the owner
+    let authorSolution = null;
+    let authorUsername = undefined;
+    if (isReadOnly) {
+      const authorSolutionDoc = await Solution.findOne({
+        userId: ownerId,
+        videoId,
+        problemId: caseStudyId,
+      });
+      authorSolution = authorSolutionDoc?.content || null;
+
+      // Fetch author username
+      const author = await User.findById(ownerId).select('username').lean();
+      authorUsername = (author as any)?.username || undefined;
+    }
+
+    // 9. Construct response
     return NextResponse.json({
       problem: {
         id: problem.id,
@@ -101,6 +132,10 @@ export async function GET(
         segmentNotes: notes?.segmentNotes || [],
       },
       existingSolution: existingSolution?.content || null,
+      // Public access fields
+      isReadOnly,
+      authorSolution,
+      authorUsername,
     });
   } catch (error) {
     console.error('Error fetching case study data:', error);

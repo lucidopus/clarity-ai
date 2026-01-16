@@ -14,13 +14,14 @@ interface Video {
     videoId?: string;
     title: string;
     description?: string;
-    summary?: string; // from API
+    summary?: string;
     thumbnail?: string;
     duration?: number;
     channelName?: string;
     tags?: string[];
     materialsStatus?: 'complete' | 'incomplete' | 'generating';
     incompleteMaterials?: string[];
+    authorUsername?: string;
 }
 
 interface Category {
@@ -159,12 +160,13 @@ export default function DiscoverPage() {
                     categoryId={cat.name} // Use name as ID for now
                     items={cat.videos.map(v => ({
                         _id: v._id,
-                        videoId: v.videoId, // Pass YouTube ID
+                        videoId: v.videoId,
                         title: v.title,
                         thumbnail: v.thumbnail || '',
                         channelName: v.channelName || 'Clarity',
                         duration: v.duration || 0,
-                        createdAt: new Date().toISOString() // Fallback if missing
+                        createdAt: new Date().toISOString(),
+                        authorUsername: v.authorUsername
                     }))} 
                 />
             )
