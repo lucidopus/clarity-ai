@@ -306,15 +306,10 @@ export default function DashboardHomePage() {
 
       {!loading && !error && stats && (
         <div className="space-y-8">
-          {/* Streak Card */}
-          <div className="mb-6">
-            <StatCard icon={<Flame className="w-5 h-5" />} label="Current Streak" value={stats.currentStreak} trend={{ value: `${stats.longestStreak} day record`, isPositive: true }} />
-          </div>
-
           {/* Heatmap + Weekly Rhythm */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             <div className="xl:col-span-2">
-              <StudyActivityHeatmap />
+              <StudyActivityHeatmap currentStreak={stats.currentStreak} longestStreak={stats.longestStreak} />
             </div>
             <div className="h-full">
               <WeekdayConsistencyBars />
