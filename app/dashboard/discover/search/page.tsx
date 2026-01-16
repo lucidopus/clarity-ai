@@ -79,12 +79,30 @@ function SearchPageContent() {
 
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           
-          {loading && (
-              <div className="flex flex-col items-center justify-center py-20">
-                  <Loader2 className="w-10 h-10 animate-spin text-accent mb-4" />
-                  <p className="text-muted-foreground animate-pulse">Analyzing semantics...</p>
-              </div>
-          )}
+          {loading && Array.from({ length: 4 }).map((_, i) => (
+             <div 
+               key={i} 
+               className="flex flex-col sm:flex-row gap-4 sm:gap-6 bg-card-bg border border-border p-4 rounded-xl animate-pulse"
+             >
+                 {/* Thumbnail Skeleton */}
+                 <div className="w-full sm:w-[260px] aspect-video shrink-0 rounded-lg bg-secondary/10" />
+
+                 {/* Content Skeleton */}
+                 <div className="flex flex-col flex-1 py-1">
+                     <div className="h-6 bg-secondary/10 rounded w-3/4 mb-3" />
+                     <div className="h-4 bg-secondary/10 rounded w-1/2 mb-4" />
+                     <div className="space-y-2">
+                         <div className="h-3 bg-secondary/10 rounded w-full" />
+                         <div className="h-3 bg-secondary/10 rounded w-5/6" />
+                     </div>
+                     <div className="mt-auto pt-4 flex gap-2">
+                         <div className="h-5 w-16 bg-secondary/10 rounded-full" />
+                         <div className="h-5 w-12 bg-secondary/10 rounded-full" />
+                         <div className="h-5 w-20 bg-secondary/10 rounded-full" />
+                     </div>
+                 </div>
+             </div>
+          ))}
 
           {error && (
              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-center gap-3 text-destructive">
