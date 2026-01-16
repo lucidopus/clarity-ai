@@ -306,12 +306,9 @@ export default function DashboardHomePage() {
 
       {!loading && !error && stats && (
         <div className="space-y-8">
-          {/* Stats Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            <StatCard icon={<Library className="w-5 h-5" />} label="Videos" value={stats.totalVideos} trend={{ value: `+${stats.videosThisWeek} this week`, isPositive: true }} />
-            <StatCard icon={<Layers className="w-5 h-5" />} label="Flashcards" value={stats.totalFlashcards} trend={{ value: `${stats.flashcardsMastered} mastered`, isPositive: true }} />
-            <StatCard icon={<ListChecks className="w-5 h-5" />} label="Quizzes" value={stats.totalQuizzes} trend={{ value: `${stats.averageQuizScore}% avg`, isPositive: true }} />
-            <StatCard icon={<Flame className="w-5 h-5" />} label="Streak" value={stats.currentStreak} trend={{ value: `${stats.longestStreak} longest`, isPositive: true }} />
+          {/* Streak Card */}
+          <div className="mb-6">
+            <StatCard icon={<Flame className="w-5 h-5" />} label="Current Streak" value={stats.currentStreak} trend={{ value: `${stats.longestStreak} day record`, isPositive: true }} />
           </div>
 
           {/* Heatmap + Weekly Rhythm */}

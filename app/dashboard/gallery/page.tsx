@@ -8,7 +8,7 @@ import GenerateModal from '@/components/GenerateModal';
 import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
 import Dialog from '@/components/Dialog';
-import { Library } from 'lucide-react';
+import { Library, Layers, HelpCircle, Clock } from 'lucide-react';
 
 const filterOptions = [
   { label: 'All Materials', value: 'all' },
@@ -270,6 +270,53 @@ export default function GalleryPage() {
           />
         </div>
       </div>
+
+      {/* Library Stats Summary */}
+      {!loading && videos.length > 0 && (
+        <div className="bg-card-bg border border-border rounded-xl px-6 py-4 mb-6">
+          <div className="flex items-center justify-evenly text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                <Library className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <span className="text-lg font-bold text-foreground">{videos.length}</span>
+                <span className="text-muted-foreground ml-1">videos</span>
+              </div>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                <Layers className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <span className="text-lg font-bold text-foreground">{videos.reduce((acc, v) => acc + (v.flashcardCount || 0), 0)}</span>
+                <span className="text-muted-foreground ml-1">flashcards</span>
+              </div>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                <HelpCircle className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <span className="text-lg font-bold text-foreground">{videos.reduce((acc, v) => acc + (v.quizCount || 0), 0)}</span>
+                <span className="text-muted-foreground ml-1">quizzes</span>
+              </div>
+            </div>
+            <div className="w-px h-8 bg-border" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4 text-accent" />
+              </div>
+              <div>
+                <span className="text-lg font-bold text-foreground">{Math.round(videos.reduce((acc, v) => acc + (v.duration || 0), 0) / 60)}</span>
+                <span className="text-muted-foreground ml-1">min of content</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading State */}
       {loading && (
