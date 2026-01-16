@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Flame } from 'lucide-react';
 import HeatmapTooltip, { type HeatmapTooltipState } from './HeatmapTooltip';
 
 type HeatmapDay = { date: string; count: number; level: 0 | 1 | 2 | 3 };
@@ -36,7 +37,12 @@ declare global {
   }
 }
 
-export default function StudyActivityHeatmap() {
+interface StudyActivityHeatmapProps {
+  currentStreak?: number;
+  longestStreak?: number;
+}
+
+export default function StudyActivityHeatmap({ currentStreak, longestStreak }: StudyActivityHeatmapProps) {
   const [view, setView] = useState<View>('year');
   const [days, setDays] = useState<HeatmapDay[]>([]);
   const [startDate, setStartDate] = useState<string | null>(null);
@@ -194,7 +200,18 @@ export default function StudyActivityHeatmap() {
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-6 heatmap-grid-container">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-foreground">Study Activity</h3>
+        <div className="flex items-center gap-4">
+          <h3 className="text-lg font-semibold text-foreground">Study Activity</h3>
+          {currentStreak !== undefined && (
+            <div className="flex items-center gap-1.5 bg-orange-500/10 text-orange-500 px-2.5 py-1 rounded-full text-sm font-medium">
+              <Flame className="w-4 h-4" />
+              <span>{currentStreak} day streak</span>
+              {longestStreak !== undefined && longestStreak > currentStreak && (
+                <span className="text-orange-400/70 text-xs ml-1">• {longestStreak} best</span>
+              )}
+            </div>
+          )}
+        </div>
         {/* Merged pill toggle */}
         <div className="inline-flex items-center overflow-hidden rounded-full border border-border">
           <button
