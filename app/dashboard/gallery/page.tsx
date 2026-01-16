@@ -402,6 +402,19 @@ export default function GalleryPage() {
         </div>
       )}
 
+      {/* No Search Results State */}
+      {!loading && videos.length > 0 && filteredVideos.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+           <div className="p-4 rounded-full bg-secondary/10 mb-4">
+               <Library className="w-8 h-8 text-muted-foreground" />
+           </div>
+           <h3 className="text-xl font-bold text-foreground mb-2">No matches found</h3>
+           <p className="text-muted-foreground max-w-md mx-auto">
+               We couldn't find any materials matching "{searchQuery}". Try adjusting your search terms or filters.
+           </p>
+        </div>
+      )}
+
       {/* Videos Display */}
       {!loading && filteredVideos.length > 0 && (
         <>
