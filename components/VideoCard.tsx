@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
 
-import { Clock, Layers, HelpCircle, User, Stars, Globe, Share2, Trash2 } from 'lucide-react';
+import { Clock, Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2 } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -121,6 +121,13 @@ export default function VideoCard({
           
           {/* Overlay Gradient */}
           <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-60" />
+          
+          {/* Duration Badge */}
+          {duration && (
+            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-white">
+              {duration}
+            </div>
+          )}
         </div>
       )}
 
@@ -132,7 +139,7 @@ export default function VideoCard({
             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground max-w-full">
               {channelName && (
                 <>
-                  <User className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <Youtube className="w-3.5 h-3.5 shrink-0 text-red-500" aria-hidden="true" />
                   <span className="truncate">{channelName}</span>
                 </>
               )}
@@ -189,13 +196,6 @@ export default function VideoCard({
         </div>
         {/* Stats, minimal inline items (no pills) */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-5 text-xs text-muted-foreground">
-          {duration && (
-            <div className="inline-flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{duration}</span>
-            </div>
-          )}
-
           {(flashcardCount || 0) > 0 && (
             <div className="inline-flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5" aria-hidden="true" />
