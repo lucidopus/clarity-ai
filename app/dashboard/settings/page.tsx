@@ -728,6 +728,203 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Learning Profile Section */}
+      <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
+        <h2 className="text-xl font-semibold text-foreground mb-6">Learning Profile</h2>
+        
+        {user?.preferences?.learning ? (
+          <div className="space-y-6">
+            {/* Role & Learning Goals */}
+            {(user.preferences.learning.role || user.preferences.learning.learningGoals?.length > 0 || user.preferences.learning.learningGoalText) && (
+              <div className="p-4 bg-background rounded-xl border border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Learning Goals & Context</h3>
+                
+                {user.preferences.learning.role && (
+                  <div className="mb-3">
+                    <p className="text-xs text-muted-foreground mb-1">Role</p>
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-accent/10 text-accent border border-accent/20">
+                      {user.preferences.learning.role}
+                    </span>
+                  </div>
+                )}
+                
+                {user.preferences.learning.learningGoals && user.preferences.learning.learningGoals.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs text-muted-foreground mb-2">Learning Goals</p>
+                    <div className="flex flex-wrap gap-2">
+                      {user.preferences.learning.learningGoals.map((goal, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-accent/10 text-accent border border-accent/20">
+                          {goal}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {user.preferences.learning.learningGoalText && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Custom Goal</p>
+                    <p className="text-sm text-foreground italic">&quot;{user.preferences.learning.learningGoalText}&quot;</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Learning Challenges */}
+            {(Array.isArray(user.preferences.learning.learningChallenges) && user.preferences.learning.learningChallenges.length > 0 || user.preferences.learning.learningChallengesText) && (
+              <div className="p-4 bg-background rounded-xl border border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Learning Challenges</h3>
+                
+                {user.preferences.learning.learningChallenges && user.preferences.learning.learningChallenges.length > 0 && (
+                  <div className="mb-3">
+                    <div className="flex flex-wrap gap-2">
+                      {user.preferences.learning.learningChallenges.map((challenge, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-accent/10 text-accent border border-accent/20">
+                          {challenge}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {user.preferences.learning.learningChallengesText && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Additional Details</p>
+                    <p className="text-sm text-foreground italic">&quot;{user.preferences.learning.learningChallengesText}&quot;</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Personality Profile */}
+            {user.preferences.learning.personalityProfile && (
+              <div className="p-4 bg-background rounded-xl border border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Personality Profile</h3>
+                <div className="space-y-3">
+                  {user.preferences.learning.personalityProfile.conscientiousness !== undefined && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-foreground">Conscientiousness</span>
+                        <span className="text-sm font-medium text-accent">{user.preferences.learning.personalityProfile.conscientiousness.toFixed(1)}/7</span>
+                      </div>
+                      <div className="w-full bg-secondary/30 rounded-full h-2">
+                        <div 
+                          className="bg-accent rounded-full h-2 transition-all" 
+                          style={{ width: `${(user.preferences.learning.personalityProfile.conscientiousness / 7) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {user.preferences.learning.personalityProfile.emotionalStability !== undefined && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-foreground">Emotional Stability</span>
+                        <span className="text-sm font-medium text-accent">{user.preferences.learning.personalityProfile.emotionalStability.toFixed(1)}/7</span>
+                      </div>
+                      <div className="w-full bg-secondary/30 rounded-full h-2">
+                        <div 
+                          className="bg-accent rounded-full h-2 transition-all" 
+                          style={{ width: `${(user.preferences.learning.personalityProfile.emotionalStability / 7) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {user.preferences.learning.personalityProfile.selfEfficacy !== undefined && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-foreground">Self-Efficacy</span>
+                        <span className="text-sm font-medium text-accent">{user.preferences.learning.personalityProfile.selfEfficacy.toFixed(1)}/7</span>
+                      </div>
+                      <div className="w-full bg-secondary/30 rounded-full h-2">
+                        <div 
+                          className="bg-accent rounded-full h-2 transition-all" 
+                          style={{ width: `${(user.preferences.learning.personalityProfile.selfEfficacy / 7) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {user.preferences.learning.personalityProfile.masteryOrientation !== undefined && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-foreground">Mastery Orientation</span>
+                        <span className="text-sm font-medium text-accent">{user.preferences.learning.personalityProfile.masteryOrientation.toFixed(1)}/7</span>
+                      </div>
+                      <div className="w-full bg-secondary/30 rounded-full h-2">
+                        <div 
+                          className="bg-accent rounded-full h-2 transition-all" 
+                          style={{ width: `${(user.preferences.learning.personalityProfile.masteryOrientation / 7) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {user.preferences.learning.personalityProfile.performanceOrientation !== undefined && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm text-foreground">Performance Orientation</span>
+                        <span className="text-sm font-medium text-accent">{user.preferences.learning.personalityProfile.performanceOrientation.toFixed(1)}/7</span>
+                      </div>
+                      <div className="w-full bg-secondary/30 rounded-full h-2">
+                        <div 
+                          className="bg-accent rounded-full h-2 transition-all" 
+                          style={{ width: `${(user.preferences.learning.personalityProfile.performanceOrientation / 7) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Material & Time Preferences */}
+            {(Array.isArray(user.preferences.learning.preferredMaterialsRanked) && user.preferences.learning.preferredMaterialsRanked.length > 0 || user.preferences.learning.dailyTimeMinutes) && (
+              <div className="p-4 bg-background rounded-xl border border-border">
+                <h3 className="text-sm font-semibold text-foreground mb-3">Material & Time Preferences</h3>
+                
+                {user.preferences.learning.preferredMaterialsRanked && user.preferences.learning.preferredMaterialsRanked.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs text-muted-foreground mb-2">Preferred Materials (Ranked)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {user.preferences.learning.preferredMaterialsRanked.map((material, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-accent/10 text-accent border border-accent/20">
+                          <span className="mr-1.5 font-semibold">#{index + 1}</span>
+                          {material}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {user.preferences.learning.dailyTimeMinutes !== undefined && user.preferences.learning.dailyTimeMinutes > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Daily Time Commitment</p>
+                    <p className="text-sm text-foreground font-medium">
+                      {user.preferences.learning.dailyTimeMinutes >= 60 
+                        ? `${Math.floor(user.preferences.learning.dailyTimeMinutes / 60)}h ${user.preferences.learning.dailyTimeMinutes % 60}m`
+                        : `${user.preferences.learning.dailyTimeMinutes} minutes`
+                      } per day
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-8 bg-background rounded-xl border border-border text-center">
+            <p className="text-muted-foreground mb-4">You haven&apos;t completed your learning profile yet.</p>
+            <Button 
+              onClick={() => window.location.href = '/onboarding'}
+              variant="primary"
+            >
+              Complete Onboarding
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Appearance Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
         <h2 className="text-xl font-semibold text-foreground mb-6">Appearance</h2>
