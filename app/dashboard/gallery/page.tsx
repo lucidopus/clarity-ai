@@ -7,8 +7,9 @@ import FilterDropdown from '@/components/FilterDropdown';
 import GenerateModal from '@/components/GenerateModal';
 import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
+import VideoListItem from '@/components/VideoListItem';
 import Dialog from '@/components/Dialog';
-import { Library, Layers, HelpCircle, Clock } from 'lucide-react';
+import { Library, Layers, HelpCircle, Clock, LayoutGrid, List } from 'lucide-react';
 
 const filterOptions = [
   { label: 'All Materials', value: 'all' },
@@ -38,6 +39,7 @@ export default function GalleryPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [errorDialog, setErrorDialog] = useState<{ show: boolean; message: string }>({
     show: false,
     message: '',
@@ -61,6 +63,20 @@ export default function GalleryPage() {
     videoTitle: '',
   });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Load view mode preference from localStorage
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('library-view-mode') as 'grid' | 'list' | null;
+    if (savedViewMode) {
+      setViewMode(savedViewMode);
+    }
+  }, []);
+
+  // Save view mode preference to localStorage
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('library-view-mode', mode);
+  };
 
   // Fetch videos on mount
   useEffect(() => {
@@ -262,12 +278,39 @@ export default function GalleryPage() {
             onSearch={handleSearch}
           />
         </div>
-        <div className="sm:w-48">
-          <FilterDropdown
-            options={filterOptions}
-            defaultValue="all"
-            onFilterChange={handleFilterChange}
-          />
+        <div className="flex items-center gap-3">
+          <div className="sm:w-48">
+            <FilterDropdown
+              options={filterOptions}
+              defaultValue="all"
+              onFilterChange={handleFilterChange}
+            />
+          </div>
+          {/* View Toggle */}
+          <div className="flex items-center bg-card-bg border border-border rounded-lg p-1">
+            <button
+              onClick={() => handleViewModeChange('grid')}
+              className={`p-2 rounded transition-colors cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-accent text-white'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+              }`}
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleViewModeChange('list')}
+              className={`p-2 rounded transition-colors cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-accent text-white'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+              }`}
+              aria-label="List view"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -359,29 +402,55 @@ export default function GalleryPage() {
         </div>
       )}
 
-      {/* Videos Grid */}
+      {/* Videos Display */}
       {!loading && filteredVideos.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredVideos.map((video) => (
-            <VideoCard
-              key={video.id}
-              id={video.id}
-              title={video.title}
-              channelName={video.channelName}
-              thumbnailUrl={video.thumbnailUrl}
-              duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
-              transcriptMinutes={video.transcriptMinutes}
-              createdAt={video.createdAt}
-              progress={video.progress}
-              flashcardCount={video.flashcardCount}
-              quizCount={video.quizCount}
-              visibility={video.visibility}
-              onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
-              onDelete={() => handleDelete(video.id, video.title)}
-              onClick={handleVideoClick}
-            />
-          ))}
-        </div>
+        <>
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredVideos.map((video) => (
+                <VideoCard
+                  key={video.id}
+                  id={video.id}
+                  title={video.title}
+                  channelName={video.channelName}
+                  thumbnailUrl={video.thumbnailUrl}
+                  duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
+                  transcriptMinutes={video.transcriptMinutes}
+                  createdAt={video.createdAt}
+                  progress={video.progress}
+                  flashcardCount={video.flashcardCount}
+                  quizCount={video.quizCount}
+                  visibility={video.visibility}
+                  onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
+                  onDelete={() => handleDelete(video.id, video.title)}
+                  onClick={handleVideoClick}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredVideos.map((video) => (
+                <VideoListItem
+                  key={video.id}
+                  id={video.id}
+                  title={video.title}
+                  channelName={video.channelName}
+                  thumbnailUrl={video.thumbnailUrl}
+                  duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
+                  transcriptMinutes={video.transcriptMinutes}
+                  createdAt={video.createdAt}
+                  progress={video.progress}
+                  flashcardCount={video.flashcardCount}
+                  quizCount={video.quizCount}
+                  visibility={video.visibility}
+                  onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
+                  onDelete={() => handleDelete(video.id, video.title)}
+                  onClick={handleVideoClick}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Generate Modal */}
