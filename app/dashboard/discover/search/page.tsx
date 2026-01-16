@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Loader2, Play, AlertCircle, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
 import Button from '@/components/Button';
 import DiscoverNavbar from '@/components/DiscoverNavbar';
 
@@ -152,9 +153,21 @@ function SearchPageContent() {
                           )}
                       </div>
 
-                      <p className="mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                          {video.summary || video.description || "No description available."}
-                      </p>
+                      <div className="mt-3 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                          <ReactMarkdown
+                              components={{
+                                  p: ({ children }) => <span className="mr-1">{children}</span>,
+                                  strong: ({ children }) => <span className="font-bold text-foreground">{children}</span>,
+                                  h1: ({ children }) => <span className="font-bold text-foreground block">{children}</span>,
+                                  h2: ({ children }) => <span className="font-bold text-foreground block">{children}</span>,
+                                  h3: ({ children }) => <span className="font-semibold text-foreground block">{children}</span>,
+                                  ul: ({ children }) => <span className="block">{children}</span>,
+                                  li: ({ children }) => <span className="mr-2 inline-block">• {children}</span>,
+                              }}
+                          >
+                            {video.summary || video.description || "No description available."}
+                          </ReactMarkdown>
+                      </div>
 
                       <div className="mt-auto pt-4 flex flex-wrap gap-2">
                           {video.tags?.slice(0, 3).map(tag => (
