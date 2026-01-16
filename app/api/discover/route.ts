@@ -71,15 +71,21 @@ export async function GET(request: NextRequest) {
     // A) Hydrate: Fetch rich metadata from MongoDB
     const freshVideoIds = freshCandidates.map(c => c.videoId);
     const videos = await Video.find({ videoId: { $in: freshVideoIds } })
-        .select('videoId title thumbnail channelName duration category tags materialsStatus incompleteMaterials summary') // Added summary
+        .select('videoId title thumbnail channelName duration category tags materialsStatus incompleteMaterials summary userId')
         .lean();
+
+    // B) Fetch author usernames
+    const uniqueUserIds = [...new Set(videos.map((v: any) => v.userId?.toString()).filter(Boolean))];
+    const users = await User.find({ _id: { $in: uniqueUserIds } }).select('_id username').lean();
+    const usernameMap = new Map(users.map((u: any) => [u._id.toString(), u.username]));
 
     const scoreMap = new Map(freshCandidates.map(c => [c.videoId, c.score]));
     
     const richCandidates = videos.map((v: any) => ({
         ...v,
         score: scoreMap.get(v.videoId) || 0,
-        durationSeconds: v.duration || 0 
+        durationSeconds: v.duration || 0,
+        authorUsername: v.userId ? usernameMap.get(v.userId.toString()) : undefined
     }));
 
     // B) Row Builders

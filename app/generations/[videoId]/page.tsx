@@ -126,6 +126,8 @@ interface VideoMaterials {
     type?: string;
     message?: string;
   } | null;
+  isReadOnly?: boolean;
+  authorUsername?: string;
 }
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
@@ -482,9 +484,16 @@ export default function VideoMaterialsPage() {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-full relative">
         {/* Minimal Header (Title) - Sticky */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm z-30 shrink-0 gap-4">
-             <h1 className="text-lg font-semibold text-foreground truncate min-w-0">
-                 {materials.video.title}
-             </h1>
+             <div className="flex items-center gap-3 min-w-0">
+               <h1 className="text-lg font-semibold text-foreground truncate">
+                   {materials.video.title}
+               </h1>
+               {materials.isReadOnly && materials.authorUsername && (
+                 <span className="shrink-0 text-xs bg-accent/10 text-accent px-2.5 py-1 rounded-full font-medium">
+                   by @{materials.authorUsername}
+                 </span>
+               )}
+             </div>
 
              <div className="flex items-center gap-3 shrink-0">
                 <Button
@@ -556,6 +565,8 @@ export default function VideoMaterialsPage() {
                           variant="primary"
                           onClick={() => setIsCreatorOpen(true)}
                           className="flex items-center gap-2"
+                          disabled={materials.isReadOnly}
+                          title={materials.isReadOnly ? "You can't add flashcards to shared content" : 'Create a new flashcard'}
                         >
                           <Plus className="w-4 h-4" />
                           Create New Flashcard
@@ -637,6 +648,7 @@ export default function VideoMaterialsPage() {
                           videoId={videoId}
                           nodes={materials.mindMap.nodes}
                           edges={materials.mindMap.edges}
+                          readOnly={materials.isReadOnly}
                         />
                      </div>
                   )}

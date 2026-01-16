@@ -18,6 +18,7 @@ interface VideoCardProps {
   createdAt: Date | string;
   progress?: number;
   visibility?: 'private' | 'public';
+  authorUsername?: string;
   onClick?: (id: string) => void;
   onDelete?: () => void;
   onVisibilityChange?: (visibility: 'private' | 'public') => void;
@@ -36,6 +37,7 @@ export default function VideoCard({
   createdAt,
   progress = 0,
   visibility = 'private',
+  authorUsername,
   onClick,
   onDelete,
   onVisibilityChange,
@@ -127,12 +129,20 @@ export default function VideoCard({
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold text-foreground line-clamp-2 leading-snug">{title}</h3>
-            {channelName && (
-              <div className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground max-w-full" title={channelName}>
-                <User className="w-3.5 h-3.5" aria-hidden="true" />
-                <span className="truncate">{channelName}</span>
-              </div>
-            )}
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground max-w-full">
+              {channelName && (
+                <>
+                  <User className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{channelName}</span>
+                </>
+              )}
+              {channelName && authorUsername && (
+                <span className="text-border">•</span>
+              )}
+              {authorUsername && (
+                <span className="text-accent font-medium">@{authorUsername}</span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {onVisibilityChange && (

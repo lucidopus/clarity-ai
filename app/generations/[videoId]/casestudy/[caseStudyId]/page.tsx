@@ -41,6 +41,9 @@ interface CaseStudyData {
     }>;
   };
   existingSolution?: string;
+  isReadOnly?: boolean;
+  authorSolution?: string;
+  authorUsername?: string;
 }
 
 export default function CaseStudyWorkspacePage() {
@@ -463,9 +466,16 @@ export default function CaseStudyWorkspacePage() {
               </Button>
               <div className="h-6 w-px bg-border" />
               <div>
-                <h1 className="text-lg font-semibold text-foreground">
-                  {data.problem.title}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-semibold text-foreground">
+                    {data.problem.title}
+                  </h1>
+                  {data.isReadOnly && data.authorUsername && (
+                    <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full font-medium">
+                      by @{data.authorUsername}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   {data.video.title}
                 </p>
@@ -731,14 +741,15 @@ export default function CaseStudyWorkspacePage() {
                <div className="bg-card-bg border border-border rounded-xl p-6">
                  <div className="flex items-center justify-between mb-4">
                    <h2 className="text-lg font-semibold text-foreground">
-                     Your Solution
+                     {data.isReadOnly ? 'Your Notes' : 'Your Solution'}
                    </h2>
                    <Button
                      onClick={handleSaveSolution}
-                     disabled={isSaving}
+                     disabled={isSaving || data.isReadOnly}
                      size="sm"
                      variant="outline"
                      className="flex items-center gap-2"
+                     title={data.isReadOnly ? "You can't save changes to shared content" : 'Save your solution'}
                    >
                      <Save className="w-4 h-4 mr-2" />
                      {isSaving ? 'Saving...' : 'Save'}
@@ -749,10 +760,28 @@ export default function CaseStudyWorkspacePage() {
                  </div>
                  <RichTextEditor
                    value={solution}
-                   onChange={setSolution}
-                   placeholder="Start writing your solution here..."
+                   onChange={data.isReadOnly ? () => {} : setSolution}
+                   placeholder={data.isReadOnly ? 'Jot down your own notes here...' : 'Start writing your solution here...'}
                  />
                </div>
+
+               {/* Author's Solution (for public content) */}
+               {data.isReadOnly && data.authorSolution && (
+                 <div className="bg-card-bg border border-accent/30 rounded-xl p-6">
+                   <div className="flex items-center gap-2 mb-4">
+                     <Sparkles className="w-5 h-5 text-accent" />
+                     <h2 className="text-lg font-semibold text-foreground">
+                       Author&apos;s Solution
+                     </h2>
+                     {data.authorUsername && (
+                       <span className="text-xs text-muted-foreground">by @{data.authorUsername}</span>
+                     )}
+                   </div>
+                   <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
+                     <div dangerouslySetInnerHTML={{ __html: data.authorSolution }} />
+                   </div>
+                 </div>
+               )}
            </div>
 
             {/* Right Panel: AI Guide */}

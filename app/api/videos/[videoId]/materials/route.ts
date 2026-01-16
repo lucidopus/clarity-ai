@@ -66,6 +66,13 @@ export async function GET(
         return NextResponse.json({ error: 'Unauthorized access to private video' }, { status: 403 });
     }
 
+    // Read-only for non-owners
+    const isReadOnly = !isOwner;
+
+    // Fetch author username
+    const author = await User.findById(video.userId).select('username').lean();
+    const authorUsername = (author as any)?.username || undefined;
+
     // Material Owner: Materials belong to the video creator
     const ownerId = video.userId;
 
@@ -189,7 +196,10 @@ export async function GET(
       error: video.errorMessage ? {
         type: video.errorType,
         message: video.errorMessage
-      } : null
+      } : null,
+      // Public access flags
+      isReadOnly,
+      authorUsername
     };
 
     return NextResponse.json(materials);

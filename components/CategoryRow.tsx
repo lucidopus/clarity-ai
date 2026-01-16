@@ -16,6 +16,7 @@ interface VideoItem {
   createdAt: string | Date;
   flashcardCount?: number;
   quizCount?: number;
+  authorUsername?: string;
 }
 
 interface CategoryRowProps {
@@ -94,6 +95,7 @@ export default function CategoryRow({ title, items, categoryId }: CategoryRowPro
                         createdAt={video.createdAt}
                         flashcardCount={video.flashcardCount || 0}
                         quizCount={video.quizCount || 0}
+                        authorUsername={video.authorUsername}
                         onClick={() => {
                             // Prefer YouTube ID for navigation, fallback to Mongo ID
                             const targetId = video.videoId || video._id;
