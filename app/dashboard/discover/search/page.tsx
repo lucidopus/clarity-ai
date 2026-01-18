@@ -189,7 +189,7 @@ function SearchPageContent() {
 
                       <div className="mt-auto pt-4 flex flex-wrap gap-2">
                           {video.tags?.slice(0, 3).map(tag => (
-                              <span key={tag} className="px-2 py-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] rounded-full font-medium">
+                              <span key={tag} className="px-2 py-1 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[10px] rounded-full font-medium border border-cyan-500/20">
                                   #{tag}
                               </span>
                           ))}

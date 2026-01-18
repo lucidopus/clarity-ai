@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, Clock, Tag, BookOpen, Brain, Network, Target } from 'lucide-react';
 import Button from './Button';
 import Image from 'next/image';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface VideoDetailsModalProps {
   isOpen: boolean;
@@ -89,7 +91,7 @@ export default function VideoDetailsModal({ isOpen, onClose, video, onPlay }: Vi
                   <div className="absolute bottom-4 left-6 right-6">
                       <div className="flex flex-wrap gap-2 mb-2">
                         {video.tags?.slice(0, 3).map(tag => (
-                            <span key={tag} className="px-2 py-1 bg-accent/20 text-accent text-xs font-bold rounded-md border border-accent/20 backdrop-blur-md">
+                            <span key={tag} className="px-2 py-1 bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 text-xs font-bold rounded-md border border-cyan-500/30 backdrop-blur-md">
                                 {tag}
                             </span>
                         ))}
@@ -103,14 +105,6 @@ export default function VideoDetailsModal({ isOpen, onClose, video, onPlay }: Vi
               {/* Body */}
               <div className="p-6 overflow-y-auto">
                  
-                 {/* Summary Section */}
-                 <div className="mb-6">
-                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">AI Summary</h3>
-                     <p className="text-foreground/90 leading-relaxed">
-                         {video.summary || video.description || "No summary available for this video."}
-                     </p>
-                 </div>
-
                  {/* Materials Grid */}
                  <div className="mb-6">
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Included Materials</h3>
@@ -130,6 +124,25 @@ export default function VideoDetailsModal({ isOpen, onClose, video, onPlay }: Vi
                             </div>
                         ))}
                     </div>
+                 </div>
+
+                 {/* Summary Section */}
+                 <div className="mb-6">
+                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">AI Summary</h3>
+                     <div className="prose prose-sm dark:prose-invert max-w-none 
+                                     prose-headings:text-foreground prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-3
+                                     prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
+                                     prose-p:text-foreground/90 prose-p:leading-relaxed prose-p:mb-4
+                                     prose-strong:text-foreground prose-strong:font-bold prose-strong:text-accent
+                                     prose-ul:text-foreground/90 prose-ul:my-3 prose-ul:space-y-1
+                                     prose-ol:text-foreground/90 prose-ol:my-3 prose-ol:space-y-1
+                                     prose-li:text-foreground/90
+                                     prose-code:text-accent prose-code:bg-accent/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                                     text-sm leading-relaxed">
+                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                             {video.summary || video.description || "No summary available for this video."}
+                         </ReactMarkdown>
+                     </div>
                  </div>
                  
                  {/* Meta Info */}
