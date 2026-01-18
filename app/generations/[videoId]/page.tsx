@@ -590,7 +590,7 @@ export default function VideoMaterialsPage() {
 
                   {activeTab === 'prerequisites' && (
                     <div className="max-w-7xl mx-auto w-full">
-                        <PrerequisitesView prerequisites={materials.prerequisites} />
+                        <PrerequisitesView prerequisites={materials.prerequisites} isReadOnly={materials.isReadOnly} />
                     </div>
                   )}
 
@@ -668,7 +668,7 @@ export default function VideoMaterialsPage() {
         <Dialog isOpen={showWarning} onClose={() => setShowWarning(false)} type="alert" variant={getErrorConfig(warningType).variant} title={getErrorConfig(warningType).title} message={getErrorConfig(warningType).message} confirmText="I Understand" />
       )}
       
-      <ChatBot videoId={videoId} />
+      {!materials.isReadOnly && <ChatBot videoId={videoId} />}
     </div>
   );
 }
