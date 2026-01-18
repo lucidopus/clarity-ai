@@ -514,7 +514,7 @@ export default function CaseStudyWorkspacePage() {
          </motion.div>
        )}
 
-        {!showRightPanel && (
+        {!showRightPanel && !data.isReadOnly && (
           <motion.div
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -574,7 +574,7 @@ export default function CaseStudyWorkspacePage() {
                <span>Show Research</span>
              </Button>
            )}
-           {!showRightPanel && (
+           {!showRightPanel && !data.isReadOnly && (
               <Button
                 onClick={toggleRightPanel}
                 size="sm"
@@ -786,7 +786,7 @@ export default function CaseStudyWorkspacePage() {
 
             {/* Right Panel: AI Guide */}
            <AnimatePresence>
-             {showRightPanel && (
+             {showRightPanel && !data.isReadOnly && (
                <motion.div
                  initial={{ opacity: 0, width: 0 }}
                  animate={{ opacity: 1, width: '500px' }}
