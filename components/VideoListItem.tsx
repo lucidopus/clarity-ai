@@ -157,7 +157,7 @@ export default function VideoListItem({
             className={`w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
               visibility === 'public'
                 ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20 hover:bg-cyan-500/20'
-                : 'bg-secondary/50 text-muted-foreground border-border hover:bg-secondary/80'
+                : 'bg-transparent text-muted-foreground border-border hover:border-muted-foreground/40'
             }`}
           >
             {visibility === 'public' ? (

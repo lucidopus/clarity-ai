@@ -91,7 +91,7 @@ export default function VideoDetailsModal({ isOpen, onClose, video, onPlay }: Vi
                   <div className="absolute bottom-4 left-6 right-6">
                       <div className="flex flex-wrap gap-2 mb-2">
                         {video.tags?.slice(0, 3).map(tag => (
-                            <span key={tag} className="px-2 py-1 bg-accent/20 text-accent text-xs font-bold rounded-md border border-accent/20 backdrop-blur-md">
+                            <span key={tag} className="px-2 py-1 bg-cyan-500/20 text-cyan-600 dark:text-cyan-300 text-xs font-bold rounded-md border border-cyan-500/30 backdrop-blur-md">
                                 {tag}
                             </span>
                         ))}
