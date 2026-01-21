@@ -1,6 +1,11 @@
 import { generateLearningMaterialsChunked } from './llm';
 import { generateEmbeddings } from './embedding';
 import mongoose from 'mongoose';
+import Video from './models/Video';
+import Flashcard from './models/Flashcard';
+import Quiz from './models/Quiz';
+import LearningMaterial from './models/LearningMaterial';
+import { MindMap } from './models';
 
 /**
  * Shared utility functions for video retry processing
@@ -53,7 +58,7 @@ export async function processVideoChunked(video: any) {
   }
 
   // Save materials to database
-  await saveVideoMaterials(video, chunkedResult.materials);
+  await saveVideoMaterials(video, chunkedResult.materials, !chunkedResult.incompleteMaterials.includes('metadata'));
 
   // Determine incompleteMaterials for tracking
   // NOTE: Only track materials that FAILED generation, not those that were SKIPPED
@@ -89,7 +94,6 @@ export async function processVideoChunked(video: any) {
   }
 
   // Update video status
-  const Video = mongoose.model('Video');
   
   if (incompleteMaterialsList.length === 0) {
     // Complete success
@@ -127,7 +131,6 @@ export async function processVideoStandard(video: any) {
   
   // For now, just mark as pending for manual review
   // In the future, this could trigger the original generation task
-  const Video = mongoose.model('Video');
   await Video.findByIdAndUpdate(video._id, {
     processingStatus: 'completed_with_warning',
   });
@@ -138,14 +141,11 @@ export async function processVideoStandard(video: any) {
 
 /**
  * Save generated materials to database
+ * @param metadataWasGenerated - If true, update video metadata fields. If false, skip to avoid overwriting with placeholders.
  */
-async function saveVideoMaterials(video: any, materials: any) {
-  const Flashcard = mongoose.model('Flashcard');
-  const Quiz = mongoose.model('Quiz');
-  const LearningMaterial = mongoose.model('LearningMaterial');
-  const MindMap = mongoose.model('MindMap');
-  const Video = mongoose.model('Video');
-
+async function saveVideoMaterials(video: any, materials: any, metadataWasGenerated: boolean = true) {
+  // Models are already imported at the top of the file
+  
   // Save flashcards
   if (materials.flashcards && materials.flashcards.length > 0) {
     await Flashcard.deleteMany({ videoId: video.videoId });
@@ -154,6 +154,8 @@ async function saveVideoMaterials(video: any, materials: any) {
         ...card,
         videoId: video.videoId,
         userId: video.userId,
+        generationType: 'ai',
+        difficulty: card.difficulty || 'medium', // Default to medium if not provided
       }))
     );
   }
@@ -166,6 +168,8 @@ async function saveVideoMaterials(video: any, materials: any) {
         ...quiz,
         videoId: video.videoId,
         userId: video.userId,
+        generationType: 'ai',
+        difficulty: quiz.difficulty || 'medium', // Default to medium if not provided
       }))
     );
   }
@@ -181,6 +185,11 @@ async function saveVideoMaterials(video: any, materials: any) {
       userId: video.userId,
       prerequisites: materials.prerequisites || [],
       realWorldProblems: materials.realWorldProblems || [],
+      videoSummary: materials.videoSummary || '',
+      metadata: {
+        generatedBy: 'retry-task',
+        generatedAt: new Date(),
+      },
     });
   }
 
@@ -192,15 +201,25 @@ async function saveVideoMaterials(video: any, materials: any) {
       userId: video.userId,
       nodes: materials.mindMap.nodes,
       edges: materials.mindMap.edges || [],
+      metadata: {
+        generatedBy: 'retry-task',
+        generatedAt: new Date(),
+      },
     });
   }
 
-  // Update video metadata
-  await Video.findByIdAndUpdate(video._id, {
-    title: materials.title,
-    category: materials.category,
-    tags: materials.tags,
-    summary: materials.videoSummary,
-    chapters: materials.chapters || [],
-  });
+  // Update video metadata ONLY if it was actually generated (not skipped)
+  // This prevents overwriting real metadata with placeholder values during selective retry
+  if (metadataWasGenerated) {
+    await Video.findByIdAndUpdate(video._id, {
+      title: materials.title,
+      category: materials.category,
+      tags: materials.tags,
+      summary: materials.videoSummary,
+      chapters: materials.chapters || [],
+    });
+    console.log(`📝 Updated video metadata (title: ${materials.title})`);
+  } else {
+    console.log(`⏭️  Skipped video metadata update - using existing values`);
+  }
 }
