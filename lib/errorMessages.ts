@@ -112,6 +112,88 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageConfig> = {
     ]
   },
 
+  LLM_AUTHENTICATION: {
+    title: 'API Configuration Error',
+    message: 'There\'s an issue with our AI service configuration. Our team has been notified. Please contact support if this persists.',
+    variant: 'error',
+    shouldRedirect: false,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  LLM_PERMISSION_DENIED: {
+    title: 'Permission Error',
+    message: 'Our AI service lacks the required permissions. Our team has been notified. Please contact support.',
+    variant: 'error',
+    shouldRedirect: false,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  LLM_INVALID_REQUEST: {
+    title: 'Invalid Request',
+    message: 'There was an issue with the request format. This is a bug on our end. Our team has been notified.',
+    variant: 'error',
+    shouldRedirect: false,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  LLM_CONTENT_FILTERED_SAFETY: {
+    title: 'Content Blocked',
+    message: 'This video\'s content was blocked by our safety filters. Please try a different video.',
+    variant: 'warning',
+    shouldRedirect: false,
+    actions: [
+      { label: 'Choose Different Video', variant: 'primary', onClick: 'chooseDifferentVideo' },
+      { label: 'Cancel', variant: 'ghost', onClick: 'close' }
+    ]
+  },
+
+  LLM_CONTENT_FILTERED_RECITATION: {
+    title: 'Content Similarity Issue',
+    message: 'This video\'s content is too similar to existing training data and cannot be processed. Please try a different video.',
+    variant: 'warning',
+    shouldRedirect: false,
+    actions: [
+      { label: 'Choose Different Video', variant: 'primary', onClick: 'chooseDifferentVideo' },
+      { label: 'Cancel', variant: 'ghost', onClick: 'close' }
+    ]
+  },
+
+  LLM_TIMEOUT: {
+    title: 'Request Timed Out',
+    message: 'The AI processing took longer than expected. This might be due to high server load. Your video and transcript are saved. Please try again in a few moments.',
+    variant: 'warning',
+    shouldRedirect: true,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  LLM_UNAVAILABLE: {
+    title: 'Service Temporarily Unavailable',
+    message: 'Our AI service is temporarily overloaded or undergoing maintenance. Your video and transcript are safely saved. Please try again in a few minutes.',
+    variant: 'warning',
+    shouldRedirect: true,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  LLM_OUTPUT_LIMIT: {
+    title: 'Output Too Large',
+    message: 'The AI generated too much content for this video. We\'re working on optimizing this. Your video and transcript are saved.',
+    variant: 'warning',
+    shouldRedirect: true,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
   // General Errors
   NETWORK_ERROR: {
     title: 'Connection Failed',
