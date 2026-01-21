@@ -8,6 +8,7 @@ import { MindMap } from "../lib/models";
 import { generateLearningMaterialsChunked } from "../lib/llm";
 import { generateEmbeddings } from "../lib/embedding";
 import { GEMINI_MODEL_NAME } from "../lib/sdk";
+import { processSingleVideoTask } from "./process-single-video";
 
 /**
  * Helper: Check if error is permanent (should mark as 'failed')
@@ -75,45 +76,75 @@ export const retryFailedVideos = schedules.task({
       summary.videosFound = videos.length;
       logger.info(`📊 Found ${videos.length} videos to retry`);
 
-      // Process each video
+      if (videos.length === 0) {
+        logger.info("✅ No videos to retry");
+        return summary;
+      }
+
+      // First, handle permanent failures sequentially (quick DB updates)
+      const videosToRetry: any[] = [];
+      
       for (const video of videos) {
+        const errorType = video.errorType || 'UNKNOWN';
+        summary.breakdown.byErrorType[errorType] =
+          (summary.breakdown.byErrorType[errorType] || 0) + 1;
+
+        // CATEGORY 3: Permanent failures - mark as 'failed' immediately
+        if (isPermanentError(errorType)) {
+          await Video.findByIdAndUpdate(video._id, {
+            processingStatus: 'failed',
+          });
+          summary.permanentFailures++;
+          logger.info(`❌ Marked video ${video.videoId} as failed (${errorType})`);
+        } else {
+          // Add to batch for parallel processing
+          videosToRetry.push(video);
+        }
+      }
+
+      logger.info(`🚀 Batch processing ${videosToRetry.length} videos in parallel (concurrency: 3)`);
+
+      // Process videos in parallel using batchTriggerAndWait
+      if (videosToRetry.length > 0) {
+        const batchPayloads = videosToRetry.map(video => ({
+          payload: { video }
+        }));
+
         try {
-          const errorType = video.errorType || 'UNKNOWN';
-
-          // Track error type distribution
-          summary.breakdown.byErrorType[errorType] =
-            (summary.breakdown.byErrorType[errorType] || 0) + 1;
-
-          // CATEGORY 3: Permanent failures - mark as 'failed'
-          if (isPermanentError(errorType)) {
-            await Video.findByIdAndUpdate(video._id, {
-              processingStatus: 'failed',
-              // Keep errorType and errorMessage for debugging
-            });
-            summary.permanentFailures++;
-            logger.info(`❌ Marked video ${video.videoId} as failed (${errorType})`);
-            continue;
+          const results = await processSingleVideoTask.batchTriggerAndWait(batchPayloads);
+          
+          // Aggregate results
+          for (const result of results.runs) {
+            if (result.ok) {
+              const output = result.output;
+              
+              if (output.success) {
+                summary.successfulRetries++;
+                if (output.status === 'chunked_processing') {
+                  summary.breakdown.chunkedGeneration++;
+                } else {
+                  summary.breakdown.standardRetry++;
+                }
+                logger.info(`✅ Successfully processed ${output.videoId} (${output.status})`);
+              } else {
+                summary.stillPending++;
+                if ('incompleteMaterials' in output && output.incompleteMaterials) {
+                  logger.warn(`⚠️ Partially completed ${output.videoId}. Incomplete: ${output.incompleteMaterials.join(', ')}`);
+                } else {
+                  logger.warn(`⚠️ Video ${output.videoId} still pending (${output.status})`);
+                }
+              }
+            } else {
+              summary.stillPending++;
+              const errorMsg = (result.error as any)?.message || 'Unknown error';
+              summary.errors.push(`${result.id}: ${errorMsg}`);
+              logger.error(`⚠️ Task failed for video:`, result.error as Record<string, unknown>);
+            }
           }
-
-          // CATEGORY 2: Token limit errors - use chunked generation
-          if (isTokenLimitError(errorType)) {
-            await processVideoChunked(video, summary);
-            continue;
-          }
-
-          // CATEGORY 1: Transient errors - retry with standard approach
-          await processVideoStandard(video, summary);
-
-        } catch (error) {
-          // ⚠️ CRITICAL: If anything goes wrong processing this video,
-          // DO NOT mark it as failed. Leave it as 'completed_with_warning'
-          // so the next cron run can try again.
-          summary.stillPending++;
-          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-          summary.errors.push(`${video.videoId}: ${errorMsg}`);
-          logger.error(`⚠️ Error processing video ${video.videoId}:`, error as Record<string, unknown>);
-          logger.warn(`Leaving video as 'completed_with_warning' for next cron retry`);
-          // Continue to next video, don't crash the entire job
+        } catch (batchError) {
+          logger.error("💥 Batch processing error:", batchError as Record<string, unknown>);
+          summary.errors.push(`BATCH_ERROR: ${batchError instanceof Error ? batchError.message : 'Unknown'}`);
+          summary.stillPending += videosToRetry.length;
         }
       }
 
