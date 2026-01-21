@@ -129,6 +129,97 @@ export class LLMPartialFailureError extends LLMError {
 }
 
 /**
+ * Authentication/Authorization Errors
+ */
+export class LLMAuthenticationError extends LLMError {
+  constructor() {
+    super(
+      'LLM_AUTHENTICATION',
+      'Invalid API key or authentication failed',
+      401
+    );
+  }
+}
+
+export class LLMPermissionError extends LLMError {
+  constructor() {
+    super(
+      'LLM_PERMISSION_DENIED',
+      'API key lacks required permissions',
+      403
+    );
+  }
+}
+
+/**
+ * Request Format Errors
+ */
+export class LLMInvalidRequestError extends LLMError {
+  constructor(message?: string) {
+    super(
+      'LLM_INVALID_REQUEST',
+      message || 'Invalid request format or parameters',
+      400
+    );
+  }
+}
+
+/**
+ * Content Safety Errors
+ */
+export class LLMContentFilteredError extends LLMError {
+  constructor(reason: 'SAFETY' | 'RECITATION' = 'SAFETY') {
+    super(
+      `LLM_CONTENT_FILTERED_${reason}`,
+      reason === 'SAFETY'
+        ? 'Content blocked by safety filters'
+        : 'Output blocked due to similarity with training data',
+      400
+    );
+  }
+}
+
+/**
+ * Timeout Errors
+ */
+export class LLMTimeoutError extends LLMError {
+  constructor() {
+    super(
+      'LLM_TIMEOUT',
+      'Request timed out - prompt may be too complex',
+      504
+    );
+  }
+}
+
+/**
+ * Service Availability Errors
+ */
+export class LLMUnavailableError extends LLMError {
+  constructor() {
+    super(
+      'LLM_UNAVAILABLE',
+      'Service temporarily unavailable or overloaded',
+      503
+    );
+  }
+}
+
+/**
+ * Output-specific token limit
+ */
+export class LLMOutputLimitError extends LLMError {
+  constructor() {
+    super(
+      'LLM_OUTPUT_LIMIT',
+      'Generated output exceeds maximum token limit',
+      400
+    );
+  }
+}
+
+
+/**
  * General Error Types
  */
 
