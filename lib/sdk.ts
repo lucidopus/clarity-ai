@@ -8,12 +8,7 @@ import Groq from 'groq-sdk';
  */
 // Validate environment variables only when accessing the models, not at import time
 const getModels = () => {
-  if (!process.env.CONTENT_GENERATION_MODEL) {
-    if (typeof window === 'undefined') {
-       console.warn('⚠️ CONTENT_GENERATION_MODEL environment variable is not set. Defaulting to gemini-1.5-pro for build/dev.');
-    }
-    return { gemini: 'gemini-1.5-pro', groq: 'mixtral-8x7b-32768' };
-  }
+
   return {
     gemini: process.env.CONTENT_GENERATION_MODEL,
     groq: process.env.CHATBOT_MODEL || 'mixtral-8x7b-32768'
@@ -37,7 +32,7 @@ export const getGeminiLlm = () => {
     
     console.log(`🔌 [SDK] Initializing Google Gemini provider with model: ${GEMINI_MODEL_NAME}`);
     _geminiLlm = new ChatGoogleGenerativeAI({
-      model: GEMINI_MODEL_NAME,
+      model: GEMINI_MODEL_NAME || "",
       apiKey: apiKey || 'dummy-key-for-build',
       temperature: 0.7,
       streamUsage: true,
