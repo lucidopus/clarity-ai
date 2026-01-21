@@ -48,16 +48,27 @@ Clarity AI is filled with features designed to improve your learning, all genera
         - **Weekly Rhythm**: Analyze consistency patterns across days of the week
     - **Video Gallery**: A central library for all your processed videos, with powerful search and filtering capabilities.
 
-- **🔍 Discover & Explore**:
-    - **Curated Categories**: Explore videos by mood or goal (e.g., "Morning Kickstart", "Weekend Deep Dive").
-    - **Trending**: See what other students are learning.
+- **🔍 AI-Powered Discovery & Personalization**:
+    - **Personalized Feed**: AI-driven recommendations using vector search and Gemini embeddings to match your learning style and goals.
+    - **Context-Aware Categories**: Dynamic content organization based on your preferences:
+        - **For You**: Top personalized picks based on semantic similarity
+        - **Quick Wins** (<5 min): Perfect for short study sessions
+        - **Lunch Break Learning** (15-30 min): Ideal for moderate breaks
+        - **Deep Dives** (45+ min): Comprehensive learning experiences
+        - **Code & Build**: Programming and tech content
+        - **Creator's Studio**: Design and creative resources
+        - **Entrepreneur Essentials**: Business and startup insights
+    - **Smart Recommendations**: Automatically filters watched content and updates every 6 hours.
+    - **Semantic Search**: Find videos by meaning, not just keywords.
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: [Next.js 16](https://nextjs.org/) with [TypeScript](https://www.typescriptlang.org/) and [Tailwind CSS 4](https://tailwindcss.com/)
 - **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
-- **AI/LLM**: [Groq API](https://groq.com/) (Llama 3.3, Qwen 2.5, GPT-OSS) & Google Gemini 2.0
-- **Orchestration**: [LangChain](https://www.langchain.com/)
+- **Cache**: [Redis](https://redis.io/) (Upstash) for recommendation caching
+- **AI/LLM**: [Groq API](https://groq.com/) (Llama 3.3, Qwen 2.5, GPT-OSS) & [Google Gemini 2.0](https://ai.google.dev/)
+- **Embeddings**: Google Gemini embeddings for vector search and semantic recommendations
+- **Orchestration**: [LangChain](https://www.langchain.com/) & [Trigger.dev](https://trigger.dev/) for background jobs
 - **Transcript Extraction**: youtube-transcript-plus v1.1.1 with Webshare residential proxies
 - **Authentication**: JWT-based with HTTP-only cookies
 - **Proxy Service**: Webshare residential proxies (bypasses YouTube IP blocking in production)
@@ -68,8 +79,11 @@ Clarity AI is filled with features designed to improve your learning, all genera
 ### Prerequisites
 
 - Node.js 18+
-- A MongoDB instance (local or cloud-based)
+- A MongoDB instance (local or cloud-based) with vector search index configured
 - Groq API Key
+- Google Gemini API Key (for embeddings and content generation)
+- Redis instance (Upstash recommended)
+- Trigger.dev account (for background job orchestration)
 - Apify API Token (optional, for enhanced transcript fetching)
 
 ### Installation Guide
@@ -90,6 +104,7 @@ Clarity AI is filled with features designed to improve your learning, all genera
     ```env
     MONGODB_URI=your_mongodb_connection_string
     GROQ_API_KEY=your_groq_api_key
+    GEMINI_API_KEY=your_gemini_api_key
     CONTENT_GENERATION_MODEL=gemini-2.0-flash  # Model for video material generation
     CHATBOT_MODEL=llama-3.3-70b-versatile  # Model for chatbots (Groq)
 
@@ -98,6 +113,17 @@ Clarity AI is filled with features designed to improve your learning, all genera
     APIFY_API_TOKEN=your_apify_token_for_transcripts # Optional
     JWT_EXPIRE_DAYS=1
     JWT_REMEMBER_DAYS=30
+    
+    # Redis (Upstash) for recommendation caching
+    REDIS_URL=your_redis_connection_url
+    UPSTASH_REDIS_REST_URL=your_upstash_rest_url
+    UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
+    
+    # Trigger.dev for background job orchestration
+    TRIGGER_SECRET_KEY=your_trigger_secret_key
+    
+    # Admin Portal
+    ADMIN_PASSWORD=your_admin_password
     ```
 
     **Model Configuration:**

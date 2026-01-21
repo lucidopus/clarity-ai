@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **AI-Powered Personalized Discovery Feed**:
+  - **Vector Search Engine**: Implemented semantic video recommendations using Google Gemini embeddings for content similarity matching.
+  - **Redis Caching**: Integrated Upstash Redis for high-performance caching of personalized recommendation pools (6-hour TTL).
+  - **Trigger.dev Background Jobs**: Automated scheduled recommendation updates every 6 hours for all users via background job orchestration.
+  - **Context-Aware Categorization**: Dynamic content organization based on user preferences, learning goals, and available study time:
+    - **For You**: Top personalized picks based on vector similarity scores
+    - **Quick Wins** (<5 min): Boosted for users with limited daily time
+    - **Lunch Break Learning** (15-30 min): Optimized for moderate study sessions
+    - **Deep Dives** (45+ min): Prioritized for users with extended learning time
+    - **Code & Build**: Tech and programming content weighted by user role and goals
+    - **Creator's Studio**: Design and creative content for content creators
+    - **Entrepreneur Essentials**: Business and startup content for professionals
+    - **Visual Learning**: Videos with complete mind maps for visual learners
+    - **Interactive Sessions**: Content with quizzes for hands-on learners
+  - **Smart Deduplication**: Automatically filters out already-watched videos from recommendations.
+  - **New API Endpoints**:
+    - `GET /api/discover` - Fetch personalized discovery feed with categorized recommendations
+    - `GET /api/search` - Semantic search using vector embeddings
+    - `POST /api/preferences` - Save user preferences and trigger immediate recommendation update
+  - **New Environment Variables**: `REDIS_URL`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `TRIGGER_SECRET_KEY`
+- **Enhanced Onboarding Flow**:
+  - **Detailed User Preferences**: Comprehensive preference collection including learning role (Student/Professional/Creator), daily study time, learning goals, and preferred material types.
+  - **Immediate Personalization**: Triggers recommendation generation upon onboarding completion for instant personalized content.
+  - **Preference-Driven Discovery**: User preferences directly influence content categorization weights and row prioritization.
 - **Video Player Enhancements**:
   - **Refactored Modals (Portals)**: Updated `VideoSummaryButton` and `ChapterButton` to use **React Portals**. This ensures popups break out of the DOM hierarchy and overlay correctly on top of the sidebar/navbar (Issue #71).
   - **UI Polish**: Fixed clustering of tooltips and optimized z-indexing for smoother hover states in Dark Mode.
