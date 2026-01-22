@@ -90,6 +90,53 @@ export class CategorySelector {
       }
     }
     
+    // 7. Dynamic Fallback: If we still need more categories
+    if (scoredCategories.length < limit) {
+        const unusedVideos = candidates.filter(v => !usedVideoIds.has(v.videoId || ''));
+        
+        // Group by 'category' field
+        const fallbackGroups: Record<string, CatalogVideo[]> = {};
+        for (const v of unusedVideos) {
+            const catName = v.category || 'More to Explore';
+            if (!fallbackGroups[catName]) fallbackGroups[catName] = [];
+            fallbackGroups[catName].push(v);
+        }
+        
+        // Sort groups by size or score
+        const sortedGroupKeys = Object.keys(fallbackGroups).sort((a, b) => {
+             // Prioritize groups with more high-scoring videos
+             const scoreA = fallbackGroups[a].reduce((sum: number, v: CatalogVideo) => sum + (v.score || 0), 0);
+             const scoreB = fallbackGroups[b].reduce((sum: number, v: CatalogVideo) => sum + (v.score || 0), 0);
+             return scoreB - scoreA;
+        });
+
+        for (const key of sortedGroupKeys) {
+             if (scoredCategories.length >= limit) break;
+             
+             const videos = fallbackGroups[key].slice(0, 10); // Top 10
+             if(videos.length === 0) continue;
+
+             const dynamicCategory: Category = {
+                 id: `dynamic_${key.toLowerCase().replace(/\s+/g, '_')}`,
+                 label: key,
+                 type: 'Community', // Fallback type
+                 matcher: v => v.category === key // Basic matcher for consistency
+             };
+
+             scoredCategories.push({
+                 category: dynamicCategory,
+                 score: 5, // Low base score for fallback
+                 videos: videos
+             });
+        }
+    }
+    
+    // Debug output if fallback failed unexpectedly
+    if (scoredCategories.length === 0 && candidates.length > 0) {
+        console.log('CategorySelector Debug: No categories selected. Candidates:', candidates.length);
+        console.log('Unused videos calculation:', candidates.filter(v => !usedVideoIds.has(v.videoId || '')).length);
+    }
+    
     return scoredCategories;
   }
 

@@ -249,14 +249,14 @@ export const MASTER_CATALOG: Category[] = [
     label: 'Classmate Favorites',
     type: 'Community',
     // Proxy: Random for now, or match role
-    matcher: _v => true // Match anything, reliance on score
+    matcher: _v => false // Placeholder pending real logic
   },
   {
     id: 'undiscovered_gems',
     label: 'Undiscovered Gems',
     type: 'Community',
     // Just valid videos
-    matcher: _v => true
+    matcher: _v => false // Placeholder pending views data
   },
   {
     id: 'lessons_field',
@@ -279,13 +279,13 @@ export const MASTER_CATALOG: Category[] = [
     label: 'Picked for Your Goal',
     type: 'Essential',
     // Match goal keywords?
-    matcher: _v => true // This is usually the default vector match
+    matcher: _v => false // Placeholder pending vector match logic
   },
   {
     id: 'because_you_watched',
     label: 'Because you watched...',
     type: 'Essential',
-    matcher: _v => true // Placeholder
+    matcher: _v => false // Placeholder
   },
   {
     id: 'new_arrivals',

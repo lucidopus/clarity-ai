@@ -125,4 +125,27 @@ describe('CategorySelector', () => {
       // So Quick Wins should effectively be empty/removed because its only candidate was taken.
       expect(quickWins).toBeUndefined();
   });
+
+  test('Fallback: Generates dynamic categories when Master Catalog is exhausted', () => {
+      const user = mockUser();
+      // Video is long (no quick match), matches no special tags.
+      // Category is "Science".
+      const videos: CatalogVideo[] = [{
+          videoId: 'unknown_1',
+          title: 'Unknown Science Video',
+          durationSeconds: 0, // 0 duration avoids Time/Format matchers
+          category: 'Science',
+          tags: [],
+          score: 1.0
+      }];
+      
+      const selection = CategorySelector.select(user, videos);
+      
+      // Should create a dynamic category for "Science"
+      const scienceCat = selection.find(s => s.category.label === 'Science');
+      
+      expect(scienceCat).toBeDefined();
+      expect(scienceCat!.videos.length).toBe(1);
+      expect(scienceCat!.category.id).toContain('dynamic_science');
+  });
 });
