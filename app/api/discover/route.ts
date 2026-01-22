@@ -5,6 +5,8 @@ import { redis } from '@/lib/redis';
 import Progress from '@/lib/models/Progress';
 import Video from '@/lib/models/Video';
 import User from '@/lib/models/User';
+import { CategorySelector } from '@/lib/services/category-selector';
+import { CatalogVideo } from '@/lib/catalog';
 
 // Type definitions for the Candidate object stored in Redis
 interface RedisCandidate {
@@ -75,19 +77,12 @@ export async function GET(request: NextRequest) {
     // Filter candidates: Keep only those NOT in watchedVideoIds
     const freshCandidates = candidates.filter(c => !watchedVideoIds.has(c.videoId));
 
-    console.log(`User ${userId}: ${candidates.length} candidates -> ${freshCandidates.length} fresh (removed ${candidates.length - freshCandidates.length} watched)`);
-
-
     // 4. Logic C: Hydration & Smart Categorization 
 
     // Fetch User Preferences for Context-Aware Sorting
     const user = await User.findById(userId).select('preferences.learning');
-    const prefs = user?.preferences?.learning || {};
-    const role = prefs.role || '';
-    const dailyTime = prefs.dailyTimeMinutes || 30; // Default 30m
-    const goals = (prefs.learningGoals || []).join(' ').toLowerCase();
 
-    // A) Hydrate: Fetch rich metadata from MongoDB
+    // Fetch Videos from MongoDB
     const freshVideoIds = freshCandidates.map(c => c.videoId);
     const videos = await Video.find({ videoId: { $in: freshVideoIds } })
         .select('videoId title thumbnail channelName duration category tags materialsStatus incompleteMaterials summary userId')
@@ -107,144 +102,47 @@ export async function GET(request: NextRequest) {
         authorUsername: v.userId ? usernameMap.get(v.userId.toString()) : undefined
     }));
 
-    // B) Row Builders
-    interface CategoryRow {
-        name: string;
-        videos: HydratedVideo[];
-        weight: number; // For sorting rows
-    }
+    // 4. Logic D: Dynamic Category Selection
+    // We already have 'user' (the document) but we only selected 'preferences.learning'.
+    // CategorySelector expects a user-like object with preferences.
+    // Ideally we should pass the full user document or ensure the shape matches.
+    // We faked the shape essentially above. Let's ensure strict typing or loose casting.
     
-    const rows: CategoryRow[] = [];
-    const usedVideoIds = new Set<string>();
+    // We need to pass the full 'user' doc if possible, or at least an object with preferences
+    // user doc is partial here, so we cast to unknown then Generic User or handle in service better.
+    // However, CategorySelector uses 'user.preferences.learning', which we selected.
+    const selections = CategorySelector.select(user as unknown as import('@/lib/models/User').IUser, richCandidates as CatalogVideo[], new Date());
 
-    const addRow = (name: string, filterFn: (v: HydratedVideo) => boolean, limit = 10, baseWeight = 0) => {
-        const matches = richCandidates
-            .filter(v => filterFn(v) && !usedVideoIds.has(v.videoId))
-            .sort((a, b) => (b.score || 0) - (a.score || 0));
-        
-        if (matches.length > 0) {
-            const selectedVideos = matches.slice(0, limit);
-            selectedVideos.forEach((v) => usedVideoIds.add(v.videoId)); // Track used IDs
-
-            rows.push({
-                name,
-                videos: selectedVideos,
-                weight: baseWeight
-            });
-        }
-    };
-
-    // --- ROW 1: "For You" ---
-    // Always top priority
-    // Always top priority
-    // Always top priority
+    // 5. Structure for Response
+    // We want to preserve the "For You" row as the first one if it exists or if we need to force it.
+    // CategorySelector returns sorted list.
+    // If 'For You' isn't explicitly in Master Catalog as a "selector" outcome but rather a "force include", we adding it here.
+    
+    // The Master Catalog has "Jump Back In" etc, but "For You" (Vector Match) is special.
+    // Let's create the "For You" row using the raw top scoring candidates, similar to old logic, 
+    // OR trust that one of the categories corresponds to "Picked for [Goal]" which is vector match.
+    // However, usually "For You" is just the raw mixed bag.
+    
+    // Let's FORCE "For You" as the first row.
     const forYouVideos = richCandidates.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
-    forYouVideos.forEach((v) => usedVideoIds.add(v.videoId));
     
-    rows.push({
+    const finalCategories = selections.map(s => ({
+        name: s.category.label,
+        videos: s.videos as HydratedVideo[], // Cast back to HydratedVideo for response
+        weight: s.score
+    }));
+
+    // Prepend For You
+    finalCategories.unshift({
         name: "For You",
-        videos: forYouVideos,
-        weight: 1000 // Ensure #1
+        videos: forYouVideos, 
+        weight: 1000
     });
-
-
-    // --- ROW 2: "Quick Wins" ---
-    // Boost if user has little time (< 20m)
-    let quickWinsWeight = 10;
-    if (dailyTime <= 20) quickWinsWeight += 50;
-    addRow("Quick Wins (< 5 min)", v => (v.durationSeconds || 0) > 0 && (v.durationSeconds || 0) <= 300, 10, quickWinsWeight);
-
-    // --- ROW 3: "Lunch Break Learning" ---
-    // Good for average time (20-45m)
-    let lunchWeight = 10;
-    if (dailyTime > 20 && dailyTime <= 45) lunchWeight += 30;
-    addRow("Lunch Break Learning", v => (v.durationSeconds || 0) > 900 && (v.durationSeconds || 0) <= 1800, 10, lunchWeight);
-
-    // --- ROW 4: "Deep Dives" ---
-    // Boost if user has lots of time (> 60m)
-    let deepDiveWeight = 10;
-    if (dailyTime >= 60) deepDiveWeight += 50;
-    addRow("Deep Dives", v => (v.durationSeconds || 0) > 2700, 10, deepDiveWeight);
-
-    // --- ROW 5: "Code & Build" (Tech) ---
-    // Boost if goal/role related to coding
-    let codeWeight = 5;
-    if (goals.includes('code') || goals.includes('program') || role === 'Content Creator') codeWeight += 40; // Creators often edit/tech
-    if (role === 'Student' && (goals.includes('computer') || goals.includes('tech'))) codeWeight += 40;
-    
-    addRow("Code & Build", v => 
-        (v.category === 'Technology & Coding' || 
-        (v.tags?.some((t: string) => ['programming', 'code', 'developer', 'software'].includes(t.toLowerCase())) ?? false)),
-        10, codeWeight
-    );
-
-    // --- ROW 6: "Creator's Studio" ---
-    let creatorWeight = 5;
-    if (role === 'Content Creator') creatorWeight += 60;
-    if (goals.includes('design') || goals.includes('art')) creatorWeight += 30;
-    
-    addRow("Creator's Studio", v => 
-        (v.category === 'Arts & Design' || 
-        (v.tags?.some((t: string) => ['design', 'editing', 'creative', 'art'].includes(t.toLowerCase())) ?? false)),
-        10, creatorWeight
-    );
-
-    // --- ROW 7: "Entrepreneur Essentials" ---
-    let bizWeight = 5;
-    if (role === 'Working Professional') bizWeight += 30;
-    if (goals.includes('startup') || goals.includes('business')) bizWeight += 40;
-
-    addRow("Entrepreneur Essentials", v => 
-        (v.category === 'Business & Finance' || 
-        (v.title?.toLowerCase().includes('startup') ?? false) ||
-        (v.title?.toLowerCase().includes('business') ?? false)),
-        10, bizWeight
-    );
-
-    // --- ROW 8: "Visual Learners" ---
-    // Boost if preferredMaterials includes visuals
-    // We check `prefs.preferredMaterialsRanked`
-    let visualWeight = 5;
-    const materials = (prefs.preferredMaterialsRanked || []).map((m: string) => m.toLowerCase());
-    if (materials.some((m: string) => m.includes('visual') || m.includes('mind map') || m.includes('video'))) visualWeight += 20;
-
-    addRow("Visual Learning", v => 
-        ((v.materialsStatus === 'complete' && !v.incompleteMaterials?.includes('mindmap')) ||
-        (v.tags?.includes('mindmap') ?? false)),
-        10, visualWeight
-    );
-
-    // --- ROW 9: "Interactive Sessions" ---
-    // Boost if quizzes
-    let interactiveWeight = 5;
-    if (materials.some((m: string) => m.includes('quiz') || m.includes('interactive'))) interactiveWeight += 20;
-
-    addRow("Interactive Sessions", v => 
-        ((v.materialsStatus === 'complete' && !v.incompleteMaterials?.includes('quizzes')) ||
-        (v.tags?.includes('quiz') ?? false)),
-        10, interactiveWeight
-    );
-
-    // --- Generic Category Fallback ---
-     const categoriesFound = new Set(richCandidates.map((v) => v.category).filter((c): c is string => !!c));
-    categoriesFound.forEach((cat) => {
-        if (rows.length >= 20) return;
-        if (['Arts & Design', 'Technology & Coding', 'Business & Finance'].includes(cat)) return; 
-        
-        const label = cat === 'Other' ? 'Explore' : cat;
-        if (!rows.find(r => r.name === label)) {
-             // Generic rows have low base weight (0)
-             addRow(label, v => v.category === cat, 10, 0);
-        }
-    });
-
-    // Final Sort by Weight
-    rows.sort((a, b) => b.weight - a.weight);
 
     return NextResponse.json({
       success: true,
-      recommended: rows[0].videos, // Logic C: Top row is dynamically chosen (usually For You)
-      categories: rows.map(({ name, videos }) => ({ name, videos })).slice(0, 15) // Return clean objects
+      recommended: forYouVideos, 
+      categories: finalCategories.slice(0, 15)
     });
 
   } catch (error) {
