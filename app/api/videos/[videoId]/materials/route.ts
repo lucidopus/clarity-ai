@@ -71,7 +71,7 @@ export async function GET(
 
     // Fetch author username
     const author = await User.findById(video.userId).select('username').lean();
-    const authorUsername = (author as any)?.username || undefined;
+    const authorUsername = (author as { username?: string } | null)?.username || undefined;
 
     // Material Owner: Materials belong to the video creator
     const ownerId = video.userId;

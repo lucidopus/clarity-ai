@@ -110,7 +110,7 @@ export async function GET(
 
       // Fetch author username
       const author = await User.findById(ownerId).select('username').lean();
-      authorUsername = (author as any)?.username || undefined;
+      authorUsername = (author as { username?: string } | null)?.username || undefined;
     }
 
     // 9. Construct response

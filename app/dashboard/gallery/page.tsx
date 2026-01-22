@@ -9,6 +9,8 @@ import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
 import VideoListItem from '@/components/VideoListItem';
 import Dialog from '@/components/Dialog';
+import { ToastContainer, ToastType } from '@/components/Toast';
+import { getErrorConfig } from '@/lib/errorMessages';
 import { Library, Layers, HelpCircle, Clock, LayoutGrid, List } from 'lucide-react';
 
 const filterOptions = [
@@ -19,7 +21,8 @@ const filterOptions = [
 ];
 
 interface Video {
-  id: string;
+  id: string; // YouTube Video ID
+  _id?: string; // MongoDB ID
   title: string;
   channelName: string;
   thumbnailUrl?: string;
@@ -40,7 +43,12 @@ export default function GalleryPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [errorDialog, setErrorDialog] = useState<{ show: boolean; message: string }>({
+  const [errorDialog, setErrorDialog] = useState<{ 
+    show: boolean; 
+    message: string;
+    errorType?: string;
+    videoId?: string;
+  }>({
     show: false,
     message: '',
   });
@@ -63,6 +71,22 @@ export default function GalleryPage() {
     videoTitle: '',
   });
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Toast State
+  const [toasts, setToasts] = useState<Array<{
+    id: string;
+    message: string;
+    type?: ToastType;
+  }>>([]);
+
+  const addToast = (message: string, type: ToastType = 'info') => {
+    const id = Math.random().toString(36).substring(7);
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   // Load view mode preference from localStorage
   useEffect(() => {
@@ -106,6 +130,43 @@ export default function GalleryPage() {
     setFilterValue(value);
   }, []);
 
+  const handleValidationAction = async (videoId: string, action: 'reject' | 'override') => {
+    console.log(`🎯 [FRONTEND] Handling validation action: ${action} for video ${videoId}`);
+    
+    try {
+      const response = await fetch(`/api/videos/${videoId}/validation-action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.warn('⚠️ [FRONTEND] Validation action failed:', data);
+        addToast(data.error || 'Action failed', 'error');
+        return;
+      }
+
+      console.log(`✅ [FRONTEND] Validation action successful:`, data);
+      
+      // Update local state to immediately reflect the change
+      if (action === 'reject') {
+        // Remove the video from the list immediately
+        setVideos(prev => prev.filter(v => v._id !== videoId));
+        addToast('Video deleted from library', 'info');
+      } else if (action === 'override') {
+        addToast('Generating materials... This may take a few minutes.', 'success');
+      }
+
+      setErrorDialog({ show: false, message: '' });
+      setShowGenerateModal(false); // Close open modal if any
+    } catch (error) {
+      console.error('❌ [FRONTEND] Validation action error:', error);
+      addToast('Failed to process action', 'error');
+    }
+  };
+
   const handleGenerate = async (url: string) => {
     console.log('🎬 [FRONTEND] Starting video generation...');
     console.log(`🎬 [FRONTEND] YouTube URL: ${url}`);
@@ -134,8 +195,29 @@ export default function GalleryPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('❌ [FRONTEND] API error response:', errorData);
-        throw new Error(errorData.error || 'Failed to generate materials');
+        console.warn('⚠️ [FRONTEND] API error response:', JSON.stringify(errorData, null, 2));
+        
+        // Helper to show error dialog
+        const showError = (msg: string, type: string = 'UNKNOWN_ERROR', vidId?: string) => {
+          setErrorDialog({ 
+            show: true, 
+            message: msg,
+            errorType: type,
+            videoId: vidId
+          });
+        };
+
+        // Show user-friendly message for validation rejection
+        if (errorData.errorType === 'NON_EDUCATIONAL_CONTENT') {
+          showError(
+            'This video appears to be entertainment content (like music videos, vlogs, or gaming streams) rather than educational material. Clarity AI works best with tutorials, lectures, courses, and how-to videos.',
+            'NON_EDUCATIONAL_CONTENT',
+            errorData.videoId
+          );
+        } else {
+          showError(errorData.error || 'Failed to generate materials');
+        }
+        return;
       }
 
       const data = await response.json();
@@ -192,11 +274,12 @@ export default function GalleryPage() {
         if (!response.ok) {
           throw new Error('Failed to update visibility');
         }
+        addToast(`Video is now ${newVisibility}`, 'success');
       } catch (error) {
         console.error('Error updating visibility:', error);
         // Revert on error
         setVideos(videos.map(v => v.id === videoId ? { ...v, visibility: v.visibility === 'public' ? 'private' : 'public' } : v));
-        setErrorDialog({ show: true, message: 'Failed to update visibility' });
+        addToast('Failed to update visibility', 'error');
       }
   };
 
@@ -225,6 +308,7 @@ export default function GalleryPage() {
       // Remove from local state
       setVideos(videos.filter(v => v.id !== videoId));
       setDeleteDialog({ show: false, videoId: '', videoTitle: '' });
+      addToast('Video deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting video:', error);
       const message = error instanceof Error ? error.message : 'Failed to delete video';
@@ -262,6 +346,9 @@ export default function GalleryPage() {
 
   return (
     <div>
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+
       {/* Page Header */}
       <DashboardHeader
         title="Library"
@@ -410,7 +497,7 @@ export default function GalleryPage() {
            </div>
            <h3 className="text-xl font-bold text-foreground mb-2">No matches found</h3>
            <p className="text-muted-foreground max-w-md mx-auto">
-               We couldn't find any materials matching "{searchQuery}". Try adjusting your search terms or filters.
+               We couldn&apos;t find any materials matching &quot;{searchQuery}&quot;. Try adjusting your search terms or filters.
            </p>
         </div>
       )}
@@ -479,10 +566,41 @@ export default function GalleryPage() {
         isOpen={errorDialog.show}
         onClose={() => setErrorDialog({ show: false, message: '' })}
         type="alert"
-        variant="error"
+        variant={errorDialog.errorType ? getErrorConfig(errorDialog.errorType).variant : 'error'}
         title="Generation Failed"
         message={errorDialog.message}
         confirmText="OK"
+        actions={(() => {
+            if (!errorDialog.errorType) return undefined;
+            const config = getErrorConfig(errorDialog.errorType);
+            if (!config.actions) return undefined;
+            
+            return config.actions.map(action => ({
+              label: action.label,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              variant: action.variant as any,
+              onClick: async () => {
+                // Ensure helper function closes the generate modal too if action is taken
+                if (action.onClick === 'retry') {
+                  if (errorDialog.videoId) await handleValidationAction(errorDialog.videoId, 'override');
+                  setShowGenerateModal(false);
+                } else if (action.onClick === 'close') {
+                   if (errorDialog.errorType === 'NON_EDUCATIONAL_CONTENT' && errorDialog.videoId) {
+                     handleValidationAction(errorDialog.videoId, 'reject');
+                   }
+                   setErrorDialog({ show: false, message: '' });
+                   setShowGenerateModal(false);
+                } else if (action.onClick === 'viewExisting') {
+                   // viewExisting logic if needed in gallery
+                   setErrorDialog({ show: false, message: '' });
+                   setShowGenerateModal(false);
+                } else if (action.onClick === 'chooseDifferentVideo') {
+                   setErrorDialog({ show: false, message: '' });
+                   // Keep modal open for retry
+                }
+              }
+            }));
+          })()}
       />
 
       {/* Confirmation Dialog */}

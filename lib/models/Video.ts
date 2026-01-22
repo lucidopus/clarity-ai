@@ -18,7 +18,7 @@ export interface IVideo extends Document {
   duration?: number;
   transcript: ITranscriptSegment[];
   language: string;
-  processingStatus: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed';
+  processingStatus: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed' | 'validation_rejected';
   materialsStatus: 'complete' | 'incomplete' | 'generating';
   incompleteMaterials?: ('flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
   summary?: string;
@@ -49,7 +49,7 @@ const VideoSchema: Schema = new Schema({
   duration: { type: Number },
   transcript: [TranscriptSegmentSchema],
   language: { type: String, default: 'en' },
-  processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'completed_with_warning', 'failed'] },
+  processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'completed_with_warning', 'failed', 'validation_rejected'] },
   materialsStatus: { type: String, enum: ['complete', 'incomplete', 'generating'], default: 'generating' },
   incompleteMaterials: [{ type: String, enum: ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'] }],
   
@@ -59,7 +59,7 @@ const VideoSchema: Schema = new Schema({
   category: { type: String },
   embedding: { type: [Number], select: false }, // Hide huge vector arrays by default for performance
 
-  visibility: { type: String, enum: ['private', 'public'], default: 'private' },
+  visibility: { type: String, enum: ['private', 'public'], default: 'public' },
   errorType: { type: String },
   errorMessage: { type: String },
   processedAt: { type: Date },

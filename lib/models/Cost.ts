@@ -7,6 +7,7 @@ export enum ServiceType {
   GROQ_LLM = 'groq_llm',
   GEMINI_LLM = 'gemini_llm',
   APIFY_TRANSCRIPT = 'apify_transcript',
+  CONTENT_VALIDATION = 'content_validation',
 }
 
 /**
@@ -44,7 +45,7 @@ export interface IServiceUsage {
     cost: number; // in USD
     unitDetails: IUnitDetails;
   };
-  status: 'success' | 'failed';
+  status: 'success' | 'failed' | 'rejected';
   errorMessage?: string;
 }
 
@@ -91,7 +92,7 @@ const ServiceUsageSchema: Schema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['success', 'failed']
+    enum: ['success', 'failed', 'rejected']
   },
   errorMessage: { type: String },
 }, { _id: false });

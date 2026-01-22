@@ -85,7 +85,7 @@ export default function DiscoverPage() {
       return (
           <div className="min-h-screen pt-20 px-4 text-center">
               <h2 className="text-xl font-bold">No recommendations yet.</h2>
-              <p className="text-muted-foreground">We're generating your personalized feed. Check back in a few minutes!</p>
+              <p className="text-muted-foreground">We&apos;re generating your personalized feed. Check back in a few minutes!</p>
           </div>
       );
   }

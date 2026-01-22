@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       // but saves us from complex background job coordination for single users.
       if (userProfileString) {
         const embedding = await generateEmbeddings(userProfileString);
-        (updateOperation.$set as any)['preferences.embedding'] = embedding;
+        (updateOperation.$set as Record<string, unknown>)['preferences.embedding'] = embedding;
         console.log(`Generated embedding for User ${decoded.userId}. Vector length: ${embedding.length}`);
       } else {
         console.log('Skipping embedding: Profile string is empty.');

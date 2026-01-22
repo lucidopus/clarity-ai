@@ -7,6 +7,12 @@ import Button from './Button';
 export type DialogType = 'alert' | 'confirm';
 export type DialogVariant = 'info' | 'success' | 'warning' | 'error';
 
+interface DialogAction {
+  label: string;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline';
+}
+
 interface DialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,6 +24,7 @@ interface DialogProps {
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
+  actions?: DialogAction[];
 }
 
 const variantConfig = {
@@ -58,8 +65,9 @@ export default function Dialog({
   confirmText = type === 'confirm' ? 'Confirm' : 'OK',
   cancelText = 'Cancel',
   isLoading = false,
+  actions,
 }: DialogProps) {
-  const config = variantConfig[variant];
+  const config = variantConfig[variant] || variantConfig.info;
   const Icon = config.icon;
 
   const handleConfirm = () => {
@@ -108,7 +116,7 @@ export default function Dialog({
                   <h2 className="text-xl font-bold text-foreground mb-1">
                     {title}
                   </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
                     {message}
                   </p>
                 </div>
@@ -124,33 +132,50 @@ export default function Dialog({
 
               {/* Footer Actions */}
               <div className="flex items-center justify-end gap-3 px-6 py-3 bg-muted/5">
-                {type === 'confirm' && (
-                  <Button
-                    type="button"
-                    onClick={onClose}
-                    variant="ghost"
-                    disabled={isLoading}
-                    className="px-6 py-2 cursor-pointer"
-                  >
-                    {cancelText}
-                  </Button>
+                {actions && actions.length > 0 ? (
+                  actions.map((action, index) => (
+                    <Button
+                      key={index}
+                      type="button"
+                      onClick={action.onClick}
+                      variant={action.variant || 'primary'}
+                      disabled={isLoading}
+                      className={action.variant === 'ghost' ? "px-6 py-2 cursor-pointer" : "px-6 cursor-pointer"}
+                    >
+                      {action.label}
+                    </Button>
+                  ))
+                ) : (
+                  <>
+                    {type === 'confirm' && (
+                      <Button
+                        type="button"
+                        onClick={onClose}
+                        variant="ghost"
+                        disabled={isLoading}
+                        className="px-6 py-2 cursor-pointer"
+                      >
+                        {cancelText}
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      onClick={handleConfirm}
+                      variant={config.confirmVariant}
+                      disabled={isLoading}
+                      className="px-8 cursor-pointer"
+                    >
+                      {isLoading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Processing...
+                        </div>
+                      ) : (
+                        confirmText
+                      )}
+                    </Button>
+                  </>
                 )}
-                <Button
-                  type="button"
-                  onClick={handleConfirm}
-                  variant={config.confirmVariant}
-                  disabled={isLoading}
-                  className="px-8 cursor-pointer"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processing...
-                    </div>
-                  ) : (
-                    confirmText
-                  )}
-                </Button>
               </div>
             </div>
           </motion.div>

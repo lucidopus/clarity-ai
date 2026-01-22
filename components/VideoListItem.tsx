@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, Layers, HelpCircle, MoreVertical, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Clock, Layers, HelpCircle, Eye, EyeOff, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
 interface VideoListItemProps {
@@ -37,7 +37,7 @@ export default function VideoListItem({
   onDelete,
   onClick,
 }: VideoListItemProps) {
-  const [showMenu, setShowMenu] = useState(false);
+  const [, setShowMenu] = useState(false); // Keep setter for future use
 
   const handleCardClick = () => {
     if (onClick) {

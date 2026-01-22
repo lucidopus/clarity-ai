@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
 import Button from './Button';
-import { Sparkles, LogOut } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface DashboardHeaderProps {
   title: string;
@@ -14,7 +14,7 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ title, subtitle, onGenerateClick, isGenerateModalOpen }: DashboardHeaderProps) {
-  const { logout } = useAuth();
+  useAuth(); // Keep hook for potential future usage
 
   // Add keyboard shortcut for generate button (Cmd+K)
   useEffect(() => {

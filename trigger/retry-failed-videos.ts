@@ -1,13 +1,6 @@
-import { task, schedules, logger } from "@trigger.dev/sdk/v3";
+import { schedules, logger } from "@trigger.dev/sdk/v3";
 import mongoose from "mongoose";
 import Video from "../lib/models/Video";
-import Flashcard from "../lib/models/Flashcard";
-import Quiz from "../lib/models/Quiz";
-import LearningMaterial from "../lib/models/LearningMaterial";
-import { MindMap } from "../lib/models";
-import { generateLearningMaterialsChunked } from "../lib/llm";
-import { generateEmbeddings } from "../lib/embedding";
-import { GEMINI_MODEL_NAME } from "../lib/sdk";
 import { processSingleVideoTask } from "./process-single-video";
 
 /**
@@ -25,12 +18,7 @@ function isPermanentError(errorType: string): boolean {
   return permanentErrors.includes(errorType);
 }
 
-/**
- * Helper: Check if error requires chunked generation
- */
-function isTokenLimitError(errorType: string): boolean {
-  return ['LLM_TOKEN_LIMIT', 'LLM_OUTPUT_LIMIT', 'LLM_TIMEOUT'].includes(errorType);
-}
+
 
 /**
  * Scheduled Task: Retry Failed Videos
@@ -40,7 +28,8 @@ export const retryFailedVideos = schedules.task({
   id: "retry-failed-videos",
   // cron: "0 */6 * * *", // Set this on Trigger.dev dashboard instead
   maxDuration: 600, // 10 minutes
-  run: async (payload) => {
+
+  run: async (_payload) => {
     const summary = {
       timestamp: new Date().toISOString(),
       videosFound: 0,
@@ -69,6 +58,7 @@ export const retryFailedVideos = schedules.task({
       }
 
       // Query videos needing retry
+      // Note: validation_rejected videos are excluded - they need user action first
       const videos = await Video.find({
         processingStatus: 'completed_with_warning'
       });
@@ -82,6 +72,7 @@ export const retryFailedVideos = schedules.task({
       }
 
       // First, handle permanent failures sequentially (quick DB updates)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const videosToRetry: any[] = [];
       
       for (const video of videos) {
@@ -136,6 +127,7 @@ export const retryFailedVideos = schedules.task({
               }
             } else {
               summary.stillPending++;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const errorMsg = (result.error as any)?.message || 'Unknown error';
               summary.errors.push(`${result.id}: ${errorMsg}`);
               logger.error(`⚠️ Task failed for video:`, result.error as Record<string, unknown>);
@@ -165,216 +157,3 @@ export const retryFailedVideos = schedules.task({
     return summary;
   }
 });
-
-/**
- * Process video with chunked generation
- */
-async function processVideoChunked(video: any, summary: any) {
-  try {
-    logger.info(`🔧 Starting chunked generation for ${video.videoId}`);
-    logger.info(`📋 Incomplete materials: ${video.incompleteMaterials?.join(', ') || 'all'}`);
-
-    // Get transcript
-    const transcript = video.transcript.map((s: any) => s.text).join(' ');
-
-    // Generate materials in chunks - pass incompleteMaterials for selective retry
-    const chunkedResult = await generateLearningMaterialsChunked(
-      transcript,
-      video.incompleteMaterials || undefined
-    );
-
-    // Transform problem IDs to include videoId prefix
-    if (chunkedResult.materials.realWorldProblems && chunkedResult.materials.realWorldProblems.length > 0) {
-      chunkedResult.materials.realWorldProblems = chunkedResult.materials.realWorldProblems.map(problem => ({
-        ...problem,
-        id: `${video.videoId}_${problem.id}`
-      }));
-    }
-
-    // Save materials to database
-    await saveVideoMaterials(video, chunkedResult.materials);
-
-    // Determine incompleteMaterials for tracking
-    // NOTE: Only track materials that FAILED generation, not those that were SKIPPED
-    // Skipped materials return empty arrays but already exist in the database
-    const incompleteMaterialsList: string[] = [...chunkedResult.incompleteMaterials];
-
-    // Update video status
-    if (incompleteMaterialsList.length === 0) {
-      // ✅ Complete success - generate embedding if missing
-      let embedding: number[] = video.embedding || [];
-      
-      // Only generate embedding if it doesn't exist
-      if (!video.embedding || video.embedding.length === 0) {
-        logger.info(`🧠 Generating embedding for ${video.videoId}...`);
-        try {
-          const transcript = video.transcript.map((s: any) => s.text).join(' ');
-          const transcriptSnippet = transcript.slice(0, 1000);
-          const embeddingContext = `
-            Title: ${chunkedResult.materials.title}
-            Category: ${chunkedResult.materials.category}
-            Summary: ${chunkedResult.materials.videoSummary}
-            Tags: ${chunkedResult.materials.tags.join(', ')}
-            Transcript Start: ${transcriptSnippet}
-          `.trim();
-          
-          const embeddingResult = await generateEmbeddings(embeddingContext);
-          embedding = Array.isArray(embeddingResult) && Array.isArray(embeddingResult[0]) 
-            ? (embeddingResult as number[][])[0] 
-            : (embeddingResult as number[]);
-            
-          logger.info(`✅ Generated 1536d embedding for ${video.videoId}`);
-        } catch (embError) {
-          logger.warn(`⚠️ Embedding generation failed (non-critical) for ${video.videoId}:`, embError as Record<string, unknown>);
-        }
-      } else {
-        logger.info(`⏭️  Skipping embedding generation for ${video.videoId} - already exists (${video.embedding.length} dimensions)`);
-      }
-
-      await Video.findByIdAndUpdate(video._id, {
-        title: chunkedResult.materials.title,
-        category: chunkedResult.materials.category,
-        tags: chunkedResult.materials.tags,
-        summary: chunkedResult.materials.videoSummary,
-        embedding: embedding,
-        processingStatus: 'completed',
-        materialsStatus: 'complete',
-        incompleteMaterials: [],
-        errorType: null,
-        errorMessage: null,
-        processedAt: new Date(),
-      });
-      summary.successfulRetries++;
-      summary.breakdown.chunkedGeneration++;
-      logger.info(`✅ Chunked generation succeeded completely for ${video.videoId}`);
-    } else {
-      // ⚠️ Partial success - some chunks failed
-      await Video.findByIdAndUpdate(video._id, {
-        title: chunkedResult.materials.title,
-        category: chunkedResult.materials.category,
-        tags: chunkedResult.materials.tags,
-        summary: chunkedResult.materials.videoSummary,
-        processingStatus: 'completed_with_warning',
-        materialsStatus: 'incomplete',
-        incompleteMaterials: incompleteMaterialsList,
-        processedAt: new Date(),
-      });
-      summary.stillPending++;
-      logger.warn(`⚠️ Chunked generation partial success for ${video.videoId}. Missing: ${incompleteMaterialsList.join(', ')}`);
-    }
-
-  } catch (error) {
-    // Check if it's a permanent error
-    if (error instanceof Error) {
-      const errorName = error.constructor.name;
-      if (['LLMAuthenticationError', 'LLMPermissionError', 'LLMContentFilteredError'].includes(errorName)) {
-        // Permanent error - mark as failed
-        await Video.findByIdAndUpdate(video._id, {
-          processingStatus: 'failed',
-          errorType: errorName.replace('Error', '').toUpperCase(),
-          errorMessage: error.message,
-        });
-        summary.permanentFailures++;
-        logger.error(`❌ Chunked generation permanently failed for ${video.videoId}`);
-        return;
-      }
-    }
-
-    // Transient error - re-throw to be caught by outer handler
-    logger.warn(`⚠️ Chunked generation failed temporarily for ${video.videoId}`);
-    throw error;
-  }
-}
-
-/**
- * Process video with standard (non-chunked) retry
- */
-async function processVideoStandard(video: any, summary: any) {
-  // For now, just leave as completed_with_warning
-  // The standard retry uses the same generation as initial processing
-  // This would be handled by re-running the full pipeline
-  logger.info(`ℹ️ Video ${video.videoId} has transient error ${video.errorType}, will retry in next cron run`);
-  summary.stillPending++;
-}
-
-/**
- * Helper: Save generated materials to database
- */
-async function saveVideoMaterials(video: any, materials: any) {
-  const userId = video.userId;
-  const videoId = video.videoId;
-
-  // Save flashcards
-  if (materials.flashcards && materials.flashcards.length > 0) {
-    await Flashcard.deleteMany({ userId, videoId }); // Clear old ones
-    await Flashcard.insertMany(
-      materials.flashcards.map((fc: any) => ({
-        userId,
-        videoId,
-        question: fc.question,
-        answer: fc.answer,
-        difficulty: fc.difficulty,
-        generationType: 'ai',
-      }))
-    );
-    logger.info(`💾 Saved ${materials.flashcards.length} flashcards`);
-  }
-
-  // Save quizzes
-  if (materials.quizzes && materials.quizzes.length > 0) {
-    await Quiz.deleteMany({ userId, videoId }); // Clear old ones
-    await Quiz.insertMany(
-      materials.quizzes.map((quiz: any) => ({
-        userId,
-        videoId,
-        questionText: quiz.questionText,
-        options: quiz.options,
-        correctAnswerIndex: quiz.correctAnswerIndex,
-        explanation: quiz.explanation,
-        difficulty: 'medium',
-        generationType: 'ai',
-      }))
-    );
-    logger.info(`💾 Saved ${materials.quizzes.length} quizzes`);
-  }
-
-  // Save mind map
-  if (materials.mindMap && materials.mindMap.nodes && materials.mindMap.nodes.length > 0) {
-    await MindMap.findOneAndUpdate(
-      { userId, videoId },
-      {
-        userId,
-        videoId,
-        nodes: materials.mindMap.nodes,
-        edges: materials.mindMap.edges,
-        metadata: {
-          generatedBy: 'ai',
-          generatedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true }
-    );
-    logger.info(`💾 Saved mind map with ${materials.mindMap.nodes.length} nodes`);
-  }
-
-  // Save learning materials (chapters, prerequisites, real-world problems)
-  if (materials.chapters || materials.prerequisites || materials.realWorldProblems) {
-    await LearningMaterial.findOneAndUpdate(
-      { userId, videoId },
-      {
-        userId,
-        videoId,
-        chapters: materials.chapters || [],
-        prerequisites: materials.prerequisites || [],
-        realWorldProblems: materials.realWorldProblems || [],
-        videoSummary: materials.videoSummary || '',
-        metadata: {
-          generatedBy: GEMINI_MODEL_NAME,
-          generatedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true }
-    );
-    logger.info(`💾 Saved learning materials`);
-  }
-}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Command, ArrowRight, Sparkles, Loader2, PlayCircle } from 'lucide-react';
+import { Search, X, ArrowRight, Loader2, PlayCircle } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface GlobalSearchProps {
@@ -78,6 +78,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
             setResults([]);
         }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, urlQuery]);
 
   // Debounced Search Logic
@@ -251,7 +252,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                      </span>
                  </div>
                  <div className="flex items-center gap-2 opacity-70">
-                     <span>ProTip: Describe what you want to learn, e.g. "How to build a startup".</span>
+                     <span>ProTip: Describe what you want to learn, e.g. &quot;How to build a startup&quot;.</span>
                  </div>
               </div>
             </div>

@@ -19,6 +19,7 @@ export const processSingleVideoTask = task({
     concurrencyLimit: 3, // Free tier: process 3 videos at a time
   },
   maxDuration: 600, // 10 minutes per video
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   run: async (payload: { video: any }) => {
     const { video } = payload;
     
@@ -64,7 +65,9 @@ export const processSingleVideoTask = task({
         };
       }
 
-      // CATEGORY 1: Transient errors - standard retry
+      // CATEGORY 1: Transient errors & Validation Override - standard retry
+      // VALIDATION_OVERRIDE: User requested generation for non-educational content. 
+      // We use standard generation (full transcript) as it's not a token limit issue.
       const result = await processVideoStandard(video);
       logger.info(`🔄 Standard retry result for ${video.videoId}:`, result);
       return {

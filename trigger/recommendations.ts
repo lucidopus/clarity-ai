@@ -1,4 +1,4 @@
-import { task, schedules, logger, wait, auth } from "@trigger.dev/sdk";
+import { task, schedules, logger, auth } from "@trigger.dev/sdk";
 
 // Explicitly configure authentication to ensure client-side triggering works
 auth.configure({

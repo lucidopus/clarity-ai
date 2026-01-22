@@ -1,6 +1,5 @@
 import { generateLearningMaterialsChunked } from './llm';
 import { generateEmbeddings } from './embedding';
-import mongoose from 'mongoose';
 import Video from './models/Video';
 import Flashcard from './models/Flashcard';
 import Quiz from './models/Quiz';
@@ -10,6 +9,41 @@ import { MindMap } from './models';
 /**
  * Shared utility functions for video retry processing
  */
+
+// Type definitions for video retry processing
+interface TranscriptSegment {
+  text: string;
+  offset: number;
+  duration: number;
+}
+
+// Use Record types for flexibility with LLM output structures
+type RealWorldProblem = Record<string, unknown> & { id: string };
+type FlashcardItem = Record<string, unknown> & { question: string; answer: string };
+type QuizItem = Record<string, unknown> & { questionText: string; options: string[] };
+
+interface LearningMaterials {
+  title: string;
+  category: string;
+  tags: string[];
+  videoSummary: string;
+  chapters?: Array<Record<string, unknown>>;
+  flashcards?: FlashcardItem[];
+  quizzes?: QuizItem[];
+  prerequisites?: Array<Record<string, unknown>>;
+  realWorldProblems?: RealWorldProblem[];
+  mindMap?: { nodes: unknown[]; edges?: unknown[] };
+}
+
+interface VideoDocument {
+  _id: string;
+  videoId: string;
+  userId: string;
+  transcript: TranscriptSegment[];
+  embedding?: number[];
+  incompleteMaterials?: string[];
+  errorType?: string;
+}
 
 /**
  * Determines if an error type indicates a token limit issue
@@ -34,12 +68,12 @@ export function isPermanentError(errorType: string): boolean {
 /**
  * Process a video using chunked generation (for long videos)
  */
-export async function processVideoChunked(video: any) {
+export async function processVideoChunked(video: VideoDocument) {
   console.log(`🔧 Starting chunked generation for ${video.videoId}`);
   console.log(`📋 Incomplete materials: ${video.incompleteMaterials?.join(', ') || 'all'}`);
 
   // Get transcript
-  const transcript = video.transcript.map((s: any) => s.text).join(' ');
+  const transcript = video.transcript.map((s) => s.text).join(' ');
 
   // Generate materials in chunks - pass incompleteMaterials for selective retry
   const chunkedResult = await generateLearningMaterialsChunked(
@@ -50,7 +84,7 @@ export async function processVideoChunked(video: any) {
   // Transform problem IDs to include videoId prefix
   if (chunkedResult.materials.realWorldProblems && chunkedResult.materials.realWorldProblems.length > 0) {
     chunkedResult.materials.realWorldProblems = chunkedResult.materials.realWorldProblems.map(
-      (problem: any, index: number) => ({
+      (problem, index: number) => ({
         ...problem,
         id: `${video.videoId}-problem-${index + 1}`,
       })
@@ -126,36 +160,97 @@ export async function processVideoChunked(video: any) {
 /**
  * Process a video using standard retry (for transient errors)
  */
-export async function processVideoStandard(video: any) {
-  console.log(`🔄 Retrying video ${video.videoId} with standard approach (transient error)`);
+/**
+ * Process a video using standard retry (for transient errors or validation overrides)
+ */
+export async function processVideoStandard(video: VideoDocument) {
+  console.log(`🔄 Retrying video ${video.videoId} with standard approach`);
   
-  // For now, just mark as pending for manual review
-  // In the future, this could trigger the original generation task
-  await Video.findByIdAndUpdate(video._id, {
-    processingStatus: 'completed_with_warning',
-  });
+  // Import dynamically to avoid circular dependencies if any
+  const { generateLearningMaterials } = await import('./llm');
   
-  console.log(`⏸️ Video ${video.videoId} marked for standard retry (kept as pending)`);
-  return { success: false, videoId: video.videoId, method: 'standard', needsManualRetry: true };
+  // Get transcript
+  const transcript = video.transcript.map((s) => s.text).join(' ');
+  console.log(`📝 Transcript length: ${transcript.length} characters`);
+
+  try {
+    // Generate materials using standard (non-chunked) approach
+    const llmResponse = await generateLearningMaterials(transcript);
+    const materials = llmResponse.materials;
+
+    // Transform problem IDs
+    if (materials.realWorldProblems && materials.realWorldProblems.length > 0) {
+      materials.realWorldProblems = materials.realWorldProblems.map(
+        (problem, index: number) => ({
+          ...problem,
+          id: `${video.videoId}-problem-${index + 1}`,
+        })
+      );
+    }
+
+    // Save materials
+    await saveVideoMaterials(video, materials, true);
+
+    // Generate embedding
+    console.log(`🧠 Generating embedding for ${video.videoId}...`);
+    let embedding: number[] = video.embedding || [];
+    try {
+        const transcriptSnippet = transcript.slice(0, 1000);
+        const embeddingContext = `
+          Title: ${materials.title}
+          Category: ${materials.category}
+          Summary: ${materials.videoSummary}
+          Tags: ${materials.tags.join(', ')}
+          Transcript Start: ${transcriptSnippet}
+        `.trim();
+        
+        const embeddingResult = await generateEmbeddings(embeddingContext);
+        embedding = Array.isArray(embeddingResult) && Array.isArray(embeddingResult[0]) 
+          ? (embeddingResult as number[][])[0] 
+          : (embeddingResult as number[]);
+          
+        console.log(`✅ Generated 1536d embedding for ${video.videoId}`);
+    } catch (embError) {
+        console.warn(`⚠️ Embedding generation failed (non-critical) for ${video.videoId}:`, embError);
+    }
+
+    // Mark as complete
+    await Video.findByIdAndUpdate(video._id, {
+      processingStatus: 'completed',
+      materialsStatus: 'complete',
+      incompleteMaterials: [],
+      embedding,
+      errorType: null,
+      errorMessage: null,
+      processedAt: new Date(),
+    });
+
+    console.log(`✅ Video ${video.videoId} standard retry succeeded!`);
+    return { success: true, videoId: video.videoId, method: 'standard' };
+
+  } catch (error) {
+    console.error(`❌ Standard retry failed for ${video.videoId}:`, error);
+    throw error; // Re-throw to be handled by the caller (which logs it and keeps it pending)
+  }
 }
 
 /**
  * Save generated materials to database
  * @param metadataWasGenerated - If true, update video metadata fields. If false, skip to avoid overwriting with placeholders.
  */
-async function saveVideoMaterials(video: any, materials: any, metadataWasGenerated: boolean = true) {
+async function saveVideoMaterials(video: VideoDocument, materials: LearningMaterials, metadataWasGenerated: boolean = true) {
   // Models are already imported at the top of the file
   
   // Save flashcards
   if (materials.flashcards && materials.flashcards.length > 0) {
     await Flashcard.deleteMany({ videoId: video.videoId });
     await Flashcard.insertMany(
-      materials.flashcards.map((card: any) => ({
+      materials.flashcards.map((card) => ({
         ...card,
         videoId: video.videoId,
         userId: video.userId,
         generationType: 'ai',
-        difficulty: card.difficulty || 'medium', // Default to medium if not provided
+        difficulty: (card as Record<string, unknown>).difficulty || 'medium',
       }))
     );
   }
@@ -164,12 +259,12 @@ async function saveVideoMaterials(video: any, materials: any, metadataWasGenerat
   if (materials.quizzes && materials.quizzes.length > 0) {
     await Quiz.deleteMany({ videoId: video.videoId });
     await Quiz.insertMany(
-      materials.quizzes.map((quiz: any) => ({
+      materials.quizzes.map((quiz) => ({
         ...quiz,
         videoId: video.videoId,
         userId: video.userId,
         generationType: 'ai',
-        difficulty: quiz.difficulty || 'medium', // Default to medium if not provided
+        difficulty: (quiz as Record<string, unknown>).difficulty || 'medium',
       }))
     );
   }
