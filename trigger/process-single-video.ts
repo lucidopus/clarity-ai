@@ -64,7 +64,9 @@ export const processSingleVideoTask = task({
         };
       }
 
-      // CATEGORY 1: Transient errors - standard retry
+      // CATEGORY 1: Transient errors & Validation Override - standard retry
+      // VALIDATION_OVERRIDE: User requested generation for non-educational content. 
+      // We use standard generation (full transcript) as it's not a token limit issue.
       const result = await processVideoStandard(video);
       logger.info(`🔄 Standard retry result for ${video.videoId}:`, result);
       return {

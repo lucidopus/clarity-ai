@@ -253,6 +253,19 @@ export class DuplicateVideoError extends ApiError {
   }
 }
 
+/**
+ * Content Validation Errors
+ */
+export class NonEducationalContentError extends ApiError {
+  constructor(reason?: string) {
+    super(
+      'NON_EDUCATIONAL_CONTENT',
+      reason || 'This video does not contain educational content suitable for learning materials generation',
+      400
+    );
+  }
+}
+
 export class UnknownError extends ApiError {
   constructor(originalMessage?: string) {
     super(

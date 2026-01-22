@@ -143,6 +143,41 @@ export default function DashboardHomePage() {
     return () => { mounted = false; };
   }, [user, refreshTick]);
 
+  const handleValidationAction = async (videoId: string, action: 'reject' | 'override') => {
+    console.log(`🎯 [FRONTEND] Handling validation action: ${action} for video ${videoId}`);
+    
+    try {
+      const response = await fetch(`/api/videos/${videoId}/validation-action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ [FRONTEND] Validation action failed:', data);
+        return;
+      }
+
+      console.log(`✅ [FRONTEND] Validation action successful:`, data);
+
+      if (action === 'override') {
+        // Show success message
+        alert('Materials will be generated soon! Check your library in a few minutes.');
+        // Optionally redirect to library
+        // window.location.href = '/dashboard/gallery';
+      } else {
+        // Action was 'reject' - video marked as failed, just close dialog
+        console.log('📝 [FRONTEND] Video marked as failed, not generating materials');
+      }
+
+      setErrorState(null);
+    } catch (error) {
+      console.error('❌ [FRONTEND] Validation action error:', error);
+    }
+  };
+
   const handleGenerate = async (youtubeUrl: string) => {
     console.log('🎬 [FRONTEND] Starting video generation from Home page...');
     console.log(`🎬 [FRONTEND] YouTube URL: ${youtubeUrl}`);
@@ -169,8 +204,17 @@ export default function DashboardHomePage() {
       });
 
       console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
-
-      const data = await response.json();
+      
+      // Parse response with error handling
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('📥 [FRONTEND] Raw response text:', responseText.substring(0, 200));
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (parseError) {
+        console.error('❌ [FRONTEND] Failed to parse response:', parseError);
+        data = {};
+      }
 
       // Case 1: Apify/validation failed → show error dialog, stay on home
       if (!response.ok) {
@@ -385,20 +429,33 @@ export default function DashboardHomePage() {
         <Dialog
           isOpen={errorState.show}
           onClose={() => setErrorState(null)}
-          onConfirm={() => {
-            // Handle special actions for specific error types
-            if (errorState.errorType === 'DUPLICATE_VIDEO' && errorState.videoId) {
-              // Redirect to existing video
-              window.location.href = `/generations/${errorState.videoId}`;
-            } else {
-              setErrorState(null);
-            }
-          }}
           type="alert"
           variant={getErrorConfig(errorState.errorType).variant}
           title={getErrorConfig(errorState.errorType).title}
           message={getErrorConfig(errorState.errorType).message}
-          confirmText={errorState.errorType === 'DUPLICATE_VIDEO' ? 'View Existing' : 'OK'}
+          actions={(() => {
+            const config = getErrorConfig(errorState.errorType);
+            if (!config.actions) return undefined;
+            
+            return config.actions.map(action => ({
+              label: action.label,
+              variant: action.variant as any,
+              onClick: async () => {
+                if (action.onClick === 'retry') {
+                  if (errorState.videoId) await handleValidationAction(errorState.videoId, 'override');
+                } else if (action.onClick === 'close') {
+                   if (errorState.errorType === 'NON_EDUCATIONAL_CONTENT' && errorState.videoId) {
+                     handleValidationAction(errorState.videoId, 'reject');
+                   }
+                   setErrorState(null);
+                } else if (action.onClick === 'viewExisting') {
+                   if (errorState.videoId) window.location.href = `/generations/${errorState.videoId}`;
+                } else if (action.onClick === 'chooseDifferentVideo') {
+                   setErrorState(null);
+                }
+              }
+            }));
+          })()}
         />
       )}
     </div>

@@ -227,6 +227,17 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageConfig> = {
     ]
   },
 
+  NON_EDUCATIONAL_CONTENT: {
+    title: 'Not Educational Content',
+    message: 'This video appears to be entertainment content (like music videos, vlogs, or gaming streams) rather than educational material. Clarity AI works best with tutorials, lectures, courses, and how-to videos.\n\nWhat would you like to do?',
+    variant: 'warning',
+    shouldRedirect: false,
+    actions: [
+      { label: 'Generate Anyway', variant: 'primary', onClick: 'retry' },
+      { label: 'Don\'t Generate', variant: 'secondary', onClick: 'close' },
+    ]
+  },
+
   UNKNOWN_ERROR: {
     title: 'Unexpected Error',
     message: 'We encountered an unexpected error. Our team has been notified. Please try again or contact support if the issue persists.',

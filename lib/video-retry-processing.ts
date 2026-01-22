@@ -126,17 +126,78 @@ export async function processVideoChunked(video: any) {
 /**
  * Process a video using standard retry (for transient errors)
  */
+/**
+ * Process a video using standard retry (for transient errors or validation overrides)
+ */
 export async function processVideoStandard(video: any) {
-  console.log(`🔄 Retrying video ${video.videoId} with standard approach (transient error)`);
+  console.log(`🔄 Retrying video ${video.videoId} with standard approach`);
   
-  // For now, just mark as pending for manual review
-  // In the future, this could trigger the original generation task
-  await Video.findByIdAndUpdate(video._id, {
-    processingStatus: 'completed_with_warning',
-  });
+  // Import dynamically to avoid circular dependencies if any
+  const { generateLearningMaterials } = await import('./llm');
   
-  console.log(`⏸️ Video ${video.videoId} marked for standard retry (kept as pending)`);
-  return { success: false, videoId: video.videoId, method: 'standard', needsManualRetry: true };
+  // Get transcript
+  const transcript = video.transcript.map((s: any) => s.text).join(' ');
+  console.log(`📝 Transcript length: ${transcript.length} characters`);
+
+  try {
+    // Generate materials using standard (non-chunked) approach
+    const llmResponse = await generateLearningMaterials(transcript);
+    const materials = llmResponse.materials;
+
+    // Transform problem IDs
+    if (materials.realWorldProblems && materials.realWorldProblems.length > 0) {
+      materials.realWorldProblems = materials.realWorldProblems.map(
+        (problem: any, index: number) => ({
+          ...problem,
+          id: `${video.videoId}-problem-${index + 1}`,
+        })
+      );
+    }
+
+    // Save materials
+    await saveVideoMaterials(video, materials, true);
+
+    // Generate embedding
+    console.log(`🧠 Generating embedding for ${video.videoId}...`);
+    let embedding: number[] = video.embedding || [];
+    try {
+        const transcriptSnippet = transcript.slice(0, 1000);
+        const embeddingContext = `
+          Title: ${materials.title}
+          Category: ${materials.category}
+          Summary: ${materials.videoSummary}
+          Tags: ${materials.tags.join(', ')}
+          Transcript Start: ${transcriptSnippet}
+        `.trim();
+        
+        const embeddingResult = await generateEmbeddings(embeddingContext);
+        embedding = Array.isArray(embeddingResult) && Array.isArray(embeddingResult[0]) 
+          ? (embeddingResult as number[][])[0] 
+          : (embeddingResult as number[]);
+          
+        console.log(`✅ Generated 1536d embedding for ${video.videoId}`);
+    } catch (embError) {
+        console.warn(`⚠️ Embedding generation failed (non-critical) for ${video.videoId}:`, embError);
+    }
+
+    // Mark as complete
+    await Video.findByIdAndUpdate(video._id, {
+      processingStatus: 'completed',
+      materialsStatus: 'complete',
+      incompleteMaterials: [],
+      embedding,
+      errorType: null,
+      errorMessage: null,
+      processedAt: new Date(),
+    });
+
+    console.log(`✅ Video ${video.videoId} standard retry succeeded!`);
+    return { success: true, videoId: video.videoId, method: 'standard' };
+
+  } catch (error) {
+    console.error(`❌ Standard retry failed for ${video.videoId}:`, error);
+    throw error; // Re-throw to be handled by the caller (which logs it and keeps it pending)
+  }
 }
 
 /**

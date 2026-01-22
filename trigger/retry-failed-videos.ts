@@ -69,6 +69,7 @@ export const retryFailedVideos = schedules.task({
       }
 
       // Query videos needing retry
+      // Note: validation_rejected videos are excluded - they need user action first
       const videos = await Video.find({
         processingStatus: 'completed_with_warning'
       });

@@ -195,7 +195,107 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Generate learning materials
+    // 6. Validate educational content (if enabled)
+    if (process.env.ENABLE_CONTENT_VALIDATION === 'true') {
+      console.log('🔍 [VIDEO PROCESS] Step 6.5: Validating educational content...');
+      
+      try {
+        const { validateEducationalContent, logValidationDecision } = await import('@/lib/content-validator');
+        const { NonEducationalContentError } = await import('@/lib/errors/ApiError');
+        
+        const validationStartTime = Date.now();
+        const validation = await validateEducationalContent(transcriptResult.text);
+        const validationDuration = Date.now() - validationStartTime;
+        
+        // Log validation decision to SystemLog
+        await logValidationDecision({
+          userId: decoded.userId,
+          videoId: videoId,
+          validation,
+          snippetLength: Math.min(transcriptResult.text.length, 2000),
+          model: process.env.CONTENT_VALIDATION_MODEL || 'gemini-2.0-flash-exp',
+        });
+        
+        // Track validation cost
+        const validationCost = calculateLLMCost(
+          validation.usage.promptTokens,
+          validation.usage.completionTokens,
+          process.env.CONTENT_VALIDATION_MODEL || 'gemini-2.0-flash-exp'
+        );
+        
+        services.push({
+          service: ServiceType.CONTENT_VALIDATION,
+          usage: {
+            cost: validationCost,
+            unitDetails: {
+              inputTokens: validation.usage.promptTokens,
+              outputTokens: validation.usage.completionTokens,
+              duration: validationDuration,
+              metadata: {
+                confidence: validation.confidence,
+                reason: validation.reason,
+                suggestedCategory: validation.suggestedCategory,
+              },
+            },
+          },
+          status: validation.isEducational ? 'success' : 'rejected',
+        });
+        
+        console.log(`💰 [COST] Content validation: ${validation.usage.promptTokens} input + ${validation.usage.completionTokens} output tokens = ${formatCost(validationCost)}`);
+        
+        // If non-educational, mark as validation_rejected and return
+        if (!validation.isEducational) {
+          console.log(`❌ [VIDEO PROCESS] Non-educational content detected: ${validation.reason}`);
+          console.log(`🔍 [VIDEO PROCESS] Confidence: ${validation.confidence}`);
+          
+          // Log costs before rejecting
+          const totalCost = calculateTotalCost(services);
+          await logGenerationCost({
+            userId: decoded.userId,
+            source: CostSource.LEARNING_MATERIAL_GENERATION,
+            videoId: videoDoc._id,
+            services,
+            totalCost,
+          });
+          console.log(`✅ [VIDEO PROCESS] Cost logged: ${formatCost(totalCost)} total`);
+          
+          // Update video status to validation_rejected (retriable)
+          await Video.findByIdAndUpdate(videoDoc._id, {
+            processingStatus: 'validation_rejected',
+            errorType: 'NON_EDUCATIONAL_CONTENT',
+            errorMessage: validation.reason,
+          });
+          
+          // Return error to user with override option
+          const error = new NonEducationalContentError(validation.reason);
+          const responsePayload = {
+            error: error.message,
+            errorType: error.code,
+            details: validation.reason,
+            confidence: validation.confidence,
+            videoId: videoDoc._id.toString(), // Include videoId for override handling
+          };
+          console.log('📤 [VIDEO PROCESS] Sending validation rejection response:', JSON.stringify(responsePayload));
+          return NextResponse.json(
+            responsePayload,
+            { status: error.statusCode }
+          );
+        }
+        
+        console.log(`✅ [VIDEO PROCESS] Educational content validated (confidence: ${validation.confidence})`);
+        if (validation.suggestedCategory) {
+          console.log(`💡 [VIDEO PROCESS] Suggested category: ${validation.suggestedCategory}`);
+        }
+        
+      } catch (validationError) {
+        console.error('⚠️ [VIDEO PROCESS] Content validation failed (non-critical):', validationError);
+        // Fail-open: continue processing if validation fails
+      }
+    } else {
+      console.log('⏭️ [VIDEO PROCESS] Content validation disabled, skipping...');
+    }
+
+    // 7. Generate learning materials
     console.log('🤖 [VIDEO PROCESS] Step 7: Generating learning materials with LLM...');
     console.log(`📊 [VIDEO PROCESS] Sending ${transcriptResult.text.length} characters to LLM...`);
     let materials = null;
