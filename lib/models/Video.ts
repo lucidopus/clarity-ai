@@ -59,7 +59,7 @@ const VideoSchema: Schema = new Schema({
   category: { type: String },
   embedding: { type: [Number], select: false }, // Hide huge vector arrays by default for performance
 
-  visibility: { type: String, enum: ['private', 'public'], default: 'private' },
+  visibility: { type: String, enum: ['private', 'public'], default: 'public' },
   errorType: { type: String },
   errorMessage: { type: String },
   processedAt: { type: Date },
