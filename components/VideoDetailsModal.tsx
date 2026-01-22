@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Clock, Tag, BookOpen, Brain, Network, Target } from 'lucide-react';
+import { X, Play, Clock, BookOpen, Brain, Network, Target } from 'lucide-react';
 import Button from './Button';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
@@ -30,8 +30,6 @@ export default function VideoDetailsModal({ isOpen, onClose, video, onPlay }: Vi
   if (!isOpen) return null;
 
   // Determine material availability
-  const isComplete = video.materialsStatus === 'complete';
-  // If complete, everything is available unless listed in incompleteMaterials (which shouldn't happen if complete, but safe check)
   // If incomplete, check missing array.
   
   const checkMaterial = (key: string) => {

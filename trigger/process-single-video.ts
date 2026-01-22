@@ -19,6 +19,7 @@ export const processSingleVideoTask = task({
     concurrencyLimit: 3, // Free tier: process 3 videos at a time
   },
   maxDuration: 600, // 10 minutes per video
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   run: async (payload: { video: any }) => {
     const { video } = payload;
     

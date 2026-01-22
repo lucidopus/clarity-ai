@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
 
-import { Clock, Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2 } from 'lucide-react';
+import { Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2 } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;

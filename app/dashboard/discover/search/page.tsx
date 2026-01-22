@@ -2,10 +2,9 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Loader2, Play, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, Play, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
-import Button from '@/components/Button';
 import DiscoverNavbar from '@/components/DiscoverNavbar';
 
 interface VideoResult {
@@ -114,7 +113,7 @@ function SearchPageContent() {
           {!loading && !error && results.length === 0 && (
               <div className="text-center py-20">
                   <p className="text-xl font-semibold mb-2">No relevant videos found.</p>
-                  <p className="text-muted-foreground">Try searching for broader concepts like "Python" or "History".</p>
+                  <p className="text-muted-foreground">Try searching for broader concepts like &quot;Python&quot; or &quot;History&quot;.</p>
               </div>
           )}
 

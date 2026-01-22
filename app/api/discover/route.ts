@@ -15,6 +15,24 @@ interface RedisCandidate {
   title?: string;
 }
 
+interface HydratedVideo {
+  videoId: string;
+  title: string;
+  thumbnail?: string;
+  channelName?: string;
+  duration?: number;
+  category?: string;
+  tags?: string[];
+  materialsStatus?: string;
+  incompleteMaterials?: string[];
+  summary?: string;
+  userId?: string | { toString(): string };
+  score?: number;
+  durationSeconds?: number;
+  authorUsername?: string;
+  _id?: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // 1. Authentication
@@ -50,8 +68,9 @@ export async function GET(request: NextRequest) {
     // Fetch all videoIds the user has interacted with (Progress)
     // We assume if a Progress doc exists, they have at least started watching it.
     // Optimisation: .lean() for performance
-    const userProgress = await Progress.find({ userId: userId }).select('videoId').lean();
-    const watchedVideoIds = new Set(userProgress.map((p: any) => p.videoId));
+    // Optimisation: .lean() for performance
+    const userProgress = await Progress.find({ userId: userId }).select('videoId').lean() as unknown as { videoId: string }[];
+    const watchedVideoIds = new Set(userProgress.map((p) => p.videoId));
 
     // Filter candidates: Keep only those NOT in watchedVideoIds
     const freshCandidates = candidates.filter(c => !watchedVideoIds.has(c.videoId));
@@ -72,16 +91,16 @@ export async function GET(request: NextRequest) {
     const freshVideoIds = freshCandidates.map(c => c.videoId);
     const videos = await Video.find({ videoId: { $in: freshVideoIds } })
         .select('videoId title thumbnail channelName duration category tags materialsStatus incompleteMaterials summary userId')
-        .lean();
+        .lean() as unknown as HydratedVideo[];
 
     // B) Fetch author usernames
-    const uniqueUserIds = [...new Set(videos.map((v: any) => v.userId?.toString()).filter(Boolean))];
-    const users = await User.find({ _id: { $in: uniqueUserIds } }).select('_id username').lean();
-    const usernameMap = new Map(users.map((u: any) => [u._id.toString(), u.username]));
+    const uniqueUserIds = [...new Set(videos.map((v) => v.userId?.toString()).filter(Boolean))];
+    const users = await User.find({ _id: { $in: uniqueUserIds } }).select('_id username').lean() as unknown as { _id: string; username: string }[];
+    const usernameMap = new Map(users.map((u) => [u._id.toString(), u.username]));
 
     const scoreMap = new Map(freshCandidates.map(c => [c.videoId, c.score]));
     
-    const richCandidates = videos.map((v: any) => ({
+    const richCandidates = videos.map((v) => ({
         ...v,
         score: scoreMap.get(v.videoId) || 0,
         durationSeconds: v.duration || 0,
@@ -91,21 +110,21 @@ export async function GET(request: NextRequest) {
     // B) Row Builders
     interface CategoryRow {
         name: string;
-        videos: any[];
+        videos: HydratedVideo[];
         weight: number; // For sorting rows
     }
     
     const rows: CategoryRow[] = [];
     const usedVideoIds = new Set<string>();
 
-    const addRow = (name: string, filterFn: (v: any) => boolean, limit = 10, baseWeight = 0) => {
+    const addRow = (name: string, filterFn: (v: HydratedVideo) => boolean, limit = 10, baseWeight = 0) => {
         const matches = richCandidates
             .filter(v => filterFn(v) && !usedVideoIds.has(v.videoId))
-            .sort((a: any, b: any) => b.score - a.score);
+            .sort((a, b) => (b.score || 0) - (a.score || 0));
         
         if (matches.length > 0) {
             const selectedVideos = matches.slice(0, limit);
-            selectedVideos.forEach((v: any) => usedVideoIds.add(v.videoId)); // Track used IDs
+            selectedVideos.forEach((v) => usedVideoIds.add(v.videoId)); // Track used IDs
 
             rows.push({
                 name,
@@ -118,8 +137,9 @@ export async function GET(request: NextRequest) {
     // --- ROW 1: "For You" ---
     // Always top priority
     // Always top priority
-    const forYouVideos = richCandidates.sort((a: any, b: any) => b.score - a.score).slice(0, 10);
-    forYouVideos.forEach((v: any) => usedVideoIds.add(v.videoId));
+    // Always top priority
+    const forYouVideos = richCandidates.sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 10);
+    forYouVideos.forEach((v) => usedVideoIds.add(v.videoId));
     
     rows.push({
         name: "For You",
@@ -127,23 +147,24 @@ export async function GET(request: NextRequest) {
         weight: 1000 // Ensure #1
     });
 
+
     // --- ROW 2: "Quick Wins" ---
     // Boost if user has little time (< 20m)
     let quickWinsWeight = 10;
     if (dailyTime <= 20) quickWinsWeight += 50;
-    addRow("Quick Wins (< 5 min)", v => v.durationSeconds > 0 && v.durationSeconds <= 300, 10, quickWinsWeight);
+    addRow("Quick Wins (< 5 min)", v => (v.durationSeconds || 0) > 0 && (v.durationSeconds || 0) <= 300, 10, quickWinsWeight);
 
     // --- ROW 3: "Lunch Break Learning" ---
     // Good for average time (20-45m)
     let lunchWeight = 10;
     if (dailyTime > 20 && dailyTime <= 45) lunchWeight += 30;
-    addRow("Lunch Break Learning", v => v.durationSeconds > 900 && v.durationSeconds <= 1800, 10, lunchWeight);
+    addRow("Lunch Break Learning", v => (v.durationSeconds || 0) > 900 && (v.durationSeconds || 0) <= 1800, 10, lunchWeight);
 
     // --- ROW 4: "Deep Dives" ---
     // Boost if user has lots of time (> 60m)
     let deepDiveWeight = 10;
     if (dailyTime >= 60) deepDiveWeight += 50;
-    addRow("Deep Dives", v => v.durationSeconds > 2700, 10, deepDiveWeight);
+    addRow("Deep Dives", v => (v.durationSeconds || 0) > 2700, 10, deepDiveWeight);
 
     // --- ROW 5: "Code & Build" (Tech) ---
     // Boost if goal/role related to coding
@@ -152,8 +173,8 @@ export async function GET(request: NextRequest) {
     if (role === 'Student' && (goals.includes('computer') || goals.includes('tech'))) codeWeight += 40;
     
     addRow("Code & Build", v => 
-        v.category === 'Technology & Coding' || 
-        v.tags?.some((t: string) => ['programming', 'code', 'developer', 'software'].includes(t.toLowerCase())),
+        (v.category === 'Technology & Coding' || 
+        (v.tags?.some((t: string) => ['programming', 'code', 'developer', 'software'].includes(t.toLowerCase())) ?? false)),
         10, codeWeight
     );
 
@@ -163,8 +184,8 @@ export async function GET(request: NextRequest) {
     if (goals.includes('design') || goals.includes('art')) creatorWeight += 30;
     
     addRow("Creator's Studio", v => 
-        v.category === 'Arts & Design' || 
-        v.tags?.some((t: string) => ['design', 'editing', 'creative', 'art'].includes(t.toLowerCase())),
+        (v.category === 'Arts & Design' || 
+        (v.tags?.some((t: string) => ['design', 'editing', 'creative', 'art'].includes(t.toLowerCase())) ?? false)),
         10, creatorWeight
     );
 
@@ -174,9 +195,9 @@ export async function GET(request: NextRequest) {
     if (goals.includes('startup') || goals.includes('business')) bizWeight += 40;
 
     addRow("Entrepreneur Essentials", v => 
-        v.category === 'Business & Finance' || 
-        v.title?.toLowerCase().includes('startup') ||
-        v.title?.toLowerCase().includes('business'),
+        (v.category === 'Business & Finance' || 
+        (v.title?.toLowerCase().includes('startup') ?? false) ||
+        (v.title?.toLowerCase().includes('business') ?? false)),
         10, bizWeight
     );
 
@@ -188,8 +209,8 @@ export async function GET(request: NextRequest) {
     if (materials.some((m: string) => m.includes('visual') || m.includes('mind map') || m.includes('video'))) visualWeight += 20;
 
     addRow("Visual Learning", v => 
-        (v.materialsStatus === 'complete' && !v.incompleteMaterials?.includes('mindmap')) ||
-        v.tags?.includes('mindmap'),
+        ((v.materialsStatus === 'complete' && !v.incompleteMaterials?.includes('mindmap')) ||
+        (v.tags?.includes('mindmap') ?? false)),
         10, visualWeight
     );
 
@@ -199,14 +220,14 @@ export async function GET(request: NextRequest) {
     if (materials.some((m: string) => m.includes('quiz') || m.includes('interactive'))) interactiveWeight += 20;
 
     addRow("Interactive Sessions", v => 
-        (v.materialsStatus === 'complete' && !v.incompleteMaterials?.includes('quizzes')) ||
-        v.tags?.includes('quiz'),
+        ((v.materialsStatus === 'complete' && !v.incompleteMaterials?.includes('quizzes')) ||
+        (v.tags?.includes('quiz') ?? false)),
         10, interactiveWeight
     );
 
     // --- Generic Category Fallback ---
-     const categoriesFound = new Set(richCandidates.map((v: any) => v.category).filter(Boolean));
-    categoriesFound.forEach((cat: any) => {
+     const categoriesFound = new Set(richCandidates.map((v) => v.category).filter((c): c is string => !!c));
+    categoriesFound.forEach((cat) => {
         if (rows.length >= 20) return;
         if (['Arts & Design', 'Technology & Coding', 'Business & Finance'].includes(cat)) return; 
         

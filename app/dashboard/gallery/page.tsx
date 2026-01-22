@@ -497,7 +497,7 @@ export default function GalleryPage() {
            </div>
            <h3 className="text-xl font-bold text-foreground mb-2">No matches found</h3>
            <p className="text-muted-foreground max-w-md mx-auto">
-               We couldn't find any materials matching "{searchQuery}". Try adjusting your search terms or filters.
+               We couldn&apos;t find any materials matching &quot;{searchQuery}&quot;. Try adjusting your search terms or filters.
            </p>
         </div>
       )}
@@ -577,6 +577,7 @@ export default function GalleryPage() {
             
             return config.actions.map(action => ({
               label: action.label,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               variant: action.variant as any,
               onClick: async () => {
                 // Ensure helper function closes the generate modal too if action is taken

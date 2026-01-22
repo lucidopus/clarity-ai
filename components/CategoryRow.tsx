@@ -4,11 +4,10 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import VideoCard from './VideoCard';
-import { motion } from 'framer-motion';
 
 interface VideoItem {
   _id: string; 
-  videoId?: string; // YouTube ID
+  videoId?: string;
   title: string;
   channelName?: string;
   thumbnail?: string;
@@ -21,11 +20,11 @@ interface VideoItem {
 
 interface CategoryRowProps {
   title: string;
-  items: any[];
+  items: VideoItem[];
   categoryId: string;
 }
 
-export default function CategoryRow({ title, items, categoryId }: CategoryRowProps) {
+export default function CategoryRow({ title, items, categoryId: _categoryId }: CategoryRowProps) {
   const router = useRouter(); // Initialize router
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);

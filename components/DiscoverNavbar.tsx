@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import ThemeToggle from './ThemeToggle';
 import { useRouter } from 'next/navigation';
 import Button from './Button';
-import { LogOut, Search, Command, ArrowLeft } from 'lucide-react';
+import { Search, ArrowLeft } from 'lucide-react';
 
 interface DiscoverNavbarProps {
   title?: string;
@@ -15,7 +15,7 @@ interface DiscoverNavbarProps {
 }
 
 export default function DiscoverNavbar({ title = "Discover", subtitle, initialQuery, showBackButton }: DiscoverNavbarProps) {
-  const { logout } = useAuth();
+  useAuth(); // Keep hook for potential future usage
   const router = useRouter();
   
   const openGlobalSearch = () => {

@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Home, 
   Compass, 
@@ -12,8 +12,7 @@ import {
   Settings, 
   ChevronLeft, 
   Menu, 
-  LogOut,
-  User
+  LogOut
 } from 'lucide-react';
 
 interface NavItem {
@@ -49,7 +48,6 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const router = useRouter();
 
   return (
     <motion.aside

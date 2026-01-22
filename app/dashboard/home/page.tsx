@@ -1,14 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { BarChart3, Flame, Library, Layers, ListChecks } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import GenerateModal from '@/components/GenerateModal';
 import Dialog from '@/components/Dialog';
 import { useState, useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
-import StatCard from '@/components/StatCard';
 import StudyActivityHeatmap from '@/components/StudyActivityHeatmap';
 import RecentVideoCard from '@/components/RecentVideoCard';
 import { DashboardInsightsProvider } from '@/hooks/useDashboardInsights';
@@ -439,6 +438,7 @@ export default function DashboardHomePage() {
             
             return config.actions.map(action => ({
               label: action.label,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               variant: action.variant as any,
               onClick: async () => {
                 if (action.onClick === 'retry') {
