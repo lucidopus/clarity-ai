@@ -293,7 +293,8 @@ export const MASTER_CATALOG: Category[] = [
     type: 'Essential',
     // Recent?
     matcher: v => {
-        const date = v.createdAt ? new Date(v.createdAt) : new Date();
+        if (!v.createdAt) return false;
+        const date = new Date(v.createdAt);
         const now = new Date();
         const diffDays = (now.getTime() - date.getTime()) / (1000 * 3600 * 24);
         return diffDays < 7;

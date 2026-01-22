@@ -92,7 +92,9 @@ export class CategorySelector {
     
     // 7. Dynamic Fallback: If we still need more categories
     if (scoredCategories.length < limit) {
+        console.error('DEBUG: Entering Fallback. Limit:', limit, 'Current:', scoredCategories.length);
         const unusedVideos = candidates.filter(v => !usedVideoIds.has(v.videoId || ''));
+        console.error('DEBUG: Unused Videos:', unusedVideos.length);
         
         // Group by 'category' field
         const fallbackGroups: Record<string, CatalogVideo[]> = {};
@@ -128,13 +130,8 @@ export class CategorySelector {
                  score: 5, // Low base score for fallback
                  videos: videos
              });
+             console.error('DEBUG: Added dynamic category:', key);
         }
-    }
-    
-    // Debug output if fallback failed unexpectedly
-    if (scoredCategories.length === 0 && candidates.length > 0) {
-        console.log('CategorySelector Debug: No categories selected. Candidates:', candidates.length);
-        console.log('Unused videos calculation:', candidates.filter(v => !usedVideoIds.has(v.videoId || '')).length);
     }
     
     return scoredCategories;

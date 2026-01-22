@@ -132,20 +132,21 @@ describe('CategorySelector', () => {
       // Category is "Science".
       const videos: CatalogVideo[] = [{
           videoId: 'unknown_1',
-          title: 'Unknown Science Video',
+          title: 'Cooking Session',
           durationSeconds: 0, // 0 duration avoids Time/Format matchers
-          category: 'Science',
+          category: 'Cooking',
           tags: [],
-          score: 1.0
+          score: 0.5, // Low score avoids "Trending Now" / "Hall of Fame"
+          createdAt: new Date('2020-01-01') // Old date to avoid "New Arrivals"
       }];
       
       const selection = CategorySelector.select(user, videos);
       
-      // Should create a dynamic category for "Science"
-      const scienceCat = selection.find(s => s.category.label === 'Science');
-      
-      expect(scienceCat).toBeDefined();
-      expect(scienceCat!.videos.length).toBe(1);
-      expect(scienceCat!.category.id).toContain('dynamic_science');
+      // Should create a dynamic category for "Cooking"
+      const cookingCat = selection.find(s => s.category.label === 'Cooking');
+
+      expect(cookingCat).toBeDefined();
+      expect(cookingCat!.videos.length).toBe(1);
+      expect(cookingCat!.category.id).toContain('dynamic_cooking');
   });
 });
