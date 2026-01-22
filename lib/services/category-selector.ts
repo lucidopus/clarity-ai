@@ -54,7 +54,7 @@ export class CategorySelector {
       
       // F. Dynamic Context
       if (dailyTime <= 20 && cat.id === 'quick_wins') score += 50;
-      if (dailyTime > 60 && ['deep_reads', 'weekend_deep_dive'].includes(cat.id)) score += 20;
+      if (dailyTime > 60 && ['deep_reads', 'deep_focus'].includes(cat.id)) score += 20;
 
       rankedCategories.push({ category: cat, score });
     }

@@ -7,6 +7,7 @@ export type CategoryType =
   | 'Format' 
   | 'Motivation' 
   | 'Community' 
+  | 'Study'
   | 'Essential';
 
 export interface CatalogVideo extends Partial<IVideo> {
@@ -60,9 +61,14 @@ export const MASTER_CATALOG: Category[] = [
     id: 'evening_wind_down',
     label: 'Evening Wind-Down',
     type: 'TimeAware',
-    // Low intensity? Maybe longer, slower? Or just distinct from morning.
     // Let's us "Reflective" tags or valid duration. For now, match > 10m.
     matcher: v => (v.durationSeconds || 0) > 600
+  },
+  {
+    id: 'deep_focus',
+    label: 'Deep Focus Session',
+    type: 'Study',
+    matcher: v => (v.durationSeconds || 0) > 3600 // > 60 mins
   },
   {
     id: 'weekend_deep_dive',

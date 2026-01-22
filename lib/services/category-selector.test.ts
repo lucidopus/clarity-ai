@@ -105,6 +105,28 @@ describe('CategorySelector', () => {
       expect(visualCat!.score).toBeGreaterThanOrEqual(20);
   });
 
+  test('Context Match: High daily goal triggers Deep Focus', () => {
+      const user = mockUser({ dailyTimeMinutes: 120 });
+      const videos = [mockVideo('1', 4000)]; // > 60 mins
+
+      // Use a weekday (Wednesday)
+      const wednesday = new Date('2024-01-03T12:00:00'); 
+      const selection = CategorySelector.select(user, videos, wednesday);
+
+      const deepFocus = selection.find(s => s.category.id === 'deep_focus');
+      const weekendDeepDive = selection.find(s => s.category.id === 'weekend_deep_dive');
+
+      // Deep Focus should win (+20 score)
+      expect(deepFocus).toBeDefined();
+      expect(deepFocus!.score).toBeGreaterThanOrEqual(20);
+
+      // Weekend Deep Dive should effectively lose/not match high score (0 score base on Wed, +0 context)
+      // Note: Depending on base score (0), it might exist but with score 0.
+      if (weekendDeepDive) {
+          expect(weekendDeepDive.score).toBeLessThan(20);
+      }
+  });
+
   test('Deduplication: Video appears only once in highest scoring category', () => {
       const user = mockUser();
       // Video matches both "Morning Kickstart" (5m) and "Quick Wins" (5m)
