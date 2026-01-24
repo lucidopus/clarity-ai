@@ -70,6 +70,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Documentation**: Created comprehensive `docs/cost-tracking.md` with schema details, pricing rates, query examples, and instructions for adding new models
   - **Future-Ready**: Enables cost analysis, billing dashboards, per-user usage reports, and budget management features
 - **Error Handling**: Added comprehensive error handling for video generation processes to improve user experience and system reliability (issue #56).
+- **Feynman Mode**: Step-by-step guided explanations inspired by the Feynman Technique to deepen understanding of complex concepts with AI assistance.
+- **Content Validation System**: AI-powered detection of non-educational videos with user override options, allowing rejection or approval to trigger material generation.
+- **Read-Only Mode**: Shared content now displays in read-only mode, hiding interactive elements (chatbot, editing) for viewers who aren't the content owner.
+- **Master Discovery Catalog**: Modular video categorization system using `CategorySelector` and `MasterCatalog` for dynamic, context-aware content organization.
+- **Deep Focus Category**: New category type for users with extended study sessions (45+ minutes), integrated into context-based scoring logic.
+- **AI Prompt Guardrails**: Defined scope, guardrails, and refusal policies within AI prompts to ensure safe and focused responses.
+- **Markdown AI Summaries**: AI summaries now render with ReactMarkdown and custom prose styling for improved readability.
 - Created `CHANGELOG.md` to track project changes.
 
 ### Changed
@@ -104,12 +111,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved overall visual hierarchy, spacing, and component organization
   - Better empty states with icons and helpful messages
 - Enhanced case study workspace with panel borders for better visual separation
+- **Default Video Visibility**: Changed default visibility to public for learning materials
+- **Tag Styling**: Updated tag styling to use cyan colors across components with refined non-public video indicators
+- Removed `ClassificationLog` Mongoose model (no longer needed with new validation system)
+- **Task Parallelism**: Added task parallelism for cron job using `batchTriggerAndWait()`
 
 ### Fixed
 
 - **Admin Analytics**: Fixed variable shadowing bug in summary endpoint where `activeUsersLast30Days` was referenced before initialization
 - **Admin Analytics**: Fixed active users count exceeding total users by verifying users still exist in database before counting (excludes deleted users' orphaned activity logs)
 - **Analytics Validation**: Completed analytics numbers validation to ensure accuracy of reported metrics (issue #50)
+- **Category Selector**: Prevented `Essential` matcher from failing on missing `createdAt` field
+- **Video Retry Logic**: Fixed `VALIDATION_OVERRIDE` error handling to correctly process user-approved non-educational videos
 
 ## [0.1.0] - 2025-11-09
 

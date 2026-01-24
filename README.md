@@ -58,6 +58,9 @@ Clarity AI is filled with features designed to improve your learning, all genera
         - **Code & Build**: Programming and tech content
         - **Creator's Studio**: Design and creative resources
         - **Entrepreneur Essentials**: Business and startup insights
+        - **Visual Learning**: Videos with complete mind maps for visual learners
+        - **Interactive Sessions**: Content with quizzes for hands-on learners
+    - **Content Validation**: AI-powered detection of non-educational content with user override options.
     - **Smart Recommendations**: Automatically filters watched content and updates every 6 hours.
     - **Semantic Search**: Find videos by meaning, not just keywords.
 
