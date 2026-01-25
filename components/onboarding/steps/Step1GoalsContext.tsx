@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import { IUserPreferences } from '@/lib/models/User';
@@ -30,6 +30,7 @@ export default function Step1GoalsContext({
   isFirst,
   loading,
 }: Step1GoalsContextProps) {
+  // State initialized from preferences - component remounts with key when preferences change
   const [selectedRole, setSelectedRole] = useState<string>(
     preferences.role || ''
   );
@@ -39,19 +40,6 @@ export default function Step1GoalsContext({
   const [goalText, setGoalText] = useState<string>(
     preferences.learningGoalText || ''
   );
-
-  // Sync state when preferences change (for edit mode pre-fill)
-  useEffect(() => {
-    if (preferences.role !== undefined) {
-      setSelectedRole(preferences.role || '');
-    }
-    if (preferences.learningGoals !== undefined) {
-      setSelectedGoals(preferences.learningGoals || []);
-    }
-    if (preferences.learningGoalText !== undefined) {
-      setGoalText(preferences.learningGoalText || '');
-    }
-  }, [preferences.role, preferences.learningGoals, preferences.learningGoalText]);
 
   const roleOptions = [
     { id: 'Student', label: 'Student', icon: '🎓', description: 'Currently enrolled in formal education' },

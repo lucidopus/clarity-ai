@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import CheckboxCard from '../ui/CheckboxCard';
@@ -29,22 +29,13 @@ export default function Step2Challenges({
   onBack,
   loading,
 }: Step2ChallengesProps) {
+  // State initialized from preferences - component remounts with key when preferences change
   const [selectedChallenges, setSelectedChallenges] = useState<string[]>(
     preferences.learningChallenges || []
   );
   const [challengesText, setChallengesText] = useState<string>(
     preferences.learningChallengesText || ''
   );
-
-  // Sync state when preferences change (for edit mode pre-fill)
-  useEffect(() => {
-    if (preferences.learningChallenges !== undefined) {
-      setSelectedChallenges(preferences.learningChallenges || []);
-    }
-    if (preferences.learningChallengesText !== undefined) {
-      setChallengesText(preferences.learningChallengesText || '');
-    }
-  }, [preferences.learningChallenges, preferences.learningChallengesText]);
 
   const challengeOptions = [
     {

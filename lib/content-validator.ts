@@ -9,7 +9,6 @@
 import { geminiLlm } from './sdk';
 import { CONTENT_VALIDATION_PROMPT } from './prompts';
 import { HumanMessage } from '@langchain/core/messages';
-import type { ITranscriptSegment } from './models/Video';
 import SystemLog from './models/SystemLog';
 import mongoose from 'mongoose';
 

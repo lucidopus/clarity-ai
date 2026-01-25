@@ -29,12 +29,14 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
   const [preferences, setPreferences] = useState<Partial<IUserPreferences>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Track if preferences have been loaded in edit mode (used for key-based remounting)
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const router = useRouter();
   const { user, refreshUser } = useAuth();
 
   // Pre-fill from user's existing preferences in edit mode
   useEffect(() => {
-    if (isEditMode && user?.preferences?.learning) {
+    if (isEditMode && user?.preferences?.learning && !preferencesLoaded) {
       console.log('Edit mode: Pre-filling preferences from user data');
       setPreferences({
         role: user.preferences.learning.role,
@@ -46,10 +48,12 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
         preferredMaterialsRanked: user.preferences.learning.preferredMaterialsRanked || [],
         dailyTimeMinutes: user.preferences.learning.dailyTimeMinutes,
       });
+      // Mark as loaded - this triggers remounting of step components via key
+      setPreferencesLoaded(true);
       // Clear any localStorage progress for edit mode to start fresh
       localStorage.removeItem('onboarding-progress');
     }
-  }, [isEditMode, user]);
+  }, [isEditMode, user, preferencesLoaded]);
 
   // Load from localStorage on mount (only for new onboarding, not edit mode)
   useEffect(() => {
@@ -137,6 +141,12 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
 
   const CurrentStepComponent = steps[currentStep].component;
 
+  // Generate a stable key for step components
+  // In edit mode, key changes when preferences are loaded to force remount with new initial values
+  const stepKey = isEditMode 
+    ? `${currentStep}-edit-${preferencesLoaded ? 'loaded' : 'loading'}`
+    : `${currentStep}`;
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -161,7 +171,7 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
         <div className="mt-8">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentStep}
+              key={stepKey}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -169,6 +179,7 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
               className="bg-card rounded-lg shadow-lg p-8"
             >
               <CurrentStepComponent
+                key={stepKey}
                 preferences={preferences}
                 onNext={handleNext}
                 onBack={handleBack}

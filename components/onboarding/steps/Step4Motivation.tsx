@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import EmojiSlider from '../ui/EmojiSlider';
@@ -29,7 +29,7 @@ export default function Step4Motivation({
   onBack,
   loading,
 }: Step4MotivationProps) {
-  // Initialize from preferences if available, otherwise default to 4 (middle)
+  // State initialized from preferences - component remounts with key when preferences change
   const [selfEfficacyResponses, setSelfEfficacyResponses] = useState<number[]>(
     Array(3).fill(4)
   );
@@ -39,17 +39,6 @@ export default function Step4Motivation({
   const [performanceOrientation, setPerformanceOrientation] = useState<number>(
     preferences.personalityProfile?.performanceOrientation || 4
   );
-
-  // Sync state when preferences change (for edit mode pre-fill)
-  useEffect(() => {
-    if (preferences.personalityProfile?.masteryOrientation !== undefined) {
-      setMasteryOrientation(preferences.personalityProfile.masteryOrientation);
-    }
-    if (preferences.personalityProfile?.performanceOrientation !== undefined) {
-      setPerformanceOrientation(preferences.personalityProfile.performanceOrientation);
-    }
-    // Note: self-efficacy responses are not pre-filled as we only store the computed score
-  }, [preferences.personalityProfile?.masteryOrientation, preferences.personalityProfile?.performanceOrientation]);
 
   const selfEfficacyItems = [
     {
