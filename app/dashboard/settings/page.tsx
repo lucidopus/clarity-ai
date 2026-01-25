@@ -755,7 +755,28 @@ export default function SettingsPage() {
 
       {/* Learning Profile Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
-        <h2 className="text-xl font-semibold text-foreground mb-6">Learning Profile</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-foreground">Learning Profile</h2>
+          <div className="flex items-center gap-3">
+            <div className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${
+              updatesRemaining > 0 
+                ? 'bg-accent/10 text-accent border-accent/20' 
+                : 'bg-red-500/10 text-red-500 border-red-500/20'
+            }`}>
+              {updatesRemaining} / {MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} Updates Left
+            </div>
+
+            <Button
+              onClick={() => window.location.href = '/onboarding?mode=edit'}
+              variant="ghost"
+              disabled={updatesRemaining === 0}
+              className="flex items-center gap-2 h-9 px-3"
+            >
+              <Edit2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Edit Profile</span>
+            </Button>
+          </div>
+        </div>
         
         {user?.preferences?.learning ? (
           <div className="space-y-6">
@@ -937,26 +958,7 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* Update Profile Action */}
-            <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Updates remaining this month: <span className={`font-semibold ${updatesRemaining > 0 ? 'text-foreground' : 'text-red-500'}`}>{updatesRemaining}/{MAX_LEARNING_PROFILE_UPDATES_PER_MONTH}</span>
-                </p>
-                {updatesRemaining === 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    You can update your profile again next month
-                  </p>
-                )}
-              </div>
-              <Button
-                onClick={() => window.location.href = '/onboarding?mode=edit'}
-                variant="primary"
-                disabled={updatesRemaining === 0}
-              >
-                Update Learning Profile
-              </Button>
-            </div>
+
           </div>
         ) : (
           <div className="p-8 bg-background rounded-xl border border-border text-center">
