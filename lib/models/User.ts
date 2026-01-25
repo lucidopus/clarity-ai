@@ -37,6 +37,7 @@ export interface IUserPreferences {
   learning?: ILearningPreferences;
   general?: IGeneralPreferences;
   embedding?: number[];
+  learningProfileUpdates?: Date[]; // Track timestamps of learning profile updates (max 2/month)
 
   // Flat fields for onboarding flow compatibility (will be mapped to learning.*)
   role?: 'Student' | 'Teacher' | 'Working Professional' | 'Content Creator';
@@ -113,6 +114,9 @@ const UserSchema: Schema = new Schema({
       studyReminders: { type: Boolean, default: true },
       autoplayVideos: { type: Boolean, default: false },
     },
+
+    // Track learning profile update timestamps for rate limiting (max 2/month)
+    learningProfileUpdates: [{ type: Date }],
   },
   // Streak tracking fields with defaults
   lastLoginDate: { type: Date, default: null },

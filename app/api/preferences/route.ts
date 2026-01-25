@@ -24,9 +24,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
 
+    // Calculate updates remaining this month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const updatesThisMonth = (user.preferences?.learningProfileUpdates || [])
+      .filter((date: Date) => new Date(date) >= startOfMonth).length;
+    const updatesRemainingThisMonth = Math.max(0, 2 - updatesThisMonth);
+
     return NextResponse.json({
       success: true,
       preferences: user.preferences || null,
+      updatesRemainingThisMonth,
     });
   } catch (error) {
     console.error('Get preferences error:', error);
@@ -44,6 +52,32 @@ export async function POST(request: NextRequest) {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    
+    // Check if this is an edit (update) vs initial onboarding
+    const url = new URL(request.url);
+    const mode = url.searchParams.get('mode');
+    const isEditMode = mode === 'edit';
+
+    // Rate limit check for edit mode
+    if (isEditMode) {
+      const existingUser = await User.findById(decoded.userId);
+      if (!existingUser) {
+        return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+      }
+
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const updatesThisMonth = (existingUser.preferences?.learningProfileUpdates || [])
+        .filter((date: Date) => new Date(date) >= startOfMonth).length;
+
+      if (updatesThisMonth >= 2) {
+        return NextResponse.json({
+          success: false,
+          message: 'You have reached your monthly limit of 2 profile updates. Please try again next month.',
+        }, { status: 429 });
+      }
+    }
+
     const requestBody: LearningPreferencesPayload = await request.json();
 
     // Extract ONLY allowed learning preferences fields (ignore any extra fields from old onboarding steps or localStorage)
@@ -126,8 +160,13 @@ export async function POST(request: NextRequest) {
         'preferences.general.accessibility': '',
         'preferences.general.notificationsEnabled': '',
         'preferences.general.dataPrivacyLevel': '',
-      }
+      },
     };
+
+    // Record timestamp for edit mode (used for rate limiting)
+    if (isEditMode) {
+      updateOperation.$push = { 'preferences.learningProfileUpdates': new Date() };
+    }
 
     // --- RE-EMBEDDING LOGIC ---
     // If we are updating learning preferences, we must regenerate the user's vector profile.

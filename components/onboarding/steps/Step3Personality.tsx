@@ -14,6 +14,7 @@ interface Step3PersonalityProps {
   isFirst: boolean;
   isLast: boolean;
   loading: boolean;
+  isEditMode?: boolean;
 }
 
 /**

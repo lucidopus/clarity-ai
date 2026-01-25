@@ -14,6 +14,7 @@ interface Step4MotivationProps {
   isFirst: boolean;
   isLast: boolean;
   loading: boolean;
+  isEditMode?: boolean;
 }
 
 /**

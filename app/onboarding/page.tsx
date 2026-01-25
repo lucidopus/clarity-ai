@@ -1,16 +1,18 @@
 'use client';
 
 import { useAuth } from '@/lib/auth-context';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, Suspense } from 'react';
 import OnboardingFlow from '@/components/onboarding/OnboardingFlow';
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isEditMode = searchParams.get('mode') === 'edit';
 
   useEffect(() => {
-    console.log('Onboarding useEffect - loading:', loading, 'user:', user ? 'exists' : 'null');
+    console.log('Onboarding useEffect - loading:', loading, 'user:', user ? 'exists' : 'null', 'isEditMode:', isEditMode);
     if (!loading) {
       if (!user) {
         console.log('Onboarding - No user, redirecting to signin');
@@ -35,16 +37,19 @@ export default function OnboardingPage() {
 
         console.log('Onboarding - hasLearningPreferences:', hasLearningPreferences);
 
-        if (hasLearningPreferences) {
+        // Only redirect if NOT in edit mode
+        if (hasLearningPreferences && !isEditMode) {
           // User has completed onboarding, redirect to dashboard
-          console.log('Onboarding - Has learning preferences, redirecting to dashboard');
+          console.log('Onboarding - Has learning preferences and not in edit mode, redirecting to dashboard');
           router.push('/dashboard');
+        } else if (isEditMode) {
+          console.log('Onboarding - In edit mode, staying on onboarding page');
         } else {
           console.log('Onboarding - No learning preferences, staying on onboarding page');
         }
       }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isEditMode]);
 
   if (loading) {
     return (
@@ -115,7 +120,7 @@ export default function OnboardingPage() {
     );
   }
 
-  // Don't render if user is not logged in or has already completed onboarding
+  // Don't render if user is not logged in or has already completed onboarding (unless in edit mode)
   const hasLearningPreferences = !!(
     user?.preferences?.learning &&
     (
@@ -130,13 +135,26 @@ export default function OnboardingPage() {
     )
   );
 
-  console.log('Onboarding render - user:', user ? 'exists' : 'null', 'hasLearningPreferences:', hasLearningPreferences);
+  console.log('Onboarding render - user:', user ? 'exists' : 'null', 'hasLearningPreferences:', hasLearningPreferences, 'isEditMode:', isEditMode);
 
-  if (!user || hasLearningPreferences) {
+  // Redirect if not logged in, or if has preferences and NOT in edit mode
+  if (!user || (hasLearningPreferences && !isEditMode)) {
     console.log('Onboarding render - Returning null (will redirect)');
     return null; // Will redirect
   }
 
-  console.log('Onboarding render - Rendering OnboardingFlow');
-  return <OnboardingFlow />;
+  console.log('Onboarding render - Rendering OnboardingFlow with isEditMode:', isEditMode);
+  return <OnboardingFlow isEditMode={isEditMode} />;
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <OnboardingContent />
+    </Suspense>
+  );
 }

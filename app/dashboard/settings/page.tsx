@@ -142,6 +142,9 @@ export default function SettingsPage() {
   const [autoplayVideos, setAutoplayVideos] = useState(false);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
+  // Learning profile update limit state
+  const [updatesRemaining, setUpdatesRemaining] = useState<number>(2);
+
   // Initialize form data when user loads
   useEffect(() => {
     if (user) {
@@ -225,6 +228,27 @@ export default function SettingsPage() {
 
     if (user) {
       loadPreferences();
+    }
+  }, [user]);
+
+  // Load learning profile updates remaining count
+  useEffect(() => {
+    const loadUpdatesRemaining = async () => {
+      try {
+        const response = await fetch('/api/preferences');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.updatesRemainingThisMonth !== undefined) {
+            setUpdatesRemaining(data.updatesRemainingThisMonth);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load updates remaining:', error);
+      }
+    };
+
+    if (user) {
+      loadUpdatesRemaining();
     }
   }, [user]);
 
@@ -911,6 +935,27 @@ export default function SettingsPage() {
                 )}
               </div>
             )}
+
+            {/* Update Profile Action */}
+            <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Updates remaining this month: <span className={`font-semibold ${updatesRemaining > 0 ? 'text-foreground' : 'text-red-500'}`}>{updatesRemaining}/2</span>
+                </p>
+                {updatesRemaining === 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    You can update your profile again next month
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={() => window.location.href = '/onboarding?mode=edit'}
+                variant="primary"
+                disabled={updatesRemaining === 0}
+              >
+                Update Learning Profile
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="p-8 bg-background rounded-xl border border-border text-center">

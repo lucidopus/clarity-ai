@@ -14,6 +14,7 @@ interface Step5PreferencesProps {
   isFirst: boolean;
   isLast: boolean;
   loading: boolean;
+  isEditMode?: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ export default function Step5Preferences({
   onBack,
   isLast,
   loading,
+  isEditMode = false,
 }: Step5PreferencesProps) {
   const [preferredMaterials, setPreferredMaterials] = useState<string[]>(
     preferences.preferredMaterialsRanked || []
@@ -179,7 +181,7 @@ export default function Step5Preferences({
             variant="primary"
             disabled={preferredMaterials.length === 0 || dailyTime === null || loading}
           >
-            {loading ? 'Saving...' : isLast ? 'Complete Setup' : 'Continue'}
+            {loading ? 'Saving...' : isLast ? (isEditMode ? 'Update Information' : 'Complete Setup') : 'Continue'}
           </Button>
         </div>
       </form>

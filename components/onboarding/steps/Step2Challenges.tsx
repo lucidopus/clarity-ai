@@ -13,6 +13,7 @@ interface Step2ChallengesProps {
   isFirst: boolean;
   isLast: boolean;
   loading: boolean;
+  isEditMode?: boolean;
 }
 
 /**

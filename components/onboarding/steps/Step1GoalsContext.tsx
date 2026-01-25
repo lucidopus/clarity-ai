@@ -12,6 +12,7 @@ interface Step1GoalsContextProps {
   isFirst: boolean;
   isLast: boolean;
   loading: boolean;
+  isEditMode?: boolean;
 }
 
 /**
