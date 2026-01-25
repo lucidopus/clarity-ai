@@ -42,7 +42,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.warn('Failed to verify user token', error);
-    return NextResponse.json({ user: null });
+    if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
+       return NextResponse.json({ user: null });
+    }
+    console.error('Unexpected error in /api/auth/me:', error);
+    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
   }
 }
