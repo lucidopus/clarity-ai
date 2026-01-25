@@ -40,7 +40,7 @@ describe('hasTagOrInitial', () => {
   });
 
   test('handles video with missing fields', () => {
-    // @ts-expect-error - Testing missing fields partial object
+
     const emptyVideo: CatalogVideo = { id: '2' };
     expect(hasTagOrInitial(emptyVideo, ['test'])).toBe(false);
   });
