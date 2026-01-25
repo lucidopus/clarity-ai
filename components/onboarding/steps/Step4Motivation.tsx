@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import EmojiSlider from '../ui/EmojiSlider';
@@ -39,6 +39,17 @@ export default function Step4Motivation({
   const [performanceOrientation, setPerformanceOrientation] = useState<number>(
     preferences.personalityProfile?.performanceOrientation || 4
   );
+
+  // Sync state when preferences change (for edit mode pre-fill)
+  useEffect(() => {
+    if (preferences.personalityProfile?.masteryOrientation !== undefined) {
+      setMasteryOrientation(preferences.personalityProfile.masteryOrientation);
+    }
+    if (preferences.personalityProfile?.performanceOrientation !== undefined) {
+      setPerformanceOrientation(preferences.personalityProfile.performanceOrientation);
+    }
+    // Note: self-efficacy responses are not pre-filled as we only store the computed score
+  }, [preferences.personalityProfile?.masteryOrientation, preferences.personalityProfile?.performanceOrientation]);
 
   const selfEfficacyItems = [
     {

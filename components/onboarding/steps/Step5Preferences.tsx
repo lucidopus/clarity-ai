@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import RankedChipSelector from '../ui/RankedChipSelector';
@@ -38,6 +38,16 @@ export default function Step5Preferences({
   const [dailyTime, setDailyTime] = useState<number | null>(
     preferences.dailyTimeMinutes || null
   );
+
+  // Sync state when preferences change (for edit mode pre-fill)
+  useEffect(() => {
+    if (preferences.preferredMaterialsRanked !== undefined) {
+      setPreferredMaterials(preferences.preferredMaterialsRanked || []);
+    }
+    if (preferences.dailyTimeMinutes !== undefined) {
+      setDailyTime(preferences.dailyTimeMinutes || null);
+    }
+  }, [preferences.preferredMaterialsRanked, preferences.dailyTimeMinutes]);
 
   const materialOptions = [
     'Flashcards',

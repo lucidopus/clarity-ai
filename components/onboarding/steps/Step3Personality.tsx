@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Button from '@/components/Button';
 import EmojiSlider from '../ui/EmojiSlider';
@@ -39,6 +39,11 @@ export default function Step3Personality({
   const [emotionalStabilityResponses, setEmotionalStabilityResponses] = useState<number[]>(
     Array(7).fill(4)
   );
+
+  // Note: Step 3 collects raw responses, not final scores
+  // The personalityProfile in preferences contains computed scores, not raw responses
+  // So we cannot pre-fill the individual slider values from the computed profile
+  // The sliders stay at default values in edit mode for this step
 
   const conscientiousnessItems = [
     { label: 'I make plans and stick to them', low: 'Rarely', high: 'Always' },
