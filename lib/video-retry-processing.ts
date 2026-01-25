@@ -45,25 +45,9 @@ interface VideoDocument {
   errorType?: string;
 }
 
-/**
- * Determines if an error type indicates a token limit issue
- */
-export function isTokenLimitError(errorType: string): boolean {
-  return ['LLM_TOKEN_LIMIT', 'LLM_TIMEOUT'].includes(errorType);
-}
+import { isTokenLimitError, isPermanentError } from './utils/error-logic';
 
-/**
- * Determines if an error is permanent and should not be retried
- */
-export function isPermanentError(errorType: string): boolean {
-  return [
-    'API_KEY_ERROR',
-    'PERMISSION_DENIED',
-    'CONTENT_FILTERED',
-    'INVALID_REQUEST',
-    'RECITATION',
-  ].includes(errorType);
-}
+export { isTokenLimitError, isPermanentError };
 
 /**
  * Process a video using chunked generation (for long videos)

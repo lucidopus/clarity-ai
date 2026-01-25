@@ -8,27 +8,8 @@
  * which has LangChain dependencies with ESM issues in Jest.
  */
 
+import { extractTranscriptSnippet } from './utils/transcript-logic';
 import type { ITranscriptSegment } from './models/Video';
-
-/**
- * Extract transcript snippet (first N seconds)
- * This is a copy of the function from content-validator.ts for testing.
- * 
- * @param segments - Transcript segments with offset and duration
- * @param maxDurationSeconds - Maximum duration to extract (default: 120 seconds = 2 minutes)
- * @returns Concatenated text from first N seconds
- */
-function extractTranscriptSnippet(
-  segments: ITranscriptSegment[],
-  maxDurationSeconds: number = 120
-): string {
-  if (!segments || segments.length === 0) {
-    return '';
-  }
-
-  const snippetSegments = segments.filter(seg => seg.offset < maxDurationSeconds);
-  return snippetSegments.map(seg => seg.text).join(' ');
-}
 
 describe('extractTranscriptSnippet', () => {
   test('returns empty string for empty segments array', () => {
@@ -42,9 +23,9 @@ describe('extractTranscriptSnippet', () => {
 
   test('returns all segments for short video (<120s)', () => {
     const segments: ITranscriptSegment[] = [
-      { text: 'Hello', offset: 0, duration: 5 },
-      { text: 'World', offset: 5, duration: 5 },
-      { text: 'Test', offset: 10, duration: 5 },
+      { text: 'Hello', offset: 0, duration: 5, lang: 'en' },
+      { text: 'World', offset: 5, duration: 5, lang: 'en' },
+      { text: 'Test', offset: 10, duration: 5, lang: 'en' },
     ];
     
     expect(extractTranscriptSnippet(segments)).toBe('Hello World Test');
@@ -52,10 +33,10 @@ describe('extractTranscriptSnippet', () => {
 
   test('returns only first 120 seconds of segments', () => {
     const segments: ITranscriptSegment[] = [
-      { text: 'Part 1', offset: 0, duration: 60 },
-      { text: 'Part 2', offset: 60, duration: 60 },
-      { text: 'Part 3', offset: 120, duration: 60 }, // Should be excluded
-      { text: 'Part 4', offset: 180, duration: 60 }, // Should be excluded
+      { text: 'Part 1', offset: 0, duration: 60, lang: 'en' },
+      { text: 'Part 2', offset: 60, duration: 60, lang: 'en' },
+      { text: 'Part 3', offset: 120, duration: 60, lang: 'en' }, // Should be excluded
+      { text: 'Part 4', offset: 180, duration: 60, lang: 'en' }, // Should be excluded
     ];
     
     const result = extractTranscriptSnippet(segments);
@@ -67,9 +48,9 @@ describe('extractTranscriptSnippet', () => {
 
   test('respects custom maxDurationSeconds parameter', () => {
     const segments: ITranscriptSegment[] = [
-      { text: 'Intro', offset: 0, duration: 30 },
-      { text: 'Content', offset: 30, duration: 30 },
-      { text: 'More', offset: 60, duration: 30 },
+      { text: 'Intro', offset: 0, duration: 30, lang: 'en' },
+      { text: 'Content', offset: 30, duration: 30, lang: 'en' },
+      { text: 'More', offset: 60, duration: 30, lang: 'en' },
     ];
     
     // Only get first 30 seconds
@@ -81,9 +62,9 @@ describe('extractTranscriptSnippet', () => {
 
   test('handles segments with offset at exactly the boundary', () => {
     const segments: ITranscriptSegment[] = [
-      { text: 'Before', offset: 119, duration: 5 },
-      { text: 'At', offset: 120, duration: 5 }, // Exactly at boundary - should be excluded
-      { text: 'After', offset: 125, duration: 5 },
+      { text: 'Before', offset: 119, duration: 5, lang: 'en' },
+      { text: 'At', offset: 120, duration: 5, lang: 'en' }, // Exactly at boundary - should be excluded
+      { text: 'After', offset: 125, duration: 5, lang: 'en' },
     ];
     
     const result = extractTranscriptSnippet(segments);

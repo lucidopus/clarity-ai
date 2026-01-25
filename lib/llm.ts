@@ -23,6 +23,7 @@ import {
   LLMOutputLimitError,
 } from './errors/ApiError';
 import { HumanMessage } from '@langchain/core/messages';
+import { classifyLLMError } from './utils/error-logic';
 
 /**
  * Response type that includes both learning materials and token usage data
@@ -134,72 +135,10 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
       console.error(`❌ [LLM] Stack trace:`, error.stack);
     }
 
-    // Check for specific error patterns in the error message
-    const errorStr = errorMessage.toLowerCase();
-
-    // Authentication errors (401)
-    if (errorStr.includes('auth') || errorStr.includes('api key') || 
-        errorStr.includes('unauthorized') || errorStr.includes('unauthenticated')) {
-      throw new LLMAuthenticationError();
-    }
-
-    // Permission errors (403)
-    if (errorStr.includes('permission') || errorStr.includes('forbidden')) {
-      throw new LLMPermissionError();
-    }
-
-    // Rate limit errors (429)
-    if (errorStr.includes('rate limit') || errorStr.includes('429') || 
-        errorStr.includes('resource_exhausted') || errorStr.includes('quota')) {
-      throw new LLMRateLimitError();
-    }
-
-    // Token limit errors - INPUT (context length exceeded)
-    if ((errorStr.includes('context') && errorStr.includes('length')) ||
-        (errorStr.includes('token') && errorStr.includes('limit') && errorStr.includes('input')) ||
-        errorStr.includes('context_length_exceeded') ||
-        errorStr.includes('maximum context length')) {
-      throw new LLMTokenLimitError();
-    }
-
-    // Token limit errors - OUTPUT
-    if (errorStr.includes('output') && errorStr.includes('limit')) {
-      throw new LLMOutputLimitError();
-    }
-
-    // Content safety filtering
-    if (errorStr.includes('recitation')) {
-      throw new LLMContentFilteredError('RECITATION');
-    }
-    if (errorStr.includes('safety') && (errorStr.includes('block') || errorStr.includes('filter'))) {
-      throw new LLMContentFilteredError('SAFETY');
-    }
-
-    // Timeout errors (504)
-    if (errorStr.includes('timeout') || errorStr.includes('deadline') || 
-        errorStr.includes('504') || errorStr.includes('deadline_exceeded')) {
-      throw new LLMTimeoutError();
-    }
-
-    // Service unavailable (503)
-    if (errorStr.includes('503') || errorStr.includes('unavailable') || 
-        errorStr.includes('overload') || errorStr.includes('capacity')) {
-      throw new LLMUnavailableError();
-    }
-
-    // Invalid request format (400)
-    if ((errorStr.includes('invalid') && (errorStr.includes('argument') || errorStr.includes('request'))) ||
-        errorStr.includes('malformed') || errorStr.includes('failed_precondition')) {
-      throw new LLMInvalidRequestError(errorMessage);
-    }
-
-    // Network errors
-    if (error instanceof TypeError && errorStr.includes('fetch')) {
-      throw new LLMServiceError('Network error while connecting to LLM service');
-    }
-
-    // For any other error, wrap in LLMServiceError
-    throw new LLMServiceError(errorMessage);
+    const categorizedError = classifyLLMError(errorMessage);
+    // If classifyLLMError returned a generic LLMServiceError but we have more info, we could update it,
+    // but the util handles the fallback too.
+    throw categorizedError;
   }
 }
 

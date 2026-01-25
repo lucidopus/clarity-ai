@@ -27,24 +27,9 @@ export interface ValidationResult {
   };
 }
 
-/**
- * Extract transcript snippet (first N seconds)
- * 
- * @param segments - Transcript segments with offset and duration
- * @param maxDurationSeconds - Maximum duration to extract (default: 120 seconds = 2 minutes)
- * @returns Concatenated text from first N seconds
- */
-export function extractTranscriptSnippet(
-  segments: ITranscriptSegment[],
-  maxDurationSeconds: number = 120
-): string {
-  if (!segments || segments.length === 0) {
-    return '';
-  }
+import { extractTranscriptSnippet } from './utils/transcript-logic';
 
-  const snippetSegments = segments.filter(seg => seg.offset < maxDurationSeconds);
-  return snippetSegments.map(seg => seg.text).join(' ');
-}
+export { extractTranscriptSnippet };
 
 /**
  * Validate educational content using LLM classification
