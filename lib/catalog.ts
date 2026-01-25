@@ -23,7 +23,7 @@ export interface Category {
 }
 
 // Helper to check tags/title case-insensitive
-const hasTagOrInitial = (v: CatalogVideo, terms: string[]) => {
+export const hasTagOrInitial = (v: CatalogVideo, terms: string[]) => {
   const title = (v.title || '').toLowerCase();
   const tags = (v.tags || []).map(t => t.toLowerCase());
   const category = (v.category || '').toLowerCase();
