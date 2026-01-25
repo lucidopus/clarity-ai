@@ -21,3 +21,6 @@ export const RECOMMENDATION_CONSTANTS = {
   VECTOR_SEARCH_CANDIDATES: 1000, // Number of nearest neighbors to examine (numCandidates/efSearch)
   CACHE_TTL_SECONDS: 60 * 60 * 24, // 24 hours
 };
+
+// Learning profile update limits (to conserve embedding generation tokens)
+export const MAX_LEARNING_PROFILE_UPDATES_PER_MONTH = 2;

@@ -5,6 +5,7 @@ import User, { ILearningPreferences } from '@/lib/models/User';
 import { generateEmbeddings } from '@/lib/embedding';
 import { constructUserProfileString } from '@/lib/service-utils';
 import { generateUserRecommendations } from '@/trigger/recommendations';
+import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 
 type LearningPreferencesPayload = Partial<ILearningPreferences> & Record<string, unknown>;
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const updatesThisMonth = (user.preferences?.learningProfileUpdates || [])
       .filter((date: Date) => new Date(date) >= startOfMonth).length;
-    const updatesRemainingThisMonth = Math.max(0, 2 - updatesThisMonth);
+    const updatesRemainingThisMonth = Math.max(0, MAX_LEARNING_PROFILE_UPDATES_PER_MONTH - updatesThisMonth);
 
     return NextResponse.json({
       success: true,
@@ -70,10 +71,10 @@ export async function POST(request: NextRequest) {
       const updatesThisMonth = (existingUser.preferences?.learningProfileUpdates || [])
         .filter((date: Date) => new Date(date) >= startOfMonth).length;
 
-      if (updatesThisMonth >= 2) {
+      if (updatesThisMonth >= MAX_LEARNING_PROFILE_UPDATES_PER_MONTH) {
         return NextResponse.json({
           success: false,
-          message: 'You have reached your monthly limit of 2 profile updates. Please try again next month.',
+          message: `You have reached your monthly limit of ${MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} profile updates. Please try again next month.`,
         }, { status: 429 });
       }
     }

@@ -10,6 +10,7 @@ import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { Edit2, Save, X } from 'lucide-react';
+import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 
 const PASSWORD_ATTEMPT_KEY = 'settings-email-password-attempts';
 const MAX_PASSWORD_ATTEMPTS = 4;
@@ -143,7 +144,7 @@ export default function SettingsPage() {
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   // Learning profile update limit state
-  const [updatesRemaining, setUpdatesRemaining] = useState<number>(2);
+  const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
 
   // Initialize form data when user loads
   useEffect(() => {
@@ -940,7 +941,7 @@ export default function SettingsPage() {
             <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">
-                  Updates remaining this month: <span className={`font-semibold ${updatesRemaining > 0 ? 'text-foreground' : 'text-red-500'}`}>{updatesRemaining}/2</span>
+                  Updates remaining this month: <span className={`font-semibold ${updatesRemaining > 0 ? 'text-foreground' : 'text-red-500'}`}>{updatesRemaining}/{MAX_LEARNING_PROFILE_UPDATES_PER_MONTH}</span>
                 </p>
                 {updatesRemaining === 0 && (
                   <p className="text-xs text-muted-foreground mt-1">
