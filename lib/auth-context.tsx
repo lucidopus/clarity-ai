@@ -39,48 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async (retryCount = 0) => {
-    try {
-      setError(null);
-      const response = await fetch('/api/auth/me');
-      
-      if (response.status === 500) {
-        throw new Error('Server error');
-      }
-
-      if (!response.ok) {
-        // If 401/403 or other non-500 error, just treat as not logged in
-        setUser(null);
-        return;
-      }
-
-      const data = await response.json();
-      setUser(data.user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      
-      // Retry logic for server errors or network issues
-      if (retryCount < 3) {
-        setTimeout(() => {
-          checkAuth(retryCount + 1);
-        }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s, 3s
-        return; // Don't turn off loading yet
-      }
-
-      setError(error instanceof Error ? error : new Error('Failed to verify session'));
-    } finally {
-      // Only set loading to false if we are not retrying
-      if (retryCount >= 3 || (error === null)) { 
-        // Logic trick: We can't easily peek into the future 'catch' block's decision to retry 
-        // inside 'finally', so we need to be careful.
-        // Actually, the simpler way is to handle loading inside try/catch properly.
-      }
-    }
-  };
 
   // Refactored checkAuth to be more robust
   const checkAuthRobust = async () => {
@@ -114,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     checkAuthRobust();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (username: string, password: string, rememberMe: boolean) => {

@@ -145,7 +145,7 @@ export default function DashboardLayout({
           </div>
           <h2 className="text-2xl font-bold text-foreground">Service Unavailable</h2>
           <p className="text-muted-foreground">
-            We're having trouble verifying your session. This might be due to a temporary connection issue.
+            We&apos;re having trouble verifying your session. This might be due to a temporary connection issue.
           </p>
           <button 
             onClick={() => window.location.reload()}
