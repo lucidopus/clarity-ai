@@ -95,7 +95,7 @@ export async function POST(
       await Video.findByIdAndUpdate(videoId, {
         processingStatus: 'completed_with_warning',
         materialsStatus: 'incomplete',
-        incompleteMaterials: ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'],
+        incompleteMaterials: ['metadata', 'flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'],
         errorType: 'VALIDATION_OVERRIDE',
         errorMessage: 'User overrode validation rejection - generating materials',
       });

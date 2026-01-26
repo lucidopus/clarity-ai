@@ -20,7 +20,7 @@ export interface IVideo extends Document {
   language: string;
   processingStatus: 'pending' | 'processing' | 'completed' | 'completed_with_warning' | 'failed' | 'validation_rejected';
   materialsStatus: 'complete' | 'incomplete' | 'generating';
-  incompleteMaterials?: ('flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
+  incompleteMaterials?: ('metadata' | 'flashcards' | 'quizzes' | 'prerequisites' | 'mindmap' | 'casestudies')[];
   summary?: string;
   tags?: string[];
   category?: string;
@@ -51,7 +51,7 @@ const VideoSchema: Schema = new Schema({
   language: { type: String, default: 'en' },
   processingStatus: { type: String, required: true, enum: ['pending', 'processing', 'completed', 'completed_with_warning', 'failed', 'validation_rejected'] },
   materialsStatus: { type: String, enum: ['complete', 'incomplete', 'generating'], default: 'generating' },
-  incompleteMaterials: [{ type: String, enum: ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'] }],
+  incompleteMaterials: [{ type: String, enum: ['metadata', 'flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'] }],
   
   // Discover / Recommendation Fields
   summary: { type: String },

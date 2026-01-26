@@ -39,6 +39,8 @@ interface VideoDocument {
   _id: string;
   videoId: string;
   userId: string;
+  title?: string;
+  summary?: string;
   transcript: TranscriptSegment[];
   embedding?: number[];
   incompleteMaterials?: string[];
@@ -59,10 +61,23 @@ export async function processVideoChunked(video: VideoDocument) {
   // Get transcript
   const transcript = video.transcript.map((s) => s.text).join(' ');
 
-  // Generate materials in chunks - pass incompleteMaterials for selective retry
+  // Detect placeholder metadata from previous failed runs
+  // If metadata looks like a placeholder but isn't in incompleteMaterials, add it
+  const hasPlaceholderMetadata = 
+    video.title === 'Video Title' || 
+    video.title?.startsWith('Video ') ||
+    video.summary === 'Summary unavailable';
+
+  let materialsToRetry = video.incompleteMaterials || [];
+  if (hasPlaceholderMetadata && !materialsToRetry.includes('metadata')) {
+    materialsToRetry = ['metadata', ...materialsToRetry];
+    console.log('🔍 Detected placeholder metadata - adding metadata to retry list');
+  }
+
+  // Generate materials in chunks - pass materialsToRetry for selective retry
   const chunkedResult = await generateLearningMaterialsChunked(
     transcript,
-    video.incompleteMaterials || undefined
+    materialsToRetry.length > 0 ? materialsToRetry : undefined
   );
 
   // Transform problem IDs to include videoId prefix

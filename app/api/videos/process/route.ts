@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
 
     if (llmError || !materials) {
       // CASE: LLM Failed
-      const incompleteMaterials = ['flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'];
+      const incompleteMaterials = ['metadata', 'flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'];
       await Video.findByIdAndUpdate(videoDoc._id, {
         title: `Video ${videoId}`,
         processingStatus: 'completed_with_warning',
