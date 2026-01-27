@@ -77,6 +77,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Deep Focus Category**: New category type for users with extended study sessions (45+ minutes), integrated into context-based scoring logic.
 - **AI Prompt Guardrails**: Defined scope, guardrails, and refusal policies within AI prompts to ensure safe and focused responses.
 - **Markdown AI Summaries**: AI summaries now render with ReactMarkdown and custom prose styling for improved readability.
+- **Session Stability Improvements**: Enhanced authentication error handling with retry logic and user-friendly error states.
+  - Distinguished between invalid tokens (expected logout) and server errors (temporary issues)
+  - Added 3-attempt retry logic with exponential backoff for transient failures
+  - New "Service Unavailable" error UI in dashboard instead of silent redirects to login
+- **Learning Profile Settings UI**: Redesigned the Learning Profile section in settings for a cleaner, more consistent look.
+  - Moved "Edit Profile" button to section header (matching Account Information style)
+  - Added styled badge showing remaining monthly updates with accent/red color coding
+  - Removed redundant footer section for a more compact layout
 - Created `CHANGELOG.md` to track project changes.
 
 ### Changed
