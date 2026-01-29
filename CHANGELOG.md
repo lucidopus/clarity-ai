@@ -81,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Distinguished between invalid tokens (expected logout) and server errors (temporary issues)
   - Added 3-attempt retry logic with exponential backoff for transient failures
   - New "Service Unavailable" error UI in dashboard instead of silent redirects to login
-- **Learning Profile Settings UI**: Redesigned the Learning Profile section in settings for a cleaner, more consistent look.
+- **Learning Profile Settings UI**: Redesigned the Learning Profile section in settings for a cleaner, and a more consistent look.
   - Moved "Edit Profile" button to section header (matching Account Information style)
   - Added styled badge showing remaining monthly updates with accent/red color coding
   - Removed redundant footer section for a more compact layout
