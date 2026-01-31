@@ -146,7 +146,7 @@ export default function VideoAndTranscriptViewer({
                 try {
                   playerRef.current.playVideo();
                 } catch (e) {
-                  console.error('Error auto-playing:', e);
+                  console.error('Error while auto-playing:', e);
                 }
               }
 
