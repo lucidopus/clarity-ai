@@ -49,7 +49,7 @@ Clarity AI is filled with features designed to improve your learning, all genera
     - **Video Gallery**: A central library for all your processed videos, with powerful search and filtering capabilities.
 
 - **🔍 AI-Powered Discovery & Personalization**:
-    - **Personalized Feed**: AI-driven recommendations using vector search and Gemini embeddings to match your learning style and goals.
+    - **Personalized Feed**: AI-driven recommendations using vector search and embeddings to match your learning style and goals.
     - **Context-Aware Categories**: Dynamic content organization based on your preferences:
         - **For You**: Top personalized picks based on semantic similarity
         - **Quick Wins** (<5 min): Perfect for short study sessions
