@@ -398,7 +398,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
       </AnimatePresence>
 
       {/* Tiptap Editor */}
-      <div className="bg-background border-2 border-border rounded-xl focus-within:ring-2 focus-within:ring-accent focus-within:border-transparent transition-all duration-200 max-h-[300px] overflow-y-auto scrollbar-themed">
+      <div className="bg-background border-2 border-border rounded-xl focus-within:ring-2 focus-within:ring-accent focus-within:border-transparent transition-all duration-200 h-[200px] overflow-y-auto scrollbar-themed">
         <EditorContent editor={editor} />
       </div>
 
