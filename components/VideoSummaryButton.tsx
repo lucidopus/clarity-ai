@@ -103,13 +103,14 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
                             h1: ({ children }) => <h1 className="text-xl font-bold mb-4 mt-6 text-foreground border-b border-border pb-2">{children}</h1>,
                             h2: ({ children }) => <h2 className="text-lg font-bold mb-3 mt-5 text-foreground">{children}</h2>,
                             h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-4 text-foreground">{children}</h3>,
-                            p: ({ children }) => <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{children}</p>,
-                            ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-1 text-sm text-muted-foreground">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal pl-5 mb-4 space-y-1 text-sm text-muted-foreground">{children}</ol>,
-                            li: ({ children }) => <li className="pl-1">{children}</li>,
-                            strong: ({ children }) => <span className="font-semibold text-foreground">{children}</span>,
+                            p: ({ children }) => <p className="text-sm text-foreground/90 mb-4 leading-relaxed">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc ml-5 mb-4 space-y-2 text-sm text-muted-foreground marker:text-accent/70">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal ml-5 mb-4 space-y-2 text-sm text-muted-foreground marker:text-accent/70">{children}</ol>,
+                            li: ({ children }) => <li className="pl-1 leading-relaxed">{children}</li>,
+                            strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-foreground">{children}</em>,
                             blockquote: ({ children }) => <blockquote className="border-l-4 border-accent pl-4 py-1 my-4 italic text-muted-foreground bg-accent/5 rounded-r">{children}</blockquote>,
-                            code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground">{children}</code>,
+                            code: ({ children }) => <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-accent">{children}</code>,
                           }}
                         >
                           {summary}

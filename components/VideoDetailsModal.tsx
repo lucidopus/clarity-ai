@@ -126,18 +126,22 @@ export default function VideoDetailsModal({ isOpen, onClose, video, onPlay }: Vi
 
                  {/* Summary Section */}
                  <div className="mb-6">
-                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">AI Summary</h3>
-                     <div className="prose prose-sm dark:prose-invert max-w-none 
-                                     prose-headings:text-foreground prose-headings:font-bold prose-headings:mt-6 prose-headings:mb-3
-                                     prose-h1:text-xl prose-h2:text-lg prose-h3:text-base
-                                     prose-p:text-foreground/90 prose-p:leading-relaxed prose-p:mb-4
-                                     prose-strong:text-foreground prose-strong:font-bold prose-strong:text-accent
-                                     prose-ul:text-foreground/90 prose-ul:my-3 prose-ul:space-y-1
-                                     prose-ol:text-foreground/90 prose-ol:my-3 prose-ol:space-y-1
-                                     prose-li:text-foreground/90
-                                     prose-code:text-accent prose-code:bg-accent/10 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                                     text-sm leading-relaxed">
-                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                     <div className="text-sm leading-relaxed">
+                         <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0 text-foreground">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3 first:mt-0 text-foreground">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-3 first:mt-0 text-foreground">{children}</h3>,
+                            p: ({ children }) => <p className="mb-3 last:mb-0 text-foreground/90">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc ml-5 mb-3 space-y-1 marker:text-accent/70">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal ml-5 mb-3 space-y-1 marker:text-accent/70">{children}</ol>,
+                            li: ({ children }) => <li className="pl-1 leading-relaxed text-foreground/90">{children}</li>,
+                            strong: ({ children }) => <strong className="font-semibold text-accent">{children}</strong>,
+                            em: ({ children }) => <em className="italic text-foreground">{children}</em>,
+                            code: ({ children }) => <code className="bg-accent/10 px-1 py-0.5 rounded text-accent font-mono text-xs">{children}</code>,
+                          }}
+                         >
                              {video.summary || video.description || "No summary available for this video."}
                          </ReactMarkdown>
                      </div>

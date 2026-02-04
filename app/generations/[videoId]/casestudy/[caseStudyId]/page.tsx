@@ -634,7 +634,7 @@ export default function CaseStudyWorkspacePage() {
                 )}
                 {!data.notes.generalNote && data.notes.segmentNotes.length === 0 && (
                   <p className="text-sm text-muted-foreground italic">
-                    You haven't added any notes for this video yet.
+                    You haven&apos;t added any notes for this video yet.
                   </p>
                 )}
               </div>

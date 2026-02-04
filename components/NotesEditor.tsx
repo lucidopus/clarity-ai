@@ -581,14 +581,14 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
                   remarkPlugins={[remarkGfm]}
                   components={{
                     // Custom styling for markdown elements
-                    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                    strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
-                    em: ({ children }) => <em className="italic">{children}</em>,
+                    p: ({ children }) => <p className="mb-3 last:mb-0 text-foreground/90">{children}</p>,
+                    strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                    em: ({ children }) => <em className="italic text-foreground">{children}</em>,
                     del: ({ children }) => <del className="line-through text-muted-foreground">{children}</del>,
                     u: ({ children }) => <span className="underline">{children}</span>,
-                    ul: ({ children }) => <ul className="list-disc list-inside mb-3 space-y-1">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal list-inside mb-3 space-y-1">{children}</ol>,
-                    li: ({ children }) => <li className="ml-2">{children}</li>,
+                    ul: ({ children }) => <ul className="list-disc ml-5 mb-3 space-y-1.5 marker:text-accent/70">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal ml-5 mb-3 space-y-1.5 marker:text-accent/70">{children}</ol>,
+                    li: ({ children }) => <li className="pl-1 leading-relaxed">{children}</li>,
                     h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 first:mt-0">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3 first:mt-0">{children}</h2>,
                     h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-3 first:mt-0">{children}</h3>,
