@@ -365,3 +365,146 @@ html {
   color: #6B7280;
 }
 
+/* Code Wiki Inspired Styles */
+
+/* Ambient glow effect */
+.ambient-glow {
+  position: relative;
+}
+
+.ambient-glow::after {
+  content: '';
+  position: absolute;
+  bottom: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120%;
+  height: 60%;
+  background: radial-gradient(ellipse at center, rgba(6, 182, 212, 0.3) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* 3D Card perspective container */
+.perspective-container {
+  perspective: 1000px;
+}
+
+/* 3D Card transform */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotateY(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotateY(2deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.animate-float-delayed-2 {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #06B6D4 0%, #22D3EE 50%, #67E8F9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Glow border effect */
+.glow-border {
+  box-shadow: 
+    0 0 0 1px rgba(6, 182, 212, 0.3),
+    0 0 20px rgba(6, 182, 212, 0.15),
+    0 0 40px rgba(6, 182, 212, 0.1);
+}
+
+/* Feature card styling */
+.feature-card {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  backdrop-filter: blur(10px);
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.feature-card:hover {
+  border-color: rgba(6, 182, 212, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Code cube effect */
+.code-cube {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
+  box-shadow: 
+    inset 0 0 60px rgba(6, 182, 212, 0.1),
+    0 0 40px rgba(6, 182, 212, 0.2);
+}
+
+/* Hero input styling */
+.hero-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  transition: all 0.3s ease;
+}
+
+.hero-input:focus {
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+}
+
+.light .hero-input {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+
+/* Staggered animation delays for cards */
+.stagger-1 { animation-delay: 0s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.2s; }
+.stagger-4 { animation-delay: 0.3s; }
+
+/* Fade in up animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
+/* Scroll-triggered reveal */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
