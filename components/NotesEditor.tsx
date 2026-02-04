@@ -67,7 +67,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
     },
     onUpdate: ({ editor }) => {
       // Get markdown content from editor
-      // @ts-ignore - tiptap-markdown adds markdown to storage
+      // @ts-expect-error - tiptap-markdown adds markdown to storage
       const markdown = editor.storage.markdown.getMarkdown();
       
       // Debounced auto-save
