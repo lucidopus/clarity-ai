@@ -38,11 +38,11 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Initial position targeted at the letter 'i' in "Clarity"
+    // Initial position targeted slightly on the right and slightly up from "Clarity"
     if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        mouseX.set(width * 0.46); // 46% hits the 'i' area more accurately
-        mouseY.set(height / 2);
+        mouseX.set(width * 0.54); // 54% is slightly left from previous 58%
+        mouseY.set(height * 0.4);  // 40% remains the same
     }
   }, [mouseX, mouseY]);
 
