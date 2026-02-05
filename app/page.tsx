@@ -266,9 +266,9 @@ export default function Home() {
                        
                        {/* Gradients */}
                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 300" preserveAspectRatio="none">
-                          {/* Passive Curve (Forgetting) - 28% Retention (Ends at Y=215) */}
+                          {/* Passive Curve (Forgetting) - 28% Retention (Ends at Y=226) */}
                           <motion.path 
-                            d="M0,20 C150,110 250,190 500,215" 
+                            d="M0,10 C150,160 250,210 500,226" 
                             fill="none" 
                             stroke="#f87171" 
                             strokeWidth="3" 
@@ -279,9 +279,9 @@ export default function Home() {
                             transition={{ duration: 2, ease: "easeOut" }}
                           />
 
-                          {/* Active Curve (Retention) - 85% Retention (Pronounced Dip) */}
+                          {/* Active Curve (Retention) - 85% Retention (Consistent Dip) */}
                           <motion.path 
-                            d="M0,20 C100,70 300,65 500,60" 
+                            d="M0,10 C100,70 300,60 500,55" 
                             fill="none" 
                             stroke="#06B6D4" 
                             strokeWidth="3" 
@@ -294,14 +294,14 @@ export default function Home() {
                           />
                        </svg>
 
-                       {/* Active Points - Sitting exactly on the new blue curve */}
+                       {/* Active Points - Perfectly tracking the new consistent dip */}
                        {[160, 320, 450].map((x, i) => (
                           <motion.div 
                             key={i} 
                             className="absolute w-3 h-3 bg-card-bg border-2 border-accent rounded-full z-10 -translate-x-1/2 -translate-y-1/2"
                             style={{ 
                               left: `${(x / 500) * 100}%`, 
-                              top: `${((i === 0 ? 54 : i === 1 ? 66 : 62) / 300) * 100}%` 
+                              top: `${((i === 0 ? 53 : i === 1 ? 59 : 56) / 300) * 100}%` 
                             }} 
                             initial={{ opacity: 0, scale: 0 }}
                             whileInView={{ opacity: 1, scale: 1 }}
@@ -312,7 +312,7 @@ export default function Home() {
                        {/* Labels resting precisely ON TOP of curve endpoints */}
                        <motion.div 
                           className="absolute right-0 text-red-400 text-xs font-bold"
-                          style={{ top: '56%' }}
+                          style={{ top: '63%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
                           transition={{ delay: 2 }}
@@ -321,7 +321,7 @@ export default function Home() {
                        </motion.div>
                        <motion.div 
                           className="absolute right-0 text-accent text-xs font-bold"
-                          style={{ top: '8%' }}
+                          style={{ top: '5%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
                           transition={{ delay: 2.5 }}
