@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { 
   BookOpen, 
   Zap, 
@@ -10,16 +10,41 @@ import {
   Layers, 
   Cpu, 
   Globe,
-  Compass,
   Sparkles,
   Brain,
-  Users
+  Users,
+  GitGraph,
+  Target
 } from 'lucide-react';
 import Button from '@/components/Button';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Home() {
   const [url, setUrl] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Smooth out the mouse movement
+  const springConfig = { damping: 25, stiffness: 700 };
+  const smoothX = useSpring(mouseX, springConfig);
+  const smoothY = useSpring(mouseY, springConfig);
+
+  const handleMouseMove = (e: React.MouseEvent | MouseEvent) => {
+    if (!containerRef.current) return;
+    const { left, top } = containerRef.current.getBoundingClientRect();
+    mouseX.set(e.clientX - left);
+    mouseY.set(e.clientY - top);
+  };
+
+  useEffect(() => {
+    // Initial position fine-tuned slightly to the left
+    if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        mouseX.set(width * 0.75); // 75% of width for the perfect starting balance
+        mouseY.set(height / 2);
+    }
+  }, [mouseX, mouseY]);
 
   return (
     <main className="min-h-screen bg-background overflow-x-hidden">
@@ -47,8 +72,70 @@ export default function Home() {
               <Zap className="w-8 h-8 md:w-10 md:h-10 text-white fill-white" />
             </motion.div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6">
-              <span className="text-foreground">Clarity</span> <span className="text-gradient">AI</span>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4 cursor-default select-none">
+              <div 
+                ref={containerRef}
+                onMouseMove={handleMouseMove}
+                className="relative inline-flex group py-4 px-8"
+              >
+                {/* Background Layer: Dim/Blurred initially */}
+                <motion.span
+                    className="text-foreground/20 blur-[2px] transition-all duration-500 group-hover:blur-0"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                >
+                    Clarity
+                </motion.span>
+
+                {/* Torch Reveal Layer: Bright/Cyan revealed by mouse */}
+                <motion.span
+                    className="absolute inset-0 flex items-center justify-center text-accent"
+                    style={{
+                        maskImage: useTransform(
+                            [smoothX, smoothY],
+                            ([x, y]: number[]) => `radial-gradient(circle 150px at ${x}px ${y}px, black 30%, transparent 100%)`
+                        ),
+                        WebkitMaskImage: useTransform(
+                            [smoothX, smoothY],
+                            ([x, y]: number[]) => `radial-gradient(circle 150px at ${x}px ${y}px, black 30%, transparent 100%)`
+                        ),
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                    Clarity
+                </motion.span>
+
+                {/* Ambient Glow that follows exactly at cursor */}
+                <motion.div
+                  className="absolute w-64 h-64 bg-accent/20 blur-3xl rounded-full -z-10 pointer-events-none"
+                  style={{
+                    left: smoothX,
+                    top: smoothY,
+                    x: "-50%",
+                    y: "-50%",
+                  }}
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{ 
+                    duration: 4, 
+                    repeat: Infinity, 
+                    repeatType: "reverse" 
+                  }}
+                />
+              </div>
+
+              <motion.span 
+                className="text-gradient"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.8 }}
+              >
+                AI
+              </motion.span>
             </h1>
             
             <p className="text-xl md:text-2xl text-secondary max-w-3xl mx-auto leading-relaxed mb-10">
@@ -90,7 +177,7 @@ export default function Home() {
 
           {/* 3D Floating Cards */}
           <div className="w-full max-w-7xl mx-auto h-[550px] md:h-[650px] relative perspective-container mt-12 hidden md:block">
-            {/* Card 1: Notes - Left */}
+            {/* Card 1: Mind Map - Left Foreground */}
             <motion.div 
               className="absolute top-1/2 -translate-y-[60%] left-0 md:left-[2%] w-72 h-[400px] z-10"
               animate={{ 
@@ -107,23 +194,25 @@ export default function Home() {
             >
               <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-8 shadow-2xl flex flex-col justify-between glow-border card-3d">
                 <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-6">
-                  <BookOpen className="w-8 h-8" />
+                  <GitGraph className="w-8 h-8" />
                 </div>
                 <div>
-                  <div className="h-2 w-16 bg-accent/20 rounded mb-4"></div>
-                  <h3 className="text-2xl font-bold mb-4">Smart Notes</h3>
-                  <div className="space-y-4 opacity-50">
-                    <div className="h-2.5 w-full bg-foreground/20 rounded"></div>
-                    <div className="h-2.5 w-3/4 bg-foreground/20 rounded"></div>
-                    <div className="h-2.5 w-full bg-foreground/20 rounded"></div>
-                    <div className="h-2.5 w-5/6 bg-foreground/20 rounded"></div>
-                    <div className="h-2.5 w-2/3 bg-foreground/20 rounded"></div>
+                  <h3 className="text-2xl font-bold mb-4">Mind Map</h3>
+                  <div className="space-y-4 opacity-70">
+                    <div className="h-2 w-full bg-accent/20 rounded"></div>
+                    <div className="flex gap-4">
+                      <div className="h-2 w-1/3 bg-accent/20 rounded"></div>
+                      <div className="h-2 w-1/3 bg-accent/20 rounded"></div>
+                    </div>
+                    <div className="h-2 w-full bg-accent/20 rounded"></div>
+                    <div className="flex gap-4 justify-end">
+                      <div className="h-2 w-1/2 bg-accent/20 rounded"></div>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-8 pt-4 flex gap-3">
                   <div className="w-3 h-3 rounded-full bg-accent/40"></div>
                   <div className="w-3 h-3 rounded-full bg-accent/20"></div>
-                  <div className="w-3 h-3 rounded-full bg-accent/10"></div>
                 </div>
               </div>
             </motion.div>
@@ -183,7 +272,7 @@ export default function Home() {
                     </div>
                     <div className="flex justify-start">
                       <div className="bg-foreground/5 text-secondary text-xs p-3.5 rounded-r-xl rounded-tl-xl max-w-[90%] leading-relaxed shadow-sm">
-                        Haha, standard. He&apos;s using a shortcut library. I&apos;ve broken those 40 lines into 4 logic steps. Want the &quot;actually simple&quot; version?
+                        Haha, standard. He&apos;s skipping steps to move fast. I&apos;ve distilled those 40 lines into 4 logical primitives. Want the &quot;actually simple&quot; version?
                       </div>
                     </div>
                   </div>
@@ -191,10 +280,72 @@ export default function Home() {
               </div>
             </motion.div>
             
+            {/* BACKGROUND LAYER - Deeper cards */}
+            {/* Card 4: Smart Notes - Background Left */}
+            <motion.div 
+              className="absolute top-0 left-[20%] w-64 h-72 z-0 opacity-40 blur-[1px]"
+              animate={{ 
+                y: [0, -15, 0],
+                rotateZ: [-2, 2, -2]
+              }}
+              transition={{ 
+                duration: 10, 
+                repeat: Infinity, 
+                ease: "easeInOut"
+              }}
+            >
+              <div className="w-full h-full bg-card-bg/50 backdrop-blur-sm rounded-2xl border border-accent/10 p-6 flex flex-col justify-between card-3d">
+                <div className="w-10 h-10 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-foreground/40 mb-2">Smart Notes</h4>
+                  <div className="h-1.5 w-full bg-accent/10 rounded mb-2"></div>
+                  <div className="h-1.5 w-3/4 bg-accent/10 rounded mb-2"></div>
+                  <div className="h-1.5 w-1/2 bg-accent/10 rounded"></div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 5: Challenges - Background Right */}
+            <motion.div 
+              className="absolute top-0 right-[20%] w-64 h-72 z-0 opacity-40 blur-[1px]"
+              animate={{ 
+                y: [0, 15, 0],
+                rotateZ: [2, -2, 2]
+              }}
+              transition={{ 
+                duration: 12, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: 1
+              }}
+            >
+              <div className="w-full h-full bg-card-bg/50 backdrop-blur-sm rounded-2xl border border-accent/10 p-6 flex flex-col justify-between card-3d">
+                <div className="w-10 h-10 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50">
+                  <Target className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-foreground/40 mb-2">Real Scenarios</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="h-8 bg-accent/10 rounded"></div>
+                    <div className="h-8 bg-accent/10 rounded"></div>
+                    <div className="h-8 bg-accent/10 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
             {/* Background connection lines (Simple SVG) */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 z-0" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Foreground lines */}
               <path d="M150 240 C 300 240, 350 300, 500 300" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="8,8" />
               <path d="M850 240 C 700 240, 650 300, 500 300" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="8,8" />
+              
+              {/* Background lines (connecting deep cards) */}
+              <path d="M250 100 C 350 150, 450 150, 500 300" stroke="currentColor" fill="none" className="text-accent/30" strokeWidth="1" strokeDasharray="4,4" />
+              <path d="M750 100 C 650 150, 550 150, 500 300" stroke="currentColor" fill="none" className="text-accent/30" strokeWidth="1" strokeDasharray="4,4" />
+              <path d="M250 100 L 750 100" stroke="currentColor" fill="none" className="text-accent/20" strokeWidth="1" strokeDasharray="10,10" />
             </svg>
           </div>
         </section>
@@ -437,7 +588,7 @@ export default function Home() {
                  </div>
                  <h3 className="text-xl font-bold mb-3">User-Centered</h3>
                  <p className="text-secondary leading-relaxed">
-                   Every feature solves a real student problem. From "Too long to watch" to "Hard to review," we build exactly what you need to study less and learn more.
+                   Every feature solves a real student problem. From &quot;Too long to watch&quot; to &quot;Hard to review,&quot; we build exactly what you need to study less and learn more.
                  </p>
                   <div className="mt-8 pt-6 border-t border-accent/10">  
                     <div className="flex items-center gap-2 text-sm text-purple-400 font-medium">
