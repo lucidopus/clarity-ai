@@ -103,15 +103,46 @@ export async function GET(request: NextRequest) {
     }));
 
     // 4. Logic D: Dynamic Category Selection
-    // We already have 'user' (the document) but we only selected 'preferences.learning'.
-    // CategorySelector expects a user-like object with preferences.
-    // Ideally we should pass the full user document or ensure the shape matches.
-    // We faked the shape essentially above. Let's ensure strict typing or loose casting.
     
-    // We need to pass the full 'user' doc if possible, or at least an object with preferences
-    // user doc is partial here, so we cast to unknown then Generic User or handle in service better.
-    // However, CategorySelector uses 'user.preferences.learning', which we selected.
-    const selections = CategorySelector.select(user as unknown as import('@/lib/models/User').IUser, richCandidates as CatalogVideo[], new Date());
+    // Get user timezone from query param
+    const { searchParams } = new URL(request.url);
+    const tz = searchParams.get('tz') || 'UTC';
+    
+    // Get current time in user's timezone
+    let referenceDate = new Date();
+    try {
+        const formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            hour12: false
+        });
+        const parts = formatter.formatToParts(new Date());
+        const getPart = (type: string) => parts.find(p => p.type === type)?.value || '0';
+        
+        // This date object "looks" like the local time (its methods will return local values)
+        referenceDate = new Date(
+            parseInt(getPart('year')),
+            parseInt(getPart('month')) - 1,
+            parseInt(getPart('day')),
+            parseInt(getPart('hour')),
+            parseInt(getPart('minute')),
+            parseInt(getPart('second'))
+        );
+    } catch (e) {
+        console.error('Timezone adjustment failed:', e);
+        // Fallback to server time if tz is invalid
+    }
+
+    const selections = CategorySelector.select(
+        user as unknown as import('@/lib/models/User').IUser, 
+        richCandidates as CatalogVideo[], 
+        referenceDate
+    );
 
     // 5. Structure for Response
     // We want to preserve the "For You" row as the first one if it exists or if we need to force it.

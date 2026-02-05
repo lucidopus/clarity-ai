@@ -41,7 +41,8 @@ export default function DiscoverPage() {
     async function fetchDiscoverFeed() {
         try {
             setLoading(true);
-            const res = await fetch('/api/discover');
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const res = await fetch(`/api/discover?tz=${encodeURIComponent(tz)}`);
             const data = await res.json();
 
             if (data.success) {
