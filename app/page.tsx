@@ -141,7 +141,7 @@ export default function Home() {
                 <h3 className="text-2xl font-bold mb-2">Instant Clarity</h3>
                 <p className="text-secondary text-sm">Transform hours of video into minutes of reading.</p>
                 <div className="mt-8 px-4 py-2 bg-accent/10 rounded-full text-accent text-xs font-mono border border-accent/20">
-                  Processing: 99%
+                  Analyzed: 1,420 keyframes
                 </div>
               </div>
             </motion.div>
@@ -266,9 +266,9 @@ export default function Home() {
                        
                        {/* Gradients */}
                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 300" preserveAspectRatio="none">
-                          {/* Passive Curve (Forgetting) - 30% Retention */}
+                          {/* Passive Curve (Forgetting) - 28% Retention (Ends at Y=215) */}
                           <motion.path 
-                            d="M0,20 C150,120 250,180 500,220" 
+                            d="M0,20 C150,110 250,190 500,215" 
                             fill="none" 
                             stroke="#f87171" 
                             strokeWidth="3" 
@@ -279,9 +279,9 @@ export default function Home() {
                             transition={{ duration: 2, ease: "easeOut" }}
                           />
 
-                          {/* Active Curve (Retention) - Stroke set to 3 to match red */}
+                          {/* Active Curve (Retention) - 85% Retention (Pronounced Dip) */}
                           <motion.path 
-                            d="M0,20 C100,50 250,70 500,90" 
+                            d="M0,20 C100,70 300,65 500,60" 
                             fill="none" 
                             stroke="#06B6D4" 
                             strokeWidth="3" 
@@ -292,44 +292,41 @@ export default function Home() {
                             whileInView={{ pathLength: 1 }}
                             transition={{ duration: 2.5, ease: "easeInOut", delay: 0.5 }}
                           />
-                          
                        </svg>
 
-                       {/* Active Points - Moved outside SVG for valid HTML nesting & hydration */}
+                       {/* Active Points - Sitting exactly on the new blue curve */}
                        {[160, 320, 450].map((x, i) => (
                           <motion.div 
                             key={i} 
                             className="absolute w-3 h-3 bg-card-bg border-2 border-accent rounded-full z-10 -translate-x-1/2 -translate-y-1/2"
                             style={{ 
                               left: `${(x / 500) * 100}%`, 
-                              top: `${((i === 0 ? 55 : i === 1 ? 75 : 85) / 300) * 100}%` 
+                              top: `${((i === 0 ? 54 : i === 1 ? 66 : 62) / 300) * 100}%` 
                             }} 
                             initial={{ opacity: 0, scale: 0 }}
                             whileInView={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 1.5 + i * 0.3 }}
-                          >
-                            <div className="absolute inset-0 bg-accent/20 animate-ping rounded-full"></div>
-                          </motion.div>
+                          />
                        ))}
 
-                       {/* Labels using precise positioning */}
+                       {/* Labels resting precisely ON TOP of curve endpoints */}
                        <motion.div 
                           className="absolute right-0 text-red-400 text-xs font-bold"
-                          style={{ top: '55%' }}
+                          style={{ top: '56%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
                           transition={{ delay: 2 }}
                        >
-                          30% Retention
+                          28% Retention
                        </motion.div>
                        <motion.div 
                           className="absolute right-0 text-accent text-xs font-bold"
-                          style={{ top: '12%' }}
+                          style={{ top: '8%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
                           transition={{ delay: 2.5 }}
                        >
-                          90% Retention
+                          85% Retention
                        </motion.div>
                     </div>
 
@@ -400,7 +397,7 @@ export default function Home() {
                  </div>
                  <h3 className="text-xl font-bold mb-3 relative z-10">Cognitive Science</h3>
                  <p className="text-secondary leading-relaxed relative z-10">
-                   Built on the Forgetting Curve. Our tools enforce <span className="text-accent">Active Recall</span> and <span className="text-accent">Spaced Repetition</span>, proven to improve long-term retention by up to 200%.
+                   Built on the Forgetting Curve. Our tools enforce <span className="text-accent">Active Recall</span> and <span className="text-accent">Spaced Repetition</span>, proven to improve long-term retention by <span className="text-accent">1.8x - 2.4x</span>.
                  </p>
                  {/* Decorative Pulse */}
                  <div className="absolute bottom-6 right-6 flex gap-1">
@@ -562,7 +559,7 @@ export default function Home() {
   "meta": {
     "version": "2.1.0",
     "generated_by": "Clarity AI Agent",
-    "processing_time": "12s"
+    "processing_time": "4.2s"
   },
   "graph_data": {
     "nodes": [
@@ -628,7 +625,7 @@ export default function Home() {
   "meta": {
     "version": "2.1.0",
     "generated_by": "Clarity AI Agent",
-    "processing_time": "12s"
+    "processing_time": "4.2s"
   },
   "graph_data": {
     "nodes": [
