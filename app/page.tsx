@@ -1,586 +1,948 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { BookOpen, Compass, Zap } from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { 
+  BookOpen, 
+  Zap, 
+  MessageSquare, 
+  Search, 
+  Code2, 
+  Layers, 
+  Cpu, 
+  Globe,
+  Sparkles,
+  Brain,
+  Users,
+  GitGraph,
+  Target
+} from 'lucide-react';
 import Button from '@/components/Button';
-import Card from '@/components/Card';
-import SectionTitle from '@/components/SectionTitle';
-import { CHATBOT_NAME } from '@/lib/config';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Home() {
+  const [url, setUrl] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Smooth out the mouse movement
+  const springConfig = { damping: 25, stiffness: 700 };
+  const smoothX = useSpring(mouseX, springConfig);
+  const smoothY = useSpring(mouseY, springConfig);
+
+  const handleMouseMove = (e: React.MouseEvent | MouseEvent) => {
+    if (!containerRef.current) return;
+    const { left, top } = containerRef.current.getBoundingClientRect();
+    mouseX.set(e.clientX - left);
+    mouseY.set(e.clientY - top);
+  };
+
+  useEffect(() => {
+    // Initial position targeted at the letter 'i' in "Clarity"
+    if (containerRef.current) {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        mouseX.set(width * 0.46); // 46% hits the 'i' area more accurately
+        mouseY.set(height / 2);
+    }
+  }, [mouseX, mouseY]);
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-background overflow-x-hidden">
+        {/* Ambient background glow */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[100px] animate-pulse-subtle"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/5 rounded-full blur-[100px] animate-pulse-subtle" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-[40%] left-[50%] transform -translate-x-1/2 w-[60%] h-[30%] bg-accent/5 rounded-full blur-[120px] opacity-50"></div>
+        </div>
+
         {/* Hero Section */}
-        <section className="relative overflow-hidden opacity-100 transition-opacity duration-700 h-screen flex items-center">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-               The{' '}
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 1.5, ease: 'easeInOut' }}
+        <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
+          <motion.div 
+            ref={containerRef}
+            onMouseMove={handleMouseMove}
+            className="text-center max-w-5xl mx-auto mb-12 relative group"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
+            {/* The Base Layer (Background/Dimmed) */}
+            <div className="relative select-none cursor-default">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4">
+                <span className="text-foreground/20 blur-[2px] transition-all duration-500 group-hover:blur-0">
+                  Clarity
+                </span>
+                <span className="text-gradient">AI</span>
+              </h1>
+              {/* Invisible tagline in base layer */}
+              <div className="h-12 mb-8 opacity-0">The Smarter Way to Learn is Here</div>
+            </div>
 
-                >
-                 Smarter
-               </motion.span>{' '}
-               Way to <span className="text-accent">Learn</span> is Here.
-            </h1>
-            <p className="text-xl md:text-2xl text-secondary mb-8 leading-relaxed max-w-3xl mx-auto">
-              Clarity AI transforms YouTube tutorials into interactive study tools. Get AI-powered notes, quizzes, and mind maps that cut your learning time in half.
+            {/* The Torch Reveal Layer (Bright/Cyan) */}
+            <motion.div
+                className="absolute inset-0 z-20 pointer-events-none select-none"
+                style={{
+                    maskImage: useTransform(
+                        [smoothX, smoothY],
+                        ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
+                    ),
+                    WebkitMaskImage: useTransform(
+                        [smoothX, smoothY],
+                        ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
+                    ),
+                }}
+            >
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4">
+                <span className="text-accent">
+                  Clarity
+                </span>
+                {/* AI is already bright/gradient, so we don't need to double-reveal it, or we mirror it */}
+                <span className="text-gradient">AI</span>
+              </h1>
+              <div className="h-12 mb-8 flex items-center justify-center text-accent text-xl md:text-2xl font-medium tracking-wide">
+                The Smarter Way to Learn is Here
+              </div>
+            </motion.div>
+
+            {/* Ambient Glow that follows exactly at cursor */}
+            <motion.div
+              className="absolute w-64 h-64 bg-accent/20 blur-3xl rounded-full z-0 pointer-events-none"
+              style={{
+                left: smoothX,
+                top: smoothY,
+                x: "-50%",
+                y: "-50%",
+              }}
+              animate={{ 
+                scale: [1, 1.2, 1],
+              }}
+              transition={{ 
+                duration: 4, 
+                repeat: Infinity, 
+                repeatType: "reverse" 
+              }}
+            />
+            
+            <p className="text-xl md:text-2xl text-secondary max-w-3xl mx-auto leading-relaxed mb-10">
+              A new perspective on learning in the AI era.
+              <br className="hidden md:block" />
+              Transform any YouTube video into interactive study materials.
             </p>
-            <div className="flex flex-col mb-15 sm:flex-row gap-4 justify-center items-center">
-              <Button href="/auth/signup" variant="primary" size="lg">
-                Get Started Free
-              </Button>
-              <Button href="#about" variant="secondary" size="lg">
-                Learn More
-              </Button>
-             </div>
-           </div>
 
-           {/* Decorative gradient */}
-           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-4xl -z-10 opacity-10">
-             <div className="absolute top-20 left-1/4 w-72 h-72 bg-accent rounded-full filter blur-3xl"></div>
-             <div className="absolute top-40 right-1/4 w-96 h-96 bg-accent/50 rounded-full filter blur-3xl"></div>
-           </div>
+            {/* Search/Input Bar */}
+            <div className="relative max-w-2xl mx-auto group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-accent/50 to-accent-hover/50 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative flex items-center bg-card-bg/80 backdrop-blur-xl rounded-full p-2 shadow-xl">
+                <div className="pl-4 text-accent">
+                  <Search className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Paste a YouTube URL to start learning..."
+                  className="flex-1 bg-transparent !border-none !focus:ring-0 !ring-0 !outline-none text-foreground placeholder-secondary/50 px-4 py-3 shadow-none focus:outline-none"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <Button 
+                  href={url ? `/dashboard?url=${encodeURIComponent(url)}` : '/auth/signup'} 
+                  variant="primary" 
+                  className="!rounded-full px-6 md:px-8"
+                  size="md"
+                >
+                  Generate
+                </Button>
+              </div>
+            </div>
+            
+            <div className="mt-8 flex justify-center gap-6 text-sm text-secondary">
+              <span className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2"></span>Free to start</span>
+              <span className="flex items-center"><span className="w-1.5 h-1.5 rounded-full bg-accent mr-2"></span>No credit card required</span>
+            </div>
+          </motion.div>
+
+          {/* 3D Floating Cards */}
+          <div className="w-full max-w-7xl mx-auto h-[550px] md:h-[650px] relative perspective-container mt-12 hidden md:block">
+            {/* Card 1: Mind Map - Left Foreground */}
+            <motion.div 
+              className="absolute top-1/2 -translate-y-[60%] left-0 md:left-[2%] w-72 h-[400px] z-10"
+              animate={{ 
+                y: [0, -20, 0],
+                rotateY: [10, 5, 10], 
+                rotateX: [5, 0, 5]
+              }}
+              transition={{ 
+                duration: 6, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: 0
+              }}
+            >
+              <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-8 shadow-2xl flex flex-col justify-between glow-border card-3d">
+                <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-6">
+                  <GitGraph className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold mb-4">Mind Map</h3>
+                  <div className="space-y-4 opacity-70">
+                    <div className="h-2 w-full bg-accent/20 rounded"></div>
+                    <div className="flex gap-4">
+                      <div className="h-2 w-1/3 bg-accent/20 rounded"></div>
+                      <div className="h-2 w-1/3 bg-accent/20 rounded"></div>
+                    </div>
+                    <div className="h-2 w-full bg-accent/20 rounded"></div>
+                    <div className="flex gap-4 justify-end">
+                      <div className="h-2 w-1/2 bg-accent/20 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-8 pt-4 flex gap-3">
+                  <div className="w-3 h-3 rounded-full bg-accent/40"></div>
+                  <div className="w-3 h-3 rounded-full bg-accent/20"></div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 2: Code/Center - Main Focus */}
+            <motion.div 
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-85 h-[420px] z-20"
+              animate={{ 
+                y: [0, -30, 0],
+              }}
+              transition={{ 
+                duration: 7, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: 1
+              }}
+            >
+              <div className="w-full h-full bg-card-bg rounded-[2.5rem] border-2 border-accent/40 p-10 shadow-[0_0_60px_rgba(6,182,212,0.15)] flex flex-col justify-center items-center text-center glow-border card-3d bg-gradient-to-b from-card-bg to-accent/5">
+                <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center text-accent mb-10">
+                  <Zap className="w-12 h-12" />
+                </div>
+                <h3 className="text-4xl font-bold mb-4 tracking-tight">Instant Clarity</h3>
+                <p className="text-secondary text-lg max-w-xs mx-auto">Transform hours of video into minutes of reading.</p>
+                <div className="mt-10 px-6 py-2.5 bg-accent/10 rounded-full text-accent text-sm font-mono border border-accent/20 shadow-inner">
+                  Analyzed: 1,420 keyframes
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 3: Chat - Right */}
+            <motion.div 
+              className="absolute top-1/2 -translate-y-[60%] right-0 md:right-[2%] w-72 h-[400px] z-10"
+              animate={{ 
+                y: [0, -25, 0],
+                rotateY: [-10, -5, -10], 
+                rotateX: [5, 0, 5]
+              }}
+              transition={{ 
+                duration: 8, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: 2
+              }}
+            >
+              <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-8 shadow-2xl flex flex-col justify-between glow-border card-3d">
+                <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+                  <MessageSquare className="w-8 h-8" />
+                </div>
+                <div>
+                  <div className="h-2.5 w-16 bg-accent/20 rounded mb-6"></div>
+                  <h3 className="text-2xl font-bold mb-4">AI Tutor</h3>
+                   <div className="space-y-4 mt-6">
+                    <div className="flex justify-end">
+                      <div className="bg-accent/10 text-accent text-xs p-3.5 rounded-l-xl rounded-tr-xl max-w-[90%] leading-relaxed shadow-sm">
+                        He just typed 40 lines of code and said it&apos;s &quot;simple.&quot; It is NOT simple.
+                      </div>
+                    </div>
+                    <div className="flex justify-start">
+                      <div className="bg-foreground/5 text-secondary text-xs p-3.5 rounded-r-xl rounded-tl-xl max-w-[90%] leading-relaxed shadow-sm">
+                        Haha, standard. He&apos;s skipping steps to move fast. I&apos;ve distilled those 40 lines into 4 logical primitives. Want the &quot;actually simple&quot; version?
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+            {/* BACKGROUND LAYER - Deeper cards */}
+            {/* Card 4: Smart Notes - Background Left */}
+            <motion.div 
+              className="absolute top-0 left-[20%] w-64 h-72 z-0 opacity-40 blur-[1px]"
+              animate={{ 
+                y: [0, -15, 0],
+                rotateZ: [-2, 2, -2]
+              }}
+              transition={{ 
+                duration: 10, 
+                repeat: Infinity, 
+                ease: "easeInOut"
+              }}
+            >
+              <div className="w-full h-full bg-card-bg/50 backdrop-blur-sm rounded-2xl border border-accent/10 p-6 flex flex-col justify-between card-3d">
+                <div className="w-10 h-10 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-foreground/40 mb-2">Smart Notes</h4>
+                  <div className="h-1.5 w-full bg-accent/10 rounded mb-2"></div>
+                  <div className="h-1.5 w-3/4 bg-accent/10 rounded mb-2"></div>
+                  <div className="h-1.5 w-1/2 bg-accent/10 rounded"></div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Card 5: Challenges - Background Right */}
+            <motion.div 
+              className="absolute top-0 right-[20%] w-64 h-72 z-0 opacity-40 blur-[1px]"
+              animate={{ 
+                y: [0, 15, 0],
+                rotateZ: [2, -2, 2]
+              }}
+              transition={{ 
+                duration: 12, 
+                repeat: Infinity, 
+                ease: "easeInOut",
+                delay: 1
+              }}
+            >
+              <div className="w-full h-full bg-card-bg/50 backdrop-blur-sm rounded-2xl border border-accent/10 p-6 flex flex-col justify-between card-3d">
+                <div className="w-10 h-10 rounded-lg bg-accent/5 flex items-center justify-center text-accent/50">
+                  <Target className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-foreground/40 mb-2">Real Scenarios</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="h-8 bg-accent/10 rounded"></div>
+                    <div className="h-8 bg-accent/10 rounded"></div>
+                    <div className="h-8 bg-accent/10 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Background connection lines (Simple SVG) */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 z-0" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              {/* Foreground lines */}
+              <path d="M150 240 C 300 240, 350 300, 500 300" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="8,8" />
+              <path d="M850 240 C 700 240, 650 300, 500 300" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="8,8" />
+              
+              {/* Background lines (connecting deep cards) */}
+              <path d="M250 100 C 350 150, 450 150, 500 300" stroke="currentColor" fill="none" className="text-accent/30" strokeWidth="1" strokeDasharray="4,4" />
+              <path d="M750 100 C 650 150, 550 150, 500 300" stroke="currentColor" fill="none" className="text-accent/30" strokeWidth="1" strokeDasharray="4,4" />
+              <path d="M250 100 L 750 100" stroke="currentColor" fill="none" className="text-accent/20" strokeWidth="1" strokeDasharray="10,10" />
+            </svg>
           </div>
         </section>
 
-        {/* About Section */}
-        <section id="about" className="py-20 bg-linear-to-br from-background via-card-bg/20 to-background relative overflow-hidden">
-          {/* Background Elements */}
-          <div className="absolute inset-0 bg-linear-to-br from-accent/5 via-transparent to-accent/10"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-50"></div>
-          <div className="absolute top-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl opacity-30"></div>
-          <div className="absolute bottom-10 left-10 w-24 h-24 bg-accent/15 rounded-full blur-xl opacity-40"></div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <SectionTitle
-              subtitle="Designed for anyone who learns from video"
+        {/* Mission Section */}
+        <section id="about" className="py-24 relative z-10 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div 
+               className="text-center mb-16"
+               initial={{ opacity: 0, y: 20 }}
+               whileInView={{ opacity: 1, y: 0 }}
+               viewport={{ once: true }}
             >
-              Built for better retention
-            </SectionTitle>
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">Built for better retention</h2>
+              <p className="text-secondary text-lg">Designed for anyone who learns from video</p>
+            </motion.div>
 
-            <div className="max-w-6xl mx-auto">
-              {/* Story Section */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20">
-                <motion.div
-                  className="space-y-6"
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6 }}
-                  viewport={{ once: true }}
-                >
-                  <div className="inline-flex items-center px-4 py-2 bg-accent/10 rounded-full text-accent font-medium text-sm">
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Our Approach
-                  </div>
-                  <h3 className="text-3xl md:text-4xl font-bold text-foreground leading-tight">
-                    Passive watching doesn&apos;t create lasting knowledge
-                  </h3>
-                  <p className="text-lg text-secondary leading-relaxed">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              >
+                <div className="inline-flex items-center px-3 py-1 bg-accent/10 rounded-full text-accent text-sm font-medium mb-6">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Our Approach
+                </div>
+                <h3 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
+                  Passive watching doesn&apos;t create lasting knowledge
+                </h3>
+                <div className="space-y-6 text-lg text-secondary leading-relaxed">
+                  <p>
                     Educational video content is everywhere, but retention remains low. Watching alone doesn&apos;t translate to learning.
                   </p>
-                  <p className="text-lg text-secondary leading-relaxed">
+                  <p>
                     Clarity AI bridges this gap with active recall techniques. Transform any video into personalized study tools—automatically generated flashcards, quizzes, and structured notes that drive real comprehension.
                   </p>
-                </motion.div>
+                </div>
+              </motion.div>
 
-                <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  viewport={{ once: true }}
-                >
-                  <Card className="bg-card-bg/50 backdrop-blur-sm rounded-2xl p-8 border border-accent/10 shadow-xl">
-                    <div className="space-y-6">
-                      <div className="w-16 h-16 bg-accent/20 rounded-full flex items-center justify-center">
-                        <Compass className="w-8 h-8 text-accent" />
-                      </div>
-                      <div>
-                        <h4 className="text-2xl font-bold text-foreground mb-3">Our Mission</h4>
-                        <p className="text-secondary leading-relaxed mb-4">
-                          Turn passive video consumption into active learning experiences. We combine AI technology with proven cognitive science to help anyone master content faster.
-                        </p>
-                        <p className="text-accent font-medium text-lg">
-                          &quot;Watch once. Master completely.&quot;
-                        </p>
-                      </div>
+              <motion.div
+                initial={{ opacity: 0, x: 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="relative h-[400px] w-full bg-card-bg/50 backdrop-blur-xl rounded-[2rem] border border-accent/20 p-8 overflow-hidden group hover:border-accent/40 transition-colors"
+              >
+                 {/* Graph Container */}
+                 <div className="absolute inset-0 p-8 flex flex-col">
+                    <div className="flex justify-between items-center mb-8">
+                       <h4 className="text-xl font-bold flex items-center gap-2">
+                         <Brain className="w-5 h-5 text-accent" />
+                         Retention Impact
+                       </h4>
+                       <div className="flex gap-4 text-xs font-medium">
+                          <div className="flex items-center gap-1.5 text-secondary">
+                             <div className="w-2 h-2 rounded-full bg-amber-500/50"></div>
+                             Without Clarity AI
+                          </div>
+                          <div className="flex items-center gap-1.5 text-accent">
+                             <div className="w-2 h-2 rounded-full bg-accent"></div>
+                             With Clarity AI
+                          </div>
+                       </div>
                     </div>
-                  </Card>
-                </motion.div>
-              </div>
 
-              {/* Values Section */}
-              <motion.div
-                className="mb-20"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                <div className="text-center mb-12">
-                  <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    Why Clarity AI
-                  </h3>
-                  <p className="text-lg text-secondary max-w-2xl mx-auto">
-                    Purpose-built for educational content with research-backed learning methods
-                  </p>
-                </div>
+                    <div className="relative flex-1 w-full">
+                       {/* Grid lines - Improved visibility */}
+                       <div className="absolute inset-0 flex flex-col justify-between">
+                          <div className="w-full h-px bg-foreground/10"></div>
+                          <div className="w-full h-px bg-foreground/10"></div>
+                          <div className="w-full h-px bg-foreground/10"></div>
+                          <div className="w-full h-px bg-foreground/10"></div>
+                       </div>
+                       
+                       {/* Gradients */}
+                       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 500 300" preserveAspectRatio="none">
+                          {/* Passive Curve (Forgetting) - 28% Retention (Ends at Y=226) */}
+                          <motion.path 
+                            d="M0,10 C150,160 250,210 500,226" 
+                            fill="none" 
+                            stroke="#d97706" 
+                            strokeWidth="3" 
+                            strokeDasharray="6,6"
+                            strokeOpacity="0.5"
+                            initial={{ pathLength: 0 }}
+                            whileInView={{ pathLength: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 2, ease: "easeOut" }}
+                          />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                   <Card className="text-center p-8 group transition-all duration-300">
-                     <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-accent">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                          {/* Active Curve (Retention) - 85% Retention (Consistent Dip) */}
+                          <motion.path 
+                            d="M0,10 C100,70 300,60 500,55" 
+                            fill="none" 
+                            stroke="#06B6D4" 
+                            strokeWidth="3" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                            filter="drop-shadow(0 0 4px rgba(6,182,212,0.3))"
+                            initial={{ pathLength: 0 }}
+                            whileInView={{ pathLength: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 2.5, ease: "easeInOut", delay: 0.5 }}
+                          />
                        </svg>
-                     </div>
-                     <h4 className="text-xl font-bold text-foreground mb-3">Education-First AI</h4>
-                    <p className="text-secondary leading-relaxed">
-                      Trained specifically for educational content. Identifies key concepts, important definitions, and critical relationships—not just generic summarization.
-                    </p>
-                  </Card>
 
-                  <Card className="text-center p-8 group transition-all duration-300">
-                     <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-accent">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                       </svg>
-                     </div>
-                     <h4 className="text-xl font-bold text-foreground mb-3">Cognitive Science Foundation</h4>
-                    <p className="text-secondary leading-relaxed">
-                      Built on proven learning principles: spaced repetition, active recall, and retrieval practice. Evidence-based techniques that improve retention by up to 200%.
-                    </p>
-                  </Card>
+                       {/* Active Points - Perfectly tracking the new consistent dip */}
+                       {[160, 320, 450].map((x, i) => (
+                          <motion.div 
+                            key={i} 
+                            className="absolute w-3 h-3 bg-card-bg border-2 border-accent rounded-full z-10 -translate-x-1/2 -translate-y-1/2"
+                            style={{ 
+                              left: `${(x / 500) * 100}%`, 
+                              top: `${((i === 0 ? 53 : i === 1 ? 59 : 56) / 300) * 100}%` 
+                            }} 
+                            initial={{ opacity: 0, scale: 0 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: 1.5 + i * 0.3 }}
+                          />
+                       ))}
 
-                  <Card className="text-center p-8 group transition-all duration-300">
-                     <div className="w-16 h-16 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-accent">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                       </svg>
-                     </div>
-                     <h4 className="text-xl font-bold text-foreground mb-3">User-Centered Design</h4>
-                    <p className="text-secondary leading-relaxed">
-                      Every feature addresses real learning challenges. Built with continuous user feedback to ensure tools are practical, effective, and intuitive.
-                    </p>
-                  </Card>
-                </div>
+                       {/* Labels resting precisely ON TOP of curve endpoints */}
+                       <motion.div 
+                          className="absolute right-0 text-amber-500 text-xs font-bold"
+                          style={{ top: '61%' }}
+                          initial={{ opacity: 0, x: 10 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 2 }}
+                       >
+                          28% Retention
+                       </motion.div>
+                       <motion.div 
+                          className="absolute right-0 text-accent text-xs font-bold"
+                          style={{ top: '6%' }}
+                          initial={{ opacity: 0, x: 10 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: 2.5 }}
+                       >
+                          85% Retention
+                       </motion.div>
+                    </div>
+
+                    {/* Bottom Axis */}
+                    <div className="flex justify-between text-xs text-secondary mt-4 uppercase tracking-wider">
+                       <span>Day 1</span>
+                       <span>Day 3</span>
+                       <span>Day 7</span>
+                       <span>Day 30</span>
+                    </div>
+                 </div>
               </motion.div>
-
-              {/* Impact Stats */}
-              <motion.div
-                className="mb-16"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                viewport={{ once: true }}
-              >
-                <div className="text-center mb-12">
-                  <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    Key Features
-                  </h3>
-                  <p className="text-lg text-secondary max-w-2xl mx-auto">
-                    Fast, free, and works with any educational video
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <Card className="text-center p-6 group transition-all duration-300">
-                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                       </svg>
-                     </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">&lt;30s</div>
-                     <p className="text-secondary font-semibold mb-1">Processing Time</p>
-                    <p className="text-sm text-secondary/70">From video to flashcards in under a minute</p>
-                  </Card>
-
-                  <Card className="text-center p-6 group transition-all duration-300">
-                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                       <Zap className="w-7 h-7 text-accent" />
-                     </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">100%</div>
-                     <p className="text-secondary font-semibold mb-1">Free to Start</p>
-                    <p className="text-sm text-secondary/70">No credit card required, ever</p>
-                  </Card>
-
-                  <Card className="text-center p-6 group transition-all duration-300">
-                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
-                       </svg>
-                     </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">5</div>
-                     <p className="text-secondary font-semibold mb-1">Learning Modes</p>
-                    <p className="text-sm text-secondary/70">Flashcards, quizzes, notes, timestamps, & AI chat</p>
-                  </Card>
-
-                  <Card className="text-center p-6 group transition-all duration-300">
-                     <div className="w-14 h-14 bg-accent/10 rounded-xl flex items-center justify-center mx-auto mb-4 transition-colors">
-                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                         <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                       </svg>
-                     </div>
-                     <div className="text-4xl md:text-5xl font-bold text-accent mb-2">Any</div>
-                     <p className="text-secondary font-semibold mb-1">YouTube Video</p>
-                    <p className="text-sm text-secondary/70">Works with lectures, tutorials, courses—anything educational</p>
-                  </Card>
-                </div>
-              </motion.div>
-
-
             </div>
           </div>
         </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-card-bg/30 relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 bg-linear-to-br from-accent/5 via-transparent to-accent/10"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute top-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl opacity-30"></div>
-        <div className="absolute bottom-10 left-10 w-24 h-24 bg-accent/15 rounded-full blur-xl opacity-40"></div>
+        {/* Why Clarity AI Section */}
+        <section id="why-clarity" className="py-24 relative z-10 bg-accent/5">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div 
+               className="text-center mb-16"
+               initial={{ opacity: 0, y: 20 }}
+               whileInView={{ opacity: 1, y: 0 }}
+               viewport={{ once: true }}
+            >
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">Why Clarity AI</h2>
+              <p className="text-secondary text-lg">Purpose-built for educational content with research-backed learning methods</p>
+            </motion.div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <SectionTitle
-            subtitle="AI-generated study tools from video content"
-          >
-            Complete Learning Suite
-          </SectionTitle>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Card 1: Context */}
+              <motion.div
+                className="bg-card-bg/80 backdrop-blur-sm border border-accent/10 p-8 rounded-[2rem] hover:border-accent/30 transition-all duration-300 group relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0 }}
+              >
+                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Sparkles className="w-24 h-24 text-accent" />
+                 </div>
+                 <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-6">
+                    <Sparkles className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-xl font-bold mb-3">Education-First AI</h3>
+                 <p className="text-secondary leading-relaxed">
+                   Trained specifically for educational content. We identify key concepts, definitions, and relationships—going far beyond generic summaries to truly teach.
+                 </p>
+                 <div className="mt-8 pt-6 border-t border-accent/10">  
+                    <div className="flex items-center gap-2 text-sm text-accent font-medium">
+                       <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+                       Context Aware
+                    </div>
+                 </div>
+              </motion.div>
 
-          {/* Interactive Learning Ecosystem */}
-          <div className="relative max-w-6xl mx-auto">
-             {/* Connected Feature Nodes */}
-             <div className="relative">
+              {/* Card 2: Science (Highlighted) */}
+              <motion.div
+                className="bg-gradient-to-b from-accent/10 to-card-bg border border-accent/20 p-8 rounded-[2rem] relative overflow-hidden group shadow-lg shadow-accent/5"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+              >
+                 <div className="absolute inset-0 bg-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                 <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white mb-6 relative z-10">
+                    <Brain className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-xl font-bold mb-3 relative z-10">Cognitive Science</h3>
+                 <p className="text-secondary leading-relaxed relative z-10">
+                   Built on the Forgetting Curve. Our tools enforce <span className="text-accent">Active Recall</span> and <span className="text-accent">Spaced Repetition</span>, proven to improve long-term retention by <span className="text-accent">1.8x - 2.4x</span>.
+                 </p>
+                 {/* Decorative Pulse */}
+                 <div className="absolute bottom-6 right-6 flex gap-1">
+                    <div className="w-1 h-4 bg-accent/20 rounded-full"></div>
+                    <div className="w-1 h-6 bg-accent/40 rounded-full"></div>
+                    <div className="w-1 h-8 bg-accent/80 rounded-full animate-pulse"></div>
+                    <div className="w-1 h-6 bg-accent/40 rounded-full"></div>
+                    <div className="w-1 h-4 bg-accent/20 rounded-full"></div>
+                 </div>
+              </motion.div>
 
-              {/* Feature Nodes */}
-              <div className="grid grid-cols-2 gap-8 relative z-10">
-                {/* Smart Flashcards */}
-                <div className="group">
-                   <div className="bg-background rounded-2xl p-6 border border-accent/60 shadow-lg shadow-black/10 dark:shadow-black/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-accent/0 via-accent/50 to-accent/0"></div>
-                    <div className="flex items-start space-x-4">
-                      <div className="shrink-0">
-                         <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Smart Flashcards</h3>
-                         <p className="text-secondary leading-relaxed mb-3">Automatically generated from key concepts. Integrated spaced repetition algorithm optimizes review timing for long-term retention.</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">Spaced repetition built-in</span>
-                          <div className="w-2 h-2 bg-accent rounded-full"></div>
-                        </div>
-                      </div>
+              {/* Card 3: Experience */}
+              <motion.div
+                className="bg-card-bg/80 backdrop-blur-sm border border-accent/10 p-8 rounded-[2rem] hover:border-accent/30 transition-all duration-300 group relative overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+              >
+                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                    <Users className="w-24 h-24 text-purple-400" />
+                 </div>
+                 <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6">
+                    <Users className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-xl font-bold mb-3">User-Centered</h3>
+                 <p className="text-secondary leading-relaxed">
+                   Every feature solves a real student problem. From &quot;Too long to watch&quot; to &quot;Hard to review,&quot; we build exactly what you need to study less and learn more.
+                 </p>
+                  <div className="mt-8 pt-6 border-t border-accent/10">  
+                    <div className="flex items-center gap-2 text-sm text-purple-400 font-medium">
+                       <div className="flex -space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-accent/20 border border-card-bg"></div>
+                          <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-card-bg"></div>
+                       </div>
+                       Student Approved
+                    </div>
+                 </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+
+
+        {/* Integration / Code Section */}
+        <section id="how-it-works" className="py-24 relative z-10 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              >
+                <div className="inline-flex items-center px-3 py-1 bg-accent/10 rounded-full text-accent text-sm font-medium mb-8">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  How it Works
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold mb-12">
+                  From video to <br />
+                  <span className="text-gradient">Mastery in seconds</span>
+                </h2>
+                
+                <div className="space-y-12">
+                  {/* Step 1 */}
+                  <div className="flex gap-6 group">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card-bg border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform duration-300 relative z-10">
+                      <span className="font-bold">1</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">Paste any URL</h3>
+                      <p className="text-secondary">Simply drop a YouTube link for any lecture, tutorial, or technical deep dive.</p>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex gap-6 group">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card-bg border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform duration-300 relative z-10">
+                      <span className="font-bold">2</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">AI Processing</h3>
+                      <p className="text-secondary">Our agent analyzes audio, visual references (OCR), and context to extract key insights.</p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex gap-6 group">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-card-bg border border-accent/20 flex items-center justify-center text-accent group-hover:scale-110 transition-transform duration-300 relative z-10">
+                      <span className="font-bold">3</span>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">Structured Knowledge</h3>
+                      <p className="text-secondary">Get a complete, portable output with chapters, summaries, and code snippets ready for your note-taking app.</p>
                     </div>
                   </div>
                 </div>
 
-                {/* Interactive Quizzes */}
-                <div className="group">
-                   <div className="bg-background rounded-2xl p-6 border border-accent/60 shadow-lg shadow-black/10 dark:shadow-black/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-accent/0 via-accent/50 to-accent/0"></div>
-                    <div className="flex items-start space-x-4">
-                      <div className="shrink-0">
-                         <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Interactive Quizzes</h3>
-                        <p className="text-secondary leading-relaxed mb-3">Multiple-choice, true/false, and fill-in-the-blank questions with instant feedback. Identifies knowledge gaps and tracks progress over time.</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">Instant feedback & tracking</span>
-                          <div className="w-2 h-2 bg-accent rounded-full"></div>
-                        </div>
-                      </div>
-                    </div>
+              </motion.div>
+
+              <motion.div
+                className="relative h-[500px] w-full overflow-hidden"
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                style={{ 
+                  maskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)'
+                }}
+              >
+                {/* Back glow */}
+
+
+                {/* Scrolling Code Content */}
+                <div className="absolute inset-x-0 top-0 overflow-hidden h-full font-mono text-sm leading-6 flex flex-col justify-center">
+                   <motion.div
+                     animate={{ y: [0, -1000] }}
+                     transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                     className="px-6 text-accent/80"
+                   >
+                     <pre>
+{`{
+  "summary": {
+    "title": "Machine Learning Fundamentals",
+    "duration": "14:20",
+    "topics": [
+      "Neural Networks",
+      "Backpropagation",
+      "Gradient Descent"
+    ]
+  },
+  "chapters": [
+    {
+      "timestamp": "00:00",
+      "title": "Introduction",
+      "content": "Overview of neural architecture..."
+    },
+    {
+      "timestamp": "02:15",
+      "title": "The Neuron Model",
+      "notes": "Mathematical representation of a biological neuron."
+    }
+  ],
+  "key_concepts": [
+    {
+      "term": "Activation Function",
+      "definition": "Determines the output of a neural network node."
+    },
+    {
+      "term": "Learning Rate",
+      "definition": "Hyperparameter controlling model change."
+    }
+  ],
+  "export_config": {
+    "format": "markdown",
+    "include_timestamps": true,
+    "highlight_color": "#06B6D4"
+  },
+  "meta": {
+    "version": "2.1.0",
+    "generated_by": "Clarity AI Agent",
+    "processing_time": "4.2s"
+  },
+  "graph_data": {
+    "nodes": [
+      { "id": "n1", "label": "Input Layer" },
+      { "id": "n2", "label": "Hidden Layer" }
+    ],
+    "edges": [
+      { "source": "n1", "target": "n2", "weight": 0.85 }
+    ]
+  }
+}
+
+// ... Additional Processed Data ...
+
+{
+  "review_session": {
+    "next_review": "2024-03-15T10:00:00Z",
+    "strength_score": 0.88,
+    "focus_areas": ["Calculus Chain Rule"]
+  }
+}
+`}
+                     </pre>
+                     {/* Duplicate content for seamless loop */}
+                     <pre>
+{`{
+  "summary": {
+    "title": "Machine Learning Fundamentals",
+    "duration": "14:20",
+    "topics": [
+      "Neural Networks",
+      "Backpropagation",
+      "Gradient Descent"
+    ]
+  },
+  "chapters": [
+    {
+      "timestamp": "00:00",
+      "title": "Introduction",
+      "content": "Overview of neural architecture..."
+    },
+    {
+      "timestamp": "02:15",
+      "title": "The Neuron Model",
+      "notes": "Mathematical representation of a biological neuron."
+    }
+  ],
+  "key_concepts": [
+    {
+      "term": "Activation Function",
+      "definition": "Determines the output of a neural network node."
+    },
+    {
+      "term": "Learning Rate",
+      "definition": "Hyperparameter controlling model change."
+    }
+  ],
+  "export_config": {
+    "format": "markdown",
+    "include_timestamps": true,
+    "highlight_color": "#06B6D4"
+  },
+  "meta": {
+    "version": "2.1.0",
+    "generated_by": "Clarity AI Agent",
+    "processing_time": "4.2s"
+  },
+  "graph_data": {
+    "nodes": [
+      { "id": "n1", "label": "Input Layer" },
+      { "id": "n2", "label": "Hidden Layer" }
+    ],
+    "edges": [
+      { "source": "n1", "target": "n2", "weight": 0.85 }
+    ]
+  }
+}
+
+// ... Additional Processed Data ...
+
+{
+  "review_session": {
+    "next_review": "2024-03-15T10:00:00Z",
+    "strength_score": 0.88,
+    "focus_areas": ["Calculus Chain Rule"]
+  }
+}
+`}
+                     </pre>
+                   </motion.div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Grid Section */}
+        <section className="py-24 relative z-10" id="features">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12"
+            >
+              {[
+                {
+                  icon: <Layers className="w-8 h-8" />,
+                  title: "Structure your learning",
+                  description: "Automatically break down long videos into logical chapters, key concepts, and summaries.",
+                  delay: 0
+                },
+                {
+                  icon: <Cpu className="w-8 h-8" />,
+                  title: "Generated automatically",
+                  description: "Our AI agent watches the video for you, extracting every important detail so you don't miss a thing.",
+                  delay: 0.1
+                },
+                {
+                  icon: <Globe className="w-8 h-8" />,
+                  title: "Always accessible",
+                  description: "Access your study materials from any device, anywhere. Your knowledge base is always with you.",
+                  delay: 0.2
+                },
+                {
+                  icon: <Code2 className="w-8 h-8" />,
+                  title: "Linked back to source",
+                  description: "Every note and flashcard is timestamp-linked to the original video. Never lose context.",
+                  delay: 0.3
+                }
+              ].map((feature, index) => (
+                <motion.div 
+                  key={index}
+                  className="feature-card p-8 rounded-3xl relative overflow-hidden group"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: feature.delay }}
+                >
+                  <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent mb-6 group-hover:scale-110 transition-transform duration-300">
+                    {feature.icon}
                   </div>
+                  <h3 className="text-2xl font-bold mb-3 group-hover:text-accent transition-colors">{feature.title}</h3>
+                  <p className="text-secondary text-lg leading-relaxed">
+                    {feature.description}
+                  </p>
+                  
+                  {/* Hover effect glow */}
+                  <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-accent/20 rounded-full blur-[50px] group-hover:bg-accent/30 transition-colors duration-500"></div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section id="pricing" className="py-24 relative z-10 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="relative bg-gradient-to-br from-card-bg to-background border border-accent/20 rounded-[2.5rem] p-8 md:p-16 overflow-hidden shadow-2xl">
+              {/* Background Glow */}
+              <div className="absolute top-0 right-0 w-full h-full bg-accent/5 pointer-events-none"></div>
+              <div className="absolute -top-[20%] -right-[10%] w-[60%] h-[60%] bg-accent/10 rounded-full blur-[100px]"></div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+                <div className="space-y-8">
+                  <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+                    What if learning just had... <br/>
+                    <span className="text-gradient">More Clarity?</span>
+                  </h2>
+                  <p className="text-xl text-secondary max-w-lg">
+                    Transform your learning experience today. Join thousands of learners mastering subjects faster with Clarity AI.
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button href="/auth/signup" variant="primary" size="lg" className="rounded-full px-8 shadow-lg shadow-accent/20">
+                      Get Started Free
+                    </Button>
+                    <Button href="#features" variant="outline" size="lg" className="rounded-full px-8 backdrop-blur-sm bg-transparent border-accent/30 hover:bg-accent/10">
+                      Explore Features
+                    </Button>
+                  </div>
+                  
+                  <p className="text-sm text-secondary/80 mt-2">No credit card required • Get started for free</p>
                 </div>
 
-                {/* Timestamped Notes */}
-                <div className="group">
-                   <div className="bg-background rounded-2xl p-6 border border-accent/60 shadow-lg shadow-black/10 dark:shadow-black/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-accent/0 via-accent/50 to-accent/0"></div>
-                    <div className="flex items-start space-x-4">
-                      <div className="shrink-0">
-                         <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">Timestamped Notes</h3>
-                                                 <p className="text-secondary leading-relaxed mb-3">Structured notes with direct video links. Click any timestamp to jump to that exact moment. Searchable and exportable.</p>                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">One-click navigation</span>
-                          <div className="w-2 h-2 bg-accent rounded-full"></div>
-                        </div>
-                      </div>
+                <div className="relative h-[300px] lg:h-[400px] flex items-center justify-center perspective-container">
+                  {/* 3D Cube Representation */}
+                  <div className="relative w-48 h-48 md:w-64 md:h-64 animate-float">
+                    <div className="absolute inset-0 border-2 border-accent/50 rounded-lg transform rotate-6 rotate-y-12 rotate-x-12 translate-z-12 bg-accent/5 backdrop-blur-sm"></div>
+                    <div className="absolute inset-0 border-2 border-accent/30 rounded-lg transform -rotate-6 scale-90 bg-accent/5 backdrop-blur-sm flex items-center justify-center">
+                       <Zap className="w-20 h-20 text-accent opacity-80" />
                     </div>
                   </div>
-                </div>
+                  
+                  {/* Floating Elements */}
+                   <motion.div 
+                    className="absolute top-[20%] right-[10%] bg-background/80 backdrop-blur border border-accent/20 p-4 rounded-xl shadow-xl max-w-[200px]"
+                    animate={{ y: [-10, 10, -10] }}
+                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <span className="text-xs font-mono text-secondary">Knowledge Synthesized</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-accent/20 rounded-full overflow-hidden">
+                      <div className="h-full bg-accent w-full"></div>
+                    </div>
+                  </motion.div>
 
-                {/* Progress Tracking */}
-                <div className="group">
-                   <div className="bg-background rounded-2xl p-6 border border-accent/60 shadow-lg shadow-black/10 dark:shadow-black/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-accent/0 via-accent/50 to-accent/0"></div>
-                    <div className="flex items-start space-x-4">
-                      <div className="shrink-0">
-                         <div className="w-14 h-14 bg-accent/20 rounded-xl flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-7 h-7 text-accent">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                                                 <h3 className="text-xl font-semibold text-accent mb-2">AI Tutor Chat</h3>
-                                                 <p className="text-secondary leading-relaxed mb-3">Context-aware Q&A based on video content. Ask questions, get explanations, and clarify concepts without rewatching. Available 24/7.</p>                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-accent">Context-aware assistance</span>
-                          <div className="w-2 h-2 bg-accent rounded-full"></div>
-                        </div>
-                      </div>
+                  <motion.div 
+                    className="absolute bottom-[20%] left-[10%] bg-background/80 backdrop-blur border border-accent/20 p-4 rounded-xl shadow-xl"
+                    animate={{ y: [10, -10, 10] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                  >
+                    <div className="flex items-center gap-2">
+                       <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
+                         <span className="text-xs font-bold text-accent">A</span>
+                       </div>
+                       <div className="space-y-1">
+                         <div className="h-2 w-20 bg-secondary/20 rounded"></div>
+                         <div className="h-2 w-12 bg-secondary/20 rounded"></div>
+                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 bg-linear-to-br from-accent/5 via-transparent to-accent/10"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute top-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl opacity-30"></div>
-        <div className="absolute bottom-10 left-10 w-24 h-24 bg-accent/15 rounded-full blur-xl opacity-40"></div>
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <SectionTitle
-            subtitle="Simple 3-step process"
-          >
-            How It Works
-          </SectionTitle>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                1
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Paste URL</h3>
-              <p className="text-secondary">Submit any YouTube educational video link.</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                2
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">AI Processing</h3>
-              <p className="text-secondary">Study tools generated in under 60 seconds.</p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-accent text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                3
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Study & Master</h3>
-              <p className="text-secondary">Learn with interactive flashcards, quizzes, and notes.</p>
-            </div>
+        {/* Footer Minimal */}
+        <footer className="py-8 text-center text-sm text-secondary/60 relative z-10 border-t border-border/50">
+          <div className="max-w-7xl mx-auto px-4">
+            <p>&copy; {new Date().getFullYear()} Clarity AI. All rights reserved.</p>
           </div>
-        </div>
-      </section>
-
-      {/* Pricing Section - Commented out */}
-      {false && (
-      <section id="pricing" className="py-20 bg-card-bg/30 relative overflow-hidden">
-        {/* Background Elements */}
-        <div className="absolute inset-0 bg-linear-to-br from-accent/5 via-transparent to-accent/10"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-50"></div>
-        <div className="absolute top-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl opacity-30"></div>
-        <div className="absolute bottom-10 left-10 w-24 h-24 bg-accent/15 rounded-full blur-xl opacity-40"></div>
-
-         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-           <SectionTitle
-             subtitle="Start free. Upgrade when you&apos;re ready."
-           >
-             Pricing That Makes Sense
-           </SectionTitle>
-
-           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              <Card className="text-center">
-               <div className="mb-6">
-                 <h3 className="text-2xl font-bold text-foreground mb-2">Free</h3>
-                 <div className="text-4xl font-bold text-accent mb-2">$0</div>
-                 <p className="text-secondary">Perfect for getting started</p>
-               </div>
-               <ul className="text-left space-y-3 mb-6">
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>5 videos per month</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Basic flashcards & quizzes</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Progress tracking</span>
-                 </li>
-               </ul>
-               <Button variant="secondary" size="lg" className="w-full">
-                 Get Started Free
-               </Button>
-             </Card>
-
-              <Card className="text-center border-accent border-2 relative">
-               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                 <span className="bg-accent text-white px-4 py-1 rounded-full text-sm font-semibold">Most Popular</span>
-               </div>
-               <div className="mb-6">
-                 <h3 className="text-2xl font-bold text-foreground mb-2">Pro</h3>
-                 <div className="text-4xl font-bold text-accent mb-2">$9.99<span className="text-lg text-secondary">/month</span></div>
-                 <p className="text-secondary">For serious learners</p>
-               </div>
-               <ul className="text-left space-y-3 mb-6">
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span className="text-secondary"><strong className="text-foreground">Everything in Free</strong> +</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Unlimited videos (no monthly limit)</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Ask {CHATBOT_NAME} - AI-powered Q&A tutor (get instant answers 24/7)</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Custom flashcard creation with generation effect</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Priority support & export capabilities</span>
-                 </li>
-               </ul>
-               <Button variant="primary" size="lg" className="w-full">
-                 Get Pro Plan
-               </Button>
-             </Card>
-
-             <Card className="text-center">
-               <div className="mb-6">
-                 <h3 className="text-2xl font-bold text-foreground mb-2">Enterprise</h3>
-                 <div className="text-4xl font-bold text-accent mb-2">Custom</div>
-                 <p className="text-secondary">For organizations</p>
-               </div>
-               <ul className="text-left space-y-3 mb-6">
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span className="text-secondary"><strong className="text-foreground">Everything in Pro</strong> +</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Unlimited team members & seats</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>SSO & advanced admin controls</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Custom integrations & API access</span>
-                 </li>
-                 <li className="flex items-center">
-                   <svg className="w-5 h-5 text-accent mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                   </svg>
-                   <span>Dedicated account manager & 24/7 support</span>
-                 </li>
-               </ul>
-               <Button variant="secondary" size="lg" className="w-full">
-                 Contact Sales
-               </Button>
-             </Card>
-           </div>
-         </div>
-       </section>
-      )}
-
-       {/* CTA Section */}
-       <section className="py-20 relative overflow-hidden">
-         {/* Background Elements */}
-         <div className="absolute inset-0 bg-linear-to-br from-accent/5 via-transparent to-accent/10"></div>
-         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/10 rounded-full blur-3xl opacity-50"></div>
-         <div className="absolute top-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-2xl opacity-30"></div>
-         <div className="absolute bottom-10 left-10 w-24 h-24 bg-accent/15 rounded-full blur-xl opacity-40"></div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="max-w-4xl mx-auto">
-             {/* Main CTA Card */}
-             <div className="bg-background/80 backdrop-blur-sm rounded-3xl p-8 md:p-12 text-center border border-accent/20 shadow-2xl relative overflow-hidden">
-               {/* Decorative gradient bar */}
-               <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-accent/0 via-accent to-accent/0"></div>
-
-
-               <h2 className="text-5xl font-bold text-foreground mb-6 leading-tight">What if learning just had...{' '}<span className="text-accent">More Clarity?</span></h2>
-
-               <p className="text-xl text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
-                 Transform your learning experience today. Join thousands of learners mastering subjects faster with Clarity AI.
-               </p>
-
-               {/* CTA Buttons */}
-               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-6">
-                 <Button href="/auth/signup" variant="primary" size="lg" className="shadow-lg hover:shadow-xl transition-shadow">
-                   Get Started Free
-                 </Button>
-                 <Button href="#features" variant="secondary" size="lg">
-                   Explore Features
-                 </Button>
-               </div>
-
-               <p className="text-sm text-secondary/80">No credit card required • Get started for free</p>
-
-               {/* Trust indicators removed for now */}
-             </div>
-           </div>
-         </div>
-       </section>
+        </footer>
     </main>
   );
 }
