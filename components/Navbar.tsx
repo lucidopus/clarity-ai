@@ -25,22 +25,28 @@ export default function Navbar() {
           {/* Desktop Navigation - Centered */}
           <div className="hidden md:flex items-center justify-center flex-1 space-x-8">
             <Link
-              href="#about"
-              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-            >
-              About
-            </Link>
-            <Link
               href="#features"
               className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
             >
               Features
             </Link>
             <Link
+              href="#why-clarity"
+              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+            >
+              Why Clarity
+            </Link>
+            <Link
               href="#how-it-works"
               className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
             >
               How It Works
+            </Link>
+            <Link
+              href="#about"
+              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+            >
+              About
             </Link>
             <Link
               href="#pricing"
@@ -120,13 +126,6 @@ export default function Navbar() {
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col space-y-4">
               <Link
-                href="#about"
-                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About
-              </Link>
-              <Link
                 href="#features"
                 className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
                 onClick={() => setMobileMenuOpen(false)}
@@ -134,11 +133,25 @@ export default function Navbar() {
                 Features
               </Link>
               <Link
+                href="#why-clarity"
+                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Why Clarity
+              </Link>
+              <Link
                 href="#how-it-works"
                 className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 How It Works
+              </Link>
+              <Link
+                href="#about"
+                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                About
               </Link>
               <Link
                 href="#pricing"

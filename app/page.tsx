@@ -38,10 +38,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Initial position fine-tuned slightly to the left
+    // Initial position targeted at the letter 'i' in "Clarity"
     if (containerRef.current) {
         const { width, height } = containerRef.current.getBoundingClientRect();
-        mouseX.set(width * 0.75); // 75% of width for the perfect starting balance
+        mouseX.set(width * 0.46); // 46% hits the 'i' area more accurately
         mouseY.set(height / 2);
     }
   }, [mouseX, mouseY]);
@@ -58,85 +58,69 @@ export default function Home() {
         {/* Hero Section */}
         <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20">
           <motion.div 
-            className="text-center max-w-5xl mx-auto mb-12"
+            ref={containerRef}
+            onMouseMove={handleMouseMove}
+            className="text-center max-w-5xl mx-auto mb-12 relative group"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            {/* Logo/Icon */}
-            <motion.div 
-              className="mx-auto mb-8 w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-accent to-accent-hover rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20"
-              whileHover={{ rotate: 10, scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
+            {/* The Base Layer (Background/Dimmed) */}
+            <div className="relative select-none cursor-default">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4">
+                <span className="text-foreground/20 blur-[2px] transition-all duration-500 group-hover:blur-0">
+                  Clarity
+                </span>
+                <span className="text-gradient">AI</span>
+              </h1>
+              {/* Invisible tagline in base layer */}
+              <div className="h-12 mb-8 opacity-0">The Smarter Way to Learn is Here</div>
+            </div>
+
+            {/* The Torch Reveal Layer (Bright/Cyan) */}
+            <motion.div
+                className="absolute inset-0 z-20 pointer-events-none select-none"
+                style={{
+                    maskImage: useTransform(
+                        [smoothX, smoothY],
+                        ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
+                    ),
+                    WebkitMaskImage: useTransform(
+                        [smoothX, smoothY],
+                        ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
+                    ),
+                }}
             >
-              <Zap className="w-8 h-8 md:w-10 md:h-10 text-white fill-white" />
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4">
+                <span className="text-accent">
+                  Clarity
+                </span>
+                {/* AI is already bright/gradient, so we don't need to double-reveal it, or we mirror it */}
+                <span className="text-gradient">AI</span>
+              </h1>
+              <div className="h-12 mb-8 flex items-center justify-center text-accent text-xl md:text-2xl font-medium tracking-wide">
+                The Smarter Way to Learn is Here
+              </div>
             </motion.div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4 cursor-default select-none">
-              <div 
-                ref={containerRef}
-                onMouseMove={handleMouseMove}
-                className="relative inline-flex group py-4 px-8"
-              >
-                {/* Background Layer: Dim/Blurred initially */}
-                <motion.span
-                    className="text-foreground/20 blur-[2px] transition-all duration-500 group-hover:blur-0"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.8, delay: 0.2 }}
-                >
-                    Clarity
-                </motion.span>
-
-                {/* Torch Reveal Layer: Bright/Cyan revealed by mouse */}
-                <motion.span
-                    className="absolute inset-0 flex items-center justify-center text-accent"
-                    style={{
-                        maskImage: useTransform(
-                            [smoothX, smoothY],
-                            ([x, y]: number[]) => `radial-gradient(circle 150px at ${x}px ${y}px, black 30%, transparent 100%)`
-                        ),
-                        WebkitMaskImage: useTransform(
-                            [smoothX, smoothY],
-                            ([x, y]: number[]) => `radial-gradient(circle 150px at ${x}px ${y}px, black 30%, transparent 100%)`
-                        ),
-                    }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.5 }}
-                >
-                    Clarity
-                </motion.span>
-
-                {/* Ambient Glow that follows exactly at cursor */}
-                <motion.div
-                  className="absolute w-64 h-64 bg-accent/20 blur-3xl rounded-full -z-10 pointer-events-none"
-                  style={{
-                    left: smoothX,
-                    top: smoothY,
-                    x: "-50%",
-                    y: "-50%",
-                  }}
-                  animate={{ 
-                    scale: [1, 1.2, 1],
-                  }}
-                  transition={{ 
-                    duration: 4, 
-                    repeat: Infinity, 
-                    repeatType: "reverse" 
-                  }}
-                />
-              </div>
-
-              <motion.span 
-                className="text-gradient"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.6, delay: 0.8 }}
-              >
-                AI
-              </motion.span>
-            </h1>
+            {/* Ambient Glow that follows exactly at cursor */}
+            <motion.div
+              className="absolute w-64 h-64 bg-accent/20 blur-3xl rounded-full z-0 pointer-events-none"
+              style={{
+                left: smoothX,
+                top: smoothY,
+                x: "-50%",
+                y: "-50%",
+              }}
+              animate={{ 
+                scale: [1, 1.2, 1],
+              }}
+              transition={{ 
+                duration: 4, 
+                repeat: Infinity, 
+                repeatType: "reverse" 
+              }}
+            />
             
             <p className="text-xl md:text-2xl text-secondary max-w-3xl mx-auto leading-relaxed mb-10">
               A new perspective on learning in the AI era.
@@ -231,7 +215,7 @@ export default function Home() {
               }}
             >
               <div className="w-full h-full bg-card-bg rounded-[2.5rem] border-2 border-accent/40 p-10 shadow-[0_0_60px_rgba(6,182,212,0.15)] flex flex-col justify-center items-center text-center glow-border card-3d bg-gradient-to-b from-card-bg to-accent/5">
-                <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center text-accent mb-10 animate-pulse-subtle">
+                <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center text-accent mb-10">
                   <Zap className="w-12 h-12" />
                 </div>
                 <h3 className="text-4xl font-bold mb-4 tracking-tight">Instant Clarity</h3>
@@ -351,7 +335,7 @@ export default function Home() {
         </section>
 
         {/* Mission Section */}
-        <section className="py-24 relative z-10 overflow-hidden">
+        <section id="about" className="py-24 relative z-10 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div 
                className="text-center mb-16"
@@ -507,7 +491,7 @@ export default function Home() {
         </section>
 
         {/* Why Clarity AI Section */}
-        <section className="py-24 relative z-10 bg-accent/5">
+        <section id="why-clarity" className="py-24 relative z-10 bg-accent/5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div 
                className="text-center mb-16"
@@ -607,7 +591,7 @@ export default function Home() {
 
 
         {/* Integration / Code Section */}
-        <section className="py-24 relative z-10 overflow-hidden">
+        <section id="how-it-works" className="py-24 relative z-10 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
               <motion.div
@@ -879,7 +863,7 @@ export default function Home() {
         </section>
 
         {/* CTA Section */}
-        <section className="py-24 relative overflow-hidden">
+        <section id="pricing" className="py-24 relative z-10 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative bg-gradient-to-br from-card-bg to-background border border-accent/20 rounded-[2.5rem] p-8 md:p-16 overflow-hidden shadow-2xl">
               {/* Background Glow */}
