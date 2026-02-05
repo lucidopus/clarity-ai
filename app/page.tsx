@@ -89,10 +89,10 @@ export default function Home() {
           </motion.div>
 
           {/* 3D Floating Cards */}
-          <div className="w-full max-w-6xl mx-auto h-[400px] md:h-[500px] relative perspective-container mt-8 hidden md:block">
+          <div className="w-full max-w-7xl mx-auto h-[550px] md:h-[650px] relative perspective-container mt-12 hidden md:block">
             {/* Card 1: Notes - Left */}
             <motion.div 
-              className="absolute top-1/4 left-0 md:left-[5%] w-64 h-80 z-10"
+              className="absolute top-1/2 -translate-y-[60%] left-0 md:left-[2%] w-72 h-[400px] z-10"
               animate={{ 
                 y: [0, -20, 0],
                 rotateY: [10, 5, 10], 
@@ -105,25 +105,32 @@ export default function Home() {
                 delay: 0
               }}
             >
-              <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-6 shadow-2xl flex flex-col justify-between glow-border card-3d">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                  <BookOpen className="w-6 h-6" />
+              <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-8 shadow-2xl flex flex-col justify-between glow-border card-3d">
+                <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-6">
+                  <BookOpen className="w-8 h-8" />
                 </div>
                 <div>
-                  <div className="h-2 w-12 bg-blue-500/20 rounded mb-4"></div>
-                  <h3 className="text-xl font-bold mb-2">Smart Notes</h3>
-                  <div className="space-y-2 opacity-50">
-                    <div className="h-2 w-full bg-foreground/20 rounded"></div>
-                    <div className="h-2 w-3/4 bg-foreground/20 rounded"></div>
-                    <div className="h-2 w-5/6 bg-foreground/20 rounded"></div>
+                  <div className="h-2 w-16 bg-accent/20 rounded mb-4"></div>
+                  <h3 className="text-2xl font-bold mb-4">Smart Notes</h3>
+                  <div className="space-y-4 opacity-50">
+                    <div className="h-2.5 w-full bg-foreground/20 rounded"></div>
+                    <div className="h-2.5 w-3/4 bg-foreground/20 rounded"></div>
+                    <div className="h-2.5 w-full bg-foreground/20 rounded"></div>
+                    <div className="h-2.5 w-5/6 bg-foreground/20 rounded"></div>
+                    <div className="h-2.5 w-2/3 bg-foreground/20 rounded"></div>
                   </div>
+                </div>
+                <div className="mt-8 pt-4 flex gap-3">
+                  <div className="w-3 h-3 rounded-full bg-accent/40"></div>
+                  <div className="w-3 h-3 rounded-full bg-accent/20"></div>
+                  <div className="w-3 h-3 rounded-full bg-accent/10"></div>
                 </div>
               </div>
             </motion.div>
 
             {/* Card 2: Code/Center - Main Focus */}
             <motion.div 
-              className="absolute top-0 left-1/2 transform -translate-x-1/2 w-72 h-96 z-20"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-85 h-[420px] z-20"
               animate={{ 
                 y: [0, -30, 0],
               }}
@@ -134,13 +141,13 @@ export default function Home() {
                 delay: 1
               }}
             >
-              <div className="w-full h-full bg-card-bg rounded-2xl border border-accent/40 p-6 shadow-2xl flex flex-col justify-center items-center text-center glow-border card-3d bg-gradient-to-b from-card-bg to-accent/5">
-                <div className="w-20 h-20 rounded-2xl bg-accent/10 flex items-center justify-center text-accent mb-6 animate-pulse-subtle">
-                  <Zap className="w-10 h-10" />
+              <div className="w-full h-full bg-card-bg rounded-[2.5rem] border-2 border-accent/40 p-10 shadow-[0_0_60px_rgba(6,182,212,0.15)] flex flex-col justify-center items-center text-center glow-border card-3d bg-gradient-to-b from-card-bg to-accent/5">
+                <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center text-accent mb-10 animate-pulse-subtle">
+                  <Zap className="w-12 h-12" />
                 </div>
-                <h3 className="text-2xl font-bold mb-2">Instant Clarity</h3>
-                <p className="text-secondary text-sm">Transform hours of video into minutes of reading.</p>
-                <div className="mt-8 px-4 py-2 bg-accent/10 rounded-full text-accent text-xs font-mono border border-accent/20">
+                <h3 className="text-4xl font-bold mb-4 tracking-tight">Instant Clarity</h3>
+                <p className="text-secondary text-lg max-w-xs mx-auto">Transform hours of video into minutes of reading.</p>
+                <div className="mt-10 px-6 py-2.5 bg-accent/10 rounded-full text-accent text-sm font-mono border border-accent/20 shadow-inner">
                   Analyzed: 1,420 keyframes
                 </div>
               </div>
@@ -148,7 +155,7 @@ export default function Home() {
 
             {/* Card 3: Chat - Right */}
             <motion.div 
-              className="absolute top-1/4 right-0 md:right-[5%] w-64 h-80 z-10"
+              className="absolute top-1/2 -translate-y-[60%] right-0 md:right-[2%] w-72 h-[400px] z-10"
               animate={{ 
                 y: [0, -25, 0],
                 rotateY: [-10, -5, -10], 
@@ -161,22 +168,22 @@ export default function Home() {
                 delay: 2
               }}
             >
-              <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-6 shadow-2xl flex flex-col justify-between glow-border card-3d">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-                  <MessageSquare className="w-6 h-6" />
+              <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-8 shadow-2xl flex flex-col justify-between glow-border card-3d">
+                <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+                  <MessageSquare className="w-8 h-8" />
                 </div>
                 <div>
-                  <div className="h-2 w-12 bg-purple-500/20 rounded mb-4"></div>
-                  <h3 className="text-xl font-bold mb-2">AI Tutor</h3>
-                  <div className="space-y-3 mt-4">
+                  <div className="h-2.5 w-16 bg-accent/20 rounded mb-6"></div>
+                  <h3 className="text-2xl font-bold mb-4">AI Tutor</h3>
+                   <div className="space-y-4 mt-6">
                     <div className="flex justify-end">
-                      <div className="bg-purple-500/10 text-purple-500 text-xs p-2 rounded-l-lg rounded-tr-lg max-w-[80%]">
-                        Explain this concept?
+                      <div className="bg-accent/10 text-accent text-xs p-3.5 rounded-l-xl rounded-tr-xl max-w-[90%] leading-relaxed shadow-sm">
+                        He just typed 40 lines of code and said it&apos;s &quot;simple.&quot; It is NOT simple.
                       </div>
                     </div>
                     <div className="flex justify-start">
-                      <div className="bg-foreground/5 text-secondary text-xs p-2 rounded-r-lg rounded-tl-lg max-w-[80%]">
-                        Here&apos;s a simple breakdown...
+                      <div className="bg-foreground/5 text-secondary text-xs p-3.5 rounded-r-xl rounded-tl-xl max-w-[90%] leading-relaxed shadow-sm">
+                        Haha, standard. He&apos;s using a shortcut library. I&apos;ve broken those 40 lines into 4 logic steps. Want the &quot;actually simple&quot; version?
                       </div>
                     </div>
                   </div>
@@ -185,9 +192,9 @@ export default function Home() {
             </motion.div>
             
             {/* Background connection lines (Simple SVG) */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 z-0" xmlns="http://www.w3.org/2000/svg">
-              <path d="M300 150 C 450 150, 450 150, 600 250" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="5,5" />
-              <path d="M900 150 C 750 150, 750 150, 600 250" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="5,5" />
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 z-0" viewBox="0 0 1000 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M150 240 C 300 240, 350 300, 500 300" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="8,8" />
+              <path d="M850 240 C 700 240, 650 300, 500 300" stroke="currentColor" fill="none" className="text-accent" strokeWidth="2" strokeDasharray="8,8" />
             </svg>
           </div>
         </section>
@@ -245,7 +252,7 @@ export default function Home() {
                        </h4>
                        <div className="flex gap-4 text-xs font-medium">
                           <div className="flex items-center gap-1.5 text-secondary">
-                             <div className="w-2 h-2 rounded-full bg-red-400/50"></div>
+                             <div className="w-2 h-2 rounded-full bg-amber-500/50"></div>
                              Without Clarity AI
                           </div>
                           <div className="flex items-center gap-1.5 text-accent">
@@ -270,7 +277,7 @@ export default function Home() {
                           <motion.path 
                             d="M0,10 C150,160 250,210 500,226" 
                             fill="none" 
-                            stroke="#f87171" 
+                            stroke="#d97706" 
                             strokeWidth="3" 
                             strokeDasharray="6,6"
                             strokeOpacity="0.5"
@@ -314,7 +321,7 @@ export default function Home() {
 
                        {/* Labels resting precisely ON TOP of curve endpoints */}
                        <motion.div 
-                          className="absolute right-0 text-red-400 text-xs font-bold"
+                          className="absolute right-0 text-amber-500 text-xs font-bold"
                           style={{ top: '61%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
