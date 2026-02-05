@@ -276,6 +276,7 @@ export default function Home() {
                             strokeOpacity="0.5"
                             initial={{ pathLength: 0 }}
                             whileInView={{ pathLength: 1 }}
+                            viewport={{ once: true }}
                             transition={{ duration: 2, ease: "easeOut" }}
                           />
 
@@ -290,6 +291,7 @@ export default function Home() {
                             filter="drop-shadow(0 0 4px rgba(6,182,212,0.3))"
                             initial={{ pathLength: 0 }}
                             whileInView={{ pathLength: 1 }}
+                            viewport={{ once: true }}
                             transition={{ duration: 2.5, ease: "easeInOut", delay: 0.5 }}
                           />
                        </svg>
@@ -305,6 +307,7 @@ export default function Home() {
                             }} 
                             initial={{ opacity: 0, scale: 0 }}
                             whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
                             transition={{ delay: 1.5 + i * 0.3 }}
                           />
                        ))}
@@ -312,18 +315,20 @@ export default function Home() {
                        {/* Labels resting precisely ON TOP of curve endpoints */}
                        <motion.div 
                           className="absolute right-0 text-red-400 text-xs font-bold"
-                          style={{ top: '63%' }}
+                          style={{ top: '61%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
                           transition={{ delay: 2 }}
                        >
                           28% Retention
                        </motion.div>
                        <motion.div 
                           className="absolute right-0 text-accent text-xs font-bold"
-                          style={{ top: '5%' }}
+                          style={{ top: '6%' }}
                           initial={{ opacity: 0, x: 10 }}
                           whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
                           transition={{ delay: 2.5 }}
                        >
                           85% Retention
