@@ -228,8 +228,8 @@ export default function GalleryPage() {
 
        // Open generation page in new tab
        if (data.videoId) {
-         console.log(`🎬 [FRONTEND] Opening /generations/${data.videoId} in new tab`);
-         window.open(`/generations/${data.videoId}`, '_blank');
+         console.log(`🎬 [FRONTEND] Opening /content/${data.videoId} in new tab`);
+         window.open(`/content/${data.videoId}`, '_blank');
        } else {
          console.error('❌ [FRONTEND] No videoId in response');
        }
@@ -245,7 +245,7 @@ export default function GalleryPage() {
 
   const handleVideoClick = (videoId: string) => {
     // Open in new tab
-    window.open(`/generations/${videoId}`, '_blank');
+    window.open(`/content/${videoId}`, '_blank');
   };
 
   const handleVisibilityChange = async (videoId: string, newVisibility: 'private' | 'public') => {
