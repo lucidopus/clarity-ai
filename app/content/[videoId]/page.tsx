@@ -13,7 +13,10 @@ import MaterialsWarningBanner from '@/components/MaterialsWarningBanner';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
+<<<<<<< HEAD
 import { ToastContainer, type ToastType } from '@/components/Toast';
+=======
+>>>>>>> d9835ac (feat: add simplified content page and update gallery routing)
 import { useAuth } from '@/lib/auth-context';
 import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
@@ -118,6 +121,7 @@ export default function SimplifiedVideoMaterialsPage() {
     setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
   }, []);
 
+<<<<<<< HEAD
   // Toast notification state
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
 
@@ -129,6 +133,9 @@ export default function SimplifiedVideoMaterialsPage() {
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
+=======
+
+>>>>>>> d9835ac (feat: add simplified content page and update gallery routing)
 
   useEffect(() => {
     const dismissedBannersKey = 'dismissedMaterialsBanners';
@@ -424,8 +431,6 @@ export default function SimplifiedVideoMaterialsPage() {
            </div>
         </div>
       </main>
-
-      <ToastContainer toasts={toasts} onClose={removeToast} />
       
       {showWarning && warningType && (
         <Dialog isOpen={showWarning} onClose={() => setShowWarning(false)} type="alert" variant={getErrorConfig(warningType).variant} title={getErrorConfig(warningType).title} message={getErrorConfig(warningType).message} confirmText="I Understand" />
