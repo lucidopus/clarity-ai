@@ -161,9 +161,9 @@ export default function Home() {
 
           {/* 3D Floating Cards */}
           <div className="w-full max-w-7xl mx-auto h-[550px] md:h-[650px] relative perspective-container mt-12 hidden md:block">
-            {/* Card 1: Mind Map - Left Foreground */}
+            {/* Card 1: Quizzes - Left Foreground */}
             <motion.div 
-              className="absolute top-1/2 -translate-y-[60%] left-0 md:left-[2%] w-72 h-[400px] z-10"
+              className="absolute top-1/2 -translate-y-[60%] left-0 md:left-[2%] w-72 h-[410px] z-10"
               animate={{ 
                 y: [0, -20, 0],
                 rotateY: [10, 5, 10], 
@@ -178,25 +178,35 @@ export default function Home() {
             >
               <div className="w-full h-full bg-card-bg/90 backdrop-blur-md rounded-2xl border border-accent/20 p-8 shadow-2xl flex flex-col justify-between glow-border card-3d">
                 <div className="w-14 h-14 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-6">
-                  <GitGraph className="w-8 h-8" />
+                  <Brain className="w-8 h-8" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold mb-4">Mind Map</h3>
-                  <div className="space-y-4 opacity-70">
-                    <div className="h-2 w-full bg-accent/20 rounded"></div>
-                    <div className="flex gap-4">
-                      <div className="h-2 w-1/3 bg-accent/20 rounded"></div>
-                      <div className="h-2 w-1/3 bg-accent/20 rounded"></div>
+                  <h3 className="text-2xl font-bold mb-4">Interactive Quizzes</h3>
+                  <div className="space-y-4">
+                    <div className="p-3 rounded-lg border border-accent/20 bg-accent/5 text-[10px] leading-relaxed text-secondary/80">
+                      What is the primary function of a transformer architecture?
                     </div>
-                    <div className="h-2 w-full bg-accent/20 rounded"></div>
-                    <div className="flex gap-4 justify-end">
-                      <div className="h-2 w-1/2 bg-accent/20 rounded"></div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 p-2 rounded-md border border-accent/20 bg-accent/5">
+                        <div className="w-3 h-3 rounded-full border border-accent/40 flex items-center justify-center shrink-0">
+                          <div className="w-1.5 h-1.5 rounded-full bg-accent"></div>
+                        </div>
+                        <div className="h-1.5 w-full bg-accent/20 rounded"></div>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 rounded-md border border-accent/10 shrink-0">
+                        <div className="w-3 h-3 rounded-full border border-accent/40 shrink-0"></div>
+                        <div className="h-1.5 w-3/4 bg-accent/10 rounded"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="mt-8 pt-4 flex gap-3">
-                  <div className="w-3 h-3 rounded-full bg-accent/40"></div>
-                  <div className="w-3 h-3 rounded-full bg-accent/20"></div>
+                <div className="mt-8 pt-4 flex justify-between items-center border-t border-accent/10">
+                  <div className="flex gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/20"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent/20"></div>
+                  </div>
+                  <div className="text-[10px] font-mono text-accent bg-accent/10 px-2 py-0.5 rounded">Score: 85%</div>
                 </div>
               </div>
             </motion.div>
