@@ -13,7 +13,6 @@ import {
   Sparkles,
   Brain,
   Users,
-  GitGraph,
   Target
 } from 'lucide-react';
 import Button from '@/components/Button';
