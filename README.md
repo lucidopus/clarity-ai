@@ -175,4 +175,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 💖 Code of Conduct
 
-To ensure a welcoming and inclusive community, we expect all contributors to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it before contributing.
+To ensure a welcoming and inclusive community, we expect all contributors to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md). Please read before contributing.
