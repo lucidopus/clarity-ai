@@ -145,6 +145,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newUser = result.user;
 
     // Update local state
+    // Update local state
+    if (result.requiresVerification) {
+        // Redirect to verification page with email
+        const searchParams = new URLSearchParams();
+        searchParams.set('email', result.email);
+        searchParams.set('username', result.username);
+        router.push(`/auth/verify-email?${searchParams.toString()}`);
+        return;
+    }
+
     setUser(newUser);
 
     // Redirect to onboarding if user hasn't completed learning preferences, otherwise to dashboard

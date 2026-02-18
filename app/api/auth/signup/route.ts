@@ -1,9 +1,11 @@
 
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import VerificationToken from '@/lib/models/VerificationToken';
+import { generateOTP, hashOTP } from '@/lib/otp';
+import { sendVerificationEmail } from '@/lib/email';
 import { z } from 'zod';
 
 const signupSchema = z.object({
@@ -42,7 +44,6 @@ export async function POST(request: Request) {
 
     // Check if username already exists
     const existingUser = await User.findOne({ username });
-    console.log('Checking for existing user:', { username, foundUser: !!existingUser });
     if (existingUser) {
       return NextResponse.json({ success: false, message: 'Username already exists' }, { status: 409 });
     }
@@ -63,44 +64,43 @@ export async function POST(request: Request) {
       passwordHash,
       userType,
       customUserType: userType === 'Other' ? customUserType : undefined,
+      emailVerified: false, // Explicitly set to false
     });
 
-    console.log('New user created:', newUser);
+    console.log('New user created (unverified):', newUser._id);
 
-    const token = jwt.sign(
-      {
-        userId: newUser._id,
-        username: newUser.username,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1d' }
-    );
+    // Generate and send OTP
+    const otp = generateOTP();
+    const tokenHash = await hashOTP(otp);
 
-    const response = NextResponse.json({
+    // Create verification token
+    await VerificationToken.create({
+      userId: newUser._id,
+      tokenHash,
+      type: 'email_verification',
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes from now
+    });
+
+    // Send email
+    const emailSent = await sendVerificationEmail({
+      to: email,
+      otp,
+      name: firstName,
+    });
+
+    if (!emailSent) {
+      console.warn('Failed to send verification email to:', email);
+      // We still return success but maybe with a warning or just let the user use "Resend" later
+    }
+
+    return NextResponse.json({
       success: true,
-      user: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        preferences: newUser.preferences || null,
-      },
-      message: 'Account created successfully',
+      requiresVerification: true,
+      email: newUser.email,
+      username: newUser.username,
+      message: 'Account created. Please verify your email.',
     });
 
-    const maxAge = parseInt(process.env.JWT_EXPIRE_DAYS || '1') * 24 * 60 * 60;
-
-    response.cookies.set('jwt', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      maxAge: maxAge,
-      path: '/',
-    });
-
-    return response;
   } catch (error) {
     console.error('Signup Error:', error);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Button from './Button';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '@/lib/auth-context';
@@ -9,6 +10,8 @@ import { useAuth } from '@/lib/auth-context';
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout, loading } = useAuth();
+  const pathname = usePathname();
+  const showMarketingLinks = !pathname?.startsWith('/onboarding') && !pathname?.startsWith('/auth');
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -22,39 +25,42 @@ export default function Navbar() {
             <span className="text-xl font-bold text-foreground">Clarity AI</span>
           </Link>
 
-          {/* Desktop Navigation - Centered */}
-          <div className="hidden md:flex items-center justify-center flex-1 space-x-8">
-            <Link
-              href="#features"
-              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-            >
-              Features
-            </Link>
-            <Link
-              href="#why-clarity"
-              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-            >
-              Why Clarity
-            </Link>
-            <Link
-              href="#how-it-works"
-              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-            >
-              How It Works
-            </Link>
-            <Link
-              href="#about"
-              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-            >
-              About
-            </Link>
-            <Link
-              href="#pricing"
-              className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-            >
-              Pricing
-            </Link>
-          </div>
+          {/* Desktop Navigation - Centered (hidden on onboarding/auth) */}
+          {showMarketingLinks && (
+            <div className="hidden md:flex items-center justify-center flex-1 space-x-8">
+              <Link
+                href="#features"
+                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+              >
+                Features
+              </Link>
+              <Link
+                href="#why-clarity"
+                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+              >
+                Why Clarity
+              </Link>
+              <Link
+                href="#how-it-works"
+                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+              >
+                How It Works
+              </Link>
+              <Link
+                href="#about"
+                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+              >
+                About
+              </Link>
+              <Link
+                href="#pricing"
+                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+              >
+                Pricing
+              </Link>
+            </div>
+          )}
+          {!showMarketingLinks && <div className="flex-1" />}
 
           {/* Desktop Right Side - Auth & Theme */}
           <div className="hidden md:flex items-center space-x-4">
@@ -125,41 +131,45 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col space-y-4">
-              <Link
-                href="#features"
-                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Features
-              </Link>
-              <Link
-                href="#why-clarity"
-                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Why Clarity
-              </Link>
-              <Link
-                href="#how-it-works"
-                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                How It Works
-              </Link>
-              <Link
-                href="#about"
-                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="#pricing"
-                className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pricing
-              </Link>
+              {showMarketingLinks && (
+                <>
+                  <Link
+                    href="#features"
+                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Features
+                  </Link>
+                  <Link
+                    href="#why-clarity"
+                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Why Clarity
+                  </Link>
+                  <Link
+                    href="#how-it-works"
+                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    How It Works
+                  </Link>
+                  <Link
+                    href="#about"
+                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    About
+                  </Link>
+                  <Link
+                    href="#pricing"
+                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Pricing
+                  </Link>
+                </>
+              )}
                <div className="px-4 pt-2 border-t border-border">
                  {loading ? (
                    <div className="text-sm text-muted-foreground text-center py-2">Loading...</div>

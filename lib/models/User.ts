@@ -65,6 +65,7 @@ export interface IUser extends Document {
   userType: 'Graduate' | 'Undergraduate' | 'Other';
   customUserType?: string;
   email: string;
+  emailVerified: boolean;
   preferences?: IUserPreferences;
   createdAt: Date;
   updatedAt: Date;
@@ -122,6 +123,8 @@ const UserSchema: Schema = new Schema({
   lastLoginDate: { type: Date, default: null },
   loginStreak: { type: Number, default: 0 },
   longestStreak: { type: Number, default: 0 },
+  // Email verification status
+  emailVerified: { type: Boolean, default: false },
 }, {
   timestamps: true,
   collection: 'users', // Explicit collection name
