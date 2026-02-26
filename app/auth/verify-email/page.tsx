@@ -27,7 +27,8 @@ function VerifyEmailForm() {
 
   // Auto-send verification email on mount if arriving from sign-in or redirect
   // (signup already sends one, so we check for a 'source' param to avoid double-send)
-  const [autoSent, setAutoSent] = useState(false);
+  // Use a ref instead of state to prevent React Strict Mode double-invocation from sending 2 OTPs
+  const autoSentRef = useRef(false);
   const source = searchParams.get('source');
 
   useEffect(() => {
@@ -37,9 +38,10 @@ function VerifyEmailForm() {
   }, []);
 
   useEffect(() => {
-    if (!email || autoSent) return;
+    if (!email || autoSentRef.current) return;
     // Only auto-send when coming from sign-in or a protected route redirect
     if (source === 'signin' || source === 'redirect') {
+      autoSentRef.current = true;
       const sendInitialCode = async () => {
         try {
           const response = await fetch('/api/auth/resend-verification', {
@@ -59,11 +61,10 @@ function VerifyEmailForm() {
         } catch {
           // Silent fail — user can still manually resend
         }
-        setAutoSent(true);
       };
       sendInitialCode();
     }
-  }, [email, source, autoSent]);
+  }, [email, source]);
 
   useEffect(() => {
     if (resendCooldown > 0) {
