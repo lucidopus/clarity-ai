@@ -34,6 +34,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
     }
 
+    // Block unverified users — redirect them to verify their email
+    if (!user.emailVerified) {
+      return NextResponse.json({
+        success: false,
+        requiresVerification: true,
+        email: user.email,
+        username: user.username,
+        message: 'Please verify your email before signing in.',
+      }, { status: 403 });
+    }
+
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
       throw new Error('JWT_SECRET is not configured');

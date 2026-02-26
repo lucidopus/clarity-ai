@@ -7,6 +7,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  emailVerified?: boolean;
   firstName: string;
   lastName: string;
   preferences?: import('./models/User').IUserPreferences;
@@ -82,12 +83,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ username, password, rememberMe }),
     });
 
+    const result = await response.json();
+
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      // If the user hasn't verified their email, redirect to verification page
+      if (result.requiresVerification) {
+        const searchParams = new URLSearchParams();
+        searchParams.set('email', result.email);
+        searchParams.set('username', result.username);
+        searchParams.set('source', 'signin');
+        router.push(`/auth/verify-email?${searchParams.toString()}`);
+        return;
+      }
+      throw new Error(result.message || 'Login failed');
     }
 
-    const result = await response.json();
     const authenticatedUser = result.user;
 
     // Update local state

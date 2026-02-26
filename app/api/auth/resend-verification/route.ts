@@ -4,6 +4,7 @@ import User from '@/lib/models/User';
 import VerificationToken from '@/lib/models/VerificationToken';
 import { generateOTP, hashOTP } from '@/lib/otp';
 import { sendVerificationEmail } from '@/lib/email';
+import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
 
 const resendSchema = z.object({
@@ -70,6 +71,10 @@ export async function POST(request: Request) {
       to: email,
       otp,
       name: user.firstName,
+    });
+
+    await logServerActivity(user._id, 'email_verification_resent', {
+      email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
     });
 
     return NextResponse.json({

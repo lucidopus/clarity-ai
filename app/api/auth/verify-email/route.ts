@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import VerificationToken from '@/lib/models/VerificationToken';
 import { verifyOTP } from '@/lib/otp';
+import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
 
 const verifySchema = z.object({
@@ -55,12 +56,16 @@ export async function POST(request: Request) {
       token.attempts += 1;
       await token.save();
       
+      await logServerActivity(user._id, 'email_verification_failed', {
+        email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
+        attempts: token.attempts,
+      });
+
       if (token.attempts >= 5) {
-          // Ideally invalidate token or block user for a while
           await VerificationToken.deleteOne({ _id: token._id });
           return NextResponse.json({ success: false, message: 'Too many failed attempts. Please request a new code.' }, { status: 400 });
       }
-      
+
       return NextResponse.json({ success: false, message: 'Invalid code' }, { status: 400 });
     }
 
@@ -70,6 +75,10 @@ export async function POST(request: Request) {
 
     // Delete verification token
     await VerificationToken.deleteOne({ _id: token._id });
+
+    await logServerActivity(user._id, 'email_verification_success', {
+      email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
+    });
 
     // Generate JWT and return success (log user in)
     const jwtToken = jwt.sign(

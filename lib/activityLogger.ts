@@ -1,4 +1,4 @@
-export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated';
+export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated' | 'email_verification_sent' | 'email_verification_success' | 'email_verification_failed' | 'email_verification_resent';
 
 export async function logActivity(activityType: ActivityType, videoId?: string, metadata?: object): Promise<boolean> {
   try {

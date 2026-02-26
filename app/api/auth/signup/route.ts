@@ -6,6 +6,7 @@ import User from '@/lib/models/User';
 import VerificationToken from '@/lib/models/VerificationToken';
 import { generateOTP, hashOTP } from '@/lib/otp';
 import { sendVerificationEmail } from '@/lib/email';
+import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
 
 const signupSchema = z.object({
@@ -90,8 +91,11 @@ export async function POST(request: Request) {
 
     if (!emailSent) {
       console.warn('Failed to send verification email to:', email);
-      // We still return success but maybe with a warning or just let the user use "Resend" later
     }
+
+    await logServerActivity(newUser._id, 'email_verification_sent', {
+      email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
+    });
 
     return NextResponse.json({
       success: true,

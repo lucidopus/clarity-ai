@@ -17,6 +17,13 @@ function OnboardingContent() {
       if (!user) {
         console.log('Onboarding - No user, redirecting to signin');
         router.push('/auth/signin');
+      } else if (user.email && !user.emailVerified) {
+        console.log('Onboarding - Email not verified, redirecting to verify-email');
+        const searchParams = new URLSearchParams();
+        searchParams.set('email', user.email);
+        if (user.username) searchParams.set('username', user.username);
+        searchParams.set('source', 'redirect');
+        router.push(`/auth/verify-email?${searchParams.toString()}`);
       } else {
         // Check if learning preferences exist AND have actual meaningful data
         console.log('Onboarding - user.preferences:', JSON.stringify(user.preferences, null, 2));

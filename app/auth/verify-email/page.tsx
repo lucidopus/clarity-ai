@@ -25,12 +25,45 @@ function VerifyEmailForm() {
   // Mask email for display
   const maskedEmail = email.replace(/(^.{2}).+(@.+)/, '$1***$2');
 
+  // Auto-send verification email on mount if arriving from sign-in or redirect
+  // (signup already sends one, so we check for a 'source' param to avoid double-send)
+  const [autoSent, setAutoSent] = useState(false);
+  const source = searchParams.get('source');
+
   useEffect(() => {
-    // Focus first input on mount
     if (inputRefs.current[0]) {
       inputRefs.current[0].focus();
     }
   }, []);
+
+  useEffect(() => {
+    if (!email || autoSent) return;
+    // Only auto-send when coming from sign-in or a protected route redirect
+    if (source === 'signin' || source === 'redirect') {
+      const sendInitialCode = async () => {
+        try {
+          const response = await fetch('/api/auth/resend-verification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const data = await response.json();
+          if (response.ok) {
+            setSuccess('Verification code sent! Please check your email.');
+            setResendCooldown(60);
+          } else if (response.status === 429) {
+            // Token was recently sent, show cooldown
+            const match = data.message?.match(/wait (\d+)s/);
+            setResendCooldown(match ? parseInt(match[1]) : 60);
+          }
+        } catch {
+          // Silent fail — user can still manually resend
+        }
+        setAutoSent(true);
+      };
+      sendInitialCode();
+    }
+  }, [email, source, autoSent]);
 
   useEffect(() => {
     if (resendCooldown > 0) {

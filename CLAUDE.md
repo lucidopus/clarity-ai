@@ -417,6 +417,7 @@ A password-protected admin portal is available at `/admin` for platform monitori
 - Prioritize 4 core features (flashcards, quizzes, timestamps, prerequisites) before advanced capabilities
 - User data is sacred - never lose learning materials
 - Quality over quantity - better 4 excellent features than 10 mediocre ones
+- **Always run `yarn lint` and fix all lint errors/warnings after completing a feature update before considering it done**
 
 ## How to Execute This Project
 

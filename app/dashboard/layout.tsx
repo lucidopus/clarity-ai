@@ -30,6 +30,13 @@ export default function DashboardLayout({
     if (!loading) {
       if (!user) {
         router.push('/auth/signin');
+      } else if (user.email && !user.emailVerified) {
+        // Redirect unverified users to verify their email
+        const searchParams = new URLSearchParams();
+        searchParams.set('email', user.email);
+        if (user.username) searchParams.set('username', user.username);
+        searchParams.set('source', 'redirect');
+        router.push(`/auth/verify-email?${searchParams.toString()}`);
       } else {
         // Check if user has completed onboarding
         const hasLearningPreferences = !!(
