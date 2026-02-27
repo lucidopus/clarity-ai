@@ -85,6 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Moved "Edit Profile" button to section header (matching Account Information style)
   - Added styled badge showing remaining monthly updates with accent/red color coding
   - Removed redundant footer section for a more compact layout
+- **Email Verification (Issue #84)**: OTP-based email verification during sign-up using SendGrid.
+  - 6-digit cryptographically secure OTP with bcrypt hashing and 10-minute TTL
+  - New `VerificationToken` MongoDB model with automatic TTL cleanup
+  - `POST /api/auth/verify-email` and `POST /api/auth/resend-verification` endpoints
+  - Verification UI page with 6-cell OTP input, auto-advance, paste support, masked email display
+  - Route protection: dashboard, onboarding, and signin all enforce `emailVerified` flag
+  - Activity logging for all verification events (sent, success, failed, resent)
+  - Dev-mode fallback: logs OTP to console when SendGrid API key is not configured
 - Created `CHANGELOG.md` to track project changes.
 
 ### Changed
