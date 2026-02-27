@@ -418,6 +418,8 @@ A password-protected admin portal is available at `/admin` for platform monitori
 - User data is sacred - never lose learning materials
 - Quality over quantity - better 4 excellent features than 10 mediocre ones
 - **Always run `yarn lint` and fix all lint errors/warnings after completing a feature update before considering it done**
+- **Completion Summary**: Whenever you're done coding, always give a quick 3-4 liner summary of what you did along with a one-liner summary of what changed in each file, including file paths.
+- **Folder-Level READMEs**: Maintain a README at important folder levels describing what exists in those files. Use the naming convention `folder-name-README.md` (e.g., `lib-README.md`, `components-README.md`). Only for key folders (e.g., `lib/`, `components/`, `app/api/`) — do NOT add READMEs to every single folder; keep the repo clean.
 
 ## How to Execute This Project
 
