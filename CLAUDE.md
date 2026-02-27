@@ -417,6 +417,11 @@ A password-protected admin portal is available at `/admin` for platform monitori
 - Prioritize 4 core features (flashcards, quizzes, timestamps, prerequisites) before advanced capabilities
 - User data is sacred - never lose learning materials
 - Quality over quantity - better 4 excellent features than 10 mediocre ones
+- **Right-Size Your Engineering**: Before writing code, assess the task's complexity and scope. Match the solution's complexity to the problem — no more, no less.
+  - **Simple tasks** (bug fixes, small tweaks, single-component changes): Write the most direct solution. No abstractions, no extra layers, no "future-proofing." Just solve the problem.
+  - **Medium tasks** (new features, multi-file changes): Use reasonable structure and patterns, but don't build frameworks. If you need a helper, make one — but don't build a generic utility system for one use case.
+  - **Complex tasks** (architectural changes, new systems, pipelines): Plan thoughtfully, use proper abstractions, and design for maintainability. This is where patterns, error handling layers, and extensibility are justified.
+  - **The litmus test**: "If this task's requirements never change, would I still build it this way?" If yes, you're right-sized. If you're building for hypothetical futures, you're over-engineering. If you'd be embarrassed showing it in a code review, you're under-engineering.
 - **Always run `yarn lint` and fix all lint errors/warnings after completing a feature update before considering it done**
 - **Completion Summary**: Whenever you're done coding, always give a quick 3-4 liner summary of what you did along with a one-liner summary of what changed in each file, including file paths.
 - **Folder-Level READMEs**: Maintain a README at important folder levels describing what exists in those files. Use the naming convention `folder-name-README.md` (e.g., `lib-README.md`, `components-README.md`). Only for key folders (e.g., `lib/`, `components/`, `app/api/`) — do NOT add READMEs to every single folder; keep the repo clean.
