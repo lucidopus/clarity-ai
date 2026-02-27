@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
+import { validatePassword, PASSWORD_ERROR_MESSAGE } from '@/lib/utils/auth-validation';
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -59,10 +60,11 @@ export default function SignupPage() {
     // Password validation
     if (!formData.password) {
       newErrors.password = ['Password is required'];
-    } else if (formData.password.length < 8) {
-      newErrors.password = ['Password must be at least 8 characters'];
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(formData.password)) {
-      newErrors.password = ['Password must contain uppercase, lowercase, number, and special character'];
+    } else {
+      const { isValid, error } = validatePassword(formData.password);
+      if (!isValid) {
+        newErrors.password = [error ?? PASSWORD_ERROR_MESSAGE];
+      }
     }
 
     // Confirm password validation
