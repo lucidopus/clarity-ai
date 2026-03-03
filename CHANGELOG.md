@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **AI Suggestion Tracking**: Implemented a system to save AI suggestions to Supabase as they appear in the UI.
+- **Post-Call Analysis Suggestions**: Added an interactive UI pill in post-call analysis to display triggered AI suggestions on hover.
 - **AI-Powered Personalized Discovery Feed**:
   - **Vector Search Engine**: Implemented semantic video recommendations using Google Gemini embeddings for content similarity matching.
   - **Redis Caching**: Integrated Upstash Redis for high-performance caching of personalized recommendation pools (6-hour TTL).
@@ -97,6 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **LLM Provider Switch**: Reverted the post-call analysis LLM from Gemini back to Groq to avoid rate limits and improve performance while maintaining PII masking and deanonymization.
+- **Suggestion UI Polish**: Improved AI suggestion box typography, vertical spacing, and readability across themes.
 - Updated `README.md` to include a new "Available Scripts" section.
 - Updated `CLAUDE.md` to document the admin portal feature and environment variables.
 - Created `.env.example` file with all required environment variables.
@@ -134,6 +138,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Backend Application Initialization**: Resolved a critical ASGI app import error (`main` module) preventing the Uvicorn server from starting.
+- **Frontend Build Issues**: Fixed `tailwindcss` dependency resolution conflicts that blocked the development server from starting.
 - **Admin Analytics**: Fixed variable shadowing bug in summary endpoint where `activeUsersLast30Days` was referenced before initialization
 - **Admin Analytics**: Fixed active users count exceeding total users by verifying users still exist in database before counting (excludes deleted users' orphaned activity logs)
 - **Analytics Validation**: Completed analytics numbers validation to ensure accuracy of reported metrics (issue #50)
