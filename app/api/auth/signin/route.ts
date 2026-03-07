@@ -7,7 +7,7 @@ import User from '@/lib/models/User';
 import { z } from 'zod';
 
 const signinSchema = z.object({
-  username: z.string(),
+  username: z.string(), // Accepts either username or email
   password: z.string(),
   rememberMe: z.boolean().optional(),
 });
@@ -24,7 +24,11 @@ export async function POST(request: Request) {
 
     const { username, password, rememberMe } = validation.data;
 
-    const user = await User.findOne({ username });
+    // Support login with either username or email
+    const isEmail = username.includes('@');
+    const user = isEmail
+      ? await User.findOne({ email: { $regex: new RegExp(`^${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } })
+      : await User.findOne({ username });
     if (!user) {
       return NextResponse.json({ success: false, message: 'Invalid username or password' }, { status: 401 });
     }
@@ -78,6 +82,7 @@ export async function POST(request: Request) {
         id: user._id,
         username: user.username,
         email: user.email,
+        emailVerified: user.emailVerified ?? false,
         firstName: user.firstName,
         lastName: user.lastName,
         preferences: user.preferences || null,
