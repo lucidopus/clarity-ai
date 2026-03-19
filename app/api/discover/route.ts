@@ -64,17 +64,30 @@ export async function GET(request: NextRequest) {
     const parsedCache = JSON.parse(cachedData);
     const candidates: RedisCandidate[] = parsedCache.candidates || [];
 
-    // 3. Logic B: Deduplication (Filter Watched Videos)
+    // 3. Logic B: Deduplication (Filter Sufficiently-Completed Videos)
     await dbConnect();
-    
-    // Fetch all sourceIds the user has interacted with (Progress)
-    // We assume if a Progress doc exists, they have at least started watching it.
-    // Optimisation: .lean() for performance
-    const userProgress = await Progress.find({ userId: userId }).select('sourceId').lean() as unknown as { sourceId: string }[];
-    const watchedVideoIds = new Set(userProgress.map((p) => p.sourceId));
 
-    // Filter candidates: Keep only those NOT in watchedVideoIds
-    const freshCandidates = candidates.filter(c => !watchedVideoIds.has(c.videoId));
+    // Fetch progress docs with mastery counts so we can apply a smart threshold.
+    // Only exclude videos where the user has made meaningful progress (≥50% mastered),
+    // not just opened or barely interacted with.
+    const userProgress = await Progress.find({ userId: userId })
+      .select('sourceId masteredFlashcardIds masteredQuizIds totalStudyTimeSeconds')
+      .lean() as unknown as { sourceId: string; masteredFlashcardIds: unknown[]; masteredQuizIds: unknown[]; totalStudyTimeSeconds: number }[];
+
+    // Build a set of truly "completed" videos — those with substantial engagement
+    const MASTERY_THRESHOLD = 15; // ~75% of a typical video's materials (flashcards + quizzes)
+    const STUDY_TIME_THRESHOLD = 1800; // 30 minutes of study time
+    const completedVideoIds = new Set(
+      userProgress
+        .filter(p => {
+          const masteredCount = (p.masteredFlashcardIds?.length || 0) + (p.masteredQuizIds?.length || 0);
+          return masteredCount >= MASTERY_THRESHOLD || p.totalStudyTimeSeconds >= STUDY_TIME_THRESHOLD;
+        })
+        .map(p => p.sourceId)
+    );
+
+    // Filter candidates: Keep those NOT substantially completed
+    const freshCandidates = candidates.filter(c => !completedVideoIds.has(c.videoId));
 
     // 4. Logic C: Hydration & Smart Categorization 
 
