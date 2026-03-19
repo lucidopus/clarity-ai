@@ -17,6 +17,6 @@ export interface ContentViewerProps {
       updatedAt: Date;
     }>;
   };
-  onSaveNotes: (notes: { generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }) => void;
+  onSaveNotes: (notes: { generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }) => Promise<void>;
   autoplayVideos: boolean;
 }

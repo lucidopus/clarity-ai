@@ -255,7 +255,7 @@ async function generateMaterials(transcriptText: string, videoId: string, servic
 
     // Transform problem IDs to be globally unique (prevent cross-video contamination)
     if (materials.realWorldProblems?.length > 0) {
-      materials.realWorldProblems = materials.realWorldProblems.map((problem: { id: string }) => ({
+      materials.realWorldProblems = materials.realWorldProblems.map((problem: { id: string; title: string; scenario: string; hints: string[] }) => ({
         ...problem,
         id: `${videoId}_${problem.id}`,
       }));

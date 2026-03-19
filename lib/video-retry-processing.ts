@@ -356,7 +356,7 @@ export async function processVideoStandard(video: VideoDocument) {
     // Transform problem IDs
     if (materials.realWorldProblems && materials.realWorldProblems.length > 0) {
       materials.realWorldProblems = materials.realWorldProblems.map(
-        (problem: { id: string }, index: number) => ({
+        (problem: { id: string; title: string; scenario: string; hints: string[] }, index: number) => ({
           ...problem,
           id: `${video.videoId}-problem-${index + 1}`,
         })
