@@ -1,6 +1,7 @@
 import { schedules, logger } from "@trigger.dev/sdk/v3";
 import mongoose from "mongoose";
 import Video from "../lib/models/Video";
+import Source from "../lib/models/Source";
 import { processSingleVideoTask } from "./process-single-video";
 
 /**
@@ -23,6 +24,9 @@ function isPermanentError(errorType: string): boolean {
 /**
  * Scheduled Task: Retry Failed Videos
  * Schedule to be configured on Trigger.dev dashboard (recommended: every 6 hours)
+ *
+ * Updated to support dual-write architecture (Video + Source collections).
+ * Queries both collections and keeps them in sync on status updates.
  */
 export const retryFailedVideos = schedules.task({
   id: "retry-failed-videos",
@@ -57,11 +61,22 @@ export const retryFailedVideos = schedules.task({
         logger.info("✅ Connected to MongoDB");
       }
 
-      // Query videos needing retry
+      // Query videos needing retry from Video collection
       // Note: validation_rejected videos are excluded - they need user action first
       const videos = await Video.find({
         processingStatus: 'completed_with_warning'
       });
+
+      // Also find any Source-only failures that may not be in Video collection
+      // This catches edge cases where Source was updated but Video wasn't
+      const sourceOnlyFailures = await Source.find({
+        processingStatus: 'completed_with_warning',
+        sourceId: { $nin: videos.map(v => v.videoId) },
+      });
+
+      if (sourceOnlyFailures.length > 0) {
+        logger.warn(`⚠️ Found ${sourceOnlyFailures.length} Source-only failures (not in Video collection)`);
+      }
 
       summary.videosFound = videos.length;
       logger.info(`📊 Found ${videos.length} videos to retry`);
@@ -74,19 +89,22 @@ export const retryFailedVideos = schedules.task({
       // First, handle permanent failures sequentially (quick DB updates)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const videosToRetry: any[] = [];
-      
+
       for (const video of videos) {
         const errorType = video.errorType || 'UNKNOWN';
         summary.breakdown.byErrorType[errorType] =
           (summary.breakdown.byErrorType[errorType] || 0) + 1;
 
-        // CATEGORY 3: Permanent failures - mark as 'failed' immediately
+        // Permanent failures - mark as 'failed' on both Video + Source
         if (isPermanentError(errorType)) {
-          await Video.findByIdAndUpdate(video._id, {
-            processingStatus: 'failed',
-          });
+          const failedPayload = { processingStatus: 'failed' };
+          await Video.findByIdAndUpdate(video._id, failedPayload);
+          await Source.findOneAndUpdate(
+            { userId: video.userId, sourceId: video.videoId },
+            failedPayload
+          );
           summary.permanentFailures++;
-          logger.info(`❌ Marked video ${video.videoId} as failed (${errorType})`);
+          logger.info(`❌ Marked video ${video.videoId} as failed (${errorType}) [Video + Source]`);
         } else {
           // Add to batch for parallel processing
           videosToRetry.push(video);
@@ -103,12 +121,12 @@ export const retryFailedVideos = schedules.task({
 
         try {
           const results = await processSingleVideoTask.batchTriggerAndWait(batchPayloads);
-          
+
           // Aggregate results
           for (const result of results.runs) {
             if (result.ok) {
               const output = result.output;
-              
+
               if (output.success) {
                 summary.successfulRetries++;
                 if (output.status === 'chunked_processing') {

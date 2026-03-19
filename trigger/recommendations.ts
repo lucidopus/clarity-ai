@@ -8,7 +8,7 @@ auth.configure({
 import mongoose from "mongoose";
 import { Redis } from "ioredis";
 import User from "../lib/models/User";
-import Video from "../lib/models/Video";
+import Source from "../lib/models/Source";
 import { RECOMMENDATION_CONSTANTS } from "../lib/config";
 
 /**
@@ -97,11 +97,11 @@ export const generateUserRecommendations = task({
 
       const userVector = user.preferences.embedding;
 
-      // 3. Perform Vector Search (Logic A)
+      // 3. Perform Vector Search on Source collection (Logic A)
       const pipeline = [
         {
           $vectorSearch: {
-            index: RECOMMENDATION_CONSTANTS.VECTOR_INDEX_NAME, // "vector_index"
+            index: RECOMMENDATION_CONSTANTS.VECTOR_INDEX_NAME, // "source_vector_index"
             path: "embedding",
             queryVector: userVector,
             numCandidates: RECOMMENDATION_CONSTANTS.VECTOR_SEARCH_CANDIDATES, // 1000
@@ -111,7 +111,7 @@ export const generateUserRecommendations = task({
         {
             $project: {
                 _id: 1,
-                videoId: 1,
+                sourceId: 1,
                 title: 1,
                 category: 1,
                 score: { $meta: "vectorSearchScore" }
@@ -119,24 +119,25 @@ export const generateUserRecommendations = task({
         }
       ];
 
-      const candidates = await Video.aggregate(pipeline);
-      
+      const candidates = await Source.aggregate(pipeline);
+
       if (candidates.length === 0) {
-          logger.warn("No candidates found via vector search. Is the index ready?");
+          logger.warn("No candidates found via vector search on Source collection. Is the index ready?");
       }
 
       logger.info(`✅ Found ${candidates.length} candidates for ${username}`);
 
       // 4. Cache to Redis (TTL: 24 hours)
       // Key: discover_pool:{userId}
+      // Note: We store sourceId as videoId for backward compatibility with downstream consumers
       const redisKey = `discover_pool:${userId}`;
       const cachePayload = JSON.stringify({
           updatedAt: new Date().toISOString(),
           candidates: candidates.map(c => ({
-              _id: c._id, 
-              videoId: c.videoId, 
-              score: c.score, 
-              category: c.category 
+              _id: c._id,
+              videoId: c.sourceId,
+              score: c.score,
+              category: c.category
           }))
       });
 

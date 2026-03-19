@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import { redis } from '@/lib/redis';
 import Progress from '@/lib/models/Progress';
-import Video from '@/lib/models/Video';
+import Source from '@/lib/models/Source';
 import User from '@/lib/models/User';
 import { CategorySelector } from '@/lib/services/category-selector';
 import { CatalogVideo } from '@/lib/catalog';
@@ -81,11 +81,17 @@ export async function GET(request: NextRequest) {
     // Fetch User Preferences for Context-Aware Sorting
     const user = await User.findById(userId).select('preferences.learning');
 
-    // Fetch Videos from MongoDB
+    // Fetch from Source collection (canonical), alias sourceId → videoId for frontend compat
     const freshVideoIds = freshCandidates.map(c => c.videoId);
-    const videos = await Video.find({ videoId: { $in: freshVideoIds } })
-        .select('videoId title thumbnail channelName duration category tags materialsStatus incompleteMaterials summary userId')
-        .lean() as unknown as HydratedVideo[];
+    const sources = await Source.find({ sourceId: { $in: freshVideoIds } })
+        .select('sourceId title thumbnail channelName duration category tags materialsStatus incompleteMaterials summary userId')
+        .lean() as unknown as (HydratedVideo & { sourceId: string })[];
+
+    // Map sourceId → videoId so downstream (frontend, category selector) keeps working
+    const videos: HydratedVideo[] = sources.map(s => ({
+        ...s,
+        videoId: s.sourceId,
+    }));
 
     // B) Fetch author usernames
     const uniqueUserIds = [...new Set(videos.map((v) => v.userId?.toString()).filter(Boolean))];

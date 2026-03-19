@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import Video from '@/lib/models/Video';
+import Source from '@/lib/models/Source';
 import { generateEmbeddings } from '@/lib/embedding';
 import { RECOMMENDATION_CONSTANTS } from '@/lib/config';
 
@@ -21,50 +21,49 @@ export async function GET(request: NextRequest) {
     let videos = [];
 
     if (mode === 'semantic') {
-      // 1. Semantic Search (Vector)
+      // 1. Semantic Search (Vector) on Source collection
       // Best for understanding intent (e.g., "how to build a website" -> matches "Intro to HTML")
-      
-      // Generate embedding for the query
-      // The generateEmbeddings function returns number[] | number[][]
-      // We cast to number[] since we are passing a single string
+
       const vector = await generateEmbeddings(query) as number[];
 
-      videos = await Video.aggregate([
+      const results = await Source.aggregate([
         {
           $vectorSearch: {
-            index: RECOMMENDATION_CONSTANTS.VECTOR_INDEX_NAME, // "vector_index"
+            index: RECOMMENDATION_CONSTANTS.VECTOR_INDEX_NAME, // "source_vector_index"
             path: "embedding",
             queryVector: vector,
-            numCandidates: 100, // Look at 100 nearest neighbors
-            limit: 20 // Return top 20 relevant results
+            numCandidates: 100,
+            limit: 20
           }
         },
         {
-          $match: { visibility: 'public' } // Enforce public visibility
+          $match: { visibility: 'public' }
         },
         {
           $project: {
             _id: 1,
-            videoId: 1,
+            sourceId: 1,
             title: 1,
             thumbnail: 1,
             channelName: 1,
             duration: 1,
             category: 1,
             tags: 1,
-            description: 1,
             summary: 1,
-            score: { $meta: "vectorSearchScore" } // Return relevance score
+            score: { $meta: "vectorSearchScore" }
           }
         }
       ]);
 
+      // Alias sourceId → videoId for frontend compatibility
+      videos = results.map(r => ({ ...r, videoId: r.sourceId }));
+
     } else {
-      // 2. Basic Search (Regex) - Default
+      // 2. Basic Search (Regex) on Source collection - Default
       // Best for Autocomplete / Exact Keyword matching
-      
+
       const regex = new RegExp(query, 'i');
-      videos = await Video.find({
+      const results = await Source.find({
         visibility: 'public',
         $or: [
           { title: { $regex: regex } },
@@ -72,10 +71,13 @@ export async function GET(request: NextRequest) {
           { tags: { $in: [regex] } }
         ]
       })
-      .select('_id videoId title thumbnail channelName duration category tags')
+      .select('_id sourceId title thumbnail channelName duration category tags')
       .sort({ createdAt: -1 })
       .limit(10)
       .lean();
+
+      // Alias sourceId → videoId for frontend compatibility
+      videos = results.map(r => ({ ...r, videoId: (r as unknown as { sourceId: string }).sourceId }));
     }
 
     return NextResponse.json({

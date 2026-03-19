@@ -1,16 +1,20 @@
 import { task, logger } from "@trigger.dev/sdk/v3";
 import mongoose from 'mongoose';
+import Source from '../lib/models/Source';
 import {
   processVideoChunked,
   processVideoStandard,
   isTokenLimitError,
   isPermanentError,
 } from '../lib/video-retry-processing';
+import { generateUserRecommendations } from './recommendations';
 
 /**
  * Process a single failed video
  * This task is triggered by the retry-failed-videos coordinator task
  * Free tier optimized: Runs with concurrency limit of 3
+ *
+ * Updated to support dual-write architecture (Video + Source collections).
  */
 export const processSingleVideoTask = task({
   id: "process-single-video",
@@ -22,7 +26,7 @@ export const processSingleVideoTask = task({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   run: async (payload: { video: any }) => {
     const { video } = payload;
-    
+
     logger.info(`🎬 Processing video: ${video.videoId}`);
     logger.info(`   Error type: ${video.errorType || 'UNKNOWN'}`);
     logger.info(`   Incomplete materials: ${video.incompleteMaterials?.join(', ') || 'none'}`);
@@ -39,13 +43,16 @@ export const processSingleVideoTask = task({
 
       const errorType = video.errorType || 'UNKNOWN';
 
-      // CATEGORY 3: Permanent failures - mark as 'failed'
+      // CATEGORY 3: Permanent failures - mark as 'failed' on both Video + Source
       if (isPermanentError(errorType)) {
         const Video = mongoose.model('Video');
-        await Video.findByIdAndUpdate(video._id, {
-          processingStatus: 'failed',
-        });
-        logger.info(`❌ Marked video ${video.videoId} as failed (${errorType})`);
+        const failedPayload = { processingStatus: 'failed' };
+        await Video.findByIdAndUpdate(video._id, failedPayload);
+        await Source.findOneAndUpdate(
+          { userId: video.userId, sourceId: video.videoId },
+          failedPayload
+        );
+        logger.info(`❌ Marked video ${video.videoId} as failed (${errorType}) [Video + Source]`);
         return {
           success: false,
           videoId: video.videoId,
@@ -58,6 +65,13 @@ export const processSingleVideoTask = task({
       if (isTokenLimitError(errorType)) {
         const result = await processVideoChunked(video);
         logger.info(`✅ Chunked processing result for ${video.videoId}:`, result);
+        // Refresh discover recommendations so new content appears immediately
+        if (result.success) {
+          await generateUserRecommendations.trigger({
+            userId: video.userId.toString(),
+            username: 'User',
+          }).catch((err: unknown) => logger.warn('Failed to trigger recommendation refresh', { err }));
+        }
         return {
           ...result,
           status: 'chunked_processing',
@@ -66,10 +80,15 @@ export const processSingleVideoTask = task({
       }
 
       // CATEGORY 1: Transient errors & Validation Override - standard retry
-      // VALIDATION_OVERRIDE: User requested generation for non-educational content. 
-      // We use standard generation (full transcript) as it's not a token limit issue.
       const result = await processVideoStandard(video);
       logger.info(`🔄 Standard retry result for ${video.videoId}:`, result);
+      // Refresh discover recommendations so new content appears immediately
+      if (result.success) {
+        await generateUserRecommendations.trigger({
+          userId: video.userId.toString(),
+          username: 'User',
+        }).catch((err: unknown) => logger.warn('Failed to trigger recommendation refresh', { err }));
+      }
       return {
         ...result,
         status: 'standard_retry',
@@ -81,7 +100,7 @@ export const processSingleVideoTask = task({
       // Let the video stay as 'completed_with_warning' for next cron run
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`⚠️ Error processing video ${video.videoId}: ${errorMsg}`, error as Record<string, unknown>);
-      
+
       return {
         success: false,
         videoId: video.videoId,

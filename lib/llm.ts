@@ -75,7 +75,7 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     const response = await structuredLLM.invoke(
       [new HumanMessage(prompt)],
       {
-        timeout: 60000, // 60s timeout
+        timeout: 180000, // 180s timeout — structured output on large transcripts can take 60-120s
         callbacks: [
           {
             handleLLMEnd: (output) => {

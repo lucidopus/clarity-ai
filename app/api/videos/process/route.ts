@@ -21,6 +21,7 @@ import type { IServiceUsage } from '@/lib/models/Cost';
 import { CostSource } from '@/lib/models/Cost';
 import { ApiError, InvalidURLError, DuplicateVideoError } from '@/lib/errors/ApiError';
 import type { ExtractedSegment } from '@/lib/extractors/types';
+import { generateUserRecommendations } from '@/trigger/recommendations';
 
 interface DecodedToken {
   userId: string;
@@ -575,7 +576,14 @@ export async function POST(request: NextRequest) {
     // 12. Log costs
     await logCosts(decoded.userId, videoDocId, services);
 
-    // 13. Return response
+    // 13. Refresh discover recommendations (non-blocking)
+    // New video has an embedding now — refresh the Redis candidate pool so it appears in Discover immediately
+    generateUserRecommendations.trigger({
+      userId: decoded.userId,
+      username: decoded.username || 'User',
+    }).catch((err) => console.warn('[VIDEO PROCESS] Failed to trigger recommendation refresh:', err));
+
+    // 14. Return response
     if (llmError) {
       return NextResponse.json({
         success: true,
