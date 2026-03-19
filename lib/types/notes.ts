@@ -10,7 +10,7 @@ export interface ISegmentNote {
 export interface INote extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  videoId: string;
+  sourceId: string;
   generalNote: string;
   segmentNotes: ISegmentNote[];
   createdAt: Date;

@@ -29,11 +29,13 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    const { videoId, flashcardId, isMastered } = await request.json();
+    const body = await request.json();
+    const sourceId = body.sourceId || body.videoId;
+    const { flashcardId, isMastered } = body;
 
-    if (!videoId || !flashcardId || typeof isMastered !== 'boolean') {
+    if (!sourceId || !flashcardId || typeof isMastered !== 'boolean') {
       return NextResponse.json(
-        { error: 'Missing required fields: videoId, flashcardId, isMastered' },
+        { error: 'Missing required fields: sourceId (or videoId), flashcardId, isMastered' },
         { status: 400 }
       );
     }
@@ -67,17 +69,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find or create progress document for this user/video combination
+    // Find or create progress document for this user/source combination
     let progress = await Progress.findOne({
       userId: decoded.userId,
-      videoId: videoId
+      sourceId: sourceId
     });
 
     if (!progress) {
-      // Create new progress document
       progress = new Progress({
         userId: decoded.userId,
-        videoId: videoId,
+        sourceId: sourceId,
         masteredFlashcardIds: [],
         masteredQuizIds: [],
         quizAttempts: [],

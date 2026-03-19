@@ -32,25 +32,25 @@ export async function getChatbotContext(
   // Fetch learning material
   const learningMaterial = await LearningMaterial.findOne({
     userId: userId,
-    videoId: videoId,
+    sourceId: videoId,
   });
   if (!learningMaterial) {
     throw new Error('Learning material not found');
   }
 
   // For videos processed before chatbot feature, provide fallback
-  const videoSummary = learningMaterial.videoSummary || 'This video was processed before the AI chatbot feature was added. To enable full chatbot functionality, please reprocess the video.';
+  const videoSummary = learningMaterial.summary || 'This video was processed before the AI chatbot feature was added. To enable full chatbot functionality, please reprocess the video.';
 
   // Fetch flashcard count
   const flashcardCount = await Flashcard.countDocuments({
     userId: userId,
-    videoId: videoId,
+    sourceId: videoId,
   });
 
   // Fetch quiz count
   const quizCount = await Quiz.countDocuments({
     userId: userId,
-    videoId: videoId,
+    sourceId: videoId,
   });
 
   return {

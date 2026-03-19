@@ -22,7 +22,8 @@ interface QuizResult {
 }
 
 interface SubmitQuizRequest {
-  videoId: string; // YouTube video ID
+  videoId?: string;
+  sourceId?: string;
   results: QuizResult[];
 }
 
@@ -36,11 +37,13 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    const { videoId, results }: SubmitQuizRequest = await request.json();
+    const body: SubmitQuizRequest = await request.json();
+    const sourceId = body.sourceId || body.videoId;
+    const { results } = body;
 
-    if (!videoId || !Array.isArray(results) || results.length === 0) {
+    if (!sourceId || !Array.isArray(results) || results.length === 0) {
       return NextResponse.json(
-        { error: 'Missing or invalid required fields: videoId, results (array)' },
+        { error: 'Missing or invalid required fields: sourceId (or videoId), results (array)' },
         { status: 400 }
       );
     }
@@ -53,16 +56,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Find or create Progress document for this user and video
+    // Find or create Progress document for this user and source
     let progress = await Progress.findOne({
       userId: decoded.userId,
-      videoId: videoId
+      sourceId: sourceId
     });
 
     if (!progress) {
       progress = new Progress({
         userId: decoded.userId,
-        videoId: videoId,
+        sourceId: sourceId,
         masteredFlashcardIds: [],
         masteredQuizIds: [],
         quizAttempts: [],

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Fetch learning material and problem details
     const learningMaterial = await LearningMaterial.findOne({
-      videoId,
+      sourceId: videoId,
       userId: decoded.userId,
     });
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     // 6. Fetch user's current solution draft (if any)
     const existingSolution = await Solution.findOne({
       userId: decoded.userId,
-      videoId,
+      sourceId: videoId,
       problemId,
     });
 
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       userProfile: { firstName: decoded.firstName },
       problemTitle: problem.title,
       problemScenario: problem.scenario,
-      videoSummary: learningMaterial.videoSummary || 'No video summary available.',
+      videoSummary: learningMaterial.summary || 'No video summary available.',
       solutionDraft: incomingDraft ?? existingSolution?.content ?? '',
     });
 
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
               await logGenerationCost({
                 userId: decoded.userId,
                 source: CostSource.CHALLENGE_CHATBOT,
-                videoId: videoId,
+                sourceId: videoId,
                 problemId: problemId,
                 services,
                 totalCost: llmCost,

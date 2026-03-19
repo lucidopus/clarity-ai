@@ -153,7 +153,7 @@ export async function logValidationDecision(params: {
       category: 'content_validation',
       eventType: 'classification',
       userId: typeof params.userId === 'string' ? new mongoose.Types.ObjectId(params.userId) : params.userId,
-      videoId: params.videoId,
+      sourceId: params.videoId,
       decision: params.validation.isEducational ? 'approved' : 'rejected',
       confidence: params.validation.confidence,
       reason: params.validation.reason,
@@ -185,9 +185,9 @@ export async function logValidationOverride(
 ): Promise<void> {
   try {
     await SystemLog.findOneAndUpdate(
-      { 
-        category: 'content_validation', 
-        videoId: videoId,
+      {
+        category: 'content_validation',
+        sourceId: videoId,
         eventType: 'classification',
       },
       { 

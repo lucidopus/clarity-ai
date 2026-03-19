@@ -26,12 +26,14 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    // 2. Parse request
-    const { videoId, problemId, content } = await request.json();
+    // 2. Parse request (accept both sourceId and videoId for backward compat)
+    const body = await request.json();
+    const sourceId = body.sourceId || body.videoId;
+    const { problemId, content } = body;
 
-    if (!videoId || !problemId) {
+    if (!sourceId || !problemId) {
       return NextResponse.json(
-        { error: 'videoId and problemId are required' },
+        { error: 'sourceId (or videoId) and problemId are required' },
         { status: 400 }
       );
     }
@@ -42,18 +44,18 @@ export async function POST(request: NextRequest) {
     const solution = await Solution.findOneAndUpdate(
       {
         userId: decoded.userId,
-        videoId,
+        sourceId,
         problemId,
       },
       {
         userId: decoded.userId,
-        videoId,
+        sourceId,
         problemId,
         content: typeof content === 'string' ? content.trim() : '',
       },
       {
-        upsert: true, // Create if doesn't exist
-        new: true, // Return updated document
+        upsert: true,
+        new: true,
         runValidators: true,
       }
     );
@@ -62,7 +64,8 @@ export async function POST(request: NextRequest) {
       success: true,
       solution: {
         id: solution._id,
-        videoId: solution.videoId,
+        videoId: solution.sourceId,
+        sourceId: solution.sourceId,
         problemId: solution.problemId,
         content: solution.content,
         createdAt: solution.createdAt,
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * GET /api/solutions?videoId=<videoId>&problemId=<problemId>
+ * GET /api/solutions?videoId=<id>&problemId=<problemId>
  * Retrieve a user's solution for a specific problem
  */
 export async function GET(request: NextRequest) {
@@ -92,14 +95,14 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    // 2. Parse query params
+    // 2. Parse query params (accept both sourceId and videoId)
     const searchParams = request.nextUrl.searchParams;
-    const videoId = searchParams.get('videoId');
+    const sourceId = searchParams.get('sourceId') || searchParams.get('videoId');
     const problemId = searchParams.get('problemId');
 
-    if (!videoId || !problemId) {
+    if (!sourceId || !problemId) {
       return NextResponse.json(
-        { error: 'videoId and problemId query parameters are required' },
+        { error: 'sourceId (or videoId) and problemId query parameters are required' },
         { status: 400 }
       );
     }
@@ -109,7 +112,7 @@ export async function GET(request: NextRequest) {
     // 3. Retrieve solution
     const solution = await Solution.findOne({
       userId: decoded.userId,
-      videoId,
+      sourceId,
       problemId,
     });
 
@@ -123,7 +126,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       solution: {
         id: solution._id,
-        videoId: solution.videoId,
+        videoId: solution.sourceId,
+        sourceId: solution.sourceId,
         problemId: solution.problemId,
         content: solution.content,
         createdAt: solution.createdAt,

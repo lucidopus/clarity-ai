@@ -87,11 +87,11 @@ export async function DELETE(
         if (video) {
           // Delete all related materials for this video
           await Promise.all([
-            Flashcard.deleteMany({ userId, videoId: video.videoId }),
-            Quiz.deleteMany({ userId, videoId: video.videoId }),
-            LearningMaterial.deleteMany({ userId, videoId: video.videoId }),
-            MindMap.deleteMany({ userId, videoId: video.videoId }),
-            Note.deleteMany({ userId, videoId: video.videoId }),
+            Flashcard.deleteMany({ userId, sourceId: video.videoId }),
+            Quiz.deleteMany({ userId, sourceId: video.videoId }),
+            LearningMaterial.deleteMany({ userId, sourceId: video.videoId }),
+            MindMap.deleteMany({ userId, sourceId: video.videoId }),
+            Note.deleteMany({ userId, sourceId: video.videoId }),
           ]);
           deletedItem = await Video.findByIdAndDelete(itemId);
         }

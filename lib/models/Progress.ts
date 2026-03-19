@@ -11,7 +11,7 @@ export interface IQuizAttempt {
 export interface IProgress extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
-  videoId: string; // YouTube video ID
+  sourceId: string;
   masteredFlashcardIds: mongoose.Types.ObjectId[];
   masteredQuizIds: mongoose.Types.ObjectId[];
   quizAttempts: IQuizAttempt[];
@@ -31,7 +31,7 @@ const QuizAttemptSchema: Schema = new Schema({
 
 const ProgressSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
+  sourceId: { type: String, required: true },
   masteredFlashcardIds: [{ type: Schema.Types.ObjectId, ref: 'Flashcard' }],
   masteredQuizIds: [{ type: Schema.Types.ObjectId, ref: 'Quiz' }],
   quizAttempts: [QuizAttemptSchema],
@@ -39,10 +39,10 @@ const ProgressSchema: Schema = new Schema({
   totalStudyTimeSeconds: { type: Number, default: 0 },
 }, {
   timestamps: true,
-  collection: 'progress', // Explicitly set collection name to prevent auto-pluralization
+  collection: 'progress',
 });
 
-// Create indexes
-ProgressSchema.index({ userId: 1, videoId: 1 }, { unique: true });
+// Indexes
+ProgressSchema.index({ userId: 1, sourceId: 1 }, { unique: true });
 
 export default mongoose.models.Progress || mongoose.model<IProgress>('Progress', ProgressSchema);

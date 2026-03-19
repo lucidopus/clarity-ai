@@ -6,7 +6,7 @@ export interface IMindMapNode {
   type: 'root' | 'concept' | 'subconcept' | 'detail';
   description?: string;
   level: number;
-  position?: { x: number; y: number }; // User-customized position
+  position?: { x: number; y: number };
 }
 
 export interface IMindMapEdge {
@@ -19,12 +19,12 @@ export interface IMindMapEdge {
 
 export interface IMindMap extends Document {
   _id: mongoose.Types.ObjectId;
-  videoId: string; // YouTube video ID
+  sourceId: string;
   userId: mongoose.Types.ObjectId;
   nodes: IMindMapNode[];
   edges: IMindMapEdge[];
   metadata: {
-    generatedBy: string; // 'ai' or 'user-modified'
+    generatedBy: string;
     generatedAt: Date;
     lastModifiedAt?: Date;
   };
@@ -53,7 +53,7 @@ const MindMapEdgeSchema: Schema = new Schema({
 }, { _id: false });
 
 const MindMapSchema: Schema = new Schema({
-  videoId: { type: String, required: true },
+  sourceId: { type: String, required: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   nodes: [MindMapNodeSchema],
   edges: [MindMapEdgeSchema],
@@ -67,7 +67,7 @@ const MindMapSchema: Schema = new Schema({
   collection: 'mindmaps',
 });
 
-// Unique index per user per video
-MindMapSchema.index({ videoId: 1, userId: 1 }, { unique: true });
+// Indexes
+MindMapSchema.index({ sourceId: 1, userId: 1 }, { unique: true });
 
 export default mongoose.models.MindMap || mongoose.model<IMindMap>('MindMap', MindMapSchema);

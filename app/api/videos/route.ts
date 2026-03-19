@@ -37,27 +37,27 @@ export async function GET(request: NextRequest) {
     // Fetch all progress documents for this user
     const progressDocs = await Progress.find({ userId: decoded.userId });
     
-    // Create a map of videoId -> progress document
+    // Create a map of sourceId -> progress document
     const progressMap = new Map();
     progressDocs.forEach(doc => {
-      progressMap.set(doc.videoId, doc);
+      progressMap.set(doc.sourceId, doc);
     });
 
-    // Aggregate total flashcards per video for this user
+    // Aggregate total flashcards per source for this user
     const flashcardCounts = await Flashcard.aggregate([
       { $match: { userId: userId } },
-      { $group: { _id: "$videoId", count: { $sum: 1 } } }
+      { $group: { _id: "$sourceId", count: { $sum: 1 } } }
     ]);
-    
+
     const flashcardCountMap = new Map();
     flashcardCounts.forEach(item => {
       flashcardCountMap.set(item._id, item.count);
     });
 
-    // Aggregate total quizzes per video for this user
+    // Aggregate total quizzes per source for this user
     const quizCounts = await Quiz.aggregate([
       { $match: { userId: userId } },
-      { $group: { _id: "$videoId", count: { $sum: 1 } } }
+      { $group: { _id: "$sourceId", count: { $sum: 1 } } }
     ]);
 
     const quizCountMap = new Map();

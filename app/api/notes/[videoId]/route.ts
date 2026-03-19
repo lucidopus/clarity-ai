@@ -19,11 +19,11 @@ export async function GET(
     }
 
     const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-    const { videoId } = await params;
+    const { videoId: sourceId } = await params;
 
     await dbConnect();
 
-    const note = await Note.findOne({ userId, videoId });
+    const note = await Note.findOne({ userId, sourceId });
 
     return NextResponse.json(note || { generalNote: '', segmentNotes: [] });
   } catch (error) {
@@ -47,13 +47,13 @@ export async function PUT(
     }
 
     const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-    const { videoId } = await params;
+    const { videoId: sourceId } = await params;
     const body = await request.json();
 
     await dbConnect();
 
     const updatedNote = await Note.findOneAndUpdate(
-      { userId, videoId },
+      { userId, sourceId },
       { $set: body },
       { upsert: true, new: true }
     );

@@ -1,5 +1,9 @@
 export { default as User, type IUser } from './User';
+// Legacy — still used by existing codebase, will be removed in Phase A (videoId → sourceId rename)
 export { default as Video, type IVideo, type ITranscriptSegment } from './Video';
+// New multi-source models
+export { default as Source, type ISource, type SourceType } from './Source';
+export { default as SourceContent, type ISourceContent, type ISegment } from './SourceContent';
 export { default as LearningMaterial, type ILearningMaterial, type IChapter, type IPrerequisite, type IRealWorldProblem } from './LearningMaterial';
 export { default as Flashcard, type IFlashcard } from './Flashcard';
 export { default as Quiz, type IQuiz } from './Quiz';

@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
     // Optionally add lightweight stats per video (e.g., flashcards count)
     const recentVideos = await Promise.all(recent.map(async (v) => {
       const [flashcardCount, quizCount] = await Promise.all([
-        (await import('@/lib/models')).Flashcard.countDocuments({ videoId: v._id }),
-        (await import('@/lib/models')).Quiz.countDocuments({ videoId: v._id }),
+        (await import('@/lib/models')).Flashcard.countDocuments({ sourceId: v.videoId }),
+        (await import('@/lib/models')).Quiz.countDocuments({ sourceId: v.videoId }),
       ]);
 
       return {

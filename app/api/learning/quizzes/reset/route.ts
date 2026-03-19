@@ -14,7 +14,8 @@ interface DecodedToken {
 }
 
 interface ResetQuizRequest {
-  videoId: string; // YouTube video ID
+  videoId?: string;
+  sourceId?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -27,11 +28,12 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    const { videoId }: ResetQuizRequest = await request.json();
+    const body: ResetQuizRequest = await request.json();
+    const sourceId = body.sourceId || body.videoId;
 
-    if (!videoId) {
+    if (!sourceId) {
       return NextResponse.json(
-        { error: 'Missing required field: videoId' },
+        { error: 'Missing required field: sourceId (or videoId)' },
         { status: 400 }
       );
     }
@@ -44,10 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Find Progress document for this user and video
+    // Find Progress document for this user and source
     const progress = await Progress.findOne({
       userId: decoded.userId,
-      videoId: videoId
+      sourceId: sourceId
     });
 
     if (!progress) {

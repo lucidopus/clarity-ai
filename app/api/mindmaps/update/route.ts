@@ -32,15 +32,16 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { videoId, nodes, edges } = body;
+    const sourceId = body.sourceId || body.videoId;
+    const { nodes, edges } = body;
 
-    if (!videoId || !nodes || !edges) {
+    if (!sourceId || !nodes || !edges) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Update mind map
     const mindMap = await MindMap.findOneAndUpdate(
-      { videoId: videoId, userId: user._id },
+      { sourceId: sourceId, userId: user._id },
       {
         nodes: nodes,
         edges: edges,

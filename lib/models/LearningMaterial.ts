@@ -2,9 +2,11 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IChapter {
   id: string;
-  timeSeconds: number;
   topic: string;
   description: string;
+  anchor?: string;
+  timeSeconds?: number;
+  page?: number;
 }
 
 export interface IPrerequisite {
@@ -22,12 +24,12 @@ export interface IRealWorldProblem {
 
 export interface ILearningMaterial extends Document {
   _id: mongoose.Types.ObjectId;
-  videoId: string; // YouTube video ID
+  sourceId: string;
   userId: mongoose.Types.ObjectId;
   chapters: IChapter[];
   prerequisites: IPrerequisite[];
   realWorldProblems: IRealWorldProblem[];
-  videoSummary: string;
+  summary: string;
   metadata: {
     generatedBy: string;
     generatedAt: Date;
@@ -38,9 +40,11 @@ export interface ILearningMaterial extends Document {
 
 const ChapterSchema: Schema = new Schema({
   id: { type: String, required: true },
-  timeSeconds: { type: Number, required: true },
   topic: { type: String, required: true },
   description: { type: String, required: true },
+  anchor: { type: String },
+  timeSeconds: { type: Number },
+  page: { type: Number },
 }, { _id: false });
 
 const PrerequisiteSchema: Schema = new Schema({
@@ -57,22 +61,22 @@ const RealWorldProblemSchema: Schema = new Schema({
 }, { _id: false });
 
 const LearningMaterialSchema: Schema = new Schema({
-  videoId: { type: String, required: true }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
+  sourceId: { type: String, required: true },
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   chapters: [ChapterSchema],
   prerequisites: [PrerequisiteSchema],
   realWorldProblems: [RealWorldProblemSchema],
-  videoSummary: { type: String, required: true },
+  summary: { type: String, required: true },
   metadata: {
     generatedBy: { type: String, required: true },
     generatedAt: { type: Date, required: true },
   },
 }, {
   timestamps: true,
-  collection: 'learningmaterials', // Explicit collection name
+  collection: 'learningmaterials',
 });
 
-// Create indexes
-LearningMaterialSchema.index({ videoId: 1, userId: 1 }, { unique: true });
+// Indexes
+LearningMaterialSchema.index({ sourceId: 1, userId: 1 }, { unique: true });
 
 export default mongoose.models.LearningMaterial || mongoose.model<ILearningMaterial>('LearningMaterial', LearningMaterialSchema);

@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
               await logGenerationCost({
                 userId: decoded.userId,
                 source: CostSource.LEARNING_CHATBOT,
-                videoId: videoId,
+                sourceId: videoId,
                 services,
                 totalCost: llmCost,
               });
@@ -227,7 +227,7 @@ export async function POST(request: NextRequest) {
       await ActivityLog.create({
         userId: decoded.userId,
         activityType: 'chatbot_message_sent',
-        videoId: videoId,
+        sourceId: videoId,
         date: startOfDay,
         timestamp: now,
         metadata: {

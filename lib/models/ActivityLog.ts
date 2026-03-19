@@ -1,14 +1,14 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated' | 'chatbot_message_sent' | 'video_started' | 'recommendation_clicked' | 'email_verification_sent' | 'email_verification_success' | 'email_verification_failed' | 'email_verification_resent';
+export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated' | 'source_generated' | 'chatbot_message_sent' | 'video_started' | 'recommendation_clicked' | 'email_verification_sent' | 'email_verification_success' | 'email_verification_failed' | 'email_verification_resent';
 
 export interface IActivityLog extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   activityType: ActivityType;
-  videoId?: string; // YouTube video ID (optional)
-  date: Date; // date-only (time zeroed out)
-  timestamp: Date; // full timestamp
+  sourceId?: string;
+  date: Date;
+  timestamp: Date;
   metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
@@ -16,8 +16,8 @@ export interface IActivityLog extends Document {
 
 const ActivityLogSchema: Schema<IActivityLog> = new Schema({
   userId: { type: Schema.Types.ObjectId, required: true, index: true, ref: 'User' },
-  activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created', 'video_generated', 'chatbot_message_sent', 'video_started', 'recommendation_clicked', 'email_verification_sent', 'email_verification_success', 'email_verification_failed', 'email_verification_resent'] },
-  videoId: { type: String }, // YouTube video ID (e.g., "dQw4w9WgXcQ")
+  activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created', 'video_generated', 'source_generated', 'chatbot_message_sent', 'video_started', 'recommendation_clicked', 'email_verification_sent', 'email_verification_success', 'email_verification_failed', 'email_verification_resent'] },
+  sourceId: { type: String },
   date: { type: Date, required: true },
   timestamp: { type: Date, required: true, default: () => new Date() },
   metadata: { type: Schema.Types.Mixed },

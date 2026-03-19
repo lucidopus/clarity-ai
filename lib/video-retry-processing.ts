@@ -242,11 +242,11 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
   
   // Save flashcards
   if (materials.flashcards && materials.flashcards.length > 0) {
-    await Flashcard.deleteMany({ videoId: video.videoId });
+    await Flashcard.deleteMany({ sourceId: video.videoId });
     await Flashcard.insertMany(
       materials.flashcards.map((card) => ({
         ...card,
-        videoId: video.videoId,
+        sourceId: video.videoId,
         userId: video.userId,
         generationType: 'ai',
         difficulty: (card as Record<string, unknown>).difficulty || 'medium',
@@ -256,11 +256,11 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
 
   // Save quizzes
   if (materials.quizzes && materials.quizzes.length > 0) {
-    await Quiz.deleteMany({ videoId: video.videoId });
+    await Quiz.deleteMany({ sourceId: video.videoId });
     await Quiz.insertMany(
       materials.quizzes.map((quiz) => ({
         ...quiz,
-        videoId: video.videoId,
+        sourceId: video.videoId,
         userId: video.userId,
         generationType: 'ai',
         difficulty: (quiz as Record<string, unknown>).difficulty || 'medium',
@@ -273,13 +273,13 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
     (materials.prerequisites && materials.prerequisites.length > 0) ||
     (materials.realWorldProblems && materials.realWorldProblems.length > 0)
   ) {
-    await LearningMaterial.deleteMany({ videoId: video.videoId });
+    await LearningMaterial.deleteMany({ sourceId: video.videoId });
     await LearningMaterial.create({
-      videoId: video.videoId,
+      sourceId: video.videoId,
       userId: video.userId,
       prerequisites: materials.prerequisites || [],
       realWorldProblems: materials.realWorldProblems || [],
-      videoSummary: materials.videoSummary || '',
+      summary: materials.videoSummary || '',
       metadata: {
         generatedBy: 'retry-task',
         generatedAt: new Date(),
@@ -289,9 +289,9 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
 
   // Save mind map
   if (materials.mindMap && materials.mindMap.nodes && materials.mindMap.nodes.length > 0) {
-    await MindMap.deleteMany({ videoId: video.videoId });
+    await MindMap.deleteMany({ sourceId: video.videoId });
     await MindMap.create({
-      videoId: video.videoId,
+      sourceId: video.videoId,
       userId: video.userId,
       nodes: materials.mindMap.nodes,
       edges: materials.mindMap.edges || [],

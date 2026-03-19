@@ -14,7 +14,8 @@ import Cost, { IServiceUsage, CostSource } from '@/lib/models/Cost';
 export interface IGenerationCostData {
   userId: mongoose.Types.ObjectId | string;
   source: CostSource; // where this cost originated
-  videoId?: mongoose.Types.ObjectId | string;
+  sourceId?: mongoose.Types.ObjectId | string;
+  videoId?: mongoose.Types.ObjectId | string; // backward compat alias for sourceId
   transcriptId?: mongoose.Types.ObjectId | string;
   problemId?: mongoose.Types.ObjectId | string; // for challenge chatbot costs
   services: IServiceUsage[];
@@ -121,15 +122,16 @@ export async function logGenerationCost(data: IGenerationCostData): Promise<void
 
     // Convert string IDs to ObjectId if needed
     // userId and transcriptId are always MongoDB ObjectIds
-    // videoId can be either a YouTube video ID string OR a MongoDB ObjectId
+    // sourceId can be either a YouTube video ID string OR a MongoDB ObjectId
     // problemId can be either a problem ID string (e.g., "rp1") OR a MongoDB ObjectId
+    const resolvedSourceId = data.sourceId || data.videoId;
     const costData = {
       userId: typeof data.userId === 'string' ? new mongoose.Types.ObjectId(data.userId) : data.userId,
       source: data.source,
-      videoId: data.videoId ? (
-        typeof data.videoId === 'string'
-          ? (isObjectIdFormat(data.videoId) ? new mongoose.Types.ObjectId(data.videoId) : data.videoId)
-          : data.videoId
+      sourceId: resolvedSourceId ? (
+        typeof resolvedSourceId === 'string'
+          ? (isObjectIdFormat(resolvedSourceId) ? new mongoose.Types.ObjectId(resolvedSourceId) : resolvedSourceId)
+          : resolvedSourceId
       ) : undefined,
       transcriptId: data.transcriptId ? (typeof data.transcriptId === 'string' ? new mongoose.Types.ObjectId(data.transcriptId) : data.transcriptId) : undefined,
       problemId: data.problemId ? (

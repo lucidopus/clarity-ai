@@ -374,7 +374,7 @@ export async function POST(request: NextRequest) {
       await Flashcard.insertMany(
         materials.flashcards.map((fc) => ({
           userId: decoded.userId,
-          videoId: videoId, // YouTube video ID
+          sourceId: videoId,
           question: fc.question,
           answer: fc.answer,
           difficulty: fc.difficulty,
@@ -388,12 +388,12 @@ export async function POST(request: NextRequest) {
       await Quiz.insertMany(
         materials.quizzes.map((quiz) => ({
           userId: decoded.userId,
-          videoId: videoId, // YouTube video ID
+          sourceId: videoId,
           questionText: quiz.questionText,
           options: quiz.options,
           correctAnswerIndex: quiz.correctAnswerIndex,
           explanation: quiz.explanation,
-          difficulty: 'medium', // Default difficulty
+          difficulty: 'medium',
           generationType: 'ai',
         }))
       );
@@ -404,11 +404,11 @@ export async function POST(request: NextRequest) {
       await MindMap.findOneAndUpdate(
         {
           userId: decoded.userId,
-          videoId: videoId,
+          sourceId: videoId,
         },
         {
           userId: decoded.userId,
-          videoId: videoId,
+          sourceId: videoId,
           nodes: materials.mindMap.nodes,
           edges: materials.mindMap.edges,
           metadata: {
@@ -423,12 +423,12 @@ export async function POST(request: NextRequest) {
       // Save chapters, prerequisites, and real-world problems in learning materials collection
       console.log(`💾 [VIDEO PROCESS] Saving ${materials.chapters.length} chapters, ${materials.prerequisites.length} prerequisites, and ${materials.realWorldProblems.length} real-world problems...`);
       await LearningMaterial.create({
-        videoId: videoId, // YouTube video ID
+        sourceId: videoId,
         userId: decoded.userId,
         chapters: materials.chapters,
         prerequisites: materials.prerequisites,
         realWorldProblems: materials.realWorldProblems,
-        videoSummary: materials.videoSummary,
+        summary: materials.videoSummary,
         metadata: {
           generatedBy: modelInfo.model,
           generatedAt: new Date(),
@@ -504,7 +504,7 @@ export async function POST(request: NextRequest) {
         await ActivityLog.create({
           userId: decoded.userId,
           activityType: 'video_generated',
-          videoId: videoId,
+          sourceId: videoId,
           date: startOfDay,
           timestamp: logTimestamp,
           metadata: {
@@ -534,7 +534,7 @@ export async function POST(request: NextRequest) {
       await logGenerationCost({
         userId: decoded.userId,
         source: CostSource.LEARNING_MATERIAL_GENERATION,
-        videoId: videoDoc._id,
+        sourceId: videoDoc._id,
         services,
         totalCost,
       });

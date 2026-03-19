@@ -51,12 +51,12 @@ export async function DELETE(
     // Delete all related data across all collections
     const deleteOperations = await Promise.all([
       Video.deleteOne({ videoId, userId }),
-      Flashcard.deleteMany({ videoId, userId }),
-      Quiz.deleteMany({ videoId, userId }),
-      Progress.deleteOne({ videoId, userId }),
-      Note.deleteOne({ videoId, userId }),
-      MindMap.deleteOne({ videoId, userId }),
-      LearningMaterial.deleteOne({ videoId, userId }),
+      Flashcard.deleteMany({ sourceId: videoId, userId }),
+      Quiz.deleteMany({ sourceId: videoId, userId }),
+      Progress.deleteOne({ sourceId: videoId, userId }),
+      Note.deleteOne({ sourceId: videoId, userId }),
+      MindMap.deleteOne({ sourceId: videoId, userId }),
+      LearningMaterial.deleteOne({ sourceId: videoId, userId }),
     ]);
 
     // Calculate total deleted items

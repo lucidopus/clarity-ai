@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       activityType,
-      videoId,
       metadata,
       clientTimestamp,
       timezoneOffsetMinutes,
@@ -28,11 +27,13 @@ export async function POST(request: NextRequest) {
     } = body as {
       activityType: ActivityType;
       videoId?: string;
+      sourceId?: string;
       metadata?: Record<string, unknown>;
       clientTimestamp?: string;
       timezoneOffsetMinutes?: number;
       timeZone?: string;
     };
+    const sourceId = body.sourceId || body.videoId;
 
     if (!activityType) {
       return NextResponse.json({ error: 'activityType is required' }, { status: 400 });
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const doc = await ActivityLog.create({
       userId: decoded.userId,
       activityType,
-      videoId: videoId || undefined,
+      sourceId: sourceId || undefined,
       date: startOfDay,
       timestamp: now,
       metadata: metadataPayload,

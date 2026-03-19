@@ -98,11 +98,11 @@ export async function GET(
     const videosWithCounts = await Promise.all(
       videos.map(async (video) => {
         const [flashcardCount, quizCount, hasLearningMaterial, hasMindMap, hasNotes] = await Promise.all([
-          Flashcard.countDocuments({ userId, videoId: video.videoId }),
-          Quiz.countDocuments({ userId, videoId: video.videoId }),
-          LearningMaterial.exists({ userId, videoId: video.videoId }),
-          MindMap.exists({ userId, videoId: video.videoId }),
-          Note.exists({ userId, videoId: video.videoId }),
+          Flashcard.countDocuments({ userId, sourceId: video.videoId }),
+          Quiz.countDocuments({ userId, sourceId: video.videoId }),
+          LearningMaterial.exists({ userId, sourceId: video.videoId }),
+          MindMap.exists({ userId, sourceId: video.videoId }),
+          Note.exists({ userId, sourceId: video.videoId }),
         ]);
 
         return {

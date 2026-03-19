@@ -27,11 +27,13 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    const { videoId, question, answer } = await request.json();
+    const body = await request.json();
+    const sourceId = body.sourceId || body.videoId;
+    const { question, answer } = body;
 
-    if (!videoId || !question?.trim() || !answer?.trim()) {
+    if (!sourceId || !question?.trim() || !answer?.trim()) {
       return NextResponse.json(
-        { error: 'Missing required fields: videoId, question, answer' },
+        { error: 'Missing required fields: sourceId (or videoId), question, answer' },
         { status: 400 }
       );
     }
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Create new user flashcard in Flashcard collection
     const newFlashcard = new Flashcard({
       userId: decoded.userId,
-      videoId: videoId,
+      sourceId: sourceId,
       question: question.trim(),
       answer: answer.trim(),
       difficulty: null, // User-created cards have no difficulty rating

@@ -67,12 +67,11 @@ export async function GET(request: NextRequest) {
     // 3. Logic B: Deduplication (Filter Watched Videos)
     await dbConnect();
     
-    // Fetch all videoIds the user has interacted with (Progress)
+    // Fetch all sourceIds the user has interacted with (Progress)
     // We assume if a Progress doc exists, they have at least started watching it.
     // Optimisation: .lean() for performance
-    // Optimisation: .lean() for performance
-    const userProgress = await Progress.find({ userId: userId }).select('videoId').lean() as unknown as { videoId: string }[];
-    const watchedVideoIds = new Set(userProgress.map((p) => p.videoId));
+    const userProgress = await Progress.find({ userId: userId }).select('sourceId').lean() as unknown as { sourceId: string }[];
+    const watchedVideoIds = new Set(userProgress.map((p) => p.sourceId));
 
     // Filter candidates: Keep only those NOT in watchedVideoIds
     const freshCandidates = candidates.filter(c => !watchedVideoIds.has(c.videoId));

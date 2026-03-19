@@ -8,7 +8,7 @@ const SegmentNoteSchema: Schema = new Schema({
 
 const NoteSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  videoId: { type: String, required: true },
+  sourceId: { type: String, required: true },
   generalNote: { type: String, default: '' },
   segmentNotes: [SegmentNoteSchema],
 }, {
@@ -16,6 +16,6 @@ const NoteSchema: Schema = new Schema({
   collection: 'notes',
 });
 
-NoteSchema.index({ videoId: 1, userId: 1 }, { unique: true });
+NoteSchema.index({ sourceId: 1, userId: 1 }, { unique: true });
 
 export default mongoose.models.Note || mongoose.model<INote>('Note', NoteSchema);

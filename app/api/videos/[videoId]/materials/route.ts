@@ -76,30 +76,30 @@ export async function GET(
     // Material Owner: Materials belong to the video creator
     const ownerId = video.userId;
 
-    // Fetch materials using the OWNER ID
+    // Fetch materials using the OWNER ID (models use sourceId = YouTube videoId)
     const learningMaterial = await LearningMaterial.findOne({
-      videoId: videoId, 
+      sourceId: videoId,
       userId: ownerId
     });
 
     const flashcards = await Flashcard.find({
-      videoId: videoId, 
+      sourceId: videoId,
       userId: ownerId
     });
 
     const quizzes = await Quiz.find({
-      videoId: videoId, 
+      sourceId: videoId,
       userId: ownerId
     });
 
     // Fetch user progress using the VIEWER ID (decoded.userId)
     const progress = await Progress.findOne({
-      videoId: videoId, 
-      userId: decoded.userId 
+      sourceId: videoId,
+      userId: decoded.userId
     });
 
     // Fetch mind map (Owner's)
-    const mindMap = await MindMap.findOne({ videoId: videoId, userId: ownerId });
+    const mindMap = await MindMap.findOne({ sourceId: videoId, userId: ownerId });
 
     // Determine which materials are available/generated
     const hasMaterials = {
@@ -186,7 +186,7 @@ export async function GET(
         scenario: problem.scenario,
         hints: problem.hints
       })) || [],
-      videoSummary: learningMaterial?.videoSummary || undefined,
+      videoSummary: learningMaterial?.summary || undefined,
       // Include processing status and error info
       processingStatus: video.processingStatus,
       materialsStatus: video.materialsStatus || 'generating',

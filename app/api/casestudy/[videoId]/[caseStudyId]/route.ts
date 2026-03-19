@@ -61,7 +61,7 @@ export async function GET(
 
     // 4. Fetch learning material using OWNER's ID (not viewer's)
     const learningMaterial = await LearningMaterial.findOne({
-      videoId,
+      sourceId: videoId,
       userId: ownerId,
     });
 
@@ -86,14 +86,14 @@ export async function GET(
 
     // 6. Fetch viewer's notes (notes are personal to each user)
     const notes = await Note.findOne({
-      videoId,
+      sourceId: videoId,
       userId: decoded.userId,
     });
 
     // 7. Fetch viewer's existing solution
     const existingSolution = await Solution.findOne({
       userId: decoded.userId,
-      videoId,
+      sourceId: videoId,
       problemId: caseStudyId,
     });
 
@@ -103,7 +103,7 @@ export async function GET(
     if (isReadOnly) {
       const authorSolutionDoc = await Solution.findOne({
         userId: ownerId,
-        videoId,
+        sourceId: videoId,
         problemId: caseStudyId,
       });
       authorSolution = authorSolutionDoc?.content || null;
