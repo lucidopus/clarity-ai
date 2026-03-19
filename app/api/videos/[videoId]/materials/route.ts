@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import Video, { type ITranscriptSegment } from '@/lib/models/Video';
-import LearningMaterial, { type IPrerequisite, type IRealWorldProblem, type IChapter } from '@/lib/models/LearningMaterial';
+import Video from '@/lib/models/Video';
+import LearningMaterial from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import { MindMap } from '@/lib/models';
 import Progress from '@/lib/models/Progress';
+import { getAdapter } from '@/lib/adapters';
 
 interface DecodedToken {
   userId: string;
@@ -32,14 +32,10 @@ export async function GET(
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    // Await params in Next.js 16
     const { videoId } = await params;
 
     if (!videoId) {
-      return NextResponse.json(
-        { error: 'Invalid video ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid video ID' }, { status: 400 });
     }
 
     await dbConnect();
@@ -50,23 +46,20 @@ export async function GET(
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Fetch video from database using YouTube videoId
-    // Fetch video first to determine ownership and visibility
+    // Fetch video to determine ownership and visibility
     const video = await Video.findOne({ videoId });
-
     if (!video) {
-        return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // Authorization Check: Must be owner OR video is public
+    // Authorization: Must be owner OR video is public
     const isOwner = video.userId.toString() === decoded.userId;
     const isPublic = video.visibility === 'public';
 
     if (!isOwner && !isPublic) {
-        return NextResponse.json({ error: 'Unauthorized access to private video' }, { status: 403 });
+      return NextResponse.json({ error: 'Unauthorized access to private video' }, { status: 403 });
     }
 
-    // Read-only for non-owners
     const isReadOnly = !isOwner;
 
     // Fetch author username
@@ -76,131 +69,27 @@ export async function GET(
     // Material Owner: Materials belong to the video creator
     const ownerId = video.userId;
 
-    // Fetch materials using the OWNER ID (models use sourceId = YouTube videoId)
-    const learningMaterial = await LearningMaterial.findOne({
-      sourceId: videoId,
-      userId: ownerId
-    });
+    // Fetch all materials (owner's) and viewer progress
+    const [learningMaterial, flashcards, quizzes, mindMap, progress] = await Promise.all([
+      LearningMaterial.findOne({ sourceId: videoId, userId: ownerId }),
+      Flashcard.find({ sourceId: videoId, userId: ownerId }),
+      Quiz.find({ sourceId: videoId, userId: ownerId }),
+      MindMap.findOne({ sourceId: videoId, userId: ownerId }),
+      Progress.findOne({ sourceId: videoId, userId: decoded.userId }),
+    ]);
 
-    const flashcards = await Flashcard.find({
-      sourceId: videoId,
-      userId: ownerId
-    });
-
-    const quizzes = await Quiz.find({
-      sourceId: videoId,
-      userId: ownerId
-    });
-
-    // Fetch user progress using the VIEWER ID (decoded.userId)
-    const progress = await Progress.findOne({
-      sourceId: videoId,
-      userId: decoded.userId
-    });
-
-    // Fetch mind map (Owner's)
-    const mindMap = await MindMap.findOne({ sourceId: videoId, userId: ownerId });
-
-    // Determine which materials are available/generated
-    const hasMaterials = {
-      flashcards: flashcards.length > 0,
-      quizzes: quizzes.length > 0,
-      prerequisites: (learningMaterial?.prerequisites?.length ?? 0) > 0,
-      mindmap: mindMap && mindMap.nodes && mindMap.nodes.length > 0,
-      casestudies: (learningMaterial?.realWorldProblems?.length ?? 0) > 0
-    };
-
-    // Create a map of latest quiz attempts
-    const latestAttempts = new Map();
-    if (progress?.quizAttempts) {
-      for (const attempt of progress.quizAttempts) {
-        const qId = attempt.quizId.toString();
-        // Since we now update in place, there is only one entry per quizId
-        latestAttempts.set(qId, attempt);
-      }
-    }
-
-    // Format response
-    const materials = {
-      video: {
-        id: video._id.toString(),
-        videoId: video.videoId,
-        youtubeUrl: video.youtubeUrl,
-        title: video.title,
-        channelName: video.channelName,
-        thumbnailUrl: video.thumbnail,
-        duration: video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : undefined,
-        createdAt: video.createdAt
-      },
-      flashcards: flashcards.map(fc => ({
-        id: fc._id.toString(),
-        question: fc.question,
-        answer: fc.answer,
-        isMastered: progress?.masteredFlashcardIds?.some((id: mongoose.Types.ObjectId) => id.toString() === fc._id.toString()) || false,
-        isUserCreated: fc.generationType === 'human'
-      })),
-      quizzes: quizzes.map(quiz => {
-        const qId = quiz._id.toString();
-        const isMastered = progress?.masteredQuizIds?.some((id: mongoose.Types.ObjectId) => id.toString() === qId) || false;
-        const latestAttempt = latestAttempts.get(qId);
-
-        return {
-          id: qId,
-          questionText: quiz.questionText,
-          type: 'multiple-choice',
-          options: quiz.options,
-          correctAnswerIndex: quiz.correctAnswerIndex,
-          explanation: quiz.explanation || '',
-          isMastered,
-          userAnswer: latestAttempt?.userAnswerIndex
-        };
-      }),
-      transcript: video.transcript.map((t: ITranscriptSegment) => ({
-        text: t.text,
-        start: t.offset,
-        duration: t.duration
-      })),
-      chapters: learningMaterial?.chapters?.map((chapter: IChapter) => ({
-        id: chapter.id,
-        timeSeconds: chapter.timeSeconds,
-        topic: chapter.topic,
-        description: chapter.description
-      })) || [],
-      prerequisites: learningMaterial?.prerequisites.map((prereq: IPrerequisite) => ({
-        id: prereq.id,
-        title: prereq.topic,
-        description: `Understanding of ${prereq.topic} (${prereq.difficulty} level)`,
-        required: prereq.difficulty === 'beginner' || prereq.difficulty === 'intermediate'
-      })) || [],
-      prerequisiteQuiz: [], // TODO: Add prerequisite quiz questions if needed
-      mindMap: mindMap ? {
-        nodes: mindMap.nodes,
-        edges: mindMap.edges,
-      } : {
-        nodes: [],
-        edges: [],
-      },
-      realWorldProblems: learningMaterial?.realWorldProblems?.map((problem: IRealWorldProblem) => ({
-        id: problem.id,
-        title: problem.title,
-        scenario: problem.scenario,
-        hints: problem.hints
-      })) || [],
-      videoSummary: learningMaterial?.summary || undefined,
-      // Include processing status and error info
-      processingStatus: video.processingStatus,
-      materialsStatus: video.materialsStatus || 'generating',
-      incompleteMaterials: video.incompleteMaterials || [],
-      hasAllMaterials: Object.values(hasMaterials).every(v => v),
-      availableMaterials: hasMaterials,
-      error: video.errorMessage ? {
-        type: video.errorType,
-        message: video.errorMessage
-      } : null,
-      // Public access flags
+    // Shape response via adapter
+    const adapter = getAdapter('youtube');
+    const materials = adapter({
+      video,
+      flashcards,
+      quizzes,
+      learningMaterial,
+      mindMap,
+      progress,
       isReadOnly,
-      authorUsername
-    };
+      authorUsername,
+    });
 
     return NextResponse.json(materials);
 

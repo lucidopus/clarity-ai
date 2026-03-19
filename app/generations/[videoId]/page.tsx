@@ -11,11 +11,10 @@ import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
 import FlashcardEditor from '@/components/FlashcardEditor';
 import QuizInterface from '@/components/QuizInterface';
-import VideoAndTranscriptViewer from '@/components/VideoAndTranscriptViewer';
 import PrerequisitesView from '@/components/PrerequisitesView';
 import MindMapViewer from '@/components/MindMapViewer';
-import VideoSummaryButton from '@/components/VideoSummaryButton';
 import MaterialsWarningBanner from '@/components/MaterialsWarningBanner';
+import { getContentViewer } from '@/components/renderers';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
@@ -25,6 +24,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface VideoMaterials {
+  sourceType?: 'youtube' | 'document' | 'audio' | 'media';
   video: {
     id: string;
     videoId: string;
@@ -532,31 +532,17 @@ export default function VideoMaterialsPage() {
                   transition={{ duration: 0.2 }}
                   className="flex-1 flex flex-col min-h-0" 
                 >
-                  {activeTab === 'transcript' && (
-                    <div className="flex flex-col gap-6">
-                       {materials.videoSummary && (
-                          <div className="shrink-0">
-                             <VideoSummaryButton
-                              summary={materials.videoSummary}
-                              videoTitle={materials.video.title}
-                            />
-                          </div>
-                        )}
-                        {/* Video Viewer now takes full remaining space if needed, or flows naturally */}
-                        <div className="flex-1 min-h-0">
-                           <VideoAndTranscriptViewer
-                              transcript={materials.transcript}
-                              videoId={materials.video.videoId}
-                              youtubeUrl={materials.video.youtubeUrl}
-                              chapters={materials.chapters}
-                              videoTitle={materials.video.title}
-                              notes={notes}
-                              onSaveNotes={saveNotes}
-                              autoplayVideos={autoplayVideos}
-                            />
-                        </div>
-                    </div>
-                  )}
+                  {activeTab === 'transcript' && (() => {
+                    const ContentViewer = getContentViewer(materials.sourceType || 'youtube');
+                    return (
+                      <ContentViewer
+                        materials={materials}
+                        notes={notes}
+                        onSaveNotes={saveNotes}
+                        autoplayVideos={autoplayVideos}
+                      />
+                    );
+                  })()}
 
                   {activeTab === 'flashcards' && (
                     <div className="space-y-6 max-w-7xl mx-auto w-full">
