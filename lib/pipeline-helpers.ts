@@ -123,6 +123,9 @@ export async function saveExtraction(
     sourceDoc.thumbnail = thumbnail;
     sourceDoc.channelName = 'YouTube';
   }
+  if (sourceType === 'document' || sourceType === 'audio') {
+    sourceDoc.fileUrl = sourceMetadata?.sourceUrl;
+  }
   if (metadata.fileName) sourceDoc.fileName = metadata.fileName;
   if (metadata.fileSize) sourceDoc.fileSize = metadata.fileSize;
   if (metadata.mimeType) sourceDoc.mimeType = metadata.mimeType;

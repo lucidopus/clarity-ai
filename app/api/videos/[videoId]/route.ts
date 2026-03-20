@@ -8,6 +8,8 @@ import Progress from '@/lib/models/Progress';
 import Note from '@/lib/models/Note';
 import MindMap from '@/lib/models/MindMap';
 import LearningMaterial from '@/lib/models/LearningMaterial';
+import Source from '@/lib/models/Source';
+import { deleteSupabaseFiles } from '@/lib/supabase';
 
 interface DecodedToken {
   userId: string;
@@ -48,9 +50,17 @@ export async function DELETE(
       );
     }
 
+    // Clean up uploaded files from Supabase Storage
+    const sources = await Source.find({ userId, videoDocId: video._id, fileUrl: { $exists: true, $ne: null } }, { fileUrl: 1 }).lean();
+    const fileUrls = sources.map((s) => s.fileUrl).filter((url): url is string => !!url);
+    if (fileUrls.length > 0) {
+      await deleteSupabaseFiles(fileUrls);
+    }
+
     // Delete all related data across all collections
     const deleteOperations = await Promise.all([
       Video.deleteOne({ videoId, userId }),
+      Source.deleteMany({ userId, videoDocId: video._id }),
       Flashcard.deleteMany({ sourceId: videoId, userId }),
       Quiz.deleteMany({ sourceId: videoId, userId }),
       Progress.deleteOne({ sourceId: videoId, userId }),

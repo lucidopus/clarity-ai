@@ -11,7 +11,9 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import Note from '@/lib/models/Note';
 import MindMap from '@/lib/models/MindMap';
 import Solution from '@/lib/models/Solution';
+import Source from '@/lib/models/Source';
 import Cost from '@/lib/models/Cost';
+import { deleteSupabaseFiles } from '@/lib/supabase';
 import mongoose from 'mongoose';
 import { startOfDay, subDays } from 'date-fns';
 
@@ -302,9 +304,17 @@ export async function DELETE(
       );
     }
 
+    // Clean up uploaded files from Supabase Storage
+    const sources = await Source.find({ userId, fileUrl: { $exists: true, $ne: null } }, { fileUrl: 1 }).lean();
+    const fileUrls = sources.map((s) => s.fileUrl).filter((url): url is string => !!url);
+    if (fileUrls.length > 0) {
+      await deleteSupabaseFiles(fileUrls);
+    }
+
     // Cascade delete all user data
     await Promise.all([
       Video.deleteMany({ userId }),
+      Source.deleteMany({ userId }),
       Flashcard.deleteMany({ userId }),
       Quiz.deleteMany({ userId }),
       LearningMaterial.deleteMany({ userId }),

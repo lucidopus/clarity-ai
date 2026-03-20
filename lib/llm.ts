@@ -57,11 +57,6 @@ export async function generateLearningMaterials(
   console.log('🤖 [LLM] Starting LLM generation...');
   console.log(`🤖 [LLM] Content length: ${content.length} characters`);
   console.log(`🤖 [LLM] Options: hasTimestamps=${options?.hasTimestamps ?? true}, sourceDescription="${options?.sourceDescription ?? 'educational content'}"`);
-  // Debug: uncomment to see full content sent to LLM (DO NOT enable in production — logs sensitive user content)
-  // console.log(`🤖 [LLM] ════════ FULL CONTENT PASSED TO LLM ════════`);
-  // console.log(content);
-  // console.log(`🤖 [LLM] ════════ END OF CONTENT (${content.length} chars) ════════`);
-
   try {
     const promptTemplate = buildLearningMaterialsPrompt({
       hasTimestamps: options?.hasTimestamps ?? true,

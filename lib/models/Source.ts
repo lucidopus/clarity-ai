@@ -22,6 +22,7 @@ export interface ISource extends Document {
   embedding?: number[];
   visibility: 'private' | 'public';
   // Upload-specific (document, audio, media)
+  fileUrl?: string;
   fileName?: string;
   fileSize?: number;
   mimeType?: string;
@@ -52,6 +53,7 @@ const SourceSchema: Schema = new Schema({
   embedding: { type: [Number], select: false },
   visibility: { type: String, enum: ['private', 'public'], default: 'public' },
   // Upload-specific fields
+  fileUrl: { type: String },
   fileName: { type: String },
   fileSize: { type: Number },
   mimeType: { type: String },

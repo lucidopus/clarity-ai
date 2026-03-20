@@ -22,6 +22,11 @@ interface SourceItem {
   youtubeUrl?: string;
   rawText?: string;
   title?: string;
+  // File upload fields (document, audio)
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
 }
 
 // ─── Helper: Authenticate request ───────────────────────────────────────────
@@ -77,6 +82,10 @@ export async function POST(request: NextRequest) {
     if (textCount > 2) {
       return NextResponse.json({ error: 'Maximum 2 text notes allowed per generation', errorType: 'TOO_MANY_SOURCES' }, { status: 400 });
     }
+    const docCount = sources.filter(s => s.sourceType === 'document').length;
+    if (docCount > 2) {
+      return NextResponse.json({ error: 'Maximum 2 documents allowed per generation', errorType: 'TOO_MANY_SOURCES' }, { status: 400 });
+    }
 
     console.log(`📋 [PROCESS] ${sources.length} source(s): ${sources.map(s => s.sourceType).join(', ')}`);
 
@@ -93,6 +102,10 @@ export async function POST(request: NextRequest) {
       sourceUrl?: string;
       rawText?: string;
       title?: string;
+      fileUrl?: string;
+      fileName?: string;
+      fileSize?: number;
+      mimeType?: string;
     }> = [];
 
     for (const source of sources) {
@@ -147,6 +160,54 @@ export async function POST(request: NextRequest) {
           sourceId: textId,
           rawText: source.rawText.trim(),
           title: textTitle,
+        });
+      } else if (source.sourceType === 'document') {
+        if (!source.fileUrl || typeof source.fileUrl !== 'string') {
+          return NextResponse.json({ error: 'File URL is required for document sources' }, { status: 400 });
+        }
+        if (!source.fileName || !source.mimeType) {
+          return NextResponse.json({ error: 'File name and MIME type are required for document sources' }, { status: 400 });
+        }
+        const docId = crypto.randomUUID();
+        const docTitle = source.fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Document';
+
+        if (!primarySourceId) {
+          primarySourceId = docId;
+          videoTitle = docTitle;
+        }
+        validatedSources.push({
+          sourceType: 'document',
+          sourceId: docId,
+          sourceUrl: source.fileUrl,
+          title: docTitle,
+          fileUrl: source.fileUrl,
+          fileName: source.fileName,
+          fileSize: source.fileSize,
+          mimeType: source.mimeType,
+        });
+      } else if (source.sourceType === 'audio') {
+        if (!source.fileUrl || typeof source.fileUrl !== 'string') {
+          return NextResponse.json({ error: 'File URL is required for audio sources' }, { status: 400 });
+        }
+        if (!source.fileName || !source.mimeType) {
+          return NextResponse.json({ error: 'File name and MIME type are required for audio sources' }, { status: 400 });
+        }
+        const audioId = crypto.randomUUID();
+        const audioTitle = source.fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ') || 'Audio Recording';
+
+        if (!primarySourceId) {
+          primarySourceId = audioId;
+          videoTitle = audioTitle;
+        }
+        validatedSources.push({
+          sourceType: 'audio',
+          sourceId: audioId,
+          sourceUrl: source.fileUrl,
+          title: audioTitle,
+          fileUrl: source.fileUrl,
+          fileName: source.fileName,
+          fileSize: source.fileSize,
+          mimeType: source.mimeType,
         });
       } else {
         return NextResponse.json({ error: `Source type '${source.sourceType}' is not yet supported` }, { status: 400 });

@@ -11,6 +11,8 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import MindMap from '@/lib/models/MindMap';
 import Note from '@/lib/models/Note';
 import Solution from '@/lib/models/Solution';
+import Source from '@/lib/models/Source';
+import { deleteSupabaseFiles } from '@/lib/supabase';
 
 /**
  * DELETE /api/account
@@ -54,9 +56,17 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
+    // Clean up uploaded files from Supabase Storage
+    const sources = await Source.find({ userId, fileUrl: { $exists: true, $ne: null } }, { fileUrl: 1 }).lean();
+    const fileUrls = sources.map((s) => s.fileUrl).filter((url): url is string => !!url);
+    if (fileUrls.length > 0) {
+      await deleteSupabaseFiles(fileUrls);
+    }
+
     // Delete all user-related data in parallel for better performance
     await Promise.all([
       Video.deleteMany({ userId }),
+      Source.deleteMany({ userId }),
       LearningMaterial.deleteMany({ userId }),
       Flashcard.deleteMany({ userId }),
       Quiz.deleteMany({ userId }),

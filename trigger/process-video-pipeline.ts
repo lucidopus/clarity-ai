@@ -45,6 +45,10 @@ interface SourceItemPayload {
   sourceUrl?: string;
   rawText?: string;
   title?: string;
+  fileUrl?: string;
+  fileName?: string;
+  fileSize?: number;
+  mimeType?: string;
 }
 
 interface ProcessPipelinePayload {
@@ -173,9 +177,9 @@ export const processVideoPipelineTask = task({
         sourceType: src.sourceType,
         sourceUrl: src.sourceUrl,
         rawText: src.rawText,
-        fileUrl: undefined,
-        fileName: undefined,
-        mimeType: undefined,
+        fileUrl: src.fileUrl,
+        fileName: src.fileName,
+        mimeType: src.mimeType,
       };
 
       const extractResult = await extractContent(extractorInput, services);
@@ -194,7 +198,13 @@ export const processVideoPipelineTask = task({
           return { success: false, sourceId, error: extractResult.error.code };
         }
         // Non-primary source failure — log warning but continue
-        logger.warn(`Non-primary source extraction failed, skipping`, { sourceId: src.sourceId, error: extractResult.error });
+        logger.warn(`Non-primary source extraction failed, skipping`, {
+          sourceId: src.sourceId,
+          sourceType: src.sourceType,
+          errorCode: extractResult.error.code,
+          errorMessage: extractResult.error.message,
+          recoverable: extractResult.error.recoverable,
+        });
         continue;
       }
 

@@ -19,4 +19,9 @@ export default defineConfig({
     },
   },
   dirs: ["trigger"],
+  build: {
+    // Exclude packages that break when bundled by esbuild
+    // pdf-parse v2 has a large pre-bundled dist + worker file that fails when re-bundled
+    external: ["pdf-parse"],
+  },
 });

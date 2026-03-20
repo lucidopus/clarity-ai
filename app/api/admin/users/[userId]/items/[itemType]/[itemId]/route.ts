@@ -7,6 +7,8 @@ import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import MindMap from '@/lib/models/MindMap';
 import Note from '@/lib/models/Note';
+import Source from '@/lib/models/Source';
+import { deleteSupabaseFiles } from '@/lib/supabase';
 import mongoose from 'mongoose';
 
 export async function DELETE(
@@ -85,8 +87,16 @@ export async function DELETE(
         // Get the video first to get the videoId
         const video = await Video.findOne({ _id: itemId, userId });
         if (video) {
+          // Clean up uploaded files from Supabase Storage
+          const sources = await Source.find({ userId, videoDocId: video._id, fileUrl: { $exists: true, $ne: null } }, { fileUrl: 1 }).lean();
+          const fileUrls = sources.map((s) => s.fileUrl).filter((url): url is string => !!url);
+          if (fileUrls.length > 0) {
+            await deleteSupabaseFiles(fileUrls);
+          }
+
           // Delete all related materials for this video
           await Promise.all([
+            Source.deleteMany({ userId, videoDocId: video._id }),
             Flashcard.deleteMany({ userId, sourceId: video.videoId }),
             Quiz.deleteMany({ userId, sourceId: video.videoId }),
             LearningMaterial.deleteMany({ userId, sourceId: video.videoId }),
