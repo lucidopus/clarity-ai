@@ -38,7 +38,7 @@ interface LearningMaterials {
   title: string;
   category: string;
   tags: string[];
-  videoSummary: string;
+  summary: string;
   chapters?: Array<Record<string, unknown>>;
   flashcards?: FlashcardItem[];
   quizzes?: QuizItem[];
@@ -121,7 +121,7 @@ async function generateVideoEmbedding(
     const embeddingContext = `
       Title: ${materials.title}
       Category: ${materials.category}
-      Summary: ${materials.videoSummary}
+      Summary: ${materials.summary}
       Tags: ${materials.tags.join(', ')}
       Transcript Start: ${transcript.slice(0, 1000)}
     `.trim();
@@ -374,7 +374,7 @@ export async function processVideoStandard(video: VideoDocument) {
       title: materials.title,
       category: materials.category,
       tags: materials.tags,
-      summary: materials.videoSummary,
+      summary: materials.summary,
       embedding,
       processingStatus: 'completed',
       materialsStatus: 'complete',
@@ -445,7 +445,7 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
       userId: video.userId,
       prerequisites: materials.prerequisites || [],
       realWorldProblems: materials.realWorldProblems || [],
-      summary: materials.videoSummary || '',
+      summary: materials.summary || '',
       metadata: {
         generatedBy: 'retry-task',
         generatedAt: new Date(),
@@ -474,7 +474,7 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
       title: materials.title,
       category: materials.category,
       tags: materials.tags,
-      summary: materials.videoSummary,
+      summary: materials.summary,
       chapters: materials.chapters || [],
     };
     await Video.findByIdAndUpdate(video._id, metadataPayload);

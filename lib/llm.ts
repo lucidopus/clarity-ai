@@ -1,5 +1,5 @@
 import { geminiLlm } from './sdk';
-import { LEARNING_MATERIALS_PROMPT } from './prompts';
+import { buildLearningMaterialsPrompt } from './prompts';
 import { LearningMaterialsSchema, LearningMaterials } from './structuredOutput';
 import {
   VideoMetadataSchema,
@@ -50,12 +50,24 @@ export interface ChunkedGenerationResponse {
   incompleteMaterials: string[];
 }
 
-export async function generateLearningMaterials(transcript: string): Promise<LLMGenerationResponse> {
+export async function generateLearningMaterials(
+  content: string,
+  options?: { hasTimestamps?: boolean; sourceDescription?: string }
+): Promise<LLMGenerationResponse> {
   console.log('🤖 [LLM] Starting LLM generation...');
-  console.log(`🤖 [LLM] Transcript length: ${transcript.length} characters`);
+  console.log(`🤖 [LLM] Content length: ${content.length} characters`);
+  console.log(`🤖 [LLM] Options: hasTimestamps=${options?.hasTimestamps ?? true}, sourceDescription="${options?.sourceDescription ?? 'educational content'}"`);
+  // Debug: uncomment to see full content sent to LLM (DO NOT enable in production — logs sensitive user content)
+  // console.log(`🤖 [LLM] ════════ FULL CONTENT PASSED TO LLM ════════`);
+  // console.log(content);
+  // console.log(`🤖 [LLM] ════════ END OF CONTENT (${content.length} chars) ════════`);
 
   try {
-    const prompt = LEARNING_MATERIALS_PROMPT.replace('[TRANSCRIPT_HERE]', transcript);
+    const promptTemplate = buildLearningMaterialsPrompt({
+      hasTimestamps: options?.hasTimestamps ?? true,
+      sourceDescription: options?.sourceDescription ?? 'educational content',
+    });
+    const prompt = promptTemplate.replace('[CONTENT_HERE]', content);
     console.log(`🤖 [LLM] Prompt prepared, total length: ${prompt.length} characters`);
 
     // Use LangChain's withStructuredOutput for provider-agnostic structured generation
@@ -106,7 +118,7 @@ export async function generateLearningMaterials(transcript: string): Promise<LLM
     console.log(`   - Quizzes: ${materials.quizzes.length}`);
     console.log(`   - Chapters: ${materials.chapters.length}`);
     console.log(`   - Prerequisites: ${materials.prerequisites.length}`);
-    console.log(`   - Video summary length: ${materials.videoSummary.length} chars`);
+    console.log(`   - Video summary length: ${materials.summary.length} chars`);
 
     console.log(`🤖 [LLM] Token usage: ${usage.promptTokens} input + ${usage.completionTokens} output = ${usage.totalTokens} total`);
 
@@ -232,7 +244,7 @@ export async function generateLearningMaterialsChunked(
         title: 'Video Title',
         category: 'Technology',
         tags: ['video'],
-        videoSummary: 'Summary unavailable',
+        summary: 'Summary unavailable',
         chapters: [],
       };
     } else {
@@ -254,7 +266,7 @@ export async function generateLearningMaterialsChunked(
           title: 'Video Title',
           category: 'Technology',
           tags: ['video'],
-          videoSummary: 'Summary unavailable',
+          summary: 'Summary unavailable',
           chapters: [],
         };
       }
@@ -390,7 +402,7 @@ export async function generateLearningMaterialsChunked(
       title: metadata.title,
       category: metadata.category as LearningMaterials['category'],
       tags: metadata.tags,
-      videoSummary: metadata.videoSummary,
+      summary: metadata.summary,
       chapters: metadata.chapters,
       flashcards: flashcardsData.flashcards,
       quizzes: quizzesData.quizzes,

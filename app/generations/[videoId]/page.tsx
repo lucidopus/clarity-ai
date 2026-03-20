@@ -24,7 +24,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface VideoMaterials {
-  sourceType?: 'youtube' | 'document' | 'audio' | 'media';
+  sourceType?: 'youtube' | 'document' | 'audio' | 'media' | 'text';
   video: {
     id: string;
     videoId: string;
@@ -59,7 +59,8 @@ interface VideoMaterials {
   }>;
   chapters: Array<{
     id: string;
-    timeSeconds: number;
+    timeSeconds?: number;
+    page?: number;
     topic: string;
     description: string;
   }>;
@@ -101,7 +102,7 @@ interface VideoMaterials {
     scenario: string;
     hints: string[];
   }>;
-  videoSummary?: string;
+  summary?: string;
   notes: {
     generalNote: string;
     segmentNotes: Array<{
@@ -153,7 +154,6 @@ export default function VideoMaterialsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
-  const [processingTitle, setProcessingTitle] = useState<string | null>(null);
   const [processingThumbnail, setProcessingThumbnail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
@@ -313,7 +313,6 @@ export default function VideoMaterialsPage() {
         // If still processing, show processing UI and start polling
         if (statusData.processingStatus === 'processing' || statusData.processingStatus === 'pending') {
           setProcessingStatus(statusData.processingStatus);
-          setProcessingTitle(statusData.title);
           setProcessingThumbnail(statusData.thumbnail);
           setLoading(false);
           return;
@@ -382,7 +381,6 @@ export default function VideoMaterialsPage() {
         if (!res.ok) return;
         const data = await res.json();
 
-        setProcessingTitle(data.title);
         setProcessingThumbnail(data.thumbnail);
 
         if (data.processingStatus === 'completed' || data.processingStatus === 'completed_with_warning') {
@@ -464,15 +462,13 @@ export default function VideoMaterialsPage() {
           )}
           <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto"></div>
           <h2 className="mt-6 text-2xl font-bold text-foreground">
-            Generating your study materials
+            Transforming content into mastery
           </h2>
-          <p className="mt-2 text-muted-foreground">
-            {processingTitle && processingTitle !== 'Processing...'
-              ? processingTitle
-              : 'Extracting transcript and creating flashcards, quizzes, and more...'}
+          <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
+            Our AI is analyzing your content and crafting personalized flashcards, quizzes, mind maps, and more.
           </p>
-          <p className="mt-4 text-sm text-muted-foreground/60">
-            This usually takes 1-2 minutes. You can leave this page and come back.
+          <p className="mt-5 text-xs text-muted-foreground/50">
+            This usually takes about a minute. Feel free to leave &mdash; we&apos;ll have everything ready when you&apos;re back.
           </p>
         </motion.div>
       </div>

@@ -6,7 +6,7 @@ import ChapterTimeline from './ChapterTimeline';
 
 interface Chapter {
   id: string;
-  timeSeconds: number;
+  timeSeconds?: number;
   topic: string;
   description: string;
 }

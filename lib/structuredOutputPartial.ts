@@ -11,15 +11,16 @@ export const VideoMetadataSchema = z.object({
   title: z.string().describe('Concise, descriptive title for the video'),
   category: z.enum(VIDEO_CATEGORIES).describe('The single best category that fits this video content'),
   tags: z.array(z.string()).describe('5-8 specific topic keywords. Lowercase.'),
-  videoSummary: z.string().describe(`200-300 word summary for ${CHATBOT_NAME} to use as context`),
+  summary: z.string().describe(`200-300 word summary for ${CHATBOT_NAME} to use as context`),
   chapters: z.array(
     z.object({
       id: z.string(),
-      timeSeconds: z.number().int(),
+      timeSeconds: z.number().int().optional(),
+      page: z.number().int().optional(),
       topic: z.string(),
       description: z.string(),
     })
-  ).describe('Key moments in the video with time markers (3-5 chapters)'),
+  ).describe('Key sections or moments in the content (3-5 chapters)'),
 });
 
 // Chunk 2: Flashcards

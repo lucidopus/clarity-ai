@@ -82,7 +82,7 @@ export function adaptYouTubeMaterials(params: AdapterInput): YouTubeAdaptedMater
 
     chapters: learningMaterial?.chapters?.map(chapter => ({
       id: chapter.id,
-      timeSeconds: chapter.timeSeconds,
+      timeSeconds: chapter.timeSeconds ?? 0,
       topic: chapter.topic,
       description: chapter.description,
     })) || [],
@@ -107,7 +107,7 @@ export function adaptYouTubeMaterials(params: AdapterInput): YouTubeAdaptedMater
       hints: problem.hints,
     })) || [],
 
-    videoSummary: learningMaterial?.summary || undefined,
+    summary: learningMaterial?.summary || undefined,
 
     processingStatus: video.processingStatus,
     materialsStatus: video.materialsStatus || 'generating',

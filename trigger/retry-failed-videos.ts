@@ -174,8 +174,9 @@ export const retryFailedVideos = schedules.task({
             userId: video.userId.toString(),
             username: 'User',
             videoDocId: video._id.toString(),
-            videoId: video.videoId,
-            youtubeUrl: video.youtubeUrl,
+            sourceId: video.videoId,
+            sourceType: 'youtube' as const,
+            sourceUrl: video.youtubeUrl,
           }
         }));
 
@@ -184,7 +185,7 @@ export const retryFailedVideos = schedules.task({
           for (const result of orphanResults.runs) {
             if (result.ok && result.output?.success) {
               summary.successfulRetries++;
-              logger.info(`✅ Recovered orphaned video ${result.output.videoId}`);
+              logger.info(`✅ Recovered orphaned video ${result.output.sourceId}`);
             } else {
               summary.stillPending++;
               logger.warn(`⚠️ Failed to recover orphaned video`, { taskId: result.id });

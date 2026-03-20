@@ -9,7 +9,7 @@ export interface ChatbotContext {
     firstName: string;
     userType: 'Undergraduate' | 'Graduate';
   };
-  videoSummary: string;
+  summary: string;
   materials: {
     flashcardCount: number;
     quizCount: number;
@@ -39,7 +39,7 @@ export async function getChatbotContext(
   }
 
   // For videos processed before chatbot feature, provide fallback
-  const videoSummary = learningMaterial.summary || 'This video was processed before the AI chatbot feature was added. To enable full chatbot functionality, please reprocess the video.';
+  const summary = learningMaterial.summary || 'This video was processed before the AI chatbot feature was added. To enable full chatbot functionality, please reprocess the video.';
 
   // Fetch flashcard count
   const flashcardCount = await Flashcard.countDocuments({
@@ -58,7 +58,7 @@ export async function getChatbotContext(
       firstName: user.firstName,
       userType: user.userType,
     },
-    videoSummary,
+    summary,
     materials: {
       flashcardCount,
       quizCount,

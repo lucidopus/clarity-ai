@@ -6,7 +6,7 @@ import { Check, Play, Clock } from 'lucide-react';
 
 interface Chapter {
   id: string;
-  timeSeconds: number;
+  timeSeconds?: number;
   topic: string;
   description: string;
 }
@@ -58,19 +58,21 @@ export default function ChapterTimeline({
   const chaptersWithStates = useMemo(() => {
     return chapters.map((chapter, index) => {
       const nextChapter = chapters[index + 1];
-      const chapterEnd = nextChapter ? nextChapter.timeSeconds : duration;
+      const time = chapter.timeSeconds ?? 0;
+      const nextTime = nextChapter?.timeSeconds ?? duration;
+      const chapterEnd = nextTime;
 
       let state: ChapterState;
-      if (currentTime < chapter.timeSeconds) {
+      if (currentTime < time) {
         state = 'upcoming';
-      } else if (currentTime >= chapter.timeSeconds && currentTime < chapterEnd) {
+      } else if (currentTime >= time && currentTime < chapterEnd) {
         state = 'in-progress';
       } else {
         state = 'completed';
       }
 
       // Calculate position percentage on the timeline
-      const position = duration > 0 ? (chapter.timeSeconds / duration) * 100 : 0;
+      const position = duration > 0 ? (time / duration) * 100 : 0;
 
       return {
         ...chapter,
@@ -85,7 +87,7 @@ export default function ChapterTimeline({
   const handleChapterClick = (chapter: Chapter) => {
     if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
       try {
-        playerRef.current.seekTo(chapter.timeSeconds, true);
+        playerRef.current.seekTo(chapter.timeSeconds ?? 0, true);
         playerRef.current.playVideo();
       } catch (error) {
         console.error('Error seeking to chapter:', error);
@@ -184,9 +186,11 @@ export default function ChapterTimeline({
                       >
                         {chapter.topic}
                       </h4>
-                      <span className="text-xs text-muted-foreground font-mono shrink-0">
-                        {formatTime(chapter.timeSeconds)}
-                      </span>
+                      {chapter.timeSeconds != null && (
+                        <span className="text-xs text-muted-foreground font-mono shrink-0">
+                          {formatTime(chapter.timeSeconds)}
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                       {chapter.description}
@@ -202,7 +206,7 @@ export default function ChapterTimeline({
                         <div className="flex items-center justify-between mb-1.5">
                           <span className="text-xs font-medium text-accent">Playing now</span>
                           <span className="text-xs text-accent font-mono">
-                            {formatTime(currentTime - chapter.timeSeconds)} / {formatTime(chapter.chapterEnd - chapter.timeSeconds)}
+                            {formatTime(currentTime - (chapter.timeSeconds ?? 0))} / {formatTime(chapter.chapterEnd - (chapter.timeSeconds ?? 0))}
                           </span>
                         </div>
                         <div className="h-1.5 bg-background rounded-full overflow-hidden">
@@ -210,7 +214,7 @@ export default function ChapterTimeline({
                             className="h-full bg-accent rounded-full"
                             initial={{ width: 0 }}
                             animate={{
-                              width: `${((currentTime - chapter.timeSeconds) / (chapter.chapterEnd - chapter.timeSeconds)) * 100}%`
+                              width: `${((currentTime - (chapter.timeSeconds ?? 0)) / (chapter.chapterEnd - (chapter.timeSeconds ?? 0))) * 100}%`
                             }}
                             transition={{ type: 'spring', damping: 20, stiffness: 100 }}
                           />

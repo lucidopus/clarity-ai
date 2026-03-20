@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import { extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { ApiError, InvalidURLError, DuplicateVideoError } from '@/lib/errors/ApiError';
 import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
+import type { SourceType } from '@/lib/models/Source';
 
 interface DecodedToken {
   userId: string;
@@ -13,6 +15,13 @@ interface DecodedToken {
   lastName: string;
   iat: number;
   exp: number;
+}
+
+interface SourceItem {
+  sourceType: SourceType;
+  youtubeUrl?: string;
+  rawText?: string;
+  title?: string;
 }
 
 // ─── Helper: Authenticate request ───────────────────────────────────────────
@@ -26,78 +35,169 @@ function authenticate(request: NextRequest): DecodedToken {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// POST /api/videos/process — Trigger video processing pipeline
+// POST /api/videos/process — Trigger content processing pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 [VIDEO PROCESS] Received processing request...');
+  console.log('🚀 [PROCESS] Received processing request...');
 
   try {
     // 1. Authenticate
     const decoded = authenticate(request);
-    console.log(`✅ [VIDEO PROCESS] Authenticated: ${decoded.userId}`);
+    console.log(`✅ [PROCESS] Authenticated: ${decoded.userId}`);
 
-    // 2. Parse & validate request
-    const { youtubeUrl, clientTimestamp, timezoneOffsetMinutes, timeZone } = await request.json();
-    if (!youtubeUrl || typeof youtubeUrl !== 'string') {
-      return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
+    // 2. Parse request body
+    const body = await request.json();
+
+    // Sanitize client context fields
+    const clientTimestamp = typeof body.clientTimestamp === 'string' ? body.clientTimestamp.slice(0, 40) : undefined;
+    const timezoneOffsetMinutes = typeof body.timezoneOffsetMinutes === 'number' && Number.isFinite(body.timezoneOffsetMinutes)
+      ? Math.max(-840, Math.min(840, body.timezoneOffsetMinutes))
+      : undefined;
+    const timeZone = typeof body.timeZone === 'string' ? body.timeZone.slice(0, 60) : undefined;
+
+    // Support both new `sources[]` format and legacy single-source format
+    let sources: SourceItem[];
+    if (Array.isArray(body.sources) && body.sources.length > 0) {
+      sources = body.sources;
+    } else if (body.sourceType || body.youtubeUrl) {
+      // Legacy format: single source
+      sources = [{
+        sourceType: body.sourceType || 'youtube',
+        youtubeUrl: body.youtubeUrl,
+        rawText: body.rawText,
+        title: body.title,
+      }];
+    } else {
+      return NextResponse.json({ error: 'No sources provided' }, { status: 400 });
     }
 
-    if (!isValidYouTubeUrl(youtubeUrl)) {
-      const err = new InvalidURLError();
-      return NextResponse.json({ error: err.message, errorType: err.code }, { status: err.statusCode });
+    // Enforce per-type source limits
+    const textCount = sources.filter(s => s.sourceType === 'text').length;
+    if (textCount > 2) {
+      return NextResponse.json({ error: 'Maximum 2 text notes allowed per generation', errorType: 'TOO_MANY_SOURCES' }, { status: 400 });
     }
+
+    console.log(`📋 [PROCESS] ${sources.length} source(s): ${sources.map(s => s.sourceType).join(', ')}`);
 
     await dbConnect();
-    const videoId = extractVideoId(youtubeUrl);
 
-    // 3. Check for duplicates
-    const existingVideo = await Video.findOne({ userId: decoded.userId, videoId });
-    if (existingVideo) {
-      const err = new DuplicateVideoError();
-      return NextResponse.json(
-        { error: err.message, errorType: err.code, videoId: existingVideo.videoId },
-        { status: err.statusCode }
-      );
+    // 3. Validate each source and build pipeline source items
+    let primarySourceId: string | null = null;
+    let videoTitle = 'Processing...';
+    let youtubeUrl: string | undefined;
+
+    const validatedSources: Array<{
+      sourceType: SourceType;
+      sourceId: string;
+      sourceUrl?: string;
+      rawText?: string;
+      title?: string;
+    }> = [];
+
+    for (const source of sources) {
+      if (source.sourceType === 'youtube') {
+        if (!source.youtubeUrl || typeof source.youtubeUrl !== 'string') {
+          return NextResponse.json({ error: 'YouTube URL is required' }, { status: 400 });
+        }
+        if (!isValidYouTubeUrl(source.youtubeUrl)) {
+          const err = new InvalidURLError();
+          return NextResponse.json({ error: err.message, errorType: err.code }, { status: err.statusCode });
+        }
+        const videoId = extractVideoId(source.youtubeUrl);
+
+        const existingVideo = await Video.findOne({ userId: decoded.userId, videoId });
+        if (existingVideo) {
+          const err = new DuplicateVideoError();
+          return NextResponse.json(
+            { error: err.message, errorType: err.code, videoId: existingVideo.videoId },
+            { status: err.statusCode }
+          );
+        }
+
+        // YouTube is the primary source (used as videoId)
+        primarySourceId = videoId;
+        youtubeUrl = source.youtubeUrl;
+        validatedSources.push({
+          sourceType: 'youtube',
+          sourceId: videoId,
+          sourceUrl: source.youtubeUrl,
+        });
+      } else if (source.sourceType === 'text') {
+        if (!source.rawText || typeof source.rawText !== 'string' || source.rawText.trim().length === 0) {
+          return NextResponse.json({ error: 'Text content is required' }, { status: 400 });
+        }
+        const wordCount = source.rawText.trim().split(/\s+/).length;
+        if (wordCount > 1000) {
+          return NextResponse.json(
+            { error: `Text content exceeds the 1,000-word limit (${wordCount} words). Please shorten your notes.`, errorType: 'TEXT_TOO_LONG' },
+            { status: 400 }
+          );
+        }
+        const textId = crypto.randomUUID();
+        const textTitle = source.title?.trim() || source.rawText.trim().split('\n')[0].slice(0, 80) || 'Text Notes';
+
+        // If no primary source yet, text becomes primary
+        if (!primarySourceId) {
+          primarySourceId = textId;
+          videoTitle = textTitle;
+        }
+        validatedSources.push({
+          sourceType: 'text',
+          sourceId: textId,
+          rawText: source.rawText.trim(),
+          title: textTitle,
+        });
+      } else {
+        return NextResponse.json({ error: `Source type '${source.sourceType}' is not yet supported` }, { status: 400 });
+      }
     }
 
-    // 4. Create initial video record
+    if (!primarySourceId) {
+      return NextResponse.json({ error: 'No valid sources provided' }, { status: 400 });
+    }
+
+    // 4. Create initial video record (primary source = videoId)
     const videoDoc = await Video.create({
       userId: decoded.userId,
       youtubeUrl,
-      videoId,
-      title: 'Processing...',
+      videoId: primarySourceId,
+      title: videoTitle,
       processingStatus: 'processing',
       transcript: [],
       language: 'en',
     });
     const videoDocId = videoDoc._id.toString();
 
-    // 5. Trigger background pipeline task
+    // 5. Trigger background pipeline task with all sources
     const handle = await processVideoPipelineTask.trigger({
       userId: decoded.userId,
       username: decoded.username || 'User',
       videoDocId,
-      videoId,
-      youtubeUrl,
+      sourceId: primarySourceId,
+      sourceType: validatedSources[0].sourceType,
+      sourceUrl: youtubeUrl,
+      rawText: validatedSources.find(s => s.sourceType === 'text')?.rawText,
+      // Pass all sources for multi-source concatenation
+      allSources: validatedSources,
       clientTimestamp,
       timezoneOffsetMinutes,
       timeZone,
     });
 
-    console.log(`🚀 [VIDEO PROCESS] Pipeline triggered: run=${handle.id}, videoId=${videoId}`);
+    console.log(`🚀 [PROCESS] Pipeline triggered: run=${handle.id}, primarySourceId=${primarySourceId}, sources=${validatedSources.length}`);
 
     // 6. Return immediately
     return NextResponse.json({
       success: true,
-      videoId,
+      videoId: primarySourceId,
       videoDocId,
       runId: handle.id,
       status: 'processing',
     }, { status: 202 });
 
   } catch (error) {
-    console.error('💥 [VIDEO PROCESS] FATAL ERROR:', error);
+    console.error('💥 [PROCESS] FATAL ERROR:', error);
 
     let errorCode = 'UNKNOWN_ERROR';
     let statusCode = 500;

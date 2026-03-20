@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
-import GenerateModal from '@/components/GenerateModal';
+import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal';
 import Dialog from '@/components/Dialog';
 import { useState, useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
@@ -177,8 +177,9 @@ export default function DashboardHomePage() {
     }
   };
 
-  const handleGenerate = async (youtubeUrl: string) => {
-    console.log('🎬 [FRONTEND] Starting video generation from Home page...');
+  const handleGenerate = async (payload: GeneratePayload) => {
+    const sourceTypes = payload.sources.map((s) => s.sourceType).join('+');
+    console.log(`🎬 [FRONTEND] Starting generation from Home page (sources: ${sourceTypes})...`);
 
     setIsGenerating(true);
     setErrorState(null);
@@ -191,7 +192,7 @@ export default function DashboardHomePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          youtubeUrl,
+          sources: payload.sources,
           clientTimestamp: clientNow.toISOString(),
           timezoneOffsetMinutes,
           timeZone,
@@ -411,7 +412,13 @@ export default function DashboardHomePage() {
               variant: action.variant as any,
               onClick: async () => {
                 if (action.onClick === 'retry') {
-                  if (errorState.videoId) await handleValidationAction(errorState.videoId, 'override');
+                  if (errorState.videoId) {
+                    await handleValidationAction(errorState.videoId, 'override');
+                  } else {
+                    // No videoId (e.g. UNKNOWN_ERROR) — dismiss and reopen modal
+                    setErrorState(null);
+                    setShowGenerateModal(true);
+                  }
                 } else if (action.onClick === 'close') {
                    if (errorState.errorType === 'NON_EDUCATIONAL_CONTENT' && errorState.videoId) {
                      handleValidationAction(errorState.videoId, 'reject');

@@ -19,10 +19,10 @@ export default function YouTubeContentViewer({
 }: ContentViewerProps) {
   return (
     <div className="flex flex-col gap-6">
-      {materials.videoSummary && (
+      {materials.summary && (
         <div className="shrink-0">
           <VideoSummaryButton
-            summary={materials.videoSummary}
+            summary={materials.summary}
             videoTitle={materials.video.title}
           />
         </div>

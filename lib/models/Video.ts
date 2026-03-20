@@ -41,7 +41,7 @@ const TranscriptSegmentSchema: Schema = new Schema({
 
 const VideoSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  youtubeUrl: { type: String, required: true },
+  youtubeUrl: { type: String },
   videoId: { type: String, required: true },
   title: { type: String, required: true },
   channelName: { type: String },

@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       userProfile: { firstName: decoded.firstName },
       problemTitle: problem.title,
       problemScenario: problem.scenario,
-      videoSummary: learningMaterial.summary || 'No video summary available.',
+      summary: learningMaterial.summary || 'No summary available.',
       solutionDraft: incomingDraft ?? existingSolution?.content ?? '',
     });
 

@@ -99,7 +99,7 @@ export interface BaseAdaptedMaterials {
   prerequisiteQuiz: unknown[];
   mindMap: AdaptedMindMap;
   realWorldProblems: AdaptedRealWorldProblem[];
-  videoSummary?: string;
+  summary?: string;
   processingStatus: string;
   materialsStatus: string;
   incompleteMaterials: string[];

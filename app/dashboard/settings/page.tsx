@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
-import GenerateModal from '@/components/GenerateModal';
+import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
@@ -263,11 +263,11 @@ export default function SettingsPage() {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
-  const handleGenerate = async (url: string) => {
+  const handleGenerate = async (payload: GeneratePayload) => {
     setIsGenerating(true);
     try {
       // TODO: Implement actual generation logic in Phase 5
-      console.log('Generating materials for URL:', url);
+      console.log('Generating materials:', payload);
 
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));

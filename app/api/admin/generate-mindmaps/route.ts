@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
-import { MindMap } from '@/lib/models';
+import MindMap from '@/lib/models/MindMap';
 import { generateLearningMaterials } from '@/lib/llm';
 
 interface DecodedToken {

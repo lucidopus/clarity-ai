@@ -36,11 +36,12 @@ export const LearningMaterialsSchema = z.object({
   chapters: z.array(
     z.object({
       id: z.string(),
-      timeSeconds: z.number().int(),
+      timeSeconds: z.number().int().optional(),
+      page: z.number().int().optional(),
       topic: z.string(),
       description: z.string(),
     })
-  ).describe('Key moments in the video with time markers (3-5 chapters)'),
+  ).describe('Key sections or moments in the content (3-5 chapters)'),
 
   prerequisites: z.array(
     z.object({
@@ -59,7 +60,7 @@ export const LearningMaterialsSchema = z.object({
     })
   ).describe('Real-world case study applying the video concepts'),
 
-  videoSummary: z.string().describe(`200-300 word summary for ${CHATBOT_NAME} to use as context`),
+  summary: z.string().describe(`200-300 word summary for ${CHATBOT_NAME} to use as context`),
 
   mindMap: z.object({
     nodes: z.array(

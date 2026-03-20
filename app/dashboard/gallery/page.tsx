@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import SearchBar from '@/components/SearchBar';
 import FilterDropdown from '@/components/FilterDropdown';
-import GenerateModal from '@/components/GenerateModal';
+import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal';
 import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
 import VideoListItem from '@/components/VideoListItem';
@@ -167,8 +167,9 @@ export default function GalleryPage() {
     }
   };
 
-  const handleGenerate = async (url: string) => {
-    console.log('🎬 [FRONTEND] Starting video generation...');
+  const handleGenerate = async (payload: GeneratePayload) => {
+    const sourceTypes = payload.sources.map((s) => s.sourceType).join('+');
+    console.log(`🎬 [FRONTEND] Starting generation (sources: ${sourceTypes})...`);
 
     setIsGenerating(true);
     try {
@@ -180,7 +181,7 @@ export default function GalleryPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          youtubeUrl: url,
+          sources: payload.sources,
           clientTimestamp: clientNow.toISOString(),
           timezoneOffsetMinutes,
           timeZone,

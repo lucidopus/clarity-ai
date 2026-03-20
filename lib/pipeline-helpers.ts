@@ -15,7 +15,9 @@ import Quiz from '@/lib/models/Quiz';
 import { MindMap, ServiceType } from '@/lib/models';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { getExtractor } from '@/lib/extractors';
+import type { ExtractorInput } from '@/lib/extractors';
 import { generateLearningMaterials } from '@/lib/llm';
+import type { SourceType } from '@/lib/models/Source';
 import { generateEmbeddings } from '@/lib/embedding';
 import { GEMINI_MODEL_NAME } from '@/lib/sdk';
 import { resolveClientDay } from '@/lib/date.utils';
@@ -26,36 +28,41 @@ import { CostSource } from '@/lib/models/Cost';
 import { ApiError } from '@/lib/errors/ApiError';
 import type { ExtractedSegment } from '@/lib/extractors/types';
 
-// ─── Helper: Extract content from YouTube ───────────────────────────────────
+// ─── Helper: Extract content from any source ────────────────────────────────
 
-export async function extractContent(youtubeUrl: string, services: IServiceUsage[]) {
+export async function extractContent(input: ExtractorInput, services: IServiceUsage[]) {
   const extractStartTime = Date.now();
-  const extractor = getExtractor('youtube');
-  const extraction = await extractor({ sourceType: 'youtube', sourceUrl: youtubeUrl });
+  const extractor = getExtractor(input.sourceType);
+  const extraction = await extractor(input);
   const extractDuration = Date.now() - extractStartTime;
 
   if (!extraction.success) {
     return { success: false as const, error: extraction.error };
   }
 
-  // Track extraction cost
-  const apifyCost = calculateApifyCost();
-  services.push({
-    service: ServiceType.APIFY_TRANSCRIPT,
-    usage: {
-      cost: apifyCost,
-      unitDetails: {
-        duration: extractDuration,
-        metadata: {
-          segmentCount: extraction.segments?.length || 0,
-          characterCount: extraction.text.length,
-          wordCount: extraction.metadata.wordCount,
+  // Track extraction cost (varies by source type)
+  if (input.sourceType === 'youtube') {
+    const apifyCost = calculateApifyCost();
+    services.push({
+      service: ServiceType.APIFY_TRANSCRIPT,
+      usage: {
+        cost: apifyCost,
+        unitDetails: {
+          duration: extractDuration,
+          metadata: {
+            segmentCount: extraction.segments?.length || 0,
+            characterCount: extraction.text.length,
+            wordCount: extraction.metadata.wordCount,
+          },
         },
       },
-    },
-    status: 'success',
-  });
-  console.log(`💰 [COST] Extraction: ${formatCost(apifyCost)} (${extractDuration}ms)`);
+      status: 'success',
+    });
+    console.log(`💰 [COST] Extraction: ${formatCost(apifyCost)} (${extractDuration}ms)`);
+  } else {
+    // Text, document, etc. — no extraction cost, just log metadata
+    console.log(`📝 [EXTRACT] ${input.sourceType} content extracted (${extraction.metadata.wordCount} words, ${extractDuration}ms)`);
+  }
 
   return { success: true as const, extraction, extractDuration };
 }
@@ -65,47 +72,68 @@ export async function extractContent(youtubeUrl: string, services: IServiceUsage
 export async function saveExtraction(
   userId: string,
   videoDocId: string,
-  videoId: string,
-  youtubeUrl: string,
-  extraction: { text: string; segments?: ExtractedSegment[]; metadata: { duration?: number; wordCount: number; sourceId: string; language?: string } }
+  sourceId: string,
+  sourceType: SourceType,
+  extraction: {
+    text: string;
+    title?: string;
+    segments?: ExtractedSegment[];
+    metadata: { duration?: number; wordCount: number; sourceId: string; language?: string; fileName?: string; fileSize?: number; mimeType?: string };
+  },
+  sourceMetadata?: { sourceUrl?: string }
 ) {
   const { segments = [], metadata } = extraction;
   const { duration: totalDuration, sourceId: extractedSourceId } = metadata;
 
+  // Determine source-specific fields
+  const isYouTube = sourceType === 'youtube';
+  const title = extraction.title || metadata.fileName || `Content ${sourceId}`;
+  const thumbnail = isYouTube ? `https://img.youtube.com/vi/${sourceId}/hqdefault.jpg` : undefined;
+
   // Update Video doc (backward compat)
-  await Video.findByIdAndUpdate(videoDocId, {
-    transcript: segments.map((seg) => ({
+  const videoUpdate: Record<string, unknown> = {
+    duration: totalDuration || 0,
+    title,
+  };
+  if (isYouTube) {
+    videoUpdate.transcript = segments.map((seg) => ({
       text: seg.text,
       offset: seg.startTime || 0,
       duration: (seg.endTime || 0) - (seg.startTime || 0),
       lang: 'en',
-    })),
-    duration: totalDuration || 0,
-    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-    channelName: 'YouTube',
-    title: `Video ${videoId}`,
-  });
+    }));
+    videoUpdate.thumbnail = thumbnail;
+    videoUpdate.channelName = 'YouTube';
+  }
+  await Video.findByIdAndUpdate(videoDocId, videoUpdate);
 
-  // Create Source doc (new schema)
+  // Create/update Source doc
+  const sourceDoc: Record<string, unknown> = {
+    userId,
+    sourceId: extractedSourceId,
+    sourceType,
+    title,
+    duration: totalDuration || 0,
+    language: metadata.language || 'en',
+    processingStatus: 'processing',
+    materialsStatus: 'generating',
+  };
+  if (isYouTube) {
+    sourceDoc.sourceUrl = sourceMetadata?.sourceUrl;
+    sourceDoc.thumbnail = thumbnail;
+    sourceDoc.channelName = 'YouTube';
+  }
+  if (metadata.fileName) sourceDoc.fileName = metadata.fileName;
+  if (metadata.fileSize) sourceDoc.fileSize = metadata.fileSize;
+  if (metadata.mimeType) sourceDoc.mimeType = metadata.mimeType;
+
   await Source.findOneAndUpdate(
     { userId, sourceId: extractedSourceId },
-    {
-      userId,
-      sourceId: extractedSourceId,
-      sourceType: 'youtube',
-      sourceUrl: youtubeUrl,
-      title: `Video ${videoId}`,
-      thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-      channelName: 'YouTube',
-      duration: totalDuration || 0,
-      language: metadata.language || 'en',
-      processingStatus: 'processing',
-      materialsStatus: 'generating',
-    },
+    sourceDoc,
     { upsert: true, new: true }
   );
 
-  // Create SourceContent doc (new schema)
+  // Create/update SourceContent doc
   await SourceContent.findOneAndUpdate(
     { sourceId: extractedSourceId, userId },
     {
@@ -117,13 +145,14 @@ export async function saveExtraction(
         text: seg.text,
         startTime: seg.startTime,
         endTime: seg.endTime,
+        page: seg.page,
         lang: metadata.language || 'en',
       })),
     },
     { upsert: true, new: true }
   );
 
-  console.log('✅ [VIDEO PROCESS] Extraction saved (Video + Source + SourceContent)');
+  console.log(`✅ [PIPELINE] Extraction saved (Video + Source + SourceContent) [${sourceType}]`);
 }
 
 // ─── Helper: Validate educational content ───────────────────────────────────
@@ -218,20 +247,28 @@ export async function validateContent(
 
 // ─── Helper: Generate materials via LLM ─────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function generateMaterials(transcriptText: string, videoId: string, services: IServiceUsage[]): Promise<{ materials: any; usage: any } | { error: unknown; errorCode: string }> {
+export async function generateMaterials(
+  contentText: string,
+  sourceId: string,
+  services: IServiceUsage[],
+  options?: { sourceType?: SourceType; hasTimestamps?: boolean; sourceDescription?: string }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): Promise<{ materials: any; usage: any } | { error: unknown; errorCode: string }> {
   const modelInfo = getCurrentModelInfo(GEMINI_MODEL_NAME);
   console.log(`🤖 [VIDEO PROCESS] Using model: ${modelInfo.model}`);
 
   try {
-    const llmResponse = await generateLearningMaterials(transcriptText);
+    const llmResponse = await generateLearningMaterials(contentText, {
+      hasTimestamps: options?.hasTimestamps ?? true,
+      sourceDescription: options?.sourceDescription ?? 'educational content',
+    });
     const { materials, usage } = llmResponse;
 
     // Transform problem IDs to be globally unique (prevent cross-video contamination)
     if (materials.realWorldProblems?.length > 0) {
       materials.realWorldProblems = materials.realWorldProblems.map((problem: { id: string; title: string; scenario: string; hints: string[] }) => ({
         ...problem,
-        id: `${videoId}_${problem.id}`,
+        id: `${sourceId}_${problem.id}`,
       }));
     }
 
@@ -319,7 +356,7 @@ export async function saveLearningMaterials(userId: string, videoId: string, mat
     chapters: materials.chapters,
     prerequisites: materials.prerequisites,
     realWorldProblems: materials.realWorldProblems,
-    summary: materials.videoSummary,
+    summary: materials.summary,
     metadata: { generatedBy: modelInfo.model, generatedAt: new Date() },
   });
 
@@ -341,7 +378,7 @@ export async function updateFinalStatus(
   if (llmError || !materials) {
     // Partial success — transcript available but LLM failed
     const failPayload = {
-      title: `Video ${videoId}`,
+      title: `Content ${videoId}`,
       processingStatus: 'completed_with_warning' as const,
       materialsStatus: 'incomplete' as const,
       incompleteMaterials: ['metadata', 'flashcards', 'quizzes', 'prerequisites', 'mindmap', 'casestudies'],
@@ -361,7 +398,7 @@ export async function updateFinalStatus(
     const embeddingContext = `
       Title: ${materials.title}
       Category: ${materials.category}
-      Summary: ${materials.videoSummary}
+      Summary: ${materials.summary}
       Tags: ${materials.tags.join(', ')}
       Transcript Start: ${transcriptText.slice(0, 1000)}
     `.trim();
@@ -379,7 +416,7 @@ export async function updateFinalStatus(
     title: materials.title,
     category: materials.category,
     tags: materials.tags,
-    summary: materials.videoSummary,
+    summary: materials.summary,
     embedding,
     processingStatus: 'completed' as const,
     materialsStatus: 'complete' as const,

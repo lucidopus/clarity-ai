@@ -57,8 +57,12 @@ export interface ExtractorInput {
   sourceType: SourceType;
   // YouTube
   sourceUrl?: string;
+  // Plain text
+  rawText?: string;
+  title?: string;
   // File uploads (document, audio, media)
   fileBuffer?: Buffer;
+  fileUrl?: string;
   fileName?: string;
   mimeType?: string;
 }
