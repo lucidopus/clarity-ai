@@ -122,15 +122,12 @@ export async function extractDocument(input: ExtractorInput): Promise<ExtractedC
 // ─── PDF Extraction (page-by-page) ──────────────────────────────────────────
 
 async function extractPdfPages(arrayBuffer: ArrayBuffer): Promise<{ text: string; num: number }[]> {
-  const { PDFParse } = await import('pdf-parse');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const parser: any = new PDFParse(new Uint8Array(arrayBuffer));
-  await parser.load();
-  const result = await parser.getText();
-  parser.destroy();
+  const { extractText, getDocumentProxy } = await import('unpdf');
+  const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
+  const { text } = await extractText(pdf, { mergePages: false });
 
-  // result.pages is an array of { text: string, num: number }
-  return (result.pages as { text: string; num: number }[]) || [];
+  // text is string[] — one entry per page
+  return text.map((pageText, i) => ({ text: pageText, num: i + 1 }));
 }
 
 // ─── PPTX Extraction (slide-by-slide) ───────────────────────────────────────
