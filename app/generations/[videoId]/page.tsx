@@ -152,6 +152,9 @@ export default function VideoMaterialsPage() {
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [processingTitle, setProcessingTitle] = useState<string | null>(null);
+  const [processingThumbnail, setProcessingThumbnail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
   const [showWarning, setShowWarning] = useState(!!warningType);
@@ -301,6 +304,29 @@ export default function VideoMaterialsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // First check processing status
+        const statusResponse = await fetch(`/api/videos/${videoId}/status`);
+        if (!statusResponse.ok) throw new Error('Failed to fetch video status');
+
+        const statusData = await statusResponse.json();
+
+        // If still processing, show processing UI and start polling
+        if (statusData.processingStatus === 'processing' || statusData.processingStatus === 'pending') {
+          setProcessingStatus(statusData.processingStatus);
+          setProcessingTitle(statusData.title);
+          setProcessingThumbnail(statusData.thumbnail);
+          setLoading(false);
+          return;
+        }
+
+        // If failed or rejected, show error
+        if (statusData.processingStatus === 'failed' || statusData.processingStatus === 'validation_rejected') {
+          setError(statusData.errorMessage || 'Processing failed');
+          setLoading(false);
+          return;
+        }
+
+        // Processing is done — fetch full materials
         const [materialsResponse, notesResponse, preferencesResponse] = await Promise.all([
           fetch(`/api/videos/${videoId}/materials`),
           fetch(`/api/notes/${videoId}`),
@@ -311,6 +337,7 @@ export default function VideoMaterialsPage() {
 
         const materialsData = await materialsResponse.json();
         setMaterials(materialsData);
+        setProcessingStatus(null);
 
         if (materialsData.materialsStatus === 'incomplete') {
           const missing: string[] = [];
@@ -345,6 +372,73 @@ export default function VideoMaterialsPage() {
     if (videoId) fetchData();
   }, [videoId]);
 
+  // Poll for status while processing
+  useEffect(() => {
+    if (processingStatus !== 'processing' && processingStatus !== 'pending') return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/videos/${videoId}/status`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        setProcessingTitle(data.title);
+        setProcessingThumbnail(data.thumbnail);
+
+        if (data.processingStatus === 'completed' || data.processingStatus === 'completed_with_warning') {
+          clearInterval(interval);
+          setProcessingStatus(null);
+
+          // Fetch full materials
+          const [materialsResponse, notesResponse, preferencesResponse] = await Promise.all([
+            fetch(`/api/videos/${videoId}/materials`),
+            fetch(`/api/notes/${videoId}`),
+            fetch(`/api/preferences/general`)
+          ]);
+
+          if (materialsResponse.ok) {
+            const materialsData = await materialsResponse.json();
+            setMaterials(materialsData);
+
+            if (materialsData.materialsStatus === 'incomplete') {
+              const missing: string[] = [];
+              if (materialsData.availableMaterials) {
+                if (!materialsData.availableMaterials.flashcards) missing.push('Flashcards');
+                if (!materialsData.availableMaterials.quizzes) missing.push('Quizzes');
+                if (!materialsData.availableMaterials.prerequisites) missing.push('Prerequisites');
+                if (!materialsData.availableMaterials.mindmap) missing.push('Mind Map');
+                if (!materialsData.availableMaterials.casestudies) missing.push('Challenges');
+              }
+              if (missing.length > 0) setIncompleteMaterials(missing);
+            }
+
+            if (data.processingStatus === 'completed_with_warning') {
+              setShowWarning(true);
+            }
+          }
+
+          if (notesResponse.ok) {
+            const notesData = await notesResponse.json();
+            setNotes(notesData);
+          }
+
+          if (preferencesResponse.ok) {
+            const preferencesData = await preferencesResponse.json();
+            setAutoplayVideos(preferencesData.preferences?.autoplayVideos ?? false);
+          }
+        } else if (data.processingStatus === 'failed' || data.processingStatus === 'validation_rejected') {
+          clearInterval(interval);
+          setProcessingStatus(null);
+          setError(data.errorMessage || 'Processing failed');
+        }
+      } catch {
+        // Silently ignore polling errors — will retry on next interval
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [processingStatus, videoId]);
+
   if (loading) {
      return (
        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
@@ -352,6 +446,37 @@ export default function VideoMaterialsPage() {
          <p className="mt-4 text-muted-foreground">{loadingMessage}</p>
        </div>
      );
+  }
+
+  if (processingStatus === 'processing' || processingStatus === 'pending') {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-lg"
+        >
+          {processingThumbnail && (
+            <div className="mb-8 rounded-xl overflow-hidden shadow-lg mx-auto max-w-sm">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={processingThumbnail} alt="Video thumbnail" className="w-full aspect-video object-cover" />
+            </div>
+          )}
+          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <h2 className="mt-6 text-2xl font-bold text-foreground">
+            Generating your study materials
+          </h2>
+          <p className="mt-2 text-muted-foreground">
+            {processingTitle && processingTitle !== 'Processing...'
+              ? processingTitle
+              : 'Extracting transcript and creating flashcards, quizzes, and more...'}
+          </p>
+          <p className="mt-4 text-sm text-muted-foreground/60">
+            This usually takes 1-2 minutes. You can leave this page and come back.
+          </p>
+        </motion.div>
+      </div>
+    );
   }
 
   if (error || !materials) {

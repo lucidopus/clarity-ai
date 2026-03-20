@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import Video from "../lib/models/Video";
 import Source from "../lib/models/Source";
 import { processSingleVideoTask } from "./process-single-video";
+import { processVideoPipelineTask } from "./process-video-pipeline";
 
 /**
  * Helper: Check if error is permanent (should mark as 'failed')
@@ -155,6 +156,43 @@ export const retryFailedVideos = schedules.task({
           logger.error("💥 Batch processing error:", batchError as Record<string, unknown>);
           summary.errors.push(`BATCH_ERROR: ${batchError instanceof Error ? batchError.message : 'Unknown'}`);
           summary.stillPending += videosToRetry.length;
+        }
+      }
+
+      // Recover orphaned runs: videos stuck in 'processing' for over 20 minutes
+      const orphanCutoff = new Date(Date.now() - 20 * 60 * 1000);
+      const orphanedVideos = await Video.find({
+        processingStatus: 'processing',
+        createdAt: { $lt: orphanCutoff },
+      });
+
+      if (orphanedVideos.length > 0) {
+        logger.info(`🔧 Found ${orphanedVideos.length} orphaned videos (stuck in processing)`);
+
+        const orphanPayloads = orphanedVideos.map(video => ({
+          payload: {
+            userId: video.userId.toString(),
+            username: 'User',
+            videoDocId: video._id.toString(),
+            videoId: video.videoId,
+            youtubeUrl: video.youtubeUrl,
+          }
+        }));
+
+        try {
+          const orphanResults = await processVideoPipelineTask.batchTriggerAndWait(orphanPayloads);
+          for (const result of orphanResults.runs) {
+            if (result.ok && result.output?.success) {
+              summary.successfulRetries++;
+              logger.info(`✅ Recovered orphaned video ${result.output.videoId}`);
+            } else {
+              summary.stillPending++;
+              logger.warn(`⚠️ Failed to recover orphaned video`, { taskId: result.id });
+            }
+          }
+        } catch (orphanError) {
+          logger.error("💥 Orphan recovery batch error:", orphanError as Record<string, unknown>);
+          summary.errors.push(`ORPHAN_BATCH_ERROR: ${orphanError instanceof Error ? orphanError.message : 'Unknown'}`);
         }
       }
 

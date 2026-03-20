@@ -179,21 +179,17 @@ export default function DashboardHomePage() {
 
   const handleGenerate = async (youtubeUrl: string) => {
     console.log('🎬 [FRONTEND] Starting video generation from Home page...');
-    console.log(`🎬 [FRONTEND] YouTube URL: ${youtubeUrl}`);
 
     setIsGenerating(true);
-    setErrorState(null); // Clear any previous errors
+    setErrorState(null);
     try {
       const clientNow = new Date();
       const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
       const response = await fetch('/api/videos/process', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           youtubeUrl,
           clientTimestamp: clientNow.toISOString(),
@@ -202,64 +198,37 @@ export default function DashboardHomePage() {
         }),
       });
 
-      console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
-      
-      // Parse response with error handling
       let data;
       try {
         const responseText = await response.text();
-        console.log('📥 [FRONTEND] Raw response text:', responseText.substring(0, 200));
         data = responseText ? JSON.parse(responseText) : {};
-      } catch (parseError) {
-        console.error('❌ [FRONTEND] Failed to parse response:', parseError);
+      } catch {
         data = {};
       }
 
-      // Case 1: Apify/validation failed → show error dialog, stay on home
       if (!response.ok) {
-        console.error('❌ [FRONTEND] API error response:', data);
         setErrorState({
           show: true,
           errorType: data.errorType || 'UNKNOWN_ERROR',
-          videoId: data.videoId, // For duplicate video errors
+          videoId: data.videoId,
         });
         setShowGenerateModal(false);
         return;
       }
 
-      // Case 2: Success (with or without warnings)
-      console.log('✅ [FRONTEND] Generation successful:', data);
+      // API returns 202 — pipeline is running in background
       setShowGenerateModal(false);
-
-      // Case 2a: LLM failed (partial success) → redirect with warning
-      if (data.warning) {
-        console.log(`⚠️ [FRONTEND] Redirecting to /generations/${data.videoId}?warning=${data.warning.type}`);
-        window.location.href = `/generations/${data.videoId}?warning=${data.warning.type}`;
-        return;
-      }
-
-      // Case 2b: Full success → redirect normally
       if (data.videoId) {
-        console.log(`🎬 [FRONTEND] Redirecting to /generations/${data.videoId}`);
         window.location.href = `/generations/${data.videoId}`;
       } else {
-        console.error('❌ [FRONTEND] No videoId in response');
-        setErrorState({
-          show: true,
-          errorType: 'UNKNOWN_ERROR',
-        });
+        setErrorState({ show: true, errorType: 'UNKNOWN_ERROR' });
       }
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation error:', error);
-      // Network error or other unexpected error
-      setErrorState({
-        show: true,
-        errorType: 'NETWORK_ERROR',
-      });
+      setErrorState({ show: true, errorType: 'NETWORK_ERROR' });
       setShowGenerateModal(false);
     } finally {
       setIsGenerating(false);
-      console.log('🎬 [FRONTEND] Generation flow completed');
     }
   };
 

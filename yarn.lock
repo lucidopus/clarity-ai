@@ -1174,6 +1174,17 @@
     "@opentelemetry/otlp-transformer" "0.203.0"
     "@opentelemetry/sdk-logs" "0.203.0"
 
+"@opentelemetry/exporter-metrics-otlp-http@0.203.0":
+  version "0.203.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/exporter-metrics-otlp-http/-/exporter-metrics-otlp-http-0.203.0.tgz#90d6e157ee93f5408a4af52e1c9250e6282ef8d0"
+  integrity sha512-HFSW10y8lY6BTZecGNpV3GpoSy7eaO0Z6GATwZasnT4bEsILp8UJXNG5OmEsz4SdwCSYvyCbTJdNbZP3/8LGCQ==
+  dependencies:
+    "@opentelemetry/core" "2.0.1"
+    "@opentelemetry/otlp-exporter-base" "0.203.0"
+    "@opentelemetry/otlp-transformer" "0.203.0"
+    "@opentelemetry/resources" "2.0.1"
+    "@opentelemetry/sdk-metrics" "2.0.1"
+
 "@opentelemetry/exporter-trace-otlp-http@0.203.0":
   version "0.203.0"
   resolved "https://registry.npmjs.org/@opentelemetry/exporter-trace-otlp-http/-/exporter-trace-otlp-http-0.203.0.tgz"
@@ -1184,6 +1195,13 @@
     "@opentelemetry/otlp-transformer" "0.203.0"
     "@opentelemetry/resources" "2.0.1"
     "@opentelemetry/sdk-trace-base" "2.0.1"
+
+"@opentelemetry/host-metrics@^0.37.0":
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/host-metrics/-/host-metrics-0.37.0.tgz#645e327c977f7a171f83702916d3fc9bcb57a2fa"
+  integrity sha512-gf6nRFci0PTni9R1QQKjZ2uZE4Y6olLKhlwdM0qqLbbn3SBVKyP2jyBMiosBTHtRNLjY7s8hzQ44eLdK5wkGNQ==
+  dependencies:
+    systeminformation "5.23.8"
 
 "@opentelemetry/instrumentation@0.203.0":
   version "0.203.0"
@@ -1356,12 +1374,13 @@
   resolved "https://registry.npmjs.org/@rtsao/scc/-/scc-1.1.0.tgz"
   integrity sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==
 
-"@s2-dev/streamstore@0.17.3":
-  version "0.17.3"
-  resolved "https://registry.npmjs.org/@s2-dev/streamstore/-/streamstore-0.17.3.tgz"
-  integrity sha512-UeXL5+MgZQfNkbhCgEDVm7PrV5B3bxh6Zp4C5pUzQQwaoA+iGh2QiiIptRZynWgayzRv4vh0PYfnKpTzJEXegQ==
+"@s2-dev/streamstore@0.22.5":
+  version "0.22.5"
+  resolved "https://registry.yarnpkg.com/@s2-dev/streamstore/-/streamstore-0.22.5.tgz#a836b66587eb2e2810234844828710bb7f1f5f75"
+  integrity sha512-GqdOKIbIoIxT+40fnKzHbrsHB6gBqKdECmFe7D3Ojk4FoN1Hu0LhFzZv6ZmVMjoHHU+55debS1xSWjZwQmbIyQ==
   dependencies:
     "@protobuf-ts/runtime" "^2.11.1"
+    debug "^4.4.3"
 
 "@sendgrid/client@^8.1.5":
   version "8.1.6"
@@ -1752,23 +1771,23 @@
     "@tiptap/extensions" "^3.20.4"
     "@tiptap/pm" "^3.20.4"
 
-"@trigger.dev/build@4.3.3":
-  version "4.3.3"
-  resolved "https://registry.npmjs.org/@trigger.dev/build/-/build-4.3.3.tgz"
-  integrity sha512-57U2nb8n9RERqFktmamSqriAgK4+e3985fwYi0EHtQ1/WDmQ0KYdiK0FEGN1ls5/vcZxbyfH/cifIA2fW0vHEg==
+"@trigger.dev/build@4.4.3":
+  version "4.4.3"
+  resolved "https://registry.yarnpkg.com/@trigger.dev/build/-/build-4.4.3.tgz#65f9a4cb517df60d71ed8ee8e380496ceb103ff4"
+  integrity sha512-t/hYmQiv2SdrUao9scoczrvfhyzSLkuT8DNyiBt9q29GKct37zytWyAo16hpN2Uf+yXh0EkdnkHbfR9odF0YtQ==
   dependencies:
     "@prisma/config" "^6.10.0"
-    "@trigger.dev/core" "4.3.3"
+    "@trigger.dev/core" "4.4.3"
     mlly "^1.7.1"
     pkg-types "^1.1.3"
     resolve "^1.22.8"
     tinyglobby "^0.2.2"
     tsconfck "3.1.3"
 
-"@trigger.dev/core@4.3.3":
-  version "4.3.3"
-  resolved "https://registry.npmjs.org/@trigger.dev/core/-/core-4.3.3.tgz"
-  integrity sha512-HPPxbesDiEEuA1U/Qi1RWXVMkQNDCNyB7zhd3cIYd6T0KUTIt6i7ZdaqSRDhkAxva2hpaWXQsQIYwr5Jnsyohw==
+"@trigger.dev/core@4.4.3":
+  version "4.4.3"
+  resolved "https://registry.yarnpkg.com/@trigger.dev/core/-/core-4.4.3.tgz#82b10ad8e1f95abd12d0aa91650b2b309e6827e0"
+  integrity sha512-4srm2UGoDEcHO29Lqp4Isioq+b6au0EjW9/pjYmzOSxXqGPFDjPquK0BnKYGHyAbKYxuBx8wr2T/ru+zbY0/Jg==
   dependencies:
     "@bugsnag/cuid" "^3.1.1"
     "@electric-sql/client" "1.0.14"
@@ -1778,14 +1797,17 @@
     "@opentelemetry/api-logs" "0.203.0"
     "@opentelemetry/core" "2.0.1"
     "@opentelemetry/exporter-logs-otlp-http" "0.203.0"
+    "@opentelemetry/exporter-metrics-otlp-http" "0.203.0"
     "@opentelemetry/exporter-trace-otlp-http" "0.203.0"
+    "@opentelemetry/host-metrics" "^0.37.0"
     "@opentelemetry/instrumentation" "0.203.0"
     "@opentelemetry/resources" "2.0.1"
     "@opentelemetry/sdk-logs" "0.203.0"
+    "@opentelemetry/sdk-metrics" "2.0.1"
     "@opentelemetry/sdk-trace-base" "2.0.1"
     "@opentelemetry/sdk-trace-node" "2.0.1"
     "@opentelemetry/semantic-conventions" "1.36.0"
-    "@s2-dev/streamstore" "0.17.3"
+    "@s2-dev/streamstore" "0.22.5"
     dequal "^2.0.3"
     eventsource "^3.0.5"
     eventsource-parser "^3.0.0"
@@ -1797,21 +1819,20 @@
     socket.io "4.7.4"
     socket.io-client "4.7.5"
     std-env "^3.8.1"
-    superjson "^2.2.1"
     tinyexec "^0.3.2"
     uncrypto "^0.1.3"
     zod "3.25.76"
     zod-error "1.5.0"
     zod-validation-error "^1.5.0"
 
-"@trigger.dev/sdk@4.3.3":
-  version "4.3.3"
-  resolved "https://registry.npmjs.org/@trigger.dev/sdk/-/sdk-4.3.3.tgz"
-  integrity sha512-aNKbmn6O8XfAJsQ3j9A8tVUm6nr+5SktHxUs804i7S4BG//b0YX0yhrKwPUe8rUGmFCYxmb3B43OOtZ0MsPyfA==
+"@trigger.dev/sdk@4.4.3":
+  version "4.4.3"
+  resolved "https://registry.yarnpkg.com/@trigger.dev/sdk/-/sdk-4.4.3.tgz#9ac5e5fa5a79c1f057c43ad5ec29a70ae62d09fa"
+  integrity sha512-ghJkak+PTBJJ9HiHMcnahJmzjsgCzYiIHu5Qj5R7I9q5LS6i7mkx169rB/tOE9HLadd4HSu3yYA5DrH4wXhZuw==
   dependencies:
     "@opentelemetry/api" "1.9.0"
     "@opentelemetry/semantic-conventions" "1.36.0"
-    "@trigger.dev/core" "4.3.3"
+    "@trigger.dev/core" "4.4.3"
     chalk "^5.2.0"
     cronstrue "^2.21.0"
     debug "^4.3.4"
@@ -3067,13 +3088,6 @@ cookie@~0.4.1:
   resolved "https://registry.npmjs.org/cookie/-/cookie-0.4.2.tgz"
   integrity sha512-aSWTXFzaKWkvHO1Ny/s+ePFpvKsPnjc551iI41v3ny/ow6tBG5Vd+FuqGNhh1LxOmVzOlGUriIlOaokOvhaStA==
 
-copy-anything@^4:
-  version "4.0.5"
-  resolved "https://registry.npmjs.org/copy-anything/-/copy-anything-4.0.5.tgz"
-  integrity sha512-7Vv6asjS4gMOuILabD3l739tsaxFQmC+a7pLZm02zyvs8p977bL3zEgq3yDk5rn9B0PbYgIv++jmHcuUab4RhA==
-  dependencies:
-    is-what "^5.2.0"
-
 cors@~2.8.5:
   version "2.8.6"
   resolved "https://registry.npmjs.org/cors/-/cors-2.8.6.tgz"
@@ -3226,7 +3240,7 @@ date-fns@^4.1.0:
   resolved "https://registry.npmjs.org/date-fns/-/date-fns-4.1.0.tgz"
   integrity sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==
 
-debug@4, debug@4.x, debug@^4.0.0, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1, debug@^4.3.2, debug@^4.3.4, debug@^4.3.5, debug@^4.4.0, debug@~4.4.1:
+debug@4, debug@4.x, debug@^4.0.0, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1, debug@^4.3.2, debug@^4.3.4, debug@^4.3.5, debug@^4.4.0, debug@^4.4.3, debug@~4.4.1:
   version "4.4.3"
   resolved "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz"
   integrity sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==
@@ -4863,11 +4877,6 @@ is-weakset@^2.0.3:
   dependencies:
     call-bound "^1.0.3"
     get-intrinsic "^1.2.6"
-
-is-what@^5.2.0:
-  version "5.5.0"
-  resolved "https://registry.npmjs.org/is-what/-/is-what-5.5.0.tgz"
-  integrity sha512-oG7cgbmg5kLYae2N5IVd3jm2s+vldjxJzK1pcu9LfpGuQ93MQSzo0okvRna+7y5ifrD+20FE8FvjusyGaz14fw==
 
 isarray@^2.0.5:
   version "2.0.5"
@@ -7858,13 +7867,6 @@ styled-jsx@5.1.6:
   dependencies:
     client-only "0.0.1"
 
-superjson@^2.2.1:
-  version "2.2.6"
-  resolved "https://registry.npmjs.org/superjson/-/superjson-2.2.6.tgz"
-  integrity sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA==
-  dependencies:
-    copy-anything "^4"
-
 supports-color@^7.1.0:
   version "7.2.0"
   resolved "https://registry.npmjs.org/supports-color/-/supports-color-7.2.0.tgz"
@@ -7895,6 +7897,11 @@ synckit@^0.11.8:
   integrity sha512-Bh7QjT8/SuKUIfObSXNHNSK6WHo6J1tHCqJsuaFDP7gP0fkzSfTxI8y85JrppZ0h8l0maIgc2tfuZQ6/t3GtnQ==
   dependencies:
     "@pkgr/core" "^0.2.9"
+
+systeminformation@5.23.8:
+  version "5.23.8"
+  resolved "https://registry.yarnpkg.com/systeminformation/-/systeminformation-5.23.8.tgz#b8efa73b36221cbcb432e3fe83dc1878a43f986a"
+  integrity sha512-Osd24mNKe6jr/YoXLLK3k8TMdzaxDffhpCxgkfgBHcapykIkd50HXThM3TCEuHO2pPuCsSx2ms/SunqhU5MmsQ==
 
 tailwindcss@4.1.16, tailwindcss@^4:
   version "4.1.16"

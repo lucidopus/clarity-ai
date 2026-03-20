@@ -169,7 +169,6 @@ export default function GalleryPage() {
 
   const handleGenerate = async (url: string) => {
     console.log('🎬 [FRONTEND] Starting video generation...');
-    console.log(`🎬 [FRONTEND] YouTube URL: ${url}`);
 
     setIsGenerating(true);
     try {
@@ -177,12 +176,9 @@ export default function GalleryPage() {
       const timezoneOffsetMinutes = clientNow.getTimezoneOffset();
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-      console.log('🎬 [FRONTEND] Sending POST request to /api/videos/process...');
       const response = await fetch('/api/videos/process', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           youtubeUrl: url,
           clientTimestamp: clientNow.toISOString(),
@@ -191,23 +187,13 @@ export default function GalleryPage() {
         }),
       });
 
-      console.log(`🎬 [FRONTEND] Response status: ${response.status} ${response.statusText}`);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.warn('⚠️ [FRONTEND] API error response:', JSON.stringify(errorData, null, 2));
-        
-        // Helper to show error dialog
+
         const showError = (msg: string, type: string = 'UNKNOWN_ERROR', vidId?: string) => {
-          setErrorDialog({ 
-            show: true, 
-            message: msg,
-            errorType: type,
-            videoId: vidId
-          });
+          setErrorDialog({ show: true, message: msg, errorType: type, videoId: vidId });
         };
 
-        // Show user-friendly message for validation rejection
         if (errorData.errorType === 'NON_EDUCATIONAL_CONTENT') {
           showError(
             'This video appears to be entertainment content (like music videos, vlogs, or gaming streams) rather than educational material. Clarity AI works best with tutorials, lectures, courses, and how-to videos.',
@@ -221,25 +207,18 @@ export default function GalleryPage() {
       }
 
       const data = await response.json();
-      console.log('✅ [FRONTEND] Generation successful:', data);
-
-      // Close modal
       setShowGenerateModal(false);
 
-       // Open generation page in new tab
-       if (data.videoId) {
-         console.log(`🎬 [FRONTEND] Opening /generations/${data.videoId} in new tab`);
-         window.open(`/generations/${data.videoId}`, '_blank');
-       } else {
-         console.error('❌ [FRONTEND] No videoId in response');
-       }
+      // API returns 202 — pipeline is running in background
+      if (data.videoId) {
+        window.open(`/generations/${data.videoId}`, '_blank');
+      }
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation failed:', error);
       const message = error instanceof Error ? error.message : 'Failed to generate materials';
       setErrorDialog({ show: true, message });
     } finally {
       setIsGenerating(false);
-      console.log('🎬 [FRONTEND] Generation flow completed');
     }
   };
 
