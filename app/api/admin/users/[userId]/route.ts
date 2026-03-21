@@ -13,6 +13,8 @@ import MindMap from '@/lib/models/MindMap';
 import Solution from '@/lib/models/Solution';
 import Source from '@/lib/models/Source';
 import Cost from '@/lib/models/Cost';
+import SourceContent from '@/lib/models/SourceContent';
+import LiveSession from '@/lib/models/LiveSession';
 import { deleteSupabaseFiles } from '@/lib/supabase';
 import mongoose from 'mongoose';
 import { startOfDay, subDays } from 'date-fns';
@@ -324,6 +326,8 @@ export async function DELETE(
       MindMap.deleteMany({ userId }),
       Solution.deleteMany({ userId }),
       Cost.deleteMany({ userId }),
+      SourceContent.deleteMany({ userId }),
+      LiveSession.deleteMany({ userId }),
       User.findByIdAndDelete(userId),
     ]);
 

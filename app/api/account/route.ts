@@ -12,6 +12,9 @@ import MindMap from '@/lib/models/MindMap';
 import Note from '@/lib/models/Note';
 import Solution from '@/lib/models/Solution';
 import Source from '@/lib/models/Source';
+import SourceContent from '@/lib/models/SourceContent';
+import LiveSession from '@/lib/models/LiveSession';
+import Cost from '@/lib/models/Cost';
 import { deleteSupabaseFiles } from '@/lib/supabase';
 
 /**
@@ -75,6 +78,9 @@ export async function DELETE(request: NextRequest) {
       MindMap.deleteMany({ userId }),
       Note.deleteMany({ userId }),
       Solution.deleteMany({ userId }),
+      SourceContent.deleteMany({ userId }),
+      LiveSession.deleteMany({ userId }),
+      Cost.deleteMany({ userId }),
     ]);
 
     // Finally, delete the user document

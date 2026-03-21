@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
       videoId: sourceId,
       title: updatedSession.title,
       channelName: 'Live Lecture',
+      visibility: 'private',
       processingStatus: 'processing',
       transcript: [],
       language: 'en',

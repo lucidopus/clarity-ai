@@ -8,6 +8,9 @@ import LearningMaterial from '@/lib/models/LearningMaterial';
 import MindMap from '@/lib/models/MindMap';
 import Note from '@/lib/models/Note';
 import Source from '@/lib/models/Source';
+import SourceContent from '@/lib/models/SourceContent';
+import LiveSession from '@/lib/models/LiveSession';
+import Cost from '@/lib/models/Cost';
 import { deleteSupabaseFiles } from '@/lib/supabase';
 import mongoose from 'mongoose';
 
@@ -102,6 +105,9 @@ export async function DELETE(
             LearningMaterial.deleteMany({ userId, sourceId: video.videoId }),
             MindMap.deleteMany({ userId, sourceId: video.videoId }),
             Note.deleteMany({ userId, sourceId: video.videoId }),
+            SourceContent.deleteMany({ userId, sourceId: video.videoId }),
+            LiveSession.deleteMany({ userId, sourceId: video.videoId }),
+            Cost.deleteMany({ userId, sourceId: video.videoId }),
           ]);
           deletedItem = await Video.findByIdAndDelete(itemId);
         }

@@ -9,6 +9,9 @@ import Note from '@/lib/models/Note';
 import MindMap from '@/lib/models/MindMap';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import Source from '@/lib/models/Source';
+import SourceContent from '@/lib/models/SourceContent';
+import LiveSession from '@/lib/models/LiveSession';
+import Cost from '@/lib/models/Cost';
 import { deleteSupabaseFiles } from '@/lib/supabase';
 
 interface DecodedToken {
@@ -67,6 +70,9 @@ export async function DELETE(
       Note.deleteOne({ sourceId: videoId, userId }),
       MindMap.deleteOne({ sourceId: videoId, userId }),
       LearningMaterial.deleteOne({ sourceId: videoId, userId }),
+      SourceContent.deleteMany({ sourceId: videoId, userId }),
+      LiveSession.deleteMany({ sourceId: videoId, userId }),
+      Cost.deleteMany({ sourceId: videoId, userId }),
     ]);
 
     // Calculate total deleted items

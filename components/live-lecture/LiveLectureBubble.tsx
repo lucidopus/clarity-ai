@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Minimize2, Square, Loader2, ExternalLink, Lightbulb, Sparkles, BookOpen, HelpCircle, ListChecks, Star } from 'lucide-react';
+import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useRouter } from 'next/navigation';
 import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import { useScribe } from '@elevenlabs/react';
@@ -33,12 +34,17 @@ function formatTimestamp(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-function TranscriptStream({ segments, partialText }: { segments: Array<{ text: string; startOffset: number }>; partialText: string }) {
+function TranscriptStream({ segments, partialText, markers }: { segments: Array<{ text: string; startOffset: number; endOffset: number }>; partialText: string; markers: Array<{ offsetSeconds: number }> }) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [segments.length, partialText]);
+
+  // Check if a segment has been marked important
+  const isMarked = useCallback((seg: { startOffset: number; endOffset: number }) => {
+    return markers.some(m => m.offsetSeconds >= seg.startOffset && m.offsetSeconds <= seg.endOffset);
+  }, [markers]);
 
   if (segments.length === 0 && !partialText) {
     return (
@@ -54,14 +60,18 @@ function TranscriptStream({ segments, partialText }: { segments: Array<{ text: s
 
   return (
     <div className="p-4 space-y-0.5">
-      {segments.map((seg, i) => (
-        <div key={i} className="group flex gap-3 py-1.5">
-          <span className="text-[11px] font-mono text-muted-foreground/40 shrink-0 w-10 text-right pt-0.5 group-hover:text-muted-foreground transition-colors">
-            {formatTimestamp(seg.startOffset)}
-          </span>
-          <span className="text-sm text-foreground/80 leading-relaxed">{seg.text}</span>
-        </div>
-      ))}
+      {segments.map((seg, i) => {
+        const marked = isMarked(seg);
+        return (
+          <div key={i} className={`group flex gap-3 py-1.5 ${marked ? 'bg-amber-500/8 -mx-2 px-2 rounded-md border-l-2 border-amber-400/60' : ''}`}>
+            <span className={`text-[11px] font-mono shrink-0 w-10 text-right pt-0.5 transition-colors ${marked ? 'text-amber-400' : 'text-muted-foreground/40 group-hover:text-muted-foreground'}`}>
+              {formatTimestamp(seg.startOffset)}
+            </span>
+            <span className="text-sm text-foreground/80 leading-relaxed flex-1">{seg.text}</span>
+            {marked && <Star className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />}
+          </div>
+        );
+      })}
       {/* Live partial transcript — streams word by word before commit */}
       {partialText && (
         <div className="flex gap-3 py-1.5">
@@ -101,6 +111,7 @@ export default function LiveLectureBubble() {
   const [isMuted, setIsMuted] = useState(false);
   const [partialText, setPartialText] = useState('');
   const [isResuming, setIsResuming] = useState(false);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type?: ToastType }>>([]);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const elapsedIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -110,6 +121,13 @@ export default function LiveLectureBubble() {
   const isMutedRef = useRef(false);
   const focusNotesRef = useRef('');
   const pendingMarkersRef = useRef<typeof markers>([]);
+
+  const addToast = useCallback((message: string, type: ToastType = 'info') => {
+    setToasts(prev => [...prev, { id: `${Date.now()}_${Math.random()}`, message, type }]);
+  }, []);
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
 
   // Keep refs in sync
   useEffect(() => { focusNotesRef.current = focusNotes; }, [focusNotes]);
@@ -166,8 +184,9 @@ export default function LiveLectureBubble() {
       }
     } catch (err) {
       console.error('❌ [SYNC] Failed:', err);
+      addToast('Failed to sync transcript', 'warning');
     }
-  }, [sessionId]);
+  }, [sessionId, addToast]);
 
   // ElevenLabs Scribe hook
   const scribe = useScribe({
@@ -255,7 +274,10 @@ export default function LiveLectureBubble() {
         mediaStreamRef.current = stream;
 
         stream.getAudioTracks().forEach(track => {
-          track.addEventListener('ended', () => setError('Audio source was disconnected'));
+          track.addEventListener('ended', () => {
+            setError('Audio source was disconnected');
+            addToast('Audio source was disconnected', 'error');
+          });
         });
 
         // Connect scribe in manual PCM mode (gives us mute control)
@@ -319,10 +341,12 @@ export default function LiveLectureBubble() {
         syncIntervalRef.current = setInterval(syncToServer, SYNC_INTERVAL);
 
         setExpanded(true);
+        addToast(isResuming ? 'Session resumed successfully' : 'Clara is now listening', 'success');
       } catch (err) {
         if (!cancelled) {
           const msg = err instanceof Error ? err.message : 'Failed to connect';
           setError(msg);
+          addToast(msg, 'error');
 
           // Mark the session as interrupted so it doesn't block future attempts
           if (sessionId) {
@@ -364,11 +388,12 @@ export default function LiveLectureBubble() {
     }
   }, [focusNotes, sessionId, phase]);
 
-  // Save markers to IndexedDB
+  // Save markers to IndexedDB + show toast
   useEffect(() => {
     if (sessionId && phase === 'active' && markers.length > 0) {
       const latest = markers[markers.length - 1];
       addMarkerToSession(sessionId, latest).catch(() => {});
+      addToast('Moment marked as important', 'success');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markers.length, sessionId, phase]);
@@ -380,7 +405,8 @@ export default function LiveLectureBubble() {
     if (newMuted) {
       setPartialText(''); // Clear stale partial when muting
     }
-  }, [isMuted]);
+    addToast(newMuted ? 'Microphone muted' : 'Microphone unmuted', 'info');
+  }, [isMuted, addToast]);
 
   const handleEnd = useCallback(async () => {
     setIsEnding(true);
@@ -425,11 +451,13 @@ export default function LiveLectureBubble() {
     setIsEnding(false);
     setShowEndDialog(false);
 
-    // Redirect to generations page for the loading/processing UI
     if (result?.sourceId) {
+      addToast('Session ended — generating materials...', 'success');
       router.push(`/generations/${result.sourceId}`);
+    } else {
+      addToast('Session ended', 'info');
     }
-  }, [scribe, syncToServer, endSession, partialText, sessionId, addSegment, router, ctx.startedAt]);
+  }, [scribe, syncToServer, endSession, partialText, sessionId, addSegment, router, ctx.startedAt, addToast]);
 
   const handleDiscard = useCallback(async () => {
     // Stop everything
@@ -458,8 +486,9 @@ export default function LiveLectureBubble() {
     }
 
     setShowEndDialog(false);
+    addToast('Session discarded', 'info');
     setPhase('idle');
-  }, [scribe, sessionId, setPhase]);
+  }, [scribe, sessionId, setPhase, addToast]);
 
   // Poll processing status
   useEffect(() => {
@@ -472,10 +501,11 @@ export default function LiveLectureBubble() {
           const data = await res.json();
           if (data.processingStatus === 'completed') {
             setSourceId(data.sourceId);
-            // Keep in processing phase but show "View Materials" link
+            addToast('Materials are ready!', 'success');
             clearInterval(interval);
           } else if (data.processingStatus === 'failed') {
             setError('Material generation failed');
+            addToast('Material generation failed', 'error');
             clearInterval(interval);
           }
         }
@@ -485,7 +515,7 @@ export default function LiveLectureBubble() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [phase, sessionId, setSourceId, setError]);
+  }, [phase, sessionId, setSourceId, setError, addToast]);
 
   // Recovery dialog — shown when we detect an active session from a previous page load
   if (phase === 'idle' && recovering && recoveryData) {
@@ -604,33 +634,36 @@ export default function LiveLectureBubble() {
   // Processing state (post-lecture)
   if (phase === 'processing') {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
-        <div className="flex items-center gap-3 px-5 py-3.5 bg-card-bg border border-border rounded-2xl shadow-xl">
-          {sourceId ? (
-            <>
-              <div className="w-2 h-2 bg-emerald-400 rounded-full" />
-              <span className="text-sm text-foreground font-medium">Materials ready!</span>
-              <a
-                href={`/generations/${sourceId}`}
-                className="flex items-center gap-1 text-sm text-accent hover:text-accent-hover font-medium transition-colors cursor-pointer"
-              >
-                View <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-              <button
-                onClick={() => setPhase('idle')}
-                className="ml-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                Dismiss
-              </button>
-            </>
-          ) : (
-            <>
-              <Loader2 className="w-4 h-4 text-accent animate-spin" />
-              <span className="text-sm text-foreground font-medium">Generating materials...</span>
-            </>
-          )}
+      <>
+        <div className="fixed bottom-6 right-6 z-50">
+          <div className="flex items-center gap-3 px-5 py-3.5 bg-card-bg border border-border rounded-2xl shadow-xl">
+            {sourceId ? (
+              <>
+                <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                <span className="text-sm text-foreground font-medium">Materials ready!</span>
+                <a
+                  href={`/generations/${sourceId}`}
+                  className="flex items-center gap-1 text-sm text-accent hover:text-accent-hover font-medium transition-colors cursor-pointer"
+                >
+                  View <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  onClick={() => setPhase('idle')}
+                  className="ml-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </>
+            ) : (
+              <>
+                <Loader2 className="w-4 h-4 text-accent animate-spin" />
+                <span className="text-sm text-foreground font-medium">Generating materials...</span>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+        <ToastContainer toasts={toasts} onClose={removeToast} />
+      </>
     );
   }
 
@@ -757,7 +790,7 @@ export default function LiveLectureBubble() {
                 <ClaraTab syncToServer={syncToServer} partialText={partialText} />
               </div>
               <div className={`flex-1 overflow-y-auto ${activeTab === 'transcript' ? '' : 'hidden'}`}>
-                <TranscriptStream segments={ctx.segments} partialText={partialText} />
+                <TranscriptStream segments={ctx.segments} partialText={partialText} markers={ctx.markers} />
               </div>
 
               {/* Quick Prompts — always visible regardless of tab */}
@@ -852,6 +885,8 @@ export default function LiveLectureBubble() {
         onDiscard={handleDiscard}
         isEnding={isEnding}
       />
+
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </>
   );
 }
