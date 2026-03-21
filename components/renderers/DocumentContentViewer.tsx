@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Search, Loader2 } from 'lucide-react';
 import VideoSummaryButton from '@/components/VideoSummaryButton';
-import NotesEditor from '@/components/NotesEditor';
 import type { ContentViewerProps } from './types';
 
 interface Segment {
@@ -25,8 +24,6 @@ interface Segment {
  */
 export default function DocumentContentViewer({
   materials,
-  notes,
-  onSaveNotes,
 }: ContentViewerProps) {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [fullText, setFullText] = useState('');
@@ -261,12 +258,6 @@ export default function DocumentContentViewer({
         </div>
       )}
 
-      {/* Notes Editor */}
-      <NotesEditor
-        videoId={sourceId}
-        notes={notes}
-        onSaveNotes={onSaveNotes}
-      />
     </div>
   );
 }

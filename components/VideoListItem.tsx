@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, Layers, HelpCircle, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Clock, Layers, HelpCircle, Eye, EyeOff, Trash2, Youtube, FileText, Headphones, StickyNote, Mic } from 'lucide-react';
 import Image from 'next/image';
 
 interface VideoListItemProps {
@@ -19,6 +19,7 @@ interface VideoListItemProps {
   onVisibilityChange?: (visibility: 'private' | 'public') => void;
   onDelete?: () => void;
   onClick?: (id: string) => void;
+  sourceTypes?: string[];
 }
 
 export default function VideoListItem({
@@ -36,8 +37,17 @@ export default function VideoListItem({
   onVisibilityChange,
   onDelete,
   onClick,
+  sourceTypes,
 }: VideoListItemProps) {
   const [, setShowMenu] = useState(false); // Keep setter for future use
+
+  const sourceIconMap: Record<string, { icon: typeof Youtube; color: string; bg: string; label: string }> = {
+    youtube: { icon: Youtube, color: 'text-red-500', bg: 'bg-red-500/10', label: 'YouTube' },
+    document: { icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/10', label: 'Document' },
+    audio: { icon: Headphones, color: 'text-purple-400', bg: 'bg-purple-500/10', label: 'Audio' },
+    text: { icon: StickyNote, color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Text' },
+    live_lecture: { icon: Mic, color: 'text-teal-400', bg: 'bg-teal-500/10', label: 'Live Lecture' },
+  };
 
   const handleCardClick = () => {
     if (onClick) {
@@ -104,13 +114,32 @@ export default function VideoListItem({
               {title}
             </h3>
 
-            {/* Channel */}
-            <p className="text-sm text-muted-foreground mb-3 flex items-center gap-1.5">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
-              {channelName}
-            </p>
+            {/* Source Types */}
+            <div className="flex items-center gap-1.5 mb-3">
+              {sourceTypes && sourceTypes.length > 0 ? (
+                <div className="flex items-center gap-1">
+                  {[...new Set(sourceTypes)].map((type) => {
+                    const config = sourceIconMap[type];
+                    if (!config) return null;
+                    const Icon = config.icon;
+                    return (
+                      <span
+                        key={type}
+                        title={config.label}
+                        className={`w-5 h-5 rounded-md flex items-center justify-center ${config.color} ${config.bg}`}
+                      >
+                        <Icon className="w-3 h-3" />
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Youtube className="w-4 h-4 text-red-500" />
+                  {channelName}
+                </p>
+              )}
+            </div>
 
             {/* Stats */}
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">

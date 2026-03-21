@@ -6,7 +6,6 @@ import { FileText, Search, Loader2, StickyNote } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import VideoSummaryButton from '@/components/VideoSummaryButton';
-import NotesEditor from '@/components/NotesEditor';
 import type { ContentViewerProps } from './types';
 
 /**
@@ -20,8 +19,6 @@ import type { ContentViewerProps } from './types';
  */
 export default function TextContentViewer({
   materials,
-  notes,
-  onSaveNotes,
 }: ContentViewerProps) {
   const [fullText, setFullText] = useState('');
   const [wordCount, setWordCount] = useState(0);
@@ -177,7 +174,13 @@ export default function TextContentViewer({
               [&_blockquote]:border-l-2 [&_blockquote]:border-accent/30 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
               [&_code]:text-xs [&_code]:bg-background/50 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:font-mono"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // eslint-disable-next-line @next/next/no-img-element
+                  img: ({ src, alt, ...props }) => src ? <img src={src} alt={alt || ''} {...props} /> : null,
+                }}
+              >
                 {fullText}
               </ReactMarkdown>
             </div>
@@ -197,12 +200,6 @@ export default function TextContentViewer({
         </div>
       )}
 
-      {/* Notes Editor */}
-      <NotesEditor
-        videoId={sourceId}
-        notes={notes}
-        onSaveNotes={onSaveNotes}
-      />
     </div>
   );
 }

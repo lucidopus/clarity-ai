@@ -22,10 +22,7 @@ export async function extractText(input: ExtractorInput): Promise<ExtractedConte
   const text = rawText.trim();
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
-  // Auto-generate title from first line if not provided
-  const autoTitle = title?.trim()
-    || text.split('\n')[0].slice(0, 80).trim()
-    || 'Untitled Notes';
+  const autoTitle = title?.trim() || 'Text Notes';
 
   return {
     success: true,

@@ -4,7 +4,6 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Headphones, Search, Loader2, FileText, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import VideoSummaryButton from '@/components/VideoSummaryButton';
-import NotesEditor from '@/components/NotesEditor';
 import type { ContentViewerProps } from './types';
 
 interface Segment {
@@ -25,8 +24,6 @@ interface Segment {
  */
 export default function AudioContentViewer({
   materials,
-  notes,
-  onSaveNotes,
 }: ContentViewerProps) {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [wordCount, setWordCount] = useState(0);
@@ -310,12 +307,6 @@ export default function AudioContentViewer({
             </motion.div>
           )}
 
-          {/* Notes Editor */}
-          <NotesEditor
-            videoId={sourceId}
-            notes={notes}
-            onSaveNotes={onSaveNotes}
-          />
         </div>
 
         {/* Right: Transcript */}

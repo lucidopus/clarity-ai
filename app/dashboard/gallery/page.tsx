@@ -34,6 +34,7 @@ interface Video {
   flashcardCount?: number;
   quizCount?: number;
   visibility?: 'private' | 'public';
+  sourceTypes?: string[];
 }
 
 export default function GalleryPage() {
@@ -507,6 +508,7 @@ export default function GalleryPage() {
                   onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
                   onDelete={() => handleDelete(video.id, video.title)}
                   onClick={handleVideoClick}
+                  sourceTypes={video.sourceTypes}
                 />
               ))}
             </div>
@@ -529,6 +531,7 @@ export default function GalleryPage() {
                   onVisibilityChange={(newVisibility) => handleVisibilityChange(video.id, newVisibility)}
                   onDelete={() => handleDelete(video.id, video.title)}
                   onClick={handleVideoClick}
+                  sourceTypes={video.sourceTypes}
                 />
               ))}
             </div>

@@ -215,7 +215,7 @@ export const processVideoPipelineTask = task({
       logger.info("Content extracted", { sourceId: src.sourceId, wordCount: extraction.metadata.wordCount, sourceType: src.sourceType });
 
       // Save each source to DB independently
-      await saveExtraction(userId, videoDocId, src.sourceId, src.sourceType, extraction, { sourceUrl: src.sourceUrl });
+      await saveExtraction(userId, videoDocId, src.sourceId, src.sourceType, extraction, { sourceUrl: src.sourceUrl, fileUrl: src.fileUrl });
 
       extractedTexts.push({
         sourceType: src.sourceType,

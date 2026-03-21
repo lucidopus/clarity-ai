@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
           );
         }
         const textId = crypto.randomUUID();
-        const textTitle = source.title?.trim() || source.rawText.trim().split('\n')[0].slice(0, 80) || 'Text Notes';
+        const textTitle = source.title?.trim() || 'Text Notes';
 
         // If no primary source yet, text becomes primary
         if (!primarySourceId) {

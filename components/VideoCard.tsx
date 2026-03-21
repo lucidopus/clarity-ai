@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
 
-import { Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2, Mic } from 'lucide-react';
+import { Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2, Mic, FileText, Headphones, StickyNote } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -24,6 +24,7 @@ interface VideoCardProps {
   onVisibilityChange?: (visibility: 'private' | 'public') => void;
   className?: string;
   variant?: 'standard' | 'compact';
+  sourceTypes?: string[];
 }
 
 export default function VideoCard({
@@ -42,9 +43,18 @@ export default function VideoCard({
   onDelete,
   onVisibilityChange,
   className = '',
-  variant = 'standard'
+  variant = 'standard',
+  sourceTypes,
 }: VideoCardProps) {
   const isLiveLecture = channelName === 'Live Lecture';
+
+  const sourceIconMap: Record<string, { icon: typeof Youtube; color: string; bg: string; label: string }> = {
+    youtube: { icon: Youtube, color: 'text-red-500', bg: 'bg-red-500/10', label: 'YouTube' },
+    document: { icon: FileText, color: 'text-blue-400', bg: 'bg-blue-500/10', label: 'Document' },
+    audio: { icon: Headphones, color: 'text-purple-400', bg: 'bg-purple-500/10', label: 'Audio' },
+    text: { icon: StickyNote, color: 'text-amber-400', bg: 'bg-amber-500/10', label: 'Text' },
+    live_lecture: { icon: Mic, color: 'text-teal-400', bg: 'bg-teal-500/10', label: 'Live Lecture' },
+  };
 
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -167,22 +177,40 @@ export default function VideoCard({
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="min-w-0">
             <h3 className="text-lg font-semibold text-foreground line-clamp-2 leading-snug">{title}</h3>
-            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground max-w-full">
-              {channelName && (
-                <>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground max-w-full">
+              {/* Source type icons */}
+              {sourceTypes && sourceTypes.length > 0 ? (
+                <div className="flex items-center gap-1">
+                  {[...new Set(sourceTypes)].map((type) => {
+                    const config = sourceIconMap[type];
+                    if (!config) return null;
+                    const Icon = config.icon;
+                    return (
+                      <span
+                        key={type}
+                        title={config.label}
+                        className={`w-5 h-5 rounded-md flex items-center justify-center ${config.color} ${config.bg}`}
+                      >
+                        <Icon className="w-3 h-3" />
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : channelName ? (
+                <div className="flex items-center gap-1.5">
                   {isLiveLecture ? (
                     <Mic className="w-3.5 h-3.5 shrink-0 text-teal-400" aria-hidden="true" />
                   ) : (
                     <Youtube className="w-3.5 h-3.5 shrink-0 text-red-500" aria-hidden="true" />
                   )}
                   <span className="truncate">{channelName}</span>
-                </>
-              )}
-              {channelName && authorUsername && (
-                <span className="text-border">•</span>
-              )}
+                </div>
+              ) : null}
               {authorUsername && (
-                <span className="text-accent font-medium">@{authorUsername}</span>
+                <>
+                  <span className="text-border">•</span>
+                  <span className="text-accent font-medium">@{authorUsername}</span>
+                </>
               )}
             </div>
           </div>

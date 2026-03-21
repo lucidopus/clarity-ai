@@ -80,12 +80,13 @@ export async function saveExtraction(
     segments?: ExtractedSegment[];
     metadata: { duration?: number; wordCount: number; sourceId: string; language?: string; fileName?: string; fileSize?: number; mimeType?: string };
   },
-  sourceMetadata?: { sourceUrl?: string }
+  sourceMetadata?: { sourceUrl?: string; fileUrl?: string }
 ) {
   const { segments = [], metadata } = extraction;
-  const { duration: totalDuration, sourceId: extractedSourceId } = metadata;
+  const { duration: totalDuration } = metadata;
 
-  // Determine source-specific fields
+  // Always use the sourceId passed in — extractors may generate their own, but we need consistency
+  // with the Video.allSourceIds array
   const isYouTube = sourceType === 'youtube';
   const title = extraction.title || metadata.fileName || `Content ${sourceId}`;
   const thumbnail = isYouTube ? `https://img.youtube.com/vi/${sourceId}/hqdefault.jpg` : undefined;
@@ -110,7 +111,7 @@ export async function saveExtraction(
   // Create/update Source doc
   const sourceDoc: Record<string, unknown> = {
     userId,
-    sourceId: extractedSourceId,
+    sourceId: sourceId,
     sourceType,
     title,
     duration: totalDuration || 0,
@@ -124,23 +125,23 @@ export async function saveExtraction(
     sourceDoc.channelName = 'YouTube';
   }
   if (sourceType === 'document' || sourceType === 'audio') {
-    sourceDoc.fileUrl = sourceMetadata?.sourceUrl;
+    sourceDoc.fileUrl = sourceMetadata?.fileUrl || sourceMetadata?.sourceUrl;
   }
   if (metadata.fileName) sourceDoc.fileName = metadata.fileName;
   if (metadata.fileSize) sourceDoc.fileSize = metadata.fileSize;
   if (metadata.mimeType) sourceDoc.mimeType = metadata.mimeType;
 
   await Source.findOneAndUpdate(
-    { userId, sourceId: extractedSourceId },
+    { userId, sourceId: sourceId },
     sourceDoc,
     { upsert: true, new: true }
   );
 
   // Create/update SourceContent doc
   await SourceContent.findOneAndUpdate(
-    { sourceId: extractedSourceId, userId },
+    { sourceId: sourceId, userId },
     {
-      sourceId: extractedSourceId,
+      sourceId: sourceId,
       userId,
       fullText: extraction.text,
       wordCount: metadata.wordCount,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
+import Source from '@/lib/models/Source';
 import Progress from '@/lib/models/Progress';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
@@ -65,6 +66,15 @@ export async function GET(request: NextRequest) {
       quizCountMap.set(item._id, item.count);
     });
 
+    // Collect all sourceIds across all videos to batch-query source types
+    const allSourceIds = videos.flatMap(v => v.allSourceIds || [v.videoId]);
+    const sourceDocs = await Source.find(
+      { sourceId: { $in: allSourceIds } },
+      { sourceId: 1, sourceType: 1 }
+    ).lean();
+    const sourceTypeMap = new Map<string, string>();
+    sourceDocs.forEach(s => sourceTypeMap.set(s.sourceId, s.sourceType));
+
     return NextResponse.json({
       videos: videos.map(video => {
         const totalFlashcards = flashcardCountMap.get(video.videoId) || 0;
@@ -90,7 +100,10 @@ export async function GET(request: NextRequest) {
           progress,
           flashcardCount: totalFlashcards,
           quizCount: totalQuizzes,
-          visibility: video.visibility || 'private'
+          visibility: video.visibility || 'private',
+          sourceTypes: (video.allSourceIds || [video.videoId])
+            .map((sid: string) => sourceTypeMap.get(sid))
+            .filter(Boolean)
         };
       })
     });

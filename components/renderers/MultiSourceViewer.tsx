@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Youtube, FileText, Headphones, StickyNote } from 'lucide-react';
 import type { ContentViewerProps } from './types';
 import type { SourceType } from '@/lib/models/Source';
@@ -28,18 +28,26 @@ const sourceIcons: Partial<Record<SourceType, typeof Youtube>> = {
   text: StickyNote,
 };
 
-const sourceColors: Partial<Record<SourceType, string>> = {
-  youtube: 'text-red-400 bg-red-500/10 border-red-500/20',
-  document: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-  audio: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
-  text: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+const sourceActiveColors: Partial<Record<SourceType, string>> = {
+  youtube: 'text-red-500 dark:text-red-400',
+  document: 'text-blue-500 dark:text-blue-400',
+  audio: 'text-purple-500 dark:text-purple-400',
+  text: 'text-amber-500 dark:text-amber-400',
 };
 
 const sourceLabels: Partial<Record<SourceType, string>> = {
   youtube: 'YouTube',
   document: 'Document',
   audio: 'Audio',
-  text: 'Text Notes',
+  text: 'Text Input',
+};
+
+// Display order: YouTube → Document → Audio → Text
+const sourceOrder: Record<string, number> = {
+  youtube: 0,
+  document: 1,
+  audio: 2,
+  text: 3,
 };
 
 function SourceContentViewer({
@@ -73,7 +81,9 @@ export default function MultiSourceViewer({
   autoplayVideos,
 }: ContentViewerProps) {
   const sources: SourceInfo[] = useMemo(
-    () => materials.sources || [],
+    () => [...(materials.sources || [])].sort(
+      (a, b) => (sourceOrder[a.sourceType] ?? 99) - (sourceOrder[b.sourceType] ?? 99)
+    ),
     [materials.sources]
   );
   const [activeSourceId, setActiveSourceId] = useState(sources[0]?.sourceId || '');
@@ -84,12 +94,14 @@ export default function MultiSourceViewer({
   );
 
   // Build materials for the active source
+  // Only YouTube gets the floating summary button — strip summary from other source types
   const activeMaterials = useMemo(() => {
     if (!activeSource) return materials;
 
     return {
       ...materials,
       sourceType: activeSource.sourceType,
+      summary: activeSource.sourceType === 'youtube' ? materials.summary : undefined,
       video: {
         ...materials.video,
         sourceId: activeSource.sourceId,
@@ -108,32 +120,31 @@ export default function MultiSourceViewer({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Source Switcher Pills */}
+      {/* Source Switcher Tabs */}
       <motion.div
         initial={{ opacity: 0, y: -5 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center gap-2 flex-wrap"
+        className="relative z-10 rounded-xl border border-border bg-card-bg p-1 flex gap-1"
       >
         {sources.map((source) => {
           const Icon = sourceIcons[source.sourceType] || FileText;
           const isActive = source.sourceId === activeSourceId;
-          const colorClasses = sourceColors[source.sourceType] || 'text-muted-foreground bg-card-bg border-border';
+          const activeColor = sourceActiveColors[source.sourceType] || 'text-foreground';
           const label = sourceLabels[source.sourceType] || source.sourceType;
-          const displayTitle = source.fileName || source.title || label;
 
           return (
             <button
               key={source.sourceId}
               onClick={() => setActiveSourceId(source.sourceId)}
-              className={`flex items-center gap-2 px-3.5 py-2 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
+              className={`relative flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer flex-1 min-w-0 justify-center ${
                 isActive
-                  ? `${colorClasses} ring-1 ring-current/20`
-                  : 'text-muted-foreground bg-card-bg border-border hover:border-border/80 hover:bg-muted/10'
+                  ? `${activeColor} bg-background shadow-sm`
+                  : 'text-muted-foreground hover:text-foreground/70'
               }`}
             >
-              <Icon className="w-3.5 h-3.5" />
-              <span className="truncate max-w-[180px]">
-                {label}: {displayTitle}
+              <Icon className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                {label}
               </span>
             </button>
           );
@@ -141,23 +152,15 @@ export default function MultiSourceViewer({
       </motion.div>
 
       {/* Active Source Viewer */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeSourceId}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.2 }}
-        >
-          <SourceContentViewer
-            sourceType={activeSourceType}
-            materials={activeMaterials}
-            notes={notes}
-            onSaveNotes={onSaveNotes}
-            autoplayVideos={autoplayVideos}
-          />
-        </motion.div>
-      </AnimatePresence>
+      <div key={activeSourceId}>
+        <SourceContentViewer
+          sourceType={activeSourceType}
+          materials={activeMaterials}
+          notes={notes}
+          onSaveNotes={onSaveNotes}
+          autoplayVideos={autoplayVideos}
+        />
+      </div>
     </div>
   );
 }
