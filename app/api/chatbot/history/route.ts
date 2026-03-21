@@ -33,10 +33,12 @@ export async function GET(request: NextRequest) {
     // 2. Parse query params
     const { searchParams } = new URL(request.url);
     const videoId = searchParams.get('videoId');
-    const channel = searchParams.get('channel') as 'chatbot' | 'guide' | null;
+    const channel = searchParams.get('channel') as 'chatbot' | 'guide' | 'live_lecture' | null;
     const problemId = searchParams.get('problemId');
+    const explicitContextId = searchParams.get('contextId');
 
-    if (!videoId) {
+    // For live_lecture, contextId is sufficient (no videoId needed)
+    if (!videoId && !(channel === 'live_lecture' && explicitContextId)) {
       return NextResponse.json(
         { error: 'videoId is required' },
         { status: 400 }
@@ -56,11 +58,14 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const contextId = generateContextId(channel, videoId, problemId || undefined);
+      // For live_lecture, use explicit contextId (sessionId); otherwise generate it
+      const contextId = channel === 'live_lecture' && explicitContextId
+        ? explicitContextId
+        : generateContextId(channel, videoId!, problemId || undefined);
       history = await loadChatHistoryByChannel(decoded.userId, channel, contextId, 100);
     } else {
       // LEGACY: Session-based query (backward compatibility)
-      sessionId = generateSessionId(decoded.userId, videoId);
+      sessionId = generateSessionId(decoded.userId, videoId!);
       history = await loadChatHistory(sessionId, 100);
     }
 

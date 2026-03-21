@@ -9,9 +9,11 @@ import type { ComponentType } from 'react';
 import type { SourceType } from '@/lib/models/Source';
 import type { ContentViewerProps } from './types';
 import YouTubeContentViewer from './YouTubeContentViewer';
+import LiveLectureContentViewer from './LiveLectureContentViewer';
 
 const viewers: Partial<Record<SourceType, ComponentType<ContentViewerProps>>> = {
   youtube: YouTubeContentViewer,
+  live_lecture: LiveLectureContentViewer,
   // document: DocumentContentViewer, // future
   // audio: AudioContentViewer,       // future
   // media: MediaContentViewer,       // future

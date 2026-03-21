@@ -5,6 +5,7 @@ import { extractDocument } from './document';
 import { extractAudio } from './audio';
 import { extractMedia } from './media';
 import { extractText } from './text';
+import { extractLiveLecture } from './live-lecture';
 
 export type { ExtractedContent, ExtractorInput, ExtractedSegment, ExtractionError, ExtractorFunction } from './types';
 
@@ -14,6 +15,7 @@ const extractors: Record<SourceType, ExtractorFunction> = {
   audio: extractAudio,
   media: extractMedia,
   text: extractText,
+  live_lecture: extractLiveLecture,
 };
 
 /**

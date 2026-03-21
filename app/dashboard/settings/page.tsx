@@ -6,6 +6,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import Button from '@/components/Button';
 import ThemeToggle from '@/components/ThemeToggle';
 import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal';
+import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
@@ -59,6 +60,7 @@ const normalizeStoredPasswordAttempts = (state: { attempts?: number; windowStart
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
+  const { openSetup: openLiveLecture } = useLiveLecture();
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -583,6 +585,7 @@ export default function SettingsPage() {
         title="Settings"
         subtitle="Manage your account preferences and settings"
         onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
+        onLiveLectureClick={openLiveLecture}
         isGenerateModalOpen={showGenerateModal}
       />
 

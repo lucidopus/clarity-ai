@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase, 
-  Lightbulb, Target, ArrowLeft, ChevronLeft, Menu 
+import {
+  BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase,
+  Lightbulb, Target, ArrowLeft, ChevronLeft, Menu,
 } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
@@ -24,7 +24,7 @@ import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface VideoMaterials {
-  sourceType?: 'youtube' | 'document' | 'audio' | 'media' | 'text';
+  sourceType?: 'youtube' | 'document' | 'audio' | 'media' | 'text' | 'live_lecture';
   video: {
     id: string;
     videoId: string;
@@ -133,7 +133,7 @@ interface VideoMaterials {
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
 
-const tabs = [
+const baseTabs = [
   { id: 'transcript' as TabType, label: 'Learn', icon: Video },
   { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
   { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
@@ -526,7 +526,7 @@ export default function VideoMaterialsPage() {
         </div>
 
         {/* Navigation Items (Scrollable) */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 gap-2 flex flex-col">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-themed p-3 gap-2 flex flex-col">
             {/* If collapsed, show centered expand button at top of list as alternative interaction */}
             {isSidebarCollapsed && (
                <button 
@@ -538,7 +538,7 @@ export default function VideoMaterialsPage() {
               </button>
             )}
 
-            {tabs.map((tab) => {
+            {baseTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               
@@ -632,7 +632,7 @@ export default function VideoMaterialsPage() {
         </div>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth will-change-transform">
+        <div className="flex-1 overflow-y-auto scrollbar-themed p-4 md:p-6 lg:p-8 scroll-smooth will-change-transform">
            
            {/* Responsive Container - Using flex to allow child to expand */}
            <div className="w-full h-full flex flex-col">
@@ -759,6 +759,7 @@ export default function VideoMaterialsPage() {
                         />
                      </div>
                   )}
+
                 </motion.div>
               </AnimatePresence>
            </div>

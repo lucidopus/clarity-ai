@@ -58,7 +58,7 @@ export async function saveChatMessage(
   userId: string,
   videoId: string,
   ip?: string,
-  channel?: 'chatbot' | 'guide',
+  channel?: 'chatbot' | 'guide' | 'live_lecture',
   contextId?: string,
   problemId?: string
 ): Promise<void> {
@@ -125,7 +125,7 @@ export async function loadChatHistory(
  */
 export async function loadChatHistoryByChannel(
   userId: string,
-  channel: 'chatbot' | 'guide',
+  channel: 'chatbot' | 'guide' | 'live_lecture',
   contextId: string,
   limit: number = 50
 ): Promise<ChatMessage[]> {
@@ -174,7 +174,7 @@ export async function deleteChatHistory(sessionId: string): Promise<void> {
  */
 export async function deleteChatHistoryByChannel(
   userId: string,
-  channel: 'chatbot' | 'guide',
+  channel: 'chatbot' | 'guide' | 'live_lecture',
   contextId: string
 ): Promise<void> {
   try {

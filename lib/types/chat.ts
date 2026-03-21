@@ -16,7 +16,7 @@ export interface ChatMessage {
   ipHash?: string; // SHA256 hash of IP address for analytics/rate limiting
 
   // NEW FIELDS (Issue #39)
-  channel?: 'chatbot' | 'guide'; // Conversation channel
+  channel?: 'chatbot' | 'guide' | 'live_lecture'; // Conversation channel
   contextId?: string; // Context identifier (videoId for chatbot, problemId for guide)
   problemId?: string; // Problem ID (only for guide channel)
 }
@@ -37,9 +37,10 @@ export function generateSessionId(userId: string, videoId: string): string {
  * - For 'guide' channel: uses problemId
  */
 export function generateContextId(
-  channel: 'chatbot' | 'guide',
+  channel: 'chatbot' | 'guide' | 'live_lecture',
   videoId: string,
-  problemId?: string
+  problemId?: string,
+  sessionId?: string
 ): string {
   if (channel === 'chatbot') {
     return videoId;
@@ -48,6 +49,11 @@ export function generateContextId(
       throw new Error('problemId is required for guide channel');
     }
     return problemId;
+  } else if (channel === 'live_lecture') {
+    if (!sessionId) {
+      throw new Error('sessionId is required for live_lecture channel');
+    }
+    return sessionId;
   }
   throw new Error(`Unknown channel: ${channel}`);
 }

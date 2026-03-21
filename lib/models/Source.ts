@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type SourceType = 'youtube' | 'document' | 'audio' | 'media' | 'text';
+export type SourceType = 'youtube' | 'document' | 'audio' | 'media' | 'text' | 'live_lecture';
 
 export interface ISource extends Document {
   _id: mongoose.Types.ObjectId;
@@ -37,7 +37,7 @@ export interface ISource extends Document {
 const SourceSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   sourceId: { type: String, required: true },
-  sourceType: { type: String, required: true, enum: ['youtube', 'document', 'audio', 'media', 'text'] },
+  sourceType: { type: String, required: true, enum: ['youtube', 'document', 'audio', 'media', 'text', 'live_lecture'] },
   sourceUrl: { type: String },
   title: { type: String, required: true },
   channelName: { type: String },

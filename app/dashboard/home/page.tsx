@@ -5,6 +5,7 @@ import { BarChart3 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import DashboardHeader from '@/components/DashboardHeader';
 import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal';
+import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import Dialog from '@/components/Dialog';
 import { useState, useEffect } from 'react';
 import EmptyState from '@/components/EmptyState';
@@ -48,6 +49,7 @@ interface RecentVideo {
 export default function DashboardHomePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { openSetup: openLiveLecture } = useLiveLecture();
   const [greeting, setGreeting] = useState('Welcome');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -242,6 +244,7 @@ export default function DashboardHomePage() {
       <DashboardHeader
         title={`${greeting}, ${user.firstName}`}
         onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
+        onLiveLectureClick={openLiveLecture}
         isGenerateModalOpen={showGenerateModal}
       />
 

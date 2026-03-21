@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Button from './Button';
 
-import { Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2 } from 'lucide-react';
+import { Layers, HelpCircle, Youtube, Stars, Globe, Share2, Trash2, Mic } from 'lucide-react';
 
 interface VideoCardProps {
   id: string;
@@ -44,6 +44,8 @@ export default function VideoCard({
   className = '',
   variant = 'standard'
 }: VideoCardProps) {
+  const isLiveLecture = channelName === 'Live Lecture';
+
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
     const now = new Date();
@@ -70,66 +72,95 @@ export default function VideoCard({
       className={`bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-lg cursor-pointer group relative ${variant === 'compact' ? 'min-w-[240px] w-[240px]' : ''} ${className}`}
       onClick={() => onClick?.(id)}
     >
-      {/* Thumbnail */}
-      {thumbnailUrl && (
-        <div className="aspect-video w-full bg-muted relative overflow-hidden">
-          <Image
-            src={thumbnailUrl}
-            alt={`${title} thumbnail`}
-            fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-          {/* Progress Ring Overlay */}
-          <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full p-1 flex items-center justify-center shadow-xl">
-             <div className="relative w-12 h-12 flex items-center justify-center">
-                {/* Background Circle */}
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r={radius}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    className="text-white/20"
-                  />
-                  {/* Progress Circle */}
-                  <circle
-                    cx="22"
-                    cy="22"
-                    r={radius}
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    className={`transition-all duration-1000 ease-out ${
-                      progress === 100 ? 'text-green-500' : 'text-accent'
-                    }`}
-                  />
-                </svg>
-                {/* Percentage Text */}
-                <span className={`absolute text-[10px] font-bold ${
-                  progress === 100 ? 'text-green-400' : 'text-white'
-                }`}>
-                  {progress}%
-                </span>
-             </div>
+      {/* Thumbnail / Live Lecture Waveform */}
+      {isLiveLecture ? (
+        <div className="aspect-video w-full bg-linear-to-br from-teal-500/10 via-accent/5 to-purple-500/10 relative overflow-hidden flex items-center justify-center">
+          {/* Waveform visualization */}
+          <div className="flex items-center gap-[3px] h-12">
+            {Array.from({ length: 24 }).map((_, i) => (
+              <div
+                key={i}
+                className="w-[3px] rounded-full bg-accent/40"
+                style={{
+                  height: `${12 + Math.sin(i * 0.8) * 16 + ((i * 7 + 3) % 8)}px`,
+                }}
+              />
+            ))}
           </div>
-          
-          {/* Overlay Gradient */}
-          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-60" />
-          
-          {/* Duration Badge */}
+          {/* Badge */}
+          <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-teal-500/20 backdrop-blur-sm rounded-full">
+            <Mic className="w-3 h-3 text-teal-400" />
+            <span className="text-[10px] font-medium text-teal-300">Live Lecture</span>
+          </div>
+          {/* Progress Ring */}
+          <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full p-1 flex items-center justify-center shadow-xl">
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+                <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="4" className="text-white/20" />
+                <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-all duration-1000 ease-out ${progress === 100 ? 'text-green-500' : 'text-accent'}`} />
+              </svg>
+              <span className={`absolute text-[10px] font-bold ${progress === 100 ? 'text-green-400' : 'text-white'}`}>{progress}%</span>
+            </div>
+          </div>
+          {/* Duration */}
           {duration && (
             <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-white">
               {duration}
             </div>
           )}
         </div>
-      )}
+      ) : thumbnailUrl ? (
+        <div className="aspect-video w-full bg-muted relative overflow-hidden">
+          <Image
+            src={thumbnailUrl}
+            alt={`${title} thumbnail`}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+          {/* Progress Ring Overlay */}
+          <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full p-1 flex items-center justify-center shadow-xl">
+             <div className="relative w-12 h-12 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+                  <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="4" className="text-white/20" />
+                  <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-all duration-1000 ease-out ${progress === 100 ? 'text-green-500' : 'text-accent'}`} />
+                </svg>
+                <span className={`absolute text-[10px] font-bold ${progress === 100 ? 'text-green-400' : 'text-white'}`}>{progress}%</span>
+             </div>
+          </div>
+          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-60" />
+          {duration && (
+            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-white">
+              {duration}
+            </div>
+          )}
+        </div>
+      ) : isLiveLecture ? (
+        <div className="aspect-video w-full bg-gradient-to-br from-teal-500/10 via-accent/5 to-purple-500/10 relative overflow-hidden flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-12 h-12 rounded-full bg-teal-500/15 flex items-center justify-center">
+              <Mic className="w-6 h-6 text-teal-400" />
+            </div>
+            <span className="text-xs font-medium text-muted-foreground">Live Lecture</span>
+          </div>
+          {/* Progress Ring Overlay */}
+          <div className="absolute top-3 right-3 bg-black/30 backdrop-blur-md rounded-full p-1 flex items-center justify-center">
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
+                <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="4" className="text-foreground/10" />
+                <circle cx="22" cy="22" r={radius} fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" className={`transition-all duration-1000 ease-out ${progress === 100 ? 'text-green-500' : 'text-accent'}`} />
+              </svg>
+              <span className={`absolute text-[10px] font-bold ${progress === 100 ? 'text-green-400' : 'text-foreground/60'}`}>{progress}%</span>
+            </div>
+          </div>
+          {duration && (
+            <div className="absolute bottom-2 right-2 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-foreground/80">
+              {duration}
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Content */}
       <div className="p-6">
@@ -139,7 +170,11 @@ export default function VideoCard({
             <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground max-w-full">
               {channelName && (
                 <>
-                  <Youtube className="w-3.5 h-3.5 shrink-0 text-red-500" aria-hidden="true" />
+                  {isLiveLecture ? (
+                    <Mic className="w-3.5 h-3.5 shrink-0 text-teal-400" aria-hidden="true" />
+                  ) : (
+                    <Youtube className="w-3.5 h-3.5 shrink-0 text-red-500" aria-hidden="true" />
+                  )}
                   <span className="truncate">{channelName}</span>
                 </>
               )}

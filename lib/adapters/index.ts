@@ -15,6 +15,7 @@ const adapters: Record<SourceType, AdapterFunction> = {
   audio: () => { throw new Error('Audio adapter not yet implemented'); },
   media: () => { throw new Error('Media adapter not yet implemented'); },
   text: adaptYouTubeMaterials, // Text uses the same adapter shape as YouTube (no special rendering needed)
+  live_lecture: adaptYouTubeMaterials, // Live lectures use same adapter shape
 };
 
 export function getAdapter(sourceType: SourceType): AdapterFunction {

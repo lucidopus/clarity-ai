@@ -5,6 +5,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import SearchBar from '@/components/SearchBar';
 import FilterDropdown from '@/components/FilterDropdown';
 import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal';
+import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import EmptyState from '@/components/EmptyState';
 import VideoCard from '@/components/VideoCard';
 import VideoListItem from '@/components/VideoListItem';
@@ -36,6 +37,7 @@ interface Video {
 }
 
 export default function GalleryPage() {
+  const { openSetup: openLiveLecture } = useLiveLecture();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterValue, setFilterValue] = useState('all');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -334,6 +336,7 @@ export default function GalleryPage() {
         title="Library"
         subtitle="Access all your learning materials and generated content"
         onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
+        onLiveLectureClick={openLiveLecture}
         isGenerateModalOpen={showGenerateModal}
       />
 

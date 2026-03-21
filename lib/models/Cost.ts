@@ -7,12 +7,15 @@ export enum ServiceType {
   CONTENT_VALIDATION = 'content_validation',
   GROQ_WHISPER = 'groq_whisper',
   GEMINI_VISION = 'gemini_vision',
+  ELEVENLABS_SCRIBE = 'elevenlabs_scribe',
 }
 
 export enum CostSource {
   LEARNING_MATERIAL_GENERATION = 'learning_material_generation',
   LEARNING_CHATBOT = 'learning_chatbot',
   CHALLENGE_CHATBOT = 'challenge_chatbot',
+  LIVE_LECTURE_TRANSCRIPTION = 'live_lecture_transcription',
+  LIVE_LECTURE_QA = 'live_lecture_qa',
 }
 
 export interface IUnitDetails {

@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+import dbConnect from '@/lib/mongodb';
+import SourceContent from '@/lib/models/SourceContent';
+import Video from '@/lib/models/Video';
+
+interface DecodedToken {
+  userId: string;
+  iat: number;
+  exp: number;
+}
+
+// GET /api/videos/[videoId]/segments — Return transcript segments for a source
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ videoId: string }> }
+) {
+  try {
+    const token = request.cookies.get('jwt')?.value;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const { videoId } = await params;
+
+    await dbConnect();
+
+    // Verify access (owner or public)
+    const video = await Video.findOne({ videoId });
+    if (!video) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    const isOwner = video.userId.toString() === decoded.userId;
+    const isPublic = video.visibility === 'public';
+    if (!isOwner && !isPublic) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const sourceContent = await SourceContent.findOne({
+      sourceId: videoId,
+      userId: video.userId,
+    });
+
+    if (!sourceContent) {
+      return NextResponse.json({ segments: [] });
+    }
+
+    return NextResponse.json({
+      segments: sourceContent.segments || [],
+      fullText: sourceContent.fullText,
+      wordCount: sourceContent.wordCount,
+    });
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

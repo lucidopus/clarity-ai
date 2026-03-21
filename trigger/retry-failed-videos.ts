@@ -169,13 +169,18 @@ export const retryFailedVideos = schedules.task({
       if (orphanedVideos.length > 0) {
         logger.info(`🔧 Found ${orphanedVideos.length} orphaned videos (stuck in processing)`);
 
+        // Look up actual sourceType from Source collection
+        const sourceIds = orphanedVideos.map(v => v.videoId);
+        const sources = await Source.find({ sourceId: { $in: sourceIds } }, { sourceId: 1, sourceType: 1 });
+        const sourceTypeMap = new Map(sources.map(s => [s.sourceId, s.sourceType]));
+
         const orphanPayloads = orphanedVideos.map(video => ({
           payload: {
             userId: video.userId.toString(),
             username: 'User',
             videoDocId: video._id.toString(),
             sourceId: video.videoId,
-            sourceType: 'youtube' as const,
+            sourceType: (sourceTypeMap.get(video.videoId) || 'youtube') as 'youtube',
             sourceUrl: video.youtubeUrl,
           }
         }));

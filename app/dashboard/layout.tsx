@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { useState } from 'react';
 import GlobalSearch from '@/components/GlobalSearch';
+import { LiveLectureProvider } from '@/lib/live-lecture/LiveLectureContext';
+import LiveLectureBubble from '@/components/live-lecture/LiveLectureBubble';
 
 export default function DashboardLayout({
   children,
@@ -170,18 +172,21 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar />
+    <LiveLectureProvider>
+      <div className="flex h-screen bg-background overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar />
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          {children}
-        </div>
-      </main>
-      
-      <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-    </div>
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-8 py-6">
+            {children}
+          </div>
+        </main>
+
+        <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+        <LiveLectureBubble />
+      </div>
+    </LiveLectureProvider>
   );
 }

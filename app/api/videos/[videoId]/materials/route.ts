@@ -91,6 +91,11 @@ export async function GET(
       authorUsername,
     });
 
+    // Override sourceType for live lectures
+    if (video.channelName === 'Live Lecture') {
+      materials.sourceType = 'live_lecture' as typeof materials.sourceType;
+    }
+
     return NextResponse.json(materials);
 
   } catch (error) {

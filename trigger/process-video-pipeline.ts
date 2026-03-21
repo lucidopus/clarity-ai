@@ -2,6 +2,7 @@ import { task, logger, auth } from "@trigger.dev/sdk";
 import mongoose from "mongoose";
 import Video from "../lib/models/Video";
 import Source from "../lib/models/Source";
+import LiveSession from "../lib/models/LiveSession";
 import type { SourceType } from "../lib/models/Source";
 import type { IServiceUsage } from "../lib/models/Cost";
 import type { ExtractorInput } from "../lib/extractors/types";
@@ -28,6 +29,7 @@ const SOURCE_DESCRIPTIONS: Record<SourceType, string> = {
   audio: "an audio recording transcript",
   document: "a document",
   media: "media content",
+  live_lecture: "a live lecture transcript captured in real-time",
 };
 
 /** Labels used when concatenating multiple sources for the LLM */
@@ -37,6 +39,7 @@ const SOURCE_LABELS: Record<SourceType, string> = {
   audio: "Audio Transcript",
   document: "Document Content",
   media: "Media Content",
+  live_lecture: "Live Lecture Transcript",
 };
 
 interface SourceItemPayload {
@@ -241,8 +244,37 @@ export const processVideoPipelineTask = task({
     }
 
     // 5. Build combined content for LLM
-    const combinedContent = buildCombinedContent(extractedTexts);
+    let combinedContent = buildCombinedContent(extractedTexts);
     const hasTimestamps = hasYouTube || sourcesToProcess.some(s => s.sourceType === "audio");
+
+    // For live lectures: append student focus notes & importance markers as extra context
+    if (sourceType === "live_lecture") {
+      try {
+        const liveSession = await LiveSession.findOne({ sourceId });
+        if (liveSession) {
+          const extras: string[] = [];
+          if (liveSession.focusNotes?.trim()) {
+            extras.push(`\n\n═══ Student's Focus Notes (taken during lecture) ═══\n\n${liveSession.focusNotes}`);
+          }
+          if (liveSession.importanceMarkers?.length > 0) {
+            const markerTimes = liveSession.importanceMarkers
+              .map((m: { offsetSeconds: number }) => {
+                const mins = Math.floor(m.offsetSeconds / 60);
+                const secs = Math.floor(m.offsetSeconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+              })
+              .join(', ');
+            extras.push(`\n\n═══ Moments Marked as Important by Student ═══\n\nThe student highlighted these timestamps as particularly important: ${markerTimes}. Pay extra attention to content around these moments when generating study materials.`);
+          }
+          if (extras.length > 0) {
+            combinedContent += extras.join('');
+            logger.info("Appended live lecture context", { hasNotes: !!liveSession.focusNotes?.trim(), markerCount: liveSession.importanceMarkers?.length || 0 });
+          }
+        }
+      } catch (e) {
+        logger.warn("Failed to load live session context", { error: e });
+      }
+    }
 
     // Build a source description for the LLM prompt
     const sourceDescription = extractedTexts.length === 1
