@@ -11,11 +11,11 @@ import { adaptYouTubeMaterials } from './youtube';
 
 const adapters: Record<SourceType, AdapterFunction> = {
   youtube: adaptYouTubeMaterials,
-  document: () => { throw new Error('Document adapter not yet implemented'); },
-  audio: () => { throw new Error('Audio adapter not yet implemented'); },
-  media: () => { throw new Error('Media adapter not yet implemented'); },
-  text: adaptYouTubeMaterials, // Text uses the same adapter shape as YouTube (no special rendering needed)
-  live_lecture: adaptYouTubeMaterials, // Live lectures use same adapter shape
+  document: adaptYouTubeMaterials, // Same base shape; sourceType overridden in materials API
+  audio: adaptYouTubeMaterials,    // Same base shape; sourceType overridden in materials API
+  media: adaptYouTubeMaterials,    // Same base shape; sourceType overridden in materials API
+  text: adaptYouTubeMaterials,     // Same base shape; sourceType overridden in materials API
+  live_lecture: adaptYouTubeMaterials, // Same base shape; sourceType overridden in materials API
 };
 
 export function getAdapter(sourceType: SourceType): AdapterFunction {
@@ -26,4 +26,4 @@ export function getAdapter(sourceType: SourceType): AdapterFunction {
   return adapter;
 }
 
-export type { AdaptedMaterials, YouTubeAdaptedMaterials, AdapterInput } from './types';
+export type { AdaptedMaterials, YouTubeAdaptedMaterials, DocumentAdaptedMaterials, AudioAdaptedMaterials, TextAdaptedMaterials, AdapterInput } from './types';

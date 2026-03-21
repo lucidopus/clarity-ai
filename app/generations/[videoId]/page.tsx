@@ -15,6 +15,7 @@ import PrerequisitesView from '@/components/PrerequisitesView';
 import MindMapViewer from '@/components/MindMapViewer';
 import MaterialsWarningBanner from '@/components/MaterialsWarningBanner';
 import { getContentViewer } from '@/components/renderers';
+import MultiSourceViewer from '@/components/renderers/MultiSourceViewer';
 import ThemeToggle from '@/components/ThemeToggle';
 import Button from '@/components/Button';
 import Dialog from '@/components/Dialog';
@@ -129,6 +130,25 @@ interface VideoMaterials {
   } | null;
   isReadOnly?: boolean;
   authorUsername?: string;
+  // Multi-source metadata (present when generation has >1 source)
+  sources?: Array<{
+    sourceId: string;
+    sourceType: 'youtube' | 'document' | 'audio' | 'media' | 'text' | 'live_lecture';
+    title: string;
+    fileName?: string;
+    fileUrl?: string;
+    sourceUrl?: string;
+    duration?: number;
+    mimeType?: string;
+  }>;
+  // Source metadata for non-YouTube sources
+  sourceMeta?: {
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    sourceUrl?: string;
+  };
 }
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
@@ -654,6 +674,18 @@ export default function VideoMaterialsPage() {
                   className="flex-1 flex flex-col min-h-0" 
                 >
                   {activeTab === 'transcript' && (() => {
+                    // Multi-source: show source switcher pills
+                    if (materials.sources && materials.sources.length > 1) {
+                      return (
+                        <MultiSourceViewer
+                          materials={materials}
+                          notes={notes}
+                          onSaveNotes={saveNotes}
+                          autoplayVideos={autoplayVideos}
+                        />
+                      );
+                    }
+                    // Single source: render appropriate viewer directly
                     const ContentViewer = getContentViewer(materials.sourceType || 'youtube');
                     return (
                       <ContentViewer

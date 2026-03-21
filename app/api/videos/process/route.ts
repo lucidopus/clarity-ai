@@ -227,6 +227,7 @@ export async function POST(request: NextRequest) {
       processingStatus: 'processing',
       transcript: [],
       language: 'en',
+      allSourceIds: validatedSources.map(s => s.sourceId),
     });
     const videoDocId = videoDoc._id.toString();
 

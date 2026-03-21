@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Video from '@/lib/models/Video';
+import Source from '@/lib/models/Source';
+import type { SourceType } from '@/lib/models/Source';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
@@ -69,17 +71,26 @@ export async function GET(
     // Material Owner: Materials belong to the video creator
     const ownerId = video.userId;
 
-    // Fetch all materials (owner's) and viewer progress
-    const [learningMaterial, flashcards, quizzes, mindMap, progress] = await Promise.all([
+    // Fetch all materials (owner's), viewer progress, and source metadata
+    const [learningMaterial, flashcards, quizzes, mindMap, progress, source] = await Promise.all([
       LearningMaterial.findOne({ sourceId: videoId, userId: ownerId }),
       Flashcard.find({ sourceId: videoId, userId: ownerId }),
       Quiz.find({ sourceId: videoId, userId: ownerId }),
       MindMap.findOne({ sourceId: videoId, userId: ownerId }),
       Progress.findOne({ sourceId: videoId, userId: decoded.userId }),
+      Source.findOne({ sourceId: videoId, userId: ownerId }),
     ]);
 
+    // Determine source type from Source doc, with fallbacks
+    let sourceType: SourceType = 'youtube';
+    if (source) {
+      sourceType = source.sourceType;
+    } else if (video.channelName === 'Live Lecture') {
+      sourceType = 'live_lecture';
+    }
+
     // Shape response via adapter
-    const adapter = getAdapter('youtube');
+    const adapter = getAdapter(sourceType);
     const materials = adapter({
       video,
       flashcards,
@@ -91,9 +102,40 @@ export async function GET(
       authorUsername,
     });
 
-    // Override sourceType for live lectures
-    if (video.channelName === 'Live Lecture') {
-      materials.sourceType = 'live_lecture' as typeof materials.sourceType;
+    // Set the correct sourceType
+    materials.sourceType = sourceType as typeof materials.sourceType;
+
+    // Include source metadata for the viewer (fileUrl, fileName, etc.)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mat = materials as any;
+    if (source) {
+      mat.sourceMeta = {
+        fileUrl: source.fileUrl,
+        fileName: source.fileName,
+        fileSize: source.fileSize,
+        mimeType: source.mimeType,
+        sourceUrl: source.sourceUrl,
+      };
+    }
+
+    // Multi-source: include all sources metadata when generation has >1 source
+    const allSourceIds = video.allSourceIds as string[] | undefined;
+    if (allSourceIds && allSourceIds.length > 1) {
+      const allSources = await Source.find({
+        sourceId: { $in: allSourceIds },
+        userId: ownerId,
+      }).lean();
+
+      mat.sources = allSources.map((s: Record<string, unknown>) => ({
+        sourceId: s.sourceId,
+        sourceType: s.sourceType,
+        title: s.title,
+        fileName: s.fileName,
+        fileUrl: s.fileUrl,
+        sourceUrl: s.sourceUrl,
+        duration: s.duration,
+        mimeType: s.mimeType,
+      }));
     }
 
     return NextResponse.json(materials);

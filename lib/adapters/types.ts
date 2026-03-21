@@ -24,7 +24,20 @@ export interface YouTubeSourceInfo extends BaseSourceInfo {
   channelName?: string;
 }
 
-// Future: export interface DocumentSourceInfo extends BaseSourceInfo { fileName, pageCount, ... }
+export interface DocumentSourceInfo extends BaseSourceInfo {
+  fileName?: string;
+  fileUrl?: string;
+  mimeType?: string;
+  fileSize?: number;
+}
+
+export interface AudioSourceInfo extends BaseSourceInfo {
+  fileUrl?: string;
+  fileName?: string;
+  mimeType?: string;
+}
+
+export type TextSourceInfo = BaseSourceInfo;
 
 // ─── Shared Material Shapes (source-agnostic) ──────────────────────────────
 
@@ -124,14 +137,38 @@ export interface YouTubeAdaptedMaterials extends BaseAdaptedMaterials {
   transcript: Array<{ text: string; start: number; duration: number }>;
 }
 
+// ─── Document-specific response ──────────────────────────────────────────────
+
+export interface DocumentAdaptedMaterials extends BaseAdaptedMaterials {
+  sourceType: 'document';
+  video: DocumentSourceInfo;
+  sourceMeta?: { fileUrl?: string; fileName?: string; fileSize?: number; mimeType?: string; sourceUrl?: string };
+}
+
+// ─── Audio-specific response ─────────────────────────────────────────────────
+
+export interface AudioAdaptedMaterials extends BaseAdaptedMaterials {
+  sourceType: 'audio';
+  video: AudioSourceInfo;
+  transcript: Array<{ text: string; start: number; duration: number }>;
+  sourceMeta?: { fileUrl?: string; fileName?: string; fileSize?: number; mimeType?: string; sourceUrl?: string };
+}
+
+// ─── Text-specific response ─────────────────────────────────────────────────
+
+export interface TextAdaptedMaterials extends BaseAdaptedMaterials {
+  sourceType: 'text';
+  video: TextSourceInfo;
+}
+
 // ─── Union of all adapted materials ─────────────────────────────────────────
 
-export type AdaptedMaterials = YouTubeAdaptedMaterials;
-// Future: | DocumentAdaptedMaterials | AudioAdaptedMaterials | ...
+export type AdaptedMaterials = YouTubeAdaptedMaterials | DocumentAdaptedMaterials | AudioAdaptedMaterials | TextAdaptedMaterials;
 
 // ─── Adapter function signature ─────────────────────────────────────────────
 
-export type AdapterFunction = (params: AdapterInput) => AdaptedMaterials;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AdapterFunction = (params: AdapterInput) => any;
 
 export interface AdapterInput {
   video: {

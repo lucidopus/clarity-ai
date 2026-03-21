@@ -25,6 +25,7 @@ export interface IVideo extends Document {
   tags?: string[];
   category?: string;
   embedding?: number[];
+  allSourceIds?: string[];
   errorType?: string;
   errorMessage?: string;
   createdAt: Date;
@@ -60,6 +61,7 @@ const VideoSchema: Schema = new Schema({
   embedding: { type: [Number], select: false }, // Hide huge vector arrays by default for performance
 
   visibility: { type: String, enum: ['private', 'public'], default: 'public' },
+  allSourceIds: [{ type: String }],
   errorType: { type: String },
   errorMessage: { type: String },
   processedAt: { type: Date },
