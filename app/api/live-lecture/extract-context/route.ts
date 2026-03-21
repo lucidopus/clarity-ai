@@ -41,9 +41,16 @@ export async function POST(request: NextRequest) {
     // Extract document content (PDF or PPTX)
     const result = await extractDocument({ sourceType: 'document', fileUrl, fileName, mimeType });
 
-    if (!result.success || !result.text) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: result.error?.message || 'Failed to extract document content' },
+        { error: result.error.message || 'Failed to extract document content' },
+        { status: 422 }
+      );
+    }
+
+    if (!result.text) {
+      return NextResponse.json(
+        { error: 'Failed to extract document content' },
         { status: 422 }
       );
     }
