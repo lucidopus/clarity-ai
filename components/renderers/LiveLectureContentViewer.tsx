@@ -716,7 +716,7 @@ export default function LiveLectureContentViewer({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-themed rounded-xl border border-border bg-card-bg"
+          className="max-h-[calc(100vh-220px)] overflow-y-auto scrollbar-themed rounded-xl border border-border bg-card-bg"
         >
           {filteredSegmentIndices.length === 0 ? (
             <div className="text-center py-12">
