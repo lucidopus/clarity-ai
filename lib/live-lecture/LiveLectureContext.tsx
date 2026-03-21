@@ -33,6 +33,7 @@ interface LiveLectureState {
   error: string | null;
   sourceId: string | null; // post-lecture
   questionCount: number;
+  startedAt: number; // epoch ms of session start (for elapsed/offset calculations)
   // Crash recovery
   recoveryData: CrashRecoveryData | null;
   recovering: boolean;
@@ -330,6 +331,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
     error,
     sourceId,
     questionCount,
+    startedAt: startTimeRef.current,
     recoveryData,
     recovering,
     openSetup,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Minimize2, Square, Loader2, ExternalLink } from 'lucide-react';
+import { Mic, MicOff, Minimize2, Square, Loader2, ExternalLink, Lightbulb, Sparkles, BookOpen, HelpCircle, ListChecks, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import { useScribe } from '@elevenlabs/react';
@@ -96,13 +96,11 @@ export default function LiveLectureBubble() {
 
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'notes' | 'clara' | 'transcript'>('notes');
-  const [claraTriggered, setClaraTriggered] = useState(false);
   const [showEndDialog, setShowEndDialog] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [partialText, setPartialText] = useState('');
-
-  const startTimeRef = useRef<number>(0);
+  const [isResuming, setIsResuming] = useState(false);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const elapsedIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -124,22 +122,17 @@ export default function LiveLectureBubble() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [markers.length]);
 
-  // Listen for tab switch events
+  // Listen for tab switch events (quick prompts switch to Clara)
   useEffect(() => {
-    const handler = () => {
+    const switchToClara = () => {
       setActiveTab('clara');
       setExpanded(true);
     };
-    window.addEventListener('live-lecture-switch-to-clara', handler);
-    // Also switch to clara on "explain last 2 min" if not already expanded
-    const handler2 = () => {
-      setActiveTab('clara');
-      setExpanded(true);
-    };
-    window.addEventListener('live-lecture-explain-last-2-min', handler2);
+    window.addEventListener('live-lecture-switch-to-clara', switchToClara);
+    window.addEventListener('live-lecture-explain-last-2-min', switchToClara);
     return () => {
-      window.removeEventListener('live-lecture-switch-to-clara', handler);
-      window.removeEventListener('live-lecture-explain-last-2-min', handler2);
+      window.removeEventListener('live-lecture-switch-to-clara', switchToClara);
+      window.removeEventListener('live-lecture-explain-last-2-min', switchToClara);
     };
   }, []);
 
@@ -191,7 +184,7 @@ export default function LiveLectureBubble() {
       setPartialText(''); // Clear partial — it's now committed
       if (!data.text || !data.text.trim()) return; // Skip empty commits (noise gate artifacts)
       const now = Date.now();
-      const offsetSeconds = (now - startTimeRef.current) / 1000;
+      const offsetSeconds = (now - (ctx.startedAt || now)) / 1000;
 
       const segment = {
         text: data.text,
@@ -227,19 +220,20 @@ export default function LiveLectureBubble() {
 
     async function connect() {
       try {
-        startTimeRef.current = Date.now();
-
-        // Save to IndexedDB for crash recovery
-        await saveActiveSession({
-          sessionId: sessionId!,
-          title: config!.title,
-          audioSource: config!.audioSource,
-          startedAt: new Date().toISOString(),
-          focusNotes: '',
-          importanceMarkers: [],
-          contextDocIds: config!.contextDocIds,
-          token: token!,
-        });
+        // Only save fresh session to IndexedDB if not resuming
+        if (!isResuming) {
+          await saveActiveSession({
+            sessionId: sessionId!,
+            title: config!.title,
+            audioSource: config!.audioSource,
+            startedAt: new Date().toISOString(),
+            focusNotes: '',
+            importanceMarkers: [],
+            contextDocIds: config!.contextDocIds,
+            token: token!,
+          });
+        }
+        setIsResuming(false);
 
         if (cancelled) return;
 
@@ -315,9 +309,10 @@ export default function LiveLectureBubble() {
         processor.connect(audioContext.destination);
         audioContextRef.current = audioContext;
 
-        // Start elapsed timer
+        // Start elapsed timer (uses ctx.startedAt from context — correct for both new & resumed sessions)
+        const sessionStartedAt = ctx.startedAt || Date.now();
         elapsedIntervalRef.current = setInterval(() => {
-          setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
+          setElapsed(Math.floor((Date.now() - sessionStartedAt) / 1000));
         }, 1000);
 
         // Start sync interval
@@ -393,7 +388,7 @@ export default function LiveLectureBubble() {
     // Save any partial transcript as a final segment before disconnecting
     if (partialText.trim() && sessionId) {
       const now = Date.now();
-      const offsetSeconds = (now - startTimeRef.current) / 1000;
+      const offsetSeconds = (now - (ctx.startedAt || now)) / 1000;
       const finalSegment = {
         text: partialText.trim(),
         startOffset: Math.max(0, offsetSeconds - 3),
@@ -434,7 +429,7 @@ export default function LiveLectureBubble() {
     if (result?.sourceId) {
       router.push(`/generations/${result.sourceId}`);
     }
-  }, [scribe, syncToServer, endSession, partialText, sessionId, addSegment, router]);
+  }, [scribe, syncToServer, endSession, partialText, sessionId, addSegment, router, ctx.startedAt]);
 
   const handleDiscard = useCallback(async () => {
     // Stop everything
@@ -559,7 +554,7 @@ export default function LiveLectureBubble() {
               End & Generate
             </button>
             <button
-              onClick={() => resumeSession(recoverySid)}
+              onClick={() => { setIsResuming(true); resumeSession(recoverySid); }}
               className="flex-1 px-4 py-2.5 text-sm font-medium bg-accent text-white hover:bg-accent/90 rounded-xl transition-colors cursor-pointer text-center"
             >
               Resume Session
@@ -737,12 +732,12 @@ export default function LiveLectureBubble() {
               <div className="flex border-b border-border/50 px-6">
                 {([
                   { key: 'notes', label: '📝 Notes' },
-                  ...(claraTriggered ? [{ key: 'clara', label: '💬 Clara' }] as const : []),
+                  { key: 'clara', label: '💬 Clara' },
                   { key: 'transcript', label: '📜 Transcript' },
                 ] as const).map(({ key, label }) => (
                   <button
                     key={key}
-                    onClick={() => setActiveTab(key as typeof activeTab)}
+                    onClick={() => setActiveTab(key)}
                     className={`py-3 px-4 text-sm font-medium transition-colors cursor-pointer ${
                       activeTab === key
                         ? 'text-foreground border-b-2 border-accent'
@@ -756,13 +751,71 @@ export default function LiveLectureBubble() {
 
               {/* Tab content — all mounted, toggle visibility to preserve state + event listeners */}
               <div className={`flex-1 overflow-hidden ${activeTab === 'notes' ? '' : 'hidden'}`}>
-                <NotesTab onAskClara={() => { setClaraTriggered(true); setActiveTab('clara'); }} />
+                <NotesTab />
               </div>
               <div className={`flex-1 overflow-hidden ${activeTab === 'clara' ? '' : 'hidden'}`}>
                 <ClaraTab syncToServer={syncToServer} partialText={partialText} />
               </div>
               <div className={`flex-1 overflow-y-auto ${activeTab === 'transcript' ? '' : 'hidden'}`}>
                 <TranscriptStream segments={ctx.segments} partialText={partialText} />
+              </div>
+
+              {/* Quick Prompts — always visible regardless of tab */}
+              <div className="flex items-center gap-1.5 px-4 py-2 border-t border-border/30 overflow-x-auto">
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('live-lecture-explain-last-2-min'));
+                    setActiveTab('clara');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  <Lightbulb className="w-3 h-3" />
+                  Explain Last 2 Min
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'Summarize everything covered so far in this lecture' }));
+                    setActiveTab('clara');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  Summarize
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'List the key terms and definitions mentioned in this lecture so far' }));
+                    setActiveTab('clara');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  Key Terms
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'Generate 3 quick quiz questions based on what has been covered so far' }));
+                    setActiveTab('clara');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  <HelpCircle className="w-3 h-3" />
+                  Quiz Me
+                </button>
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'What are the key takeaways and action items from this lecture so far?' }));
+                    setActiveTab('clara');
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  <ListChecks className="w-3 h-3" />
+                  Takeaways
+                </button>
+                <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground/50 shrink-0">
+                  <Star className="w-3 h-3" />
+                  ⌘K mark important
+                </div>
               </div>
 
               {/* Footer — Mute + End side by side */}

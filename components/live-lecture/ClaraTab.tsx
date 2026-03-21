@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Lightbulb, Bot, User } from 'lucide-react';
+import { Send, Loader2, Bot, User } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -234,18 +234,6 @@ export default function ClaraTab({ syncToServer, partialText }: ClaraTabProps) {
           </div>
         ))}
         <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick actions */}
-      <div className="px-3 py-1.5 border-t border-border/30">
-        <button
-          onClick={() => sendMessage('Explain what was discussed in the last 2 minutes', true)}
-          disabled={isStreaming}
-          className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-md transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-        >
-          <Lightbulb className="w-3 h-3" />
-          Explain Last 2 Min
-        </button>
       </div>
 
       {/* Input */}
