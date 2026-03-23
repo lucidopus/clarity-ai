@@ -43,4 +43,7 @@ All shared server-side and isomorphic library code for the Clarity AI platform.
 | `errors/` | Custom error classes: `TranscriptUnavailableError`, `LLMAuthenticationError`, etc. |
 | `utils/` | Pure utility functions: error classification, psychometric scoring, transcript processing. |
 | `cost/` | API cost tracking: pricing config, cost calculator, MongoDB logger. |
+| `tools/` | LangChain tool definitions for Clara's agentic capabilities: `render-animation.ts` (animation tool), shared `.bindTools()` utilities. |
+| `types/animation.ts` | AnimationSpec Zod discriminated union schema for 8 animation template types. |
+| `utils/webgl-detect.ts` | WebGL/Canvas/SVG feature detection for animation rendering fallback chain. |
 | `services/` | Business-logic services: category selector for Discover recommendations. |

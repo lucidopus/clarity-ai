@@ -96,6 +96,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Activity logging for all verification events (sent, success, failed, resent)
   - Dev-mode fallback: logs OTP to console when SendGrid API key is not configured
 - Created `CHANGELOG.md` to track project changes.
+- **Agentic Clara — Interactive Math Animations (Phase 7, Issue #88)**:
+  - `/visualize` slash command in Clara chatbot for interactive math animations
+  - 8 animation templates: shape_transform, vector_addition, matrix_transform, function_graph, number_line, unit_circle, derivative_tangent, area_under_curve
+  - Tool-calling framework via LangChain `.bindTools()` (`lib/tools/`)
+  - AnimationRenderer with lazy loading (`next/dynamic`, `ssr: false`)
+  - AnimationSpec discriminated union Zod schema for validated specs
+  - WebGL/Canvas feature detection with static fallback
+  - Activity logging for `animation_rendered` events and cost tracking
+  - Streaming integration: Markdown code block protocol with `animation` language identifier
+  - `ENABLE_ANIMATION_TOOL` feature flag environment variable
 
 ### Changed
 

@@ -47,7 +47,7 @@ All Next.js API route handlers. Every leaf directory contains a `route.ts` file 
 
 | Route | Methods | Description |
 |-------|---------|-------------|
-| `chatbot/ask` | POST | Handles Clara chatbot messages: context retrieval + Groq LLM response. |
+| `chatbot/ask` | POST | Handles Clara chatbot messages with tool-calling support: context retrieval, LLM response, and optional `render_animation` tool invocation for inline math animations. Returns Markdown with embedded `animation` code blocks when enabled via `ENABLE_ANIMATION_TOOL`. |
 | `chatbot/guide` | POST | Handles AI Guide messages with a different system prompt. |
 | `chatbot/history` | GET, DELETE | Loads or clears chat history by channel (chatbot vs. guide). |
 
