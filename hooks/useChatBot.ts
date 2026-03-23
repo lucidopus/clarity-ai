@@ -5,6 +5,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isVisualize?: boolean;
 }
 
 export interface UseChatBotOptions {
@@ -95,15 +96,25 @@ export function useChatBot(
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading || isStreaming) return;
 
+    // Handle /visualize command
+    let actualMessage = content.trim();
+    let forceVisualize = false;
+    if (actualMessage.toLowerCase().startsWith('/visualize ')) {
+      forceVisualize = true;
+      actualMessage = actualMessage.slice('/visualize '.length).trim();
+      if (!actualMessage) return;
+    }
+
     setError(null);
     setIsLoading(true);
 
-    // Add user message immediately
+    // Add user message immediately (show without the /visualize prefix)
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: content.trim(),
-      timestamp: new Date()
+      content: actualMessage,
+      timestamp: new Date(),
+      ...(forceVisualize ? { isVisualize: true } : {}),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -141,11 +152,12 @@ export function useChatBot(
 
       const basePayload = {
         videoId,
-        message: content.trim(),
+        message: actualMessage,
         conversationHistory,
         clientTimestamp: clientNow.toISOString(),
         timezoneOffsetMinutes,
         timeZone,
+        ...(forceVisualize ? { forceVisualize: true } : {}),
       };
 
       const requestBody = transformRequestBody

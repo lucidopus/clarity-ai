@@ -8,6 +8,7 @@ export enum ServiceType {
   GROQ_WHISPER = 'groq_whisper',
   GEMINI_VISION = 'gemini_vision',
   ELEVENLABS_SCRIBE = 'elevenlabs_scribe',
+  ANIMATION_TOOL = 'animation_tool',
 }
 
 export enum CostSource {
