@@ -82,6 +82,16 @@ export async function POST(request: NextRequest) {
     const quizzes = await Quiz.find({ _id: { $in: quizIds } });
     const quizMap = new Map(quizzes.map(q => [q._id.toString(), q]));
 
+    // Verify all quizzes belong to the claimed sourceId
+    for (const quiz of quizzes) {
+      if (quiz.sourceId && quiz.sourceId.toString() !== sourceId) {
+        return NextResponse.json(
+          { error: 'Quiz does not belong to the specified source' },
+          { status: 403 }
+        );
+      }
+    }
+
     let correctCount = 0;
 
     // Process each quiz result

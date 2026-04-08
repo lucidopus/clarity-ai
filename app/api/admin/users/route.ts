@@ -8,6 +8,7 @@ import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import ActivityLog from '@/lib/models/ActivityLog';
 import Cost from '@/lib/models/Cost';
+import { escapeRegex } from '@/lib/utils/escape-regex';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
     const sortBy = searchParams.get('sortBy') || 'joined';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
     const joinDateAfter = searchParams.get('joinDateAfter');
@@ -45,11 +46,12 @@ export async function GET(request: NextRequest) {
     const searchQuery: SearchQuery = {};
 
     if (search) {
+      const escapedSearch = escapeRegex(search);
       searchQuery.$or = [
-        { firstName: { $regex: search, $options: 'i' } },
-        { lastName: { $regex: search, $options: 'i' } },
-        { username: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { firstName: { $regex: escapedSearch, $options: 'i' } },
+        { lastName: { $regex: escapedSearch, $options: 'i' } },
+        { username: { $regex: escapedSearch, $options: 'i' } },
+        { email: { $regex: escapedSearch, $options: 'i' } },
       ];
     }
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { createAdminToken } from '@/lib/adminAuth';
+import { checkRateLimit, recordFailedAttempt, resetRateLimit, getClientIp } from '@/lib/rate-limit-auth';
 
 const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
@@ -24,6 +26,17 @@ export async function POST(request: NextRequest) {
 
     const { password } = validation.data;
 
+    // Rate limiting: 5 attempts per 15 minutes per IP
+    const clientIp = getClientIp(request.headers);
+    const rateLimitKey = `admin-login:${clientIp}`;
+    const { limited, retryAfterMs } = checkRateLimit(rateLimitKey, 5, 15 * 60 * 1000);
+    if (limited) {
+      return NextResponse.json(
+        { success: false, message: `Too many login attempts. Try again in ${Math.ceil(retryAfterMs / 60000)} minutes.` },
+        { status: 429 }
+      );
+    }
+
     // Verify admin password
     const adminPassword = process.env.ADMIN_PASSWORD;
 
@@ -38,10 +51,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Simple password comparison (constant-time to prevent timing attacks)
-    const isValid = password === adminPassword;
+    // Constant-time comparison to prevent timing attacks
+    const passBuffer = Buffer.from(password);
+    const adminBuffer = Buffer.from(adminPassword);
+    const isValid = passBuffer.length === adminBuffer.length &&
+      crypto.timingSafeEqual(passBuffer, adminBuffer);
 
     if (!isValid) {
+      recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       return NextResponse.json(
         {
           success: false,
@@ -50,6 +67,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Reset rate limit on successful login
+    resetRateLimit(rateLimitKey);
 
     // Create admin JWT token
     const token = createAdminToken();
@@ -65,6 +85,7 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV !== 'development',
       path: '/',
       maxAge: 24 * 60 * 60, // 24 hours
+      sameSite: 'strict' as const,
     };
 
     response.cookies.set('admin_jwt', token, cookieOptions);

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import { escapeRegex } from '@/lib/utils/escape-regex';
 
 interface DecodedToken {
   userId: string;
@@ -144,7 +145,7 @@ export async function PATCH(request: NextRequest) {
     if (isUsernameChanging) {
       const normalizedUsername = username!.toLowerCase();
       const existingUser = await User.findOne({
-        username: { $regex: new RegExp(`^${normalizedUsername}$`, 'i') },
+        username: { $regex: new RegExp(`^${escapeRegex(normalizedUsername)}$`, 'i') },
         _id: { $ne: user._id }
       });
 
@@ -161,7 +162,7 @@ export async function PATCH(request: NextRequest) {
     if (isEmailChanging) {
       const normalizedEmail = email!.toLowerCase();
       const existingUser = await User.findOne({
-        email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') },
+        email: { $regex: new RegExp(`^${escapeRegex(normalizedEmail)}$`, 'i') },
         _id: { $ne: user._id }
       });
 
@@ -191,7 +192,7 @@ export async function PATCH(request: NextRequest) {
       const expireDays = parseInt(jwtExpireDays, 10);
       const expiresInSeconds = expireDays * 24 * 60 * 60;
 
-      const signOptions: SignOptions = { expiresIn: expiresInSeconds };
+      const signOptions: SignOptions = { expiresIn: expiresInSeconds, algorithm: 'HS256' };
 
       newToken = jwt.sign(
         {

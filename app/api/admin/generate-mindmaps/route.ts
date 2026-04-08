@@ -1,40 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import MindMap from '@/lib/models/MindMap';
 import { generateLearningMaterials } from '@/lib/llm';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
+import { verifyAdminToken } from '@/lib/adminAuth';
 
 export async function POST(request: NextRequest) {
   console.log('🚀 [MINDMAP MIGRATION] Starting mind map generation for existing videos...');
 
   try {
-    // Verify authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      console.log('❌ [MINDMAP MIGRATION] Authentication failed: No token found');
+    // Verify admin authentication
+    const isAdmin = await verifyAdminToken(request);
+    if (!isAdmin) {
+      console.log('❌ [MINDMAP MIGRATION] Authentication failed: Not admin');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-    console.log(`✅ [MINDMAP MIGRATION] Authentication successful for user: ${decoded.userId}`);
+    console.log('✅ [MINDMAP MIGRATION] Admin authentication successful');
 
     await dbConnect();
     console.log('✅ [MINDMAP MIGRATION] Database connected');
 
-    // Find all completed videos that don't have mind maps
+    // Find all completed videos that don't have mind maps (admin: process all users)
     const videosWithoutMindMaps = await Video.find({
       processingStatus: 'completed',
-      userId: decoded.userId,
     });
 
     console.log(`📊 [MINDMAP MIGRATION] Found ${videosWithoutMindMaps.length} completed videos`);

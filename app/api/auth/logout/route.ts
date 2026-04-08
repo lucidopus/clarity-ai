@@ -13,6 +13,7 @@ export async function POST() {
       secure: process.env.NODE_ENV !== 'development',
       expires: new Date(0),
       path: '/',
+      sameSite: 'strict' as const,
     });
 
     return response;

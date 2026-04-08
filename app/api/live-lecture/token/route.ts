@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
       {
         method: 'POST',
         headers: { 'xi-api-key': apiKey },
+        signal: AbortSignal.timeout(10000),
       }
     );
 

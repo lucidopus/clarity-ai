@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import Groq from 'groq-sdk';
+import { safeFetch } from '@/lib/utils/safe-fetch';
 import type { ExtractorInput, ExtractedContent, ExtractedSegment } from './types';
 
 /**
@@ -24,8 +25,8 @@ export async function extractAudio(input: ExtractorInput): Promise<ExtractedCont
   }
 
   try {
-    // Download file from Supabase
-    const response = await fetch(fileUrl);
+    // Download file from Supabase (SSRF-safe: validates origin + enforces size limit)
+    const response = await safeFetch(fileUrl, { maxBytes: 50 * 1024 * 1024 });
     if (!response.ok) {
       return {
         success: false,

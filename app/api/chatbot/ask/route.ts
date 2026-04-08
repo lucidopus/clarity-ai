@@ -83,9 +83,12 @@ export async function POST(request: NextRequest) {
     const userMessageId = generateMessageId('user');
     const assistantMessageId = generateMessageId('assistant');
 
+    // Extract client IP once (use rightmost X-Forwarded-For entry)
+    const xffHeader = request.headers.get('x-forwarded-for');
+    const clientIp = xffHeader ? xffHeader.split(',').map(s => s.trim()).pop() : (request.headers.get('x-real-ip') || undefined);
+
     // 5. Save user message to database
     try {
-      const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
       await saveChatMessage(
         sessionId,
         userMessageId,
@@ -203,7 +206,6 @@ export async function POST(request: NextRequest) {
 
           // Save assistant message after streaming completes
           try {
-            const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined;
             await saveChatMessage(
               sessionId,
               assistantMessageId,

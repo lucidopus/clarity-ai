@@ -6,6 +6,7 @@ import { generateOTP, hashOTP } from '@/lib/otp';
 import { sendVerificationEmail } from '@/lib/email';
 import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
+import { escapeRegex } from '@/lib/utils/escape-regex';
 
 const resendSchema = z.object({
   email: z.string().email(),
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
 
     const { email } = result.data;
 
-    const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } });
     if (!user) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }

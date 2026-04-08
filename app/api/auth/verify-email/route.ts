@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
@@ -6,13 +6,15 @@ import VerificationToken from '@/lib/models/VerificationToken';
 import { verifyOTP } from '@/lib/otp';
 import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
+import { escapeRegex } from '@/lib/utils/escape-regex';
+import { checkRateLimit, recordFailedAttempt, getClientIp } from '@/lib/rate-limit-auth';
 
 const verifySchema = z.object({
   email: z.string().email(),
   otp: z.string().length(6, "OTP must be 6 digits"),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
@@ -24,8 +26,19 @@ export async function POST(request: Request) {
 
     const { email, otp } = result.data;
 
+    // Rate limiting: 10 OTP verification attempts per 15 minutes per IP
+    const clientIp = getClientIp(request.headers);
+    const rateLimitKey = `otp-verify:${clientIp}`;
+    const { limited, retryAfterMs } = checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000);
+    if (limited) {
+      return NextResponse.json(
+        { success: false, message: `Too many verification attempts. Try again in ${Math.ceil(retryAfterMs / 60000)} minutes.` },
+        { status: 429 }
+      );
+    }
+
     // Find user
-    const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    const user = await User.findOne({ email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } });
     if (!user) {
       return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
     }
@@ -52,6 +65,7 @@ export async function POST(request: Request) {
     // Verify OTP
     const isValid = await verifyOTP(otp, token.tokenHash);
     if (!isValid) {
+      recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       // Increment attempts
       token.attempts += 1;
       await token.save();
@@ -89,7 +103,7 @@ export async function POST(request: Request) {
         lastName: user.lastName,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: '1d' }
+      { expiresIn: '1d', algorithm: 'HS256' }
     );
 
     const response = NextResponse.json({
@@ -112,6 +126,7 @@ export async function POST(request: Request) {
       secure: process.env.NODE_ENV !== 'development',
       maxAge: maxAge,
       path: '/',
+      sameSite: 'strict' as const,
     });
 
     return response;

@@ -7,7 +7,7 @@ import { constructUserProfileString } from '@/lib/service-utils';
 import { generateUserRecommendations } from '@/trigger/recommendations';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 
-type LearningPreferencesPayload = Partial<ILearningPreferences> & Record<string, unknown>;
+type LearningPreferencesPayload = Partial<ILearningPreferences>;
 
 export async function GET(request: NextRequest) {
   try {

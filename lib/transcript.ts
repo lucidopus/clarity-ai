@@ -41,10 +41,11 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     // Start Apify actor run
     console.log('🚀 [APIFY] Starting actor run...');
     const runResponse = await fetch(
-      `https://api.apify.com/v2/acts/pintostudio~youtube-transcript-scraper/runs?token=${apifyToken}&waitForFinish=45`,
+      `https://api.apify.com/v2/acts/pintostudio~youtube-transcript-scraper/runs?waitForFinish=45`,
       {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${apifyToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -82,7 +83,12 @@ export async function getYouTubeTranscript(youtubeUrl: string): Promise<Transcri
     // Fetch transcript data from dataset
     console.log(`📥 [APIFY] Fetching transcript data from dataset: ${datasetId}`);
     const datasetResponse = await fetch(
-      `https://api.apify.com/v2/datasets/${datasetId}/items?token=${apifyToken}`
+      `https://api.apify.com/v2/datasets/${datasetId}/items`,
+      {
+        headers: {
+          'Authorization': `Bearer ${apifyToken}`,
+        },
+      }
     );
 
     if (!datasetResponse.ok) {
@@ -172,5 +178,14 @@ export function extractVideoId(url: string): string {
 }
 
 export function isValidYouTubeUrl(url: string): boolean {
-  return /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}/.test(url);
+  try {
+    const parsed = new URL(url);
+    const validHosts = ['www.youtube.com', 'youtube.com', 'youtu.be', 'm.youtube.com'];
+    if (!validHosts.includes(parsed.hostname)) return false;
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+    // Must have a valid video ID
+    return /(?:youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}/.test(url);
+  } catch {
+    return false;
+  }
 }

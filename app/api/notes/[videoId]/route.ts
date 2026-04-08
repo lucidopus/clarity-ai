@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Note from '@/lib/models/Note';
+
+const noteUpdateSchema = z.object({
+  generalNote: z.string().optional(),
+  segmentNotes: z.array(z.object({
+    segmentId: z.string(),
+    content: z.string(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
+  })).optional(),
+});
 
 interface DecodedToken {
   userId: string;
@@ -49,12 +60,13 @@ export async function PUT(
     const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     const { videoId: sourceId } = await params;
     const body = await request.json();
+    const parsed = noteUpdateSchema.parse(body);
 
     await dbConnect();
 
     const updatedNote = await Note.findOneAndUpdate(
       { userId, sourceId },
-      { $set: body },
+      { $set: parsed },
       { upsert: true, new: true }
     );
 

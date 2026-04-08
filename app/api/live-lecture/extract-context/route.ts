@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import SourceContent from '@/lib/models/SourceContent';
 import { extractDocument } from '@/lib/extractors/document';
+// safeFetch is used indirectly via extractDocument which calls it internally
 
 interface DecodedToken {
   userId: string;

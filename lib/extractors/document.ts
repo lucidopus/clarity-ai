@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { safeFetch } from '@/lib/utils/safe-fetch';
 import type { ExtractorInput, ExtractedContent, ExtractedSegment } from './types';
 
 /**
@@ -24,8 +25,8 @@ export async function extractDocument(input: ExtractorInput): Promise<ExtractedC
   }
 
   try {
-    // Download file from Supabase
-    const response = await fetch(fileUrl);
+    // Download file from Supabase (SSRF-safe: validates origin + enforces size limit)
+    const response = await safeFetch(fileUrl, { maxBytes: 50 * 1024 * 1024 });
     if (!response.ok) {
       return {
         success: false,
@@ -135,6 +136,17 @@ async function extractPdfPages(arrayBuffer: ArrayBuffer): Promise<{ text: string
 async function extractPptxSlides(arrayBuffer: ArrayBuffer): Promise<{ text: string; num: number }[]> {
   const JSZip = (await import('jszip')).default;
   const zip = await JSZip.loadAsync(arrayBuffer);
+
+  // ZIP bomb protection: check total uncompressed size
+  let totalUncompressedSize = 0;
+  const MAX_UNCOMPRESSED_SIZE = 50 * 1024 * 1024; // 50 MB
+  zip.forEach((_, file) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    totalUncompressedSize += (file as any)._data?.uncompressedSize || 0;
+  });
+  if (totalUncompressedSize > MAX_UNCOMPRESSED_SIZE) {
+    throw new Error(`Decompressed content exceeds ${MAX_UNCOMPRESSED_SIZE / (1024 * 1024)} MB limit`);
+  }
 
   // PPTX slides are at ppt/slides/slide1.xml, slide2.xml, etc.
   const slideFiles: { num: number; path: string }[] = [];

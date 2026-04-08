@@ -9,6 +9,17 @@ export interface AdminJWTPayload {
 }
 
 /**
+ * Get the admin JWT secret. Falls back to JWT_SECRET if ADMIN_JWT_SECRET is not set.
+ */
+function getAdminSecret(): string {
+  const secret = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('ADMIN_JWT_SECRET (or JWT_SECRET) not configured');
+  }
+  return secret;
+}
+
+/**
  * Verify admin JWT token from request cookies
  */
 export async function verifyAdminToken(request: NextRequest): Promise<boolean> {
@@ -19,12 +30,9 @@ export async function verifyAdminToken(request: NextRequest): Promise<boolean> {
       return false;
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET not configured');
-    }
-
-    const decoded = jwt.verify(token, jwtSecret) as AdminJWTPayload;
+    const decoded = jwt.verify(token, getAdminSecret(), {
+      algorithms: ['HS256'],
+    }) as AdminJWTPayload;
 
     // Verify it's an admin token
     return decoded.role === 'admin';
@@ -38,17 +46,12 @@ export async function verifyAdminToken(request: NextRequest): Promise<boolean> {
  * Create admin JWT token
  */
 export function createAdminToken(): string {
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET not configured');
-  }
-
   const expiresInSeconds = 24 * 60 * 60; // 24 hours
 
   const token = jwt.sign(
     { role: 'admin' },
-    jwtSecret,
-    { expiresIn: expiresInSeconds }
+    getAdminSecret(),
+    { expiresIn: expiresInSeconds, algorithm: 'HS256' }
   );
 
   return token;

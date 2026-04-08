@@ -69,6 +69,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify flashcard belongs to the claimed source
+    if (flashcard.sourceId && flashcard.sourceId.toString() !== sourceId) {
+      return NextResponse.json(
+        { error: 'Flashcard does not belong to the specified source' },
+        { status: 403 }
+      );
+    }
+
     // Find or create progress document for this user/source combination
     let progress = await Progress.findOne({
       userId: decoded.userId,

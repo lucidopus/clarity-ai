@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import { verifyAdminToken } from '@/lib/adminAuth';
 
 export async function GET(_req: NextRequest) {
+  // Require admin authentication
+  const isAdmin = await verifyAdminToken(_req);
+  if (!isAdmin) {
+    return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     // Check if proxy is configured
     const proxyEnabled = process.env.WEBSHARE_PROXY_ENABLED === 'true';
@@ -62,13 +69,15 @@ export async function GET(_req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [TEST] Proxy validation failed:', error);
+    console.error('❌ [TEST] Proxy validation failed');
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    // Mask any credentials that might appear in error messages
+    const safeMessage = errorMessage.replace(/\/\/[^@]+@/g, '//<masked>@');
 
     return NextResponse.json({
       success: false,
       message: 'Proxy validation failed',
-      error: errorMessage,
+      error: safeMessage,
     }, { status: 500 });
   }
 }

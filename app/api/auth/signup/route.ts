@@ -9,6 +9,7 @@ import { sendVerificationEmail } from '@/lib/email';
 import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
 import { passwordSchema } from '@/lib/utils/auth-validation';
+import { escapeRegex } from '@/lib/utils/escape-regex';
 
 const signupSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be no more than 20 characters").regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
@@ -47,13 +48,13 @@ export async function POST(request: Request) {
     // Check if username already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return NextResponse.json({ success: false, message: 'Username already exists' }, { status: 409 });
+      return NextResponse.json({ success: false, message: 'Username or email already in use' }, { status: 409 });
     }
 
     // Check if email already exists
-    const existingEmail = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    const existingEmail = await User.findOne({ email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } });
     if (existingEmail) {
-      return NextResponse.json({ success: false, message: 'Email is already registered' }, { status: 409 });
+      return NextResponse.json({ success: false, message: 'Username or email already in use' }, { status: 409 });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
