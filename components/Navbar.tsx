@@ -14,75 +14,68 @@ export default function Navbar() {
   const showMarketingLinks = !pathname?.startsWith('/onboarding') && !pathname?.startsWith('/auth');
 
   return (
-    <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16">
+    <nav className="sticky top-0 z-50 bg-[color-mix(in_srgb,var(--background)_72%,transparent)] backdrop-blur-xl backdrop-saturate-[1.8] border-b border-white/50 dark:border-white/6 px-8 h-14 flex items-center after:absolute after:-bottom-px after:left-0 after:right-0 after:h-[2px] after:bg-linear-to-r after:from-transparent after:via-accent/40 after:to-transparent">
+      <div className="max-w-7xl mx-auto w-full">
+        <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 cursor-pointer">
-            <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">C</span>
+          <Link href="/" className="flex items-center space-x-2 cursor-pointer shrink-0">
+            <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-base">C</span>
             </div>
-            <span className="text-xl font-bold text-foreground">Clarity AI</span>
+            <span className="text-lg font-bold text-foreground">Clarity AI</span>
           </Link>
 
-          {/* Desktop Navigation - Centered (hidden on onboarding/auth) */}
+          {/* Desktop Navigation - Center */}
           {showMarketingLinks && (
-            <div className="hidden md:flex items-center justify-center flex-1 space-x-8">
+            <div className="hidden md:flex items-center space-x-1">
               <Link
                 href="#features"
-                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+                className="text-sm text-secondary hover:text-foreground hover:bg-accent/10 rounded-full px-3 py-1.5 transition-colors duration-150 cursor-pointer"
               >
                 Features
               </Link>
               <Link
                 href="#why-clarity"
-                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+                className="text-sm text-secondary hover:text-foreground hover:bg-accent/10 rounded-full px-3 py-1.5 transition-colors duration-150 cursor-pointer"
               >
                 Why Clarity
               </Link>
               <Link
                 href="#how-it-works"
-                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+                className="text-sm text-secondary hover:text-foreground hover:bg-accent/10 rounded-full px-3 py-1.5 transition-colors duration-150 cursor-pointer"
               >
                 How It Works
               </Link>
               <Link
-                href="#about"
-                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
-              >
-                About
-              </Link>
-              <Link
                 href="#pricing"
-                className="text-foreground hover:text-accent transition-colors duration-150 cursor-pointer"
+                className="text-sm text-secondary hover:text-foreground hover:bg-accent/10 rounded-full px-3 py-1.5 transition-colors duration-150 cursor-pointer"
               >
                 Pricing
               </Link>
             </div>
           )}
-          {!showMarketingLinks && <div className="flex-1" />}
 
           {/* Desktop Right Side - Auth & Theme */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4 shrink-0">
             <ThemeToggle />
             {loading ? (
-              <div className="text-sm text-muted-foreground">Loading...</div>
+              <div className="text-sm text-secondary">Loading...</div>
             ) : user ? (
               <>
-                <Button href="/dashboard" variant="ghost" size="sm">
+                <Button href="/dashboard" variant="ghost" size="sm" className="text-sm">
                   Dashboard
                 </Button>
-                <Button onClick={logout} variant="ghost" size="sm">
+                <Button onClick={logout} variant="ghost" size="sm" className="text-sm">
                   Logout
                 </Button>
               </>
             ) : (
               <>
-                <Button href="/auth/signin" variant="ghost" size="sm">
+                <Button href="/auth/signin" variant="ghost" size="sm" className="text-sm">
                   Sign In
                 </Button>
-                <Button href="/auth/signup" variant="primary" size="sm">
-                  Sign Up
+                <Button href="/auth/signup" variant="primary" size="sm" className="text-sm">
+                  Get Started
                 </Button>
               </>
             )}
@@ -103,7 +96,7 @@ export default function Navbar() {
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -114,7 +107,7 @@ export default function Navbar() {
                   viewBox="0 0 24 24"
                   strokeWidth={1.5}
                   stroke="currentColor"
-                  className="w-6 h-6"
+                  className="w-5 h-5"
                 >
                   <path
                     strokeLinecap="round"
@@ -129,70 +122,63 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <div className="flex flex-col space-y-4">
+          <div className="md:hidden pt-3 pb-2 mt-2 border-t border-border/50">
+            <div className="flex flex-col space-y-1">
               {showMarketingLinks && (
                 <>
                   <Link
                     href="#features"
-                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Features
                   </Link>
                   <Link
                     href="#why-clarity"
-                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Why Clarity
                   </Link>
                   <Link
                     href="#how-it-works"
-                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     How It Works
                   </Link>
                   <Link
-                    href="#about"
-                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    About
-                  </Link>
-                  <Link
                     href="#pricing"
-                    className="text-foreground hover:text-accent transition-colors px-4 py-2 cursor-pointer"
+                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Pricing
                   </Link>
                 </>
               )}
-               <div className="px-4 pt-2 border-t border-border">
-                 {loading ? (
-                   <div className="text-sm text-muted-foreground text-center py-2">Loading...</div>
-                 ) : user ? (
-                   <>
-                     <Button href="/dashboard" variant="ghost" size="sm" className="w-full mb-2">
-                       Dashboard
-                     </Button>
-                     <Button onClick={logout} variant="ghost" size="sm" className="w-full">
-                       Logout
-                     </Button>
-                   </>
-                 ) : (
-                   <>
-                     <Button href="/auth/signin" variant="ghost" size="sm" className="w-full mb-2">
-                       Sign In
-                     </Button>
-                     <Button href="/auth/signup" variant="primary" size="sm" className="w-full">
-                       Sign Up
-                     </Button>
-                   </>
-                 )}
-               </div>
+              <div className="pt-2 mt-1 border-t border-border flex flex-col space-y-1">
+                {loading ? (
+                  <div className="text-sm text-secondary text-center py-2">Loading...</div>
+                ) : user ? (
+                  <>
+                    <Button href="/dashboard" variant="ghost" size="sm" className="w-full">
+                      Dashboard
+                    </Button>
+                    <Button onClick={logout} variant="ghost" size="sm" className="w-full">
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button href="/auth/signin" variant="ghost" size="sm" className="w-full">
+                      Sign In
+                    </Button>
+                    <Button href="/auth/signup" variant="primary" size="sm" className="w-full">
+                      Get Started
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

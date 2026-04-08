@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Trigger.dev Background Video Processing**: Migrated the video processing pipeline from synchronous Vercel serverless functions to Trigger.dev background tasks (15-minute max duration), eliminating the 60s timeout constraint.
+  - Thin API route returns 202 immediately after triggering the background task
+  - New `GET /api/videos/[videoId]/status` polling endpoint for processing state
+  - Processing UI with spinner, thumbnail preview, and live status polling on the generations page
+  - Orphan recovery in the retry-failed-videos task
+- **Multi-Source Content Support** (Issues #91–#93): Extended the platform beyond YouTube to support documents, audio files, and plain text as learning material sources.
+  - **Plain Text**: Direct text input via the Generate modal with a dedicated text extractor
+  - **Documents**: PDF (page-by-page extraction) and PPTX (JSZip) support
+  - **Audio**: File transcription via Groq Whisper (whisper-large-v3)
+  - **File Upload API**: `POST /api/upload` with Supabase Storage integration and cleanup on deletion
+  - **GenerateModal Tabs**: New Document and Audio tabs for file-based source submission
+  - **New Environment Variables**: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- **Source-Specific Content Viewers (Issue #93)**: Dedicated viewer components per source type, with `MultiSourceViewer` for tabbed multi-source navigation.
+  - `DocumentContentViewer` — page-aware document reading experience
+  - `AudioContentViewer` — audio playback with transcript view
+  - `TextContentViewer` — clean reading pane for text sources
+  - `MultiSourceViewer` — segmented tab control to switch between sources; non-YouTube sources no longer fall back to a broken YouTube embed
+- **Live Lecture Capture**: Complete live lecture feature for capturing and learning from in-person or recorded lectures in real time.
+  - Browser-based audio capture with ElevenLabs Scribe V2 real-time transcription
+  - Floating Granola-inspired bubble UI during live sessions
+  - Mid-lecture Q&A via Clara chatbot with context-aware answers
+  - Post-lecture dual-rail timeline merging transcript segments, markers, Q&A pairs, and user notes
+  - 3-layer storage: React state → IndexedDB (instant) → MongoDB (10s sync) for crash resilience
+  - Crash recovery: resumes previous session from IndexedDB / server state on reload
+  - Toast notifications for capture start, pause, resume, and end events
+  - New `LiveSession` MongoDB model
+  - New API endpoints: `POST /api/live-lecture/token`, `POST /api/live-lecture/ask`, `POST /api/live-lecture/end`, `POST /api/live-lecture/sync`, `GET /api/live-lecture/[sessionId]`, `GET /api/live-lecture/[sessionId]/status`, `GET /api/live-lecture/by-source/[sourceId]`, `POST /api/live-lecture/[sessionId]/notes`
 - **AI Suggestion Tracking**: Implemented a system to save AI suggestions to Supabase as they appear in the UI.
 - **Post-Call Analysis Suggestions**: Added an interactive UI pill in post-call analysis to display triggered AI suggestions on hover.
 - **AI-Powered Personalized Discovery Feed**:
@@ -109,6 +136,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Navbar Redesign**: Polished the marketing navbar with a frosted-glass backdrop blur effect, reduced height (h-14), refined typography, removed the "About" nav link, renamed "Sign Up" CTA to "Get Started", and improved mobile menu spacing and hover states.
+- **Multi-Source Pipeline Polish**: Replaced source-switcher pills with a clean segmented tab control; source type icons now appear on gallery cards instead of the text label "YouTube"; NotesEditor and floating summary button restricted to YouTube sources only; default text source title is "Text Notes".
+- **Live Lecture Panel UX**: Clara tab is always visible from session start; quick action buttons moved to a shared section independent of the active tab; resuming a session now restores previous chats, notes, and transcript from the server.
+- **User Data Deletion**: Account, admin user, and individual video DELETE operations now cascade to `SourceContent`, `LiveSession`, and `Cost` records.
+- **Card Background Color**: Updated global card background from `#FAFAF9` to `#F9FAFB` for improved consistency.
 - **LLM Provider Switch**: Reverted the post-call analysis LLM from Gemini back to Groq to avoid rate limits and improve performance while maintaining PII masking and deanonymization.
 - **Suggestion UI Polish**: Improved AI suggestion box typography, vertical spacing, and readability across themes.
 - Updated `README.md` to include a new "Available Scripts" section.
@@ -148,6 +180,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **PDF Extraction in Trigger.dev**: Replaced `pdf-parse` with `unpdf` for container-compatible PDF extraction (pdf-parse uses Node.js native modules incompatible with Trigger.dev workers).
+- **TypeScript Discriminated Union**: Fixed narrowing error in the live-lecture `extract-context` route where the discriminant wasn't recognized after a type assertion.
+- **sourceId Mismatch**: Fixed `saveExtraction` using an extractor-generated UUID instead of the passed `sourceId`, causing orphaned SourceContent records.
+- **Segments API 404 for Secondary Sources**: Fixed the `/api/videos/[videoId]/segments` endpoint returning 404 for non-primary sources by adding a fallback `allSourceIds` lookup.
+- **ReactMarkdown Empty `src` Warning**: Fixed console error from empty `img` src attributes in ReactMarkdown output.
+- **LiveLectureContentViewer Max Height**: Adjusted the maximum height constraint on the viewer to prevent overflow on smaller viewports.
 - **Backend Application Initialization**: Resolved a critical ASGI app import error (`main` module) preventing the Uvicorn server from starting.
 - **Frontend Build Issues**: Fixed `tailwindcss` dependency resolution conflicts that blocked the development server from starting.
 - **Admin Analytics**: Fixed variable shadowing bug in summary endpoint where `activeUsersLast30Days` was referenced before initialization
