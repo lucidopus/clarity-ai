@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
-import { initFSRSCard } from '@/lib/services/fsrs';
+import { ensureFSRSInitialized } from '@/lib/services/fsrs-migrate';
 
 interface DecodedToken {
   userId: string;
@@ -18,27 +18,7 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     await dbConnect();
-
-    // Lazy migration: initialize FSRS state for any cards that don't have it yet
-    const uninitCount = await Flashcard.countDocuments({
-      userId: decoded.userId,
-      fsrs: { $exists: false },
-    });
-
-    if (uninitCount > 0) {
-      const uninitCards = await Flashcard.find({
-        userId: decoded.userId,
-        fsrs: { $exists: false },
-      }).select('_id createdAt');
-
-      const bulkOps = uninitCards.map((card) => ({
-        updateOne: {
-          filter: { _id: card._id },
-          update: { $set: { fsrs: initFSRSCard(card.createdAt) } },
-        },
-      }));
-      await Flashcard.bulkWrite(bulkOps);
-    }
+    await ensureFSRSInitialized(decoded.userId);
 
     const now = new Date();
     const dueCards = await Flashcard.find({

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
 import FlashcardReview from '@/lib/models/FlashcardReview';
+import { ensureFSRSInitialized } from '@/lib/services/fsrs-migrate';
 
 interface DecodedToken {
   userId: string;
@@ -18,6 +19,7 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     await dbConnect();
+    await ensureFSRSInitialized(decoded.userId);
 
     const now = new Date();
     const todayStart = new Date(now);
