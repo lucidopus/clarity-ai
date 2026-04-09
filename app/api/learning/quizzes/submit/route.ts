@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Progress, { IQuizAttempt } from '@/lib/models/Progress';
 import Quiz from '@/lib/models/Quiz';
+import { computeBrierScore } from '@/lib/services/calibration';
 
 interface DecodedToken {
   userId: string;
@@ -19,6 +20,7 @@ interface QuizResult {
   quizId: string; // MongoDB ObjectId as string
   userAnswerIndex: number;
   isCorrect?: boolean; // Optional for backward compatibility/frontend convenience
+  confidenceRating?: number; // 1 = Guessing, 2 = Somewhat Sure, 3 = Confident
 }
 
 interface SubmitQuizRequest {
@@ -121,6 +123,9 @@ export async function POST(request: NextRequest) {
         progress.quizAttempts[existingAttemptIndex].userAnswerIndex = result.userAnswerIndex;
         progress.quizAttempts[existingAttemptIndex].completedAt = new Date();
         progress.quizAttempts[existingAttemptIndex].attemptNumber += 1;
+        if (result.confidenceRating) {
+          progress.quizAttempts[existingAttemptIndex].confidenceRating = result.confidenceRating;
+        }
       } else {
         // Add new quiz attempt
         progress.quizAttempts.push({
@@ -128,6 +133,7 @@ export async function POST(request: NextRequest) {
           score: isCorrect ? 100 : 0,
           attemptNumber: 1,
           userAnswerIndex: result.userAnswerIndex,
+          confidenceRating: result.confidenceRating,
           completedAt: new Date()
         });
       }
@@ -143,6 +149,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Compute and store calibration entry if confidence ratings were provided
+    const ratedResults = results
+      .map((r, i) => ({
+        confidenceRating: r.confidenceRating,
+        isCorrect: quizMap.get(r.quizId)
+          ? quizMap.get(r.quizId)!.correctAnswerIndex === r.userAnswerIndex
+          : (r.isCorrect ?? false),
+        quizId: results[i].quizId,
+      }))
+      .filter((r): r is { confidenceRating: number; isCorrect: boolean; quizId: string } =>
+        r.confidenceRating !== undefined && r.confidenceRating !== null
+      );
+
+    let brierScore: number | null = null;
+    if (ratedResults.length > 0) {
+      brierScore = computeBrierScore(
+        ratedResults.map(({ confidenceRating, isCorrect }) => ({ confidenceRating, isCorrect }))
+      );
+
+      const misinformedQuizIds = ratedResults
+        .filter(r => !r.isCorrect && r.confidenceRating === 3)
+        .map(r => new mongoose.Types.ObjectId(r.quizId));
+
+      if (!progress.calibrationHistory) progress.calibrationHistory = [];
+      progress.calibrationHistory.push({
+        date: new Date(),
+        brierScore,
+        totalQuestions: ratedResults.length,
+        misinformedCount: misinformedQuizIds.length,
+        misinformedQuizIds,
+      });
+    }
+
     await progress.save();
 
     // Calculate overall statistics for response
@@ -156,7 +195,8 @@ export async function POST(request: NextRequest) {
         totalQuestions,
         correctAnswers: correctCount,
         percentage,
-        masteredCount: progress.masteredQuizIds.length
+        masteredCount: progress.masteredQuizIds.length,
+        brierScore,
       }
     });
 

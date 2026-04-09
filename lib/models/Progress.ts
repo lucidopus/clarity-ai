@@ -5,7 +5,16 @@ export interface IQuizAttempt {
   score: number;
   attemptNumber: number;
   userAnswerIndex?: number;
+  confidenceRating?: number; // 1 = Guessing, 2 = Somewhat Sure, 3 = Confident
   completedAt: Date;
+}
+
+export interface ICalibrationEntry {
+  date: Date;
+  brierScore: number;
+  totalQuestions: number;
+  misinformedCount: number;
+  misinformedQuizIds: mongoose.Types.ObjectId[];
 }
 
 export interface IProgress extends Document {
@@ -15,6 +24,7 @@ export interface IProgress extends Document {
   masteredFlashcardIds: mongoose.Types.ObjectId[];
   masteredQuizIds: mongoose.Types.ObjectId[];
   quizAttempts: IQuizAttempt[];
+  calibrationHistory: ICalibrationEntry[];
   lastAccessedAt: Date;
   totalStudyTimeSeconds: number;
   createdAt: Date;
@@ -26,7 +36,16 @@ const QuizAttemptSchema: Schema = new Schema({
   score: { type: Number, required: true, min: 0, max: 100 },
   attemptNumber: { type: Number, required: true },
   userAnswerIndex: { type: Number },
+  confidenceRating: { type: Number, min: 1, max: 3 },
   completedAt: { type: Date, required: true },
+}, { _id: false });
+
+const CalibrationEntrySchema: Schema = new Schema({
+  date: { type: Date, required: true },
+  brierScore: { type: Number, required: true },
+  totalQuestions: { type: Number, required: true },
+  misinformedCount: { type: Number, required: true },
+  misinformedQuizIds: [{ type: Schema.Types.ObjectId, ref: 'Quiz' }],
 }, { _id: false });
 
 const ProgressSchema: Schema = new Schema({
@@ -35,6 +54,7 @@ const ProgressSchema: Schema = new Schema({
   masteredFlashcardIds: [{ type: Schema.Types.ObjectId, ref: 'Flashcard' }],
   masteredQuizIds: [{ type: Schema.Types.ObjectId, ref: 'Quiz' }],
   quizAttempts: [QuizAttemptSchema],
+  calibrationHistory: [CalibrationEntrySchema],
   lastAccessedAt: { type: Date, default: Date.now },
   totalStudyTimeSeconds: { type: Number, default: 0 },
 }, {
