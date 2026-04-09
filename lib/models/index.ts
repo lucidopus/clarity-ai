@@ -15,3 +15,4 @@ export { default as MindMap, type IMindMap, type IMindMapNode, type IMindMapEdge
 export { default as Solution, type ISolution } from './Solution';
 export { default as Cost, type ICost, type IServiceUsage, type IUnitDetails, ServiceType } from './Cost';
 export { default as SystemLog, type ISystemLog, type SystemLogCategory, type SystemLogDecision } from './SystemLog';
+export { default as FlashcardReview, type IFlashcardReview } from './FlashcardReview';
