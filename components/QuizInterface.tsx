@@ -85,8 +85,11 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
   };
 
   // Keyboard shortcuts: G = Guessing, S = Somewhat Sure, C = Confident
+  // Guard against firing while user is typing in an input/textarea
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
       if (submitted || quizCompleted) return;
       const q = quizzes[currentQuestionIndex];
       const hasAnswer = q && (
@@ -750,19 +753,25 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
           Previous
         </Button>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col items-end gap-1">
           {!submitted ? (
-            <Button
-              onClick={handleSubmitAnswer}
-              variant="primary"
-              disabled={
-                currentConfidence === null ||
-                (currentAnswer === null && currentQuestion.type !== 'fill-in-blank') ||
-                (currentQuestion.type === 'fill-in-blank' && !fillInAnswer.trim())
-              }
-            >
-              Submit Answer
-            </Button>
+            <>
+              <Button
+                onClick={handleSubmitAnswer}
+                variant="primary"
+                disabled={
+                  currentConfidence === null ||
+                  (currentAnswer === null && currentQuestion.type !== 'fill-in-blank') ||
+                  (currentQuestion.type === 'fill-in-blank' && !fillInAnswer.trim())
+                }
+              >
+                Submit Answer
+              </Button>
+              {currentConfidence === null && (currentAnswer !== null || (currentQuestion.type === 'fill-in-blank' && fillInAnswer.trim() !== '')) && (
+                <p className="text-xs text-muted-foreground">Select your confidence level above</p>
+              )}
+            </>
+
           ) : (
             <Button onClick={handleNext} variant="primary">
               {currentQuestionIndex === quizzes.length - 1 ? 'Finish Quiz' : 'Next Question'}

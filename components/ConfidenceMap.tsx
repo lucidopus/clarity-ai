@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, HelpCircle, XCircle, Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, HelpCircle, XCircle, Brain, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { computeBrierScore, getCalibrationLabel } from '@/lib/services/calibration';
 import { Quiz } from './QuizInterface';
 
@@ -154,11 +154,12 @@ export default function ConfidenceMap({ quizzes, answers, confidenceRatings }: C
                 <div key={item.index} className="w-full">
                   <button
                     onClick={() => toggleItem(quadrant, item.index)}
-                    className={`flex items-center justify-between w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${config.badgeClass} hover:opacity-80`}
+                    className={`flex items-center justify-between gap-2 w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 cursor-pointer ${config.badgeClass} hover:opacity-80`}
                     aria-expanded={isExpanded}
                   >
-                    <span>Q{item.index + 1}</span>
-                    {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    <span className="shrink-0">Q{item.index + 1}</span>
+                    <span className="truncate flex-1 font-normal opacity-75">{item.quiz.questionText}</span>
+                    {isExpanded ? <ChevronUp className="w-3 h-3 shrink-0" /> : <ChevronDown className="w-3 h-3 shrink-0" />}
                   </button>
 
                   <AnimatePresence>
@@ -228,17 +229,25 @@ export default function ConfidenceMap({ quizzes, answers, confidenceRatings }: C
             </div>
           )}
           <div className="text-right">
-            <div className="text-xs text-muted-foreground">Calibration</div>
+            <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+              Calibration
+              <span className="group relative cursor-default">
+                <Info className="w-3 h-3" />
+                <span className="pointer-events-none absolute right-0 top-5 z-10 w-56 rounded-lg bg-foreground px-3 py-2 text-xs text-background opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
+                  Measures how well your confidence matches your actual knowledge. 0 = perfect (confidence always predicts correctness). Lower is better.
+                </span>
+              </span>
+            </div>
             <div className="text-sm font-bold text-foreground">
-              {brierScore.toFixed(2)}{' '}
-              <span className="text-xs font-normal text-muted-foreground">({calibrationLabel})</span>
+              {calibrationLabel}{' '}
+              <span className="text-xs font-normal text-muted-foreground">({brierScore.toFixed(2)})</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* 2x2 Grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {renderQuadrant('mastered')}
         {renderQuadrant('misinformed')}
         {renderQuadrant('lucky')}
