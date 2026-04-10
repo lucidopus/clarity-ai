@@ -17,40 +17,150 @@ import {
   Target
 } from 'lucide-react';
 import Button from '@/components/Button';
-import { SplineScene } from '@/components/ui/splite';
-import { Card } from '@/components/ui/card';
-import { Spotlight } from '@/components/ui/spotlight';
 import { useState, useRef, useEffect } from 'react';
 
-function SplineSceneBasic() {
+const DEMO_URL = 'youtube.com/watch?v=MIT_6.006_Lecture';
+
+const PROCESSING_STEPS = [
+  'Extracting transcript…',
+  'Analysing key concepts…',
+  'Generating study materials…',
+];
+
+const MATERIALS = [
+  { emoji: '🃏', label: 'Flash Cards', meta: '24 cards generated', accent: 'bg-accent/10 text-accent' },
+  { emoji: '🧠', label: 'Quiz', meta: '12 questions', accent: 'bg-purple-500/10 text-purple-500' },
+  { emoji: '⏱️', label: 'Timestamps', meta: '9 chapters', accent: 'bg-orange-500/10 text-orange-500' },
+  { emoji: '✨', label: 'Ask Clara', meta: 'AI tutor ready', accent: 'bg-green-500/10 text-green-500' },
+];
+
+function PipelineDemo() {
+  const [phase, setPhase] = useState<'typing' | 'processing' | 'done'>('typing');
+  const [typedUrl, setTypedUrl] = useState('');
+  const [processingStep, setProcessingStep] = useState(0);
+  const [visibleCards, setVisibleCards] = useState(0);
+
+  useEffect(() => {
+    if (phase !== 'typing') return;
+    setTypedUrl('');
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      setTypedUrl(DEMO_URL.slice(0, i));
+      if (i >= DEMO_URL.length) {
+        clearInterval(iv);
+        setTimeout(() => setPhase('processing'), 600);
+      }
+    }, 55);
+    return () => clearInterval(iv);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'processing') return;
+    setProcessingStep(0);
+    PROCESSING_STEPS.forEach((_, i) => {
+      setTimeout(() => setProcessingStep(i + 1), (i + 1) * 900);
+    });
+    setTimeout(() => setPhase('done'), PROCESSING_STEPS.length * 900 + 400);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'done') return;
+    setVisibleCards(0);
+    MATERIALS.forEach((_, i) => {
+      setTimeout(() => setVisibleCards(i + 1), i * 180 + 100);
+    });
+    setTimeout(() => setPhase('typing'), 5500);
+  }, [phase]);
+
   return (
-    <Card className="w-full h-[500px] bg-black/[0.96] relative overflow-hidden">
-      <Spotlight
-        className="-top-40 left-0 md:left-60 md:-top-20"
-        fill="white"
-      />
-      <div className="flex h-full">
-        <div className="flex-1 p-8 relative z-10 flex flex-col justify-center">
-          <h2 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400">
-            Learn in<br />3D
-          </h2>
-          <p className="mt-4 text-neutral-400 max-w-xs text-base leading-relaxed">
-            Clarity AI turns any lecture into a full interactive study kit — flashcards, quizzes, timestamps, and an AI tutor, instantly.
-          </p>
-          <div className="mt-8">
-            <Button href="/auth/signup" variant="primary" size="md" className="rounded-full px-6">
-              Try it free
-            </Button>
-          </div>
+    <div className="bg-card-bg border border-border rounded-2xl overflow-hidden shadow-sm">
+      {/* Browser chrome */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-background/60">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-400/50" />
+          <div className="w-3 h-3 rounded-full bg-yellow-400/50" />
+          <div className="w-3 h-3 rounded-full bg-green-400/50" />
         </div>
-        <div className="flex-1 relative">
-          <SplineScene
-            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-            className="w-full h-full"
-          />
+        <div className="flex-1 mx-2 bg-muted/30 border border-border rounded-md px-3 py-1 flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-accent shrink-0" />
+          <span className="text-xs text-muted-foreground font-mono">clarity.ai / generate</span>
         </div>
       </div>
-    </Card>
+
+      {/* Demo body */}
+      <div className="p-5 min-h-[260px] flex flex-col gap-4">
+
+        {/* URL input row */}
+        <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-2.5">
+          {/* YouTube icon */}
+          <svg className="w-4 h-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/>
+          </svg>
+          <span className="text-sm font-mono text-foreground/80 flex-1 truncate">
+            {typedUrl}
+            <span className="inline-block w-px h-3.5 bg-accent ml-0.5 align-middle animate-pulse" />
+          </span>
+          {phase === 'typing' && typedUrl.length > 10 && (
+            <span className="px-3 py-1 bg-accent text-white text-xs rounded-lg font-medium shrink-0 opacity-90">
+              Generate →
+            </span>
+          )}
+        </div>
+
+        {/* Processing steps */}
+        {phase === 'processing' && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-2.5 py-1"
+          >
+            {PROCESSING_STEPS.map((step, i) => {
+              const done = processingStep > i;
+              const active = processingStep === i + 1;
+              return (
+                <div key={step} className="flex items-center gap-2.5">
+                  <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300 ${done ? 'bg-accent' : 'border border-border'}`}>
+                    {done && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    {active && !done && <div className="w-2 h-2 rounded-full border border-accent border-t-transparent animate-spin" />}
+                  </div>
+                  <span className={`text-sm transition-colors duration-300 ${done ? 'text-foreground' : 'text-muted-foreground/50'}`}>
+                    {step}
+                  </span>
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {/* Result cards */}
+        {phase === 'done' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-2 gap-2.5"
+          >
+            {MATERIALS.map((m, i) => (
+              <motion.div
+                key={m.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: i < visibleCards ? 1 : 0, y: i < visibleCards ? 0 : 10 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background"
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${m.accent}`}>
+                  {m.emoji}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-foreground truncate">{m.label}</div>
+                  <div className="text-xs text-muted-foreground truncate">{m.meta}</div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -838,10 +948,46 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Interactive 3D Section */}
-        <section className="py-16 relative z-10 px-4 sm:px-6 lg:px-8">
+        {/* Pipeline Demo Section */}
+        <section className="py-20 relative z-10 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
-            <SplineSceneBasic />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+              {/* Left: copy */}
+              <div className="space-y-6">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-medium">
+                  <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                  See it in action
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold leading-tight text-foreground">
+                  Paste a URL.<br />
+                  <span className="text-gradient">Get a study kit.</span>
+                </h2>
+                <p className="text-lg text-secondary leading-relaxed max-w-md">
+                  Drop any YouTube lecture and Clarity AI extracts the transcript, identifies key concepts, and generates a complete set of study materials — in under 60 seconds.
+                </p>
+
+                <div className="flex flex-wrap gap-6 pt-2">
+                  {[
+                    { value: '< 60s', label: 'Generation time' },
+                    { value: '5', label: 'Study tools' },
+                    { value: '100%', label: 'From your video' },
+                  ].map((stat) => (
+                    <div key={stat.label}>
+                      <div className="text-2xl font-bold text-accent">{stat.value}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button href="/auth/signup" variant="primary" size="lg" className="rounded-full px-8">
+                  Try it free →
+                </Button>
+              </div>
+
+              {/* Right: animated demo */}
+              <PipelineDemo />
+            </div>
           </div>
         </section>
 
