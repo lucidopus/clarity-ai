@@ -7,8 +7,7 @@ import Progress, { IQuizAttempt } from '@/lib/models/Progress';
 import Quiz from '@/lib/models/Quiz';
 import { computeBrierScore } from '@/lib/services/calibration';
 import { recordStudyActivity } from '@/lib/services/streaks';
-import { computeReadinessScore } from '@/lib/services/readinessScore';
-import { clearInsightsCache } from '@/lib/services/clarityInsights';
+import { invalidateReadiness, invalidateUserInsights, invalidateDashStats } from '@/lib/cache';
 
 interface DecodedToken {
   userId: string;
@@ -190,9 +189,10 @@ export async function POST(request: NextRequest) {
     // Record streak activity (fire-and-forget)
     recordStudyActivity(decoded.userId, 'quiz_completed').catch(() => {});
 
-    // Recompute and cache Clarity Score so dashboard reflects this quiz immediately
-    computeReadinessScore(decoded.userId, sourceId).catch(() => {});
-    clearInsightsCache(decoded.userId);
+    // Invalidate stale caches so next load triggers a fresh recompute
+    invalidateReadiness(decoded.userId, sourceId).catch(() => {});
+    invalidateUserInsights(decoded.userId).catch(() => {});
+    invalidateDashStats(decoded.userId).catch(() => {});
 
     // Calculate overall statistics for response
     const totalQuestions = results.length;

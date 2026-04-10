@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     const result = await getClarityInsights(decoded.userId);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=21600' },
+    });
   } catch (error) {
     console.error('Error computing clarity insights:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

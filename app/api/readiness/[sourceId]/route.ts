@@ -18,7 +18,9 @@ export async function GET(
     const { sourceId } = await params;
 
     const result = await getReadinessScore(decoded.userId, sourceId);
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: { 'Cache-Control': 'private, max-age=86400' },
+    });
   } catch (error) {
     console.error('Error computing clarity score:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

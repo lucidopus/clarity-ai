@@ -92,14 +92,18 @@ export async function GET(request: NextRequest) {
         .select('_id username email firstName lastName createdAt lastLoginDate loginStreak')
         .lean()) as unknown as UserData[];
 
-      // Get video counts for all users
-      const usersWithVideoCounts = await Promise.all(
-        allUsers.map(async (user: UserData) => {
-          const userObjectId = new mongoose.Types.ObjectId(user._id);
-          const videoCount = await Video.countDocuments({ userId: userObjectId });
-          return { ...user, videoCount };
-        })
-      );
+      // Batch fetch video counts for all users in one aggregation
+      const allUserIds = allUsers.map((u) => new mongoose.Types.ObjectId(u._id));
+      const videoBatch = await Video.aggregate([
+        { $match: { userId: { $in: allUserIds } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } },
+      ]);
+      const videoCountMap = new Map(videoBatch.map((r: { _id: mongoose.Types.ObjectId; count: number }) => [r._id.toString(), r.count]));
+
+      const usersWithVideoCounts = allUsers.map((user: UserData) => ({
+        ...user,
+        videoCount: videoCountMap.get(user._id.toString()) ?? 0,
+      }));
 
       // Sort by video count
       usersWithVideoCounts.sort((a, b) => {
@@ -133,57 +137,70 @@ export async function GET(request: NextRequest) {
         .lean()) as unknown as UserData[];
     }
 
-    // Get generation counts for each user
-    const usersWithCounts = await Promise.all(
-      users.map(async (user) => {
-        // Convert userId to ObjectId for proper comparison
-        const userObjectId = new mongoose.Types.ObjectId(user._id);
+    // Batch-fetch all counts for paginated users in parallel aggregations (2 queries total instead of 4×N)
+    const pageUserIds = users.map((u) => new mongoose.Types.ObjectId(u._id));
 
-        // For video sort, videoCount is already calculated
-        const videoCount = sortBy === 'videos' && 'videoCount' in user ? user.videoCount : await Video.countDocuments({ userId: userObjectId });
+    const [videosBatch, flashcardsBatch, quizzesBatch, activitiesBatch, costsBatch] = await Promise.all([
+      // Skip video batch when sortBy==='videos' — counts are already in user objects
+      sortBy === 'videos'
+        ? Promise.resolve([] as { _id: mongoose.Types.ObjectId; count: number }[])
+        : Video.aggregate([
+            { $match: { userId: { $in: pageUserIds } } },
+            { $group: { _id: '$userId', count: { $sum: 1 } } },
+          ]),
+      Flashcard.aggregate([
+        { $match: { userId: { $in: pageUserIds } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } },
+      ]),
+      Quiz.aggregate([
+        { $match: { userId: { $in: pageUserIds } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } },
+      ]),
+      ActivityLog.aggregate([
+        { $match: { userId: { $in: pageUserIds } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } },
+      ]),
+      Cost.aggregate([
+        { $match: { userId: { $in: pageUserIds } } },
+        { $group: { _id: '$userId', totalCost: { $sum: '$totalCost' }, operations: { $sum: 1 } } },
+      ]),
+    ]);
 
-        const [flashcardCount, quizCount, activityCount] = await Promise.all([
-          Flashcard.countDocuments({ userId: userObjectId }),
-          Quiz.countDocuments({ userId: userObjectId }),
-          ActivityLog.countDocuments({ userId: userObjectId }),
-        ]);
+    type CountRow = { _id: mongoose.Types.ObjectId; count: number };
+    type CostRow = { _id: mongoose.Types.ObjectId; totalCost: number; operations: number };
 
-        // Get cost data for user
-        const costData = await Cost.aggregate([
-          { $match: { userId: userObjectId } },
-          {
-            $group: {
-              _id: null,
-              totalCost: { $sum: '$totalCost' },
-              operations: { $sum: 1 },
-            }
-          }
-        ]);
+    const videosMap    = new Map((videosBatch    as CountRow[]).map((r) => [r._id.toString(), r.count]));
+    const flashcardsMap = new Map((flashcardsBatch as CountRow[]).map((r) => [r._id.toString(), r.count]));
+    const quizzesMap   = new Map((quizzesBatch   as CountRow[]).map((r) => [r._id.toString(), r.count]));
+    const activitiesMap = new Map((activitiesBatch as CountRow[]).map((r) => [r._id.toString(), r.count]));
+    const costsMap     = new Map((costsBatch     as CostRow[]).map((r) => [r._id.toString(), r]));
 
-        const userCost = costData.length > 0 ? {
-          totalCost: parseFloat(costData[0].totalCost.toFixed(6)),
-          operations: costData[0].operations,
-        } : null;
-
-        return {
-          id: String(user._id),
-          username: user.username,
-          email: user.email,
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          createdAt: user.createdAt,
-          lastLoginDate: user.lastLoginDate || null,
-          loginStreak: user.loginStreak || 0,
-          stats: {
-            videos: videoCount,
-            flashcards: flashcardCount,
-            quizzes: quizCount,
-            activities: activityCount,
-          },
-          cost: userCost,
-        };
-      })
-    );
+    const usersWithCounts = users.map((user) => {
+      const uid = user._id.toString();
+      const videoCount = sortBy === 'videos' && 'videoCount' in user
+        ? (user as UserWithVideoCount).videoCount
+        : (videosMap.get(uid) ?? 0);
+      const costRow = costsMap.get(uid);
+      return {
+        id: uid,
+        username: user.username,
+        email: user.email,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        createdAt: user.createdAt,
+        lastLoginDate: user.lastLoginDate || null,
+        loginStreak: user.loginStreak || 0,
+        stats: {
+          videos: videoCount,
+          flashcards: flashcardsMap.get(uid) ?? 0,
+          quizzes: quizzesMap.get(uid) ?? 0,
+          activities: activitiesMap.get(uid) ?? 0,
+        },
+        cost: costRow
+          ? { totalCost: parseFloat(costRow.totalCost.toFixed(6)), operations: costRow.operations }
+          : null,
+      };
+    });
 
     return NextResponse.json({
       success: true,

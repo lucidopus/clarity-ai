@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
-import { ActivityLog, Video } from '@/lib/models';
+import { ActivityLog, Video, Flashcard, Quiz } from '@/lib/models';
 
 interface DecodedToken { userId: string }
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     start.setUTCDate(end.getUTCDate() - 6);
 
     const agg = await ActivityLog.aggregate([
-      { $match: { userId: new (await import('mongoose')).default.Types.ObjectId(userId), date: { $gte: start, $lte: end } } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId), date: { $gte: start, $lte: end } } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: 'UTC' } }, count: { $sum: 1 } } },
       { $project: { _id: 0, date: '$_id', count: 1 } },
       { $sort: { date: 1 } },
@@ -48,33 +49,37 @@ export async function GET(request: NextRequest) {
     // Recent videos (last 5)
     const recent = await Video.find({ userId }).sort({ createdAt: -1 }).limit(5).lean();
 
-    // Optionally add lightweight stats per video (e.g., flashcards count)
-    const recentVideos = await Promise.all(recent.map(async (v) => {
-      const [flashcardCount, quizCount] = await Promise.all([
-        (await import('@/lib/models')).Flashcard.countDocuments({ sourceId: v.videoId }),
-        (await import('@/lib/models')).Quiz.countDocuments({ sourceId: v.videoId }),
-      ]);
+    // Batch-fetch flashcard and quiz counts for all recent videos in 2 queries instead of 2×N
+    const sourceIds = recent.map((v) => v.videoId);
+    const [flashcardCounts, quizCounts] = await Promise.all([
+      Flashcard.aggregate([
+        { $match: { sourceId: { $in: sourceIds } } },
+        { $group: { _id: '$sourceId', count: { $sum: 1 } } },
+      ]),
+      Quiz.aggregate([
+        { $match: { sourceId: { $in: sourceIds } } },
+        { $group: { _id: '$sourceId', count: { $sum: 1 } } },
+      ]),
+    ]);
 
-      return {
-        _id: v._id,
-        title: v.title,
-        videoId: v.videoId,
-        thumbnail: v.thumbnail,
-        createdAt: v.createdAt,
-        channelName: v.channelName,
-        duration: v.duration,
-        processingStatus: v.processingStatus,
-        flashcardCount,
-        quizCount,
-      };
+    const fcMap = new Map(flashcardCounts.map((r: { _id: string; count: number }) => [r._id, r.count]));
+    const qzMap = new Map(quizCounts.map((r: { _id: string; count: number }) => [r._id, r.count]));
+
+    const recentVideos = recent.map((v) => ({
+      _id: v._id,
+      title: v.title,
+      videoId: v.videoId,
+      thumbnail: v.thumbnail,
+      createdAt: v.createdAt,
+      channelName: v.channelName,
+      duration: v.duration,
+      processingStatus: v.processingStatus,
+      flashcardCount: fcMap.get(v.videoId) ?? 0,
+      quizCount: qzMap.get(v.videoId) ?? 0,
     }));
 
     return NextResponse.json({ weeklyActivity, recentVideos }, {
-      headers: {
-        'Cache-Control': 'no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
+      headers: { 'Cache-Control': 'private, max-age=120' },
     });
   } catch (error) {
     console.error('Failed to load dashboard activity', error);

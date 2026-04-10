@@ -3,6 +3,7 @@ import Source from '@/lib/models/Source';
 import Progress from '@/lib/models/Progress';
 import User from '@/lib/models/User';
 import { TOPIC_BUCKETS, BUCKET_THRESHOLD } from '@/lib/constants/topicBuckets';
+import { getCached, invalidateUserInsights } from '@/lib/cache';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,14 +36,9 @@ export interface ClarityInsights {
   hasGoalEmbedding: boolean;
 }
 
-// ── In-memory cache (6-hour TTL, per user) ────────────────────────────────────
-
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const cache = new Map<string, { data: ClarityInsights; ts: number }>();
-
 /** Call after any study activity to force a fresh insights computation on next load. */
-export function clearInsightsCache(userId: string): void {
-  cache.delete(userId);
+export async function clearInsightsCache(userId: string): Promise<void> {
+  await invalidateUserInsights(userId);
 }
 
 // ── Vector math ───────────────────────────────────────────────────────────────
@@ -82,10 +78,17 @@ type UserRow = { preferences?: { embedding?: number[] } } | null;
 
 // ── Main export ───────────────────────────────────────────────────────────────
 
-export async function getClarityInsights(userId: string): Promise<ClarityInsights> {
-  const hit = cache.get(userId);
-  if (hit && Date.now() - hit.ts < CACHE_TTL_MS) return hit.data;
+const INSIGHTS_TTL_SEC = 6 * 60 * 60; // 6 hours
 
+export async function getClarityInsights(userId: string): Promise<ClarityInsights> {
+  return getCached(
+    `insights:${userId}`,
+    () => _computeClarityInsights(userId),
+    INSIGHTS_TTL_SEC
+  );
+}
+
+async function _computeClarityInsights(userId: string): Promise<ClarityInsights> {
   await dbConnect();
 
   const [sources, progresses, user] = await Promise.all([
@@ -112,7 +115,6 @@ export async function getClarityInsights(userId: string): Promise<ClarityInsight
   };
 
   if (withEmbed.length < 3) {
-    cache.set(userId, { data: empty, ts: Date.now() });
     return empty;
   }
 
@@ -226,14 +228,11 @@ export async function getClarityInsights(userId: string): Promise<ClarityInsight
         }))
     : [];
 
-  const result: ClarityInsights = {
+  return {
     clusters,
     fogAlerts,
     stretchSources,
     hasEnoughData: true,
     hasGoalEmbedding,
   };
-
-  cache.set(userId, { data: result, ts: Date.now() });
-  return result;
 }

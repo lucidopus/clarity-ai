@@ -45,6 +45,8 @@ export async function GET(request: NextRequest) {
       date: today,
       challenges: doc?.challenges ?? [],
       allCompleted: doc?.allCompleted ?? false,
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=300' },
     });
   } catch (error) {
     console.error('Error fetching daily challenges:', error);

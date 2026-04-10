@@ -60,6 +60,8 @@ export async function GET(request: NextRequest) {
       reviewsToday,
       averageRetention,
       nextReviewDate: nextCard?.fsrs?.due ?? null,
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=120' },
     });
   } catch (error) {
     console.error('Error fetching flashcard stats:', error);

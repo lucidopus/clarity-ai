@@ -8,17 +8,20 @@ import GenerateModal, { type GeneratePayload } from '@/components/GenerateModal'
 import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import Dialog from '@/components/Dialog';
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import EmptyState from '@/components/EmptyState';
 import StudyActivityHeatmap from '@/components/StudyActivityHeatmap';
 import RecentVideoCard from '@/components/RecentVideoCard';
 import { DashboardInsightsProvider } from '@/hooks/useDashboardInsights';
-import FocusHoursChart from '@/components/FocusHoursChart';
 import ActivityFunnelCard from '@/components/ActivityFunnelCard';
 import VideoEngagementList from '@/components/VideoEngagementList';
-import FlashcardDifficultyDonut from '@/components/FlashcardDifficultyDonut';
 import CardsDueWidget from '@/components/CardsDueWidget';
-import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
 import StreakWidget from '@/components/StreakWidget';
+
+// Lazy-load chart.js-based components so they don't inflate the initial bundle
+const FocusHoursChart = dynamic(() => import('@/components/FocusHoursChart'), { ssr: false });
+const FlashcardDifficultyDonut = dynamic(() => import('@/components/FlashcardDifficultyDonut'), { ssr: false });
+const WeekdayConsistencyBars = dynamic(() => import('@/components/WeekdayConsistencyBars'), { ssr: false });
 import DailyChallengesCard from '@/components/DailyChallengesCard';
 import ClarityScoreWidget from '@/components/dashboard/ReadinessWidget';
 import ClarityInsightsPanel from '@/components/dashboard/ClarityInsightsPanel';

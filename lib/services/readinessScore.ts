@@ -3,9 +3,10 @@ import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import Progress from '@/lib/models/Progress';
 import type { IReadinessScore } from '@/lib/models/Progress';
+import { getCached, CacheKeys } from '@/lib/cache';
 
-/** Cache TTL: recompute if older than 1 hour */
-const CACHE_TTL_MS = 60 * 60 * 1000;
+const READINESS_TTL_SEC  = 24 * 60 * 60; // 24 hours — invalidated on quiz/flashcard review
+const AGGREGATE_TTL_SEC  = 60 * 60;       // 1 hour — aggregate changes less frequently
 
 export interface Suggestion {
   action: string;
@@ -158,45 +159,18 @@ export async function computeReadinessScore(
 
 /**
  * Get the cached or freshly computed readiness score for a source.
- * Returns cached value if it's less than 1 hour old.
+ * Redis TTL: 24 hours. Invalidated after quiz submission or flashcard review.
+ * Falls back to a full recompute if Redis is unavailable.
  */
 export async function getReadinessScore(
   userId: string,
   sourceId: string
 ): Promise<ReadinessResult> {
-  await dbConnect();
-
-  const progress = await Progress.findOne({ userId, sourceId }).lean() as {
-    readinessScore?: IReadinessScore;
-    quizAttempts?: { completedAt: Date; score: number }[];
-  } | null;
-  const cached = progress?.readinessScore;
-
-  if (cached && cached.computedAt && Date.now() - new Date(cached.computedAt).getTime() < CACHE_TTL_MS) {
-    // Return cached score with fresh suggestions
-    const [flashcards, totalQuizzes] = await Promise.all([
-      Flashcard.countDocuments({ userId, sourceId }),
-      Quiz.countDocuments({ sourceId, userId }),
-    ]);
-
-    const suggestions: Suggestion[] = [];
-    const quizAttempts = progress?.quizAttempts?.length ?? 0;
-    if (quizAttempts === 0 && totalQuizzes > 0) {
-      suggestions.push({ action: 'Take the quiz to assess your knowledge', impact: '+15 pts', type: 'quiz' });
-    } else if (cached.quizDimension < 60 && totalQuizzes > 0) {
-      suggestions.push({ action: 'Retake the quiz to raise your score', impact: '+10 pts', type: 'quiz' });
-    }
-    if (cached.masteryDimension < 60 && flashcards > 0) {
-      suggestions.push({ action: 'Review flashcards with spaced repetition', impact: '+8 pts', type: 'flashcards' });
-    }
-    if (cached.coverageDimension < 50 && flashcards > 0) {
-      suggestions.push({ action: 'Study more of the flashcard set', impact: '+6 pts', type: 'flashcards' });
-    }
-
-    return { ...cached, suggestions: suggestions.slice(0, 3) };
-  }
-
-  return computeReadinessScore(userId, sourceId);
+  return getCached(
+    CacheKeys.readiness(userId, sourceId),
+    () => computeReadinessScore(userId, sourceId),
+    READINESS_TTL_SEC
+  );
 }
 
 type SourceWithDimensions = {
@@ -217,6 +191,18 @@ export interface AvgDimensions {
 
 /** Aggregate readiness across all of a user's sources. */
 export async function getAggregateReadiness(userId: string): Promise<{
+  overallScore: number;
+  sources: { sourceId: string; score: number }[];
+  avgDimensions: AvgDimensions | null;
+}> {
+  return getCached(
+    CacheKeys.readinessAggregate(userId),
+    () => _computeAggregateReadiness(userId),
+    AGGREGATE_TTL_SEC
+  );
+}
+
+async function _computeAggregateReadiness(userId: string): Promise<{
   overallScore: number;
   sources: { sourceId: string; score: number }[];
   avgDimensions: AvgDimensions | null;

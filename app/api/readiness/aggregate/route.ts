@@ -28,7 +28,9 @@ export async function GET(request: NextRequest) {
     const userGoals = learning?.learningGoals ?? [];
     const userRole = learning?.role ?? null;
 
-    return NextResponse.json({ ...result, userGoal, userGoals, userRole });
+    return NextResponse.json({ ...result, userGoal, userGoals, userRole }, {
+      headers: { 'Cache-Control': 'private, max-age=3600' },
+    });
   } catch (error) {
     console.error('Error fetching aggregate clarity score:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
