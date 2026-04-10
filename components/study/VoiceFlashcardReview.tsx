@@ -334,6 +334,12 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
           <span className="text-sm text-muted-foreground" aria-live="polite">
             {index + 1} / {cards.length}
           </span>
+          {listening && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-red-500 dark:text-red-400" aria-live="polite" aria-label="Microphone active">
+              <span className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 animate-pulse shrink-0" aria-hidden="true" />
+              Mic on
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {/* TTS toggle */}

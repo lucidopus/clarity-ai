@@ -134,60 +134,81 @@ export function cancelSpeech(): void {
 }
 
 /**
- * Starts a continuous, self-restarting speech recognition session that keeps
- * the mic open until the returned stop function is called.
- * Calls onRating when a rating keyword is matched, then stops automatically.
- * Returns a cleanup function — call it to stop listening at any time.
+ * Starts a looping speech recognition session that keeps listening until a
+ * rating keyword is matched or the returned stop function is called.
+ *
+ * Uses continuous=false + manual restart per utterance — more reliable than
+ * continuous=true because each attempt gets a fresh SpeechRecognition instance
+ * (restarting a stopped instance is buggy across browsers).
+ *
+ * Returns a cleanup/stop function.
  */
 export function startContinuousRatingListener(
   onRating: (rating: RatingWord) => void
 ): () => void {
   if (!isSpeechRecognitionSupported()) return () => {};
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-  const recognition = new SR() as SpeechRecognition;
-  recognition.continuous = true;
-  recognition.interimResults = false;
-  recognition.lang = 'en-US';
-  recognition.maxAlternatives = 3;
-
   let stopped = false;
+  let active: SpeechRecognition | null = null;
 
-  recognition.onresult = (event: SpeechRecognitionEvent) => {
-    // Check the most recent result only
-    const result = event.results[event.results.length - 1];
-    for (let a = 0; a < result.length; a++) {
-      const rating = matchRating(result[a].transcript);
-      if (rating) {
-        onRating(rating);
+  const startSession = () => {
+    if (stopped) return;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+    const recognition = new SR() as SpeechRecognition;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 3;
+    active = recognition;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      for (let a = 0; a < event.results[0].length; a++) {
+        const rating = matchRating(event.results[0][a].transcript);
+        if (rating) {
+          stopped = true;
+          active = null;
+          onRating(rating);
+          return;
+        }
+      }
+      // No keyword matched — onend will restart for next utterance
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (stopped) return;
+      active = null;
+      if (event.error === 'not-allowed' || event.error === 'aborted') {
+        stopped = true; // Permission denied or explicitly stopped — don't retry
         return;
       }
+      setTimeout(startSession, 300);
+    };
+
+    recognition.onend = () => {
+      if (stopped) return;
+      active = null;
+      startSession(); // Restart with a fresh instance immediately
+    };
+
+    try {
+      recognition.start();
+    } catch {
+      active = null;
+      setTimeout(startSession, 300);
     }
   };
 
-  recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-    if (stopped) return;
-    // not-allowed = permission denied; aborted = we stopped it — don't restart
-    if (event.error === 'not-allowed' || event.error === 'aborted') return;
-    // Any other error (network, audio-capture): restart after brief delay
-    setTimeout(() => {
-      if (!stopped) try { recognition.start(); } catch { /* ignore */ }
-    }, 300);
-  };
-
-  recognition.onend = () => {
-    if (stopped) return;
-    // continuous=true sessions can still end on silence — restart immediately
-    try { recognition.start(); } catch { /* ignore */ }
-  };
-
-  try { recognition.start(); } catch { /* ignore */ }
+  startSession();
 
   return () => {
     stopped = true;
-    recognition.onend = null;
-    recognition.onerror = null;
-    try { recognition.stop(); } catch { /* ignore */ }
+    if (active) {
+      active.onend = null;
+      active.onerror = null;
+      try { active.stop(); } catch { /* ignore */ }
+      active = null;
+    }
   };
 }
