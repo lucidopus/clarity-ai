@@ -8,11 +8,9 @@ import { Rating } from '@/lib/services/fsrs';
 import {
   speak,
   cancelSpeech,
-  startContinuousRatingListener,
-  isSpeechSynthesisSupported,
-  isSpeechRecognitionSupported,
-} from '@/lib/services/speechRecognition';
-import type { RatingWord } from '@/lib/services/speechRecognition';
+  startVoiceRatingListener,
+} from '@/lib/services/elevenLabsVoice';
+import type { RatingWord } from '@/lib/services/elevenLabsVoice';
 
 interface DueCard {
   _id: string;
@@ -62,12 +60,11 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   const [phase, setPhase] = useState<Phase>('loading');
   const [countdown, setCountdown] = useState(RECALL_PAUSE_SECONDS);
   const [listening, setListening] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(isSpeechSynthesisSupported());
-  const [voiceEnabled, setVoiceEnabled] = useState(isSpeechRecognitionSupported());
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [submitError, setSubmitError] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
   const [micBlocked, setMicBlocked] = useState(false);
-  // Voice confirmation: voice pre-selects a rating; user has VOICE_CONFIRM_SECONDS to cancel
   const [pendingRating, setPendingRating] = useState<RatingWord | null>(null);
   const [pendingCountdown, setPendingCountdown] = useState(VOICE_CONFIRM_SECONDS);
 
@@ -76,21 +73,6 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     triggerRef.current = document.activeElement;
     return () => { (triggerRef.current as HTMLElement | null)?.focus(); };
   }, []);
-
-  // Explicitly request mic permission via getUserMedia — SpeechRecognition alone
-  // does not reliably trigger the macOS permission dialog or yellow dot indicator.
-  // We request, immediately release the stream, then let SpeechRecognition take over.
-  useEffect(() => {
-    if (!voiceEnabled) return;
-    navigator.mediaDevices?.getUserMedia({ audio: true })
-      .then((stream) => {
-        stream.getTracks().forEach((t) => t.stop());
-      })
-      .catch(() => {
-        setMicBlocked(true);
-        setVoiceEnabled(false);
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape to exit
   useEffect(() => {
@@ -120,7 +102,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   // ── TTS for question phase ──────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== 'question' || !currentCard) return;
-    if (!ttsEnabled) return;
+    if (!ttsEnabled) { setPhase('recall_pause'); return; }
 
     speak(`Card ${index + 1} of ${cards.length}. ${currentCard.question}`)
       .then(() => setPhase('recall_pause'))
@@ -133,14 +115,12 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   useEffect(() => {
     if (phase !== 'recall_pause') return;
     setCountdown(RECALL_PAUSE_SECONDS);
-
     const interval = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) { clearInterval(interval); setPhase('answer'); return 0; }
         return c - 1;
       });
     }, 1000);
-
     return () => clearInterval(interval);
   }, [phase]);
 
@@ -155,6 +135,36 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
 
     return () => cancelSpeech();
   }, [phase, index]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── ElevenLabs STT listener — active during rating phase ───────────────────
+  useEffect(() => {
+    if (phase !== 'rating' || !voiceEnabled || pendingRating !== null) return;
+
+    // 500ms delay so audio hardware finishes playback before mic opens
+    const timer = setTimeout(() => {
+      recognitionStopRef.current = startVoiceRatingListener({
+        onRating: (rating) => {
+          recognitionStopRef.current?.();
+          recognitionStopRef.current = null;
+          setPendingCountdown(VOICE_CONFIRM_SECONDS);
+          setPendingRating(rating);
+        },
+        onPermissionDenied: () => {
+          setMicBlocked(true);
+          setVoiceEnabled(false);
+          setListening(false);
+        },
+        onListening: setListening,
+      });
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      recognitionStopRef.current?.();
+      recognitionStopRef.current = null;
+      setListening(false);
+    };
+  }, [phase, voiceEnabled, pendingRating]);
 
   // ── Voice confirmation: countdown timer ─────────────────────────────────────
   useEffect(() => {
@@ -175,47 +185,13 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     }
   }, [pendingCountdown, pendingRating]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Continuous voice recognition — active whenever in rating phase ──────────
-  useEffect(() => {
-    if (phase !== 'rating' || !voiceEnabled || pendingRating !== null) return;
-
-    // Brief delay so the audio system finishes TTS before the mic opens
-    const timer = setTimeout(() => {
-      setListening(true);
-      setMicBlocked(false);
-      recognitionStopRef.current = startContinuousRatingListener(
-        (rating) => {
-          recognitionStopRef.current?.();
-          recognitionStopRef.current = null;
-          setListening(false);
-          setPendingCountdown(VOICE_CONFIRM_SECONDS);
-          setPendingRating(rating);
-        },
-        () => {
-          // Permission denied — mic is blocked at browser or OS level
-          setListening(false);
-          setMicBlocked(true);
-          setVoiceEnabled(false);
-        }
-      );
-    }, 500);
-
-    return () => {
-      clearTimeout(timer);
-      recognitionStopRef.current?.();
-      recognitionStopRef.current = null;
-      setListening(false);
-    };
-  }, [phase, voiceEnabled, pendingRating]);
-
   const cancelPendingRating = useCallback(() => {
     setPendingRating(null);
-    // Recognition restarts automatically — the effect above re-runs when pendingRating → null
+    // STT listener restarts automatically when pendingRating → null
   }, []);
 
   const submitRating = useCallback(async (rating: Rating) => {
     if (!currentCard || phase === 'submitting') return;
-    // Stop mic immediately before any state changes
     recognitionStopRef.current?.();
     recognitionStopRef.current = null;
     setPendingRating(null);
@@ -376,21 +352,17 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
             onClick={() => { setTtsEnabled((v) => !v); cancelSpeech(); }}
             className={`p-2 rounded-xl transition-colors cursor-pointer ${ttsEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
             aria-label={ttsEnabled ? 'Mute text-to-speech' : 'Enable text-to-speech'}
-            title={ttsEnabled ? 'Mute TTS' : 'Enable TTS'}
           >
             {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
-          {/* Voice toggle */}
-          {isSpeechRecognitionSupported() && (
-            <button
-              onClick={() => setVoiceEnabled((v) => !v)}
-              className={`p-2 rounded-xl transition-colors cursor-pointer ${voiceEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
-              aria-label={voiceEnabled ? 'Disable voice input' : 'Enable voice input'}
-              title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
-            >
-              {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-            </button>
-          )}
+          {/* Voice input toggle */}
+          <button
+            onClick={() => setVoiceEnabled((v) => !v)}
+            className={`p-2 rounded-xl transition-colors cursor-pointer ${voiceEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
+            aria-label={voiceEnabled ? 'Disable voice input' : 'Enable voice input'}
+          >
+            {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          </button>
           <button
             onClick={handleClose}
             className="p-2 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
@@ -436,11 +408,9 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                     <circle cx="36" cy="36" r={ringR} fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/30" />
                     <motion.circle
                       cx="36" cy="36" r={ringR}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      strokeLinecap="round"
+                      fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"
                       strokeDasharray={ringC}
+                      initial={{ strokeDashoffset: 0 }}
                       animate={{ strokeDashoffset: ringOffset }}
                       transition={{ duration: 1, ease: 'linear' }}
                       transform="rotate(-90 36 36)"
@@ -471,7 +441,20 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
               </div>
             )}
 
-            {/* Voice confirmation banner — shown when voice pre-selects a rating */}
+            {/* Mic permission blocked */}
+            {micBlocked && (
+              <div className="flex flex-col gap-1 px-4 py-3 mb-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Microphone access blocked — use the buttons below
+                </div>
+                <p className="text-xs opacity-80 ml-6">
+                  Fix: <strong>System Settings → Privacy &amp; Security → Microphone</strong> → allow your browser, then reload.
+                </p>
+              </div>
+            )}
+
+            {/* Voice confirmation banner */}
             {pendingRating && (
               <div
                 className="flex items-center justify-between px-4 py-3 mb-4 rounded-xl bg-accent/10 border border-accent/30 text-sm"
@@ -492,24 +475,11 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
               </div>
             )}
 
-            {/* Mic permission blocked */}
-            {micBlocked && (
-              <div className="flex flex-col gap-1 px-4 py-3 mb-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
-                <div className="flex items-center gap-2 font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
-                  Microphone access blocked — use the buttons below
-                </div>
-                <p className="text-xs opacity-80 ml-6">
-                  To enable voice: open <strong>System Settings → Privacy &amp; Security → Microphone</strong> and allow your browser, then reload.
-                </p>
-              </div>
-            )}
-
             {/* Listening indicator */}
             {listening && !pendingRating && !micBlocked && (
               <div className="flex items-center justify-center gap-2 px-4 py-2 mb-4 rounded-xl bg-accent/10 border border-accent/20 text-accent text-sm">
                 <Mic className="w-4 h-4 animate-pulse" aria-hidden="true" />
-                <span>Listening for: Again / Hard / Good / Easy</span>
+                <span>Listening — say Again, Hard, Good, or Easy</span>
               </div>
             )}
 
@@ -520,7 +490,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                   How well did you recall?{' '}
                   <span className="opacity-60" aria-hidden="true">(1–4)</span>
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {RATING_LABELS.map(({ rating, label, key, color }) => (
                     <button
                       key={rating}
@@ -537,7 +507,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
               </div>
             )}
 
-            {/* Skip recall (during recall_pause) */}
+            {/* Skip recall */}
             {phase === 'recall_pause' && (
               <div className="text-center mt-2">
                 <button
