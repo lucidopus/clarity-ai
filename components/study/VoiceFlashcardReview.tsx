@@ -8,7 +8,7 @@ import { Rating } from '@/lib/services/fsrs';
 import {
   speak,
   cancelSpeech,
-  listenForRating,
+  startContinuousRatingListener,
   isSpeechSynthesisSupported,
   isSpeechRecognitionSupported,
 } from '@/lib/services/speechRecognition';
@@ -55,6 +55,7 @@ interface Props {
 export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Props) {
   const shouldReduceMotion = useReducedMotion();
   const triggerRef = useRef<Element | null>(null);
+  const recognitionStopRef = useRef<(() => void) | null>(null);
 
   const [cards, setCards] = useState<DueCard[]>([]);
   const [index, setIndex] = useState(0);
@@ -158,31 +159,41 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     }
   }, [pendingCountdown, pendingRating]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Voice recognition during rating phase ──────────────────────────────────
-  const startListening = useCallback(() => {
-    if (!voiceEnabled) return;
-    setListening(true);
+  // ── Continuous voice recognition — active whenever in rating phase ──────────
+  useEffect(() => {
+    if (phase !== 'rating' || !voiceEnabled || pendingRating !== null) return;
 
-    listenForRating(7000)
-      .then(({ rating }) => {
+    // Brief delay so the audio system finishes TTS before the mic opens
+    const timer = setTimeout(() => {
+      setListening(true);
+      recognitionStopRef.current = startContinuousRatingListener((rating) => {
+        // Stop listening immediately on match
+        recognitionStopRef.current?.();
+        recognitionStopRef.current = null;
         setListening(false);
-        // Stage for confirmation — don't submit immediately
         setPendingCountdown(VOICE_CONFIRM_SECONDS);
         setPendingRating(rating);
-      })
-      .catch(() => {
-        setListening(false);
-        // No match — user will use on-screen buttons
       });
-  }, [voiceEnabled]);
+    }, 500);
+
+    return () => {
+      clearTimeout(timer);
+      recognitionStopRef.current?.();
+      recognitionStopRef.current = null;
+      setListening(false);
+    };
+  }, [phase, voiceEnabled, pendingRating]);
 
   const cancelPendingRating = useCallback(() => {
     setPendingRating(null);
-    if (voiceEnabled) startListening();
-  }, [voiceEnabled, startListening]);
+    // Recognition restarts automatically — the effect above re-runs when pendingRating → null
+  }, []);
 
   const submitRating = useCallback(async (rating: Rating) => {
     if (!currentCard || phase === 'submitting') return;
+    // Stop mic immediately before any state changes
+    recognitionStopRef.current?.();
+    recognitionStopRef.current = null;
     setPendingRating(null);
     setPhase('submitting');
     setSubmitError(false);
@@ -217,6 +228,8 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   }, [currentCard, phase, index, cards.length, reviewedCount, ttsEnabled, onSessionComplete]);
 
   const handleClose = () => {
+    recognitionStopRef.current?.();
+    recognitionStopRef.current = null;
     cancelSpeech();
     onClose();
   };
@@ -473,17 +486,6 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                     </button>
                   ))}
                 </div>
-                {/* Voice input — manual trigger required for browser gesture policy */}
-                {voiceEnabled && !listening && !pendingRating && phase === 'rating' && (
-                  <button
-                    onClick={startListening}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-muted-foreground hover:border-accent/50 hover:text-accent transition-colors cursor-pointer text-sm"
-                    aria-label="Tap to speak your rating"
-                  >
-                    <Mic className="w-4 h-4" />
-                    Tap to speak your rating
-                  </button>
-                )}
               </div>
             )}
 

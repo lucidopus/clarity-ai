@@ -132,3 +132,62 @@ export function cancelSpeech(): void {
     window.speechSynthesis.cancel();
   }
 }
+
+/**
+ * Starts a continuous, self-restarting speech recognition session that keeps
+ * the mic open until the returned stop function is called.
+ * Calls onRating when a rating keyword is matched, then stops automatically.
+ * Returns a cleanup function — call it to stop listening at any time.
+ */
+export function startContinuousRatingListener(
+  onRating: (rating: RatingWord) => void
+): () => void {
+  if (!isSpeechRecognitionSupported()) return () => {};
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
+  const recognition = new SR() as SpeechRecognition;
+  recognition.continuous = true;
+  recognition.interimResults = false;
+  recognition.lang = 'en-US';
+  recognition.maxAlternatives = 3;
+
+  let stopped = false;
+
+  recognition.onresult = (event: SpeechRecognitionEvent) => {
+    // Check the most recent result only
+    const result = event.results[event.results.length - 1];
+    for (let a = 0; a < result.length; a++) {
+      const rating = matchRating(result[a].transcript);
+      if (rating) {
+        onRating(rating);
+        return;
+      }
+    }
+  };
+
+  recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    if (stopped) return;
+    // not-allowed = permission denied; aborted = we stopped it — don't restart
+    if (event.error === 'not-allowed' || event.error === 'aborted') return;
+    // Any other error (network, audio-capture): restart after brief delay
+    setTimeout(() => {
+      if (!stopped) try { recognition.start(); } catch { /* ignore */ }
+    }, 300);
+  };
+
+  recognition.onend = () => {
+    if (stopped) return;
+    // continuous=true sessions can still end on silence — restart immediately
+    try { recognition.start(); } catch { /* ignore */ }
+  };
+
+  try { recognition.start(); } catch { /* ignore */ }
+
+  return () => {
+    stopped = true;
+    recognition.onend = null;
+    recognition.onerror = null;
+    try { recognition.stop(); } catch { /* ignore */ }
+  };
+}
