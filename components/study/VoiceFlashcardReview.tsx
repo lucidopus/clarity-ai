@@ -133,10 +133,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     if (!ttsEnabled) { setPhase('rating'); return; }
 
     speak(`The answer is: ${currentCard.answer}`)
-      .then(() => {
-        setPhase('rating');
-        if (voiceEnabled) startListening();
-      })
+      .then(() => setPhase('rating'))
       .catch(() => setPhase('rating'));
 
     return () => cancelSpeech();
@@ -462,7 +459,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                   How well did you recall?{' '}
                   <span className="opacity-60" aria-hidden="true">(1–4)</span>
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
                   {RATING_LABELS.map(({ rating, label, key, color }) => (
                     <button
                       key={rating}
@@ -476,6 +473,17 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                     </button>
                   ))}
                 </div>
+                {/* Voice input — manual trigger required for browser gesture policy */}
+                {voiceEnabled && !listening && !pendingRating && phase === 'rating' && (
+                  <button
+                    onClick={startListening}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-muted-foreground hover:border-accent/50 hover:text-accent transition-colors cursor-pointer text-sm"
+                    aria-label="Tap to speak your rating"
+                  >
+                    <Mic className="w-4 h-4" />
+                    Tap to speak your rating
+                  </button>
+                )}
               </div>
             )}
 
