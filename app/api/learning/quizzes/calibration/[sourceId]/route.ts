@@ -57,7 +57,7 @@ export async function GET(
         totalQuestions: entry.totalQuestions,
         misinformedCount: entry.misinformedCount,
       })),
-      misinformedTopics: misinformedTopics.map((q: { _id: unknown; questionText: string }) => ({
+      misinformedTopics: (misinformedTopics as unknown as { _id: unknown; questionText: string }[]).map((q) => ({
         quizId: q._id,
         questionText: q.questionText,
       })),

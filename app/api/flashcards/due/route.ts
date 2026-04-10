@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     })
       .sort({ 'fsrs.due': 1 })
       .select('fsrs.due')
-      .lean();
+      .lean() as { fsrs?: { due?: Date } } | null;
 
     return NextResponse.json({
       dueCards,

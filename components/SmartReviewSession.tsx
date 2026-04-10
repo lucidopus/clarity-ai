@@ -108,7 +108,7 @@ export default function SmartReviewSession({ onClose, onSessionComplete }: Smart
 
   const currentCard = cards[currentIndex];
 
-  const intervals = useMemo(() => {
+  const intervals = useMemo<Record<number, string> | null>(() => {
     if (!currentCard?.fsrs || !showAnswer) return null;
     const now = new Date();
     const preview = getSchedulingPreview(currentCard.fsrs, now);
@@ -126,7 +126,8 @@ export default function SmartReviewSession({ onClose, onSessionComplete }: Smart
     setReviewError(false);
 
     const responseTimeMs = revealTime ? Date.now() - revealTime : undefined;
-    const statKey = ({ [Rating.Again]: 'again', [Rating.Hard]: 'hard', [Rating.Good]: 'good', [Rating.Easy]: 'easy' } as const)[rating];
+    type ReviewRating = Rating.Again | Rating.Hard | Rating.Good | Rating.Easy;
+    const statKey = ({ [Rating.Again]: 'again', [Rating.Hard]: 'hard', [Rating.Good]: 'good', [Rating.Easy]: 'easy' } as const)[rating as ReviewRating];
 
     try {
       const res = await fetch('/api/flashcards/review', {

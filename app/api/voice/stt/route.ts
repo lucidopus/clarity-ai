@@ -16,9 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'audio required' }, { status: 400 });
     }
 
-    const file = audio instanceof File
-      ? audio
-      : new File([audio], 'recording.webm', { type: audio.type || 'audio/webm' });
+    // FormData only returns string | File; after the Blob guard, audio is always a File
+    const file = audio as File;
 
     const transcription = await groq.audio.transcriptions.create({
       file,

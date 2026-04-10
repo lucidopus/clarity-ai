@@ -34,8 +34,8 @@ export async function computeReadinessScore(
   ]);
 
   const quizAttempts = progress?.quizAttempts ?? [];
-  const masteredFlashcardIds: string[] = (progress?.masteredFlashcardIds ?? []).map((id) =>
-    id.toString()
+  const masteredFlashcardIds: string[] = (progress?.masteredFlashcardIds ?? []).map((id: unknown) =>
+    String(id)
   );
 
   const totalFlashcards = flashcards.length;
@@ -164,7 +164,10 @@ export async function getReadinessScore(
 ): Promise<ReadinessResult> {
   await dbConnect();
 
-  const progress = await Progress.findOne({ userId, sourceId }).lean();
+  const progress = await Progress.findOne({ userId, sourceId }).lean() as {
+    readinessScore?: IReadinessScore;
+    quizAttempts?: { completedAt: Date; score: number }[];
+  } | null;
   const cached = progress?.readinessScore;
 
   if (cached && cached.computedAt && Date.now() - new Date(cached.computedAt).getTime() < CACHE_TTL_MS) {

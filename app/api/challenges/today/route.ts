@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import DailyChallenge from '@/lib/models/DailyChallenge';
+import { IChallenge } from '@/lib/models/DailyChallenge';
 import { generateDailyChallenges } from '@/lib/services/dailyChallenges';
+
+interface IDailyChallengeDoc {
+  challenges: IChallenge[];
+  allCompleted: boolean;
+}
 
 interface DecodedToken {
   userId: string;
@@ -26,14 +32,13 @@ export async function GET(request: NextRequest) {
     const today = getUTCDateString();
 
     // Get or create today's challenge document
-    let doc = await DailyChallenge.findOne({ userId: decoded.userId, date: today }).lean();
+    let doc = await DailyChallenge.findOne({ userId: decoded.userId, date: today }).lean() as IDailyChallengeDoc | null;
     if (!doc) {
-      const created = await DailyChallenge.findOneAndUpdate(
+      doc = await DailyChallenge.findOneAndUpdate(
         { userId: decoded.userId, date: today },
         { $setOnInsert: { challenges: generateDailyChallenges(today), allCompleted: false } },
         { upsert: true, new: true }
-      ).lean();
-      doc = created;
+      ).lean() as IDailyChallengeDoc | null;
     }
 
     return NextResponse.json({

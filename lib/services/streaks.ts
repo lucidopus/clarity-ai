@@ -79,7 +79,11 @@ export async function recordStudyActivity(
 
   // Helper to return the user's current streak without modifying it
   const currentStats = async (): Promise<StreakResult | null> => {
-    const u = await User.findById(userId).select('studyStreak longestStudyStreak streakShields').lean();
+    const u = await User.findById(userId).select('studyStreak longestStudyStreak streakShields').lean() as {
+      studyStreak?: number;
+      longestStudyStreak?: number;
+      streakShields?: number;
+    } | null;
     if (!u) return null;
     return {
       studyStreak: u.studyStreak ?? 0,

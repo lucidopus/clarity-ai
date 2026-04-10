@@ -27,7 +27,7 @@ export async function GET(
     // Fetch source for exam date metadata (read-only — doesn't block score)
     const source = await Source.findOne({ sourceId, userId: decoded.userId })
       .select('examDate examName')
-      .lean();
+      .lean() as { examDate?: Date; examName?: string } | null;
 
     const result = await getReadinessScore(decoded.userId, sourceId);
 

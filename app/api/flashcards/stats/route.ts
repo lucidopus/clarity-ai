@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       Flashcard.findOne({ userId: decoded.userId, 'fsrs.due': { $gt: now } })
         .sort({ 'fsrs.due': 1 })
         .select('fsrs.due')
-        .lean(),
+        .lean() as Promise<{ fsrs?: { due?: Date } } | null>,
     ]);
 
     // Average retention: fraction of reviews rated Good or Easy (3 or 4) in last 30 days

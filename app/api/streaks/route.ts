@@ -26,8 +26,9 @@ export async function GET(request: NextRequest) {
     const [user, todayDoc] = await Promise.all([
       User.findById(decoded.userId)
         .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate')
-        .lean(),
-      StudyDay.findOne({ userId: decoded.userId, date: getUTCDateString() }).lean(),
+        .lean() as Promise<{ studyStreak?: number; longestStudyStreak?: number; streakShields?: number; milestones?: number[]; lastStudyDate?: string } | null>,
+      StudyDay.findOne({ userId: decoded.userId, date: getUTCDateString() })
+        .lean() as Promise<{ qualifies?: boolean } | null>,
     ]);
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });

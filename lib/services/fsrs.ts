@@ -45,7 +45,7 @@ export function processReview(
 ): IFSRSCard {
   const card = toFSRSCard(fsrsData);
   const scheduling = scheduler.repeat(card, now);
-  const next = scheduling[rating].card;
+  const next = (scheduling as unknown as Record<number, { card: Card }>)[rating].card;
   return {
     due: next.due,
     stability: next.stability,
@@ -64,7 +64,7 @@ export function processReview(
 export function getSchedulingPreview(
   fsrsData: IFSRSCard,
   now = new Date()
-): Record<Rating, { due: Date; scheduledDays: number }> {
+): { [key: number]: { due: Date; scheduledDays: number } } {
   const card = toFSRSCard(fsrsData);
   const scheduling = scheduler.repeat(card, now);
   return {
