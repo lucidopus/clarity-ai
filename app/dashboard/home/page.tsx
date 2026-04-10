@@ -20,6 +20,7 @@ import CardsDueWidget from '@/components/CardsDueWidget';
 import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
 import StreakWidget from '@/components/StreakWidget';
 import DailyChallengesCard from '@/components/DailyChallengesCard';
+import ReadinessWidget from '@/components/dashboard/ReadinessWidget';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface StatsResponse {
@@ -331,6 +332,9 @@ export default function DashboardHomePage() {
             <StreakWidget />
             <DailyChallengesCard />
           </div>
+
+          {/* Exam Readiness */}
+          <ReadinessWidget />
 
           {/* Heatmap + Weekly Rhythm */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

@@ -17,6 +17,15 @@ export interface ICalibrationEntry {
   misinformedQuizIds: mongoose.Types.ObjectId[];
 }
 
+export interface IReadinessScore {
+  score: number;
+  quizDimension: number;
+  masteryDimension: number;
+  coverageDimension: number;
+  trendDimension: number;
+  computedAt: Date;
+}
+
 export interface IProgress extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -25,6 +34,7 @@ export interface IProgress extends Document {
   masteredQuizIds: mongoose.Types.ObjectId[];
   quizAttempts: IQuizAttempt[];
   calibrationHistory: ICalibrationEntry[];
+  readinessScore?: IReadinessScore;
   lastAccessedAt: Date;
   totalStudyTimeSeconds: number;
   createdAt: Date;
@@ -48,6 +58,18 @@ const CalibrationEntrySchema: Schema = new Schema({
   misinformedQuizIds: [{ type: Schema.Types.ObjectId, ref: 'Quiz' }],
 }, { _id: false });
 
+const ReadinessScoreSchema: Schema = new Schema(
+  {
+    score: { type: Number, required: true },
+    quizDimension: { type: Number, required: true },
+    masteryDimension: { type: Number, required: true },
+    coverageDimension: { type: Number, required: true },
+    trendDimension: { type: Number, required: true },
+    computedAt: { type: Date, required: true },
+  },
+  { _id: false }
+);
+
 const ProgressSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   sourceId: { type: String, required: true },
@@ -55,6 +77,7 @@ const ProgressSchema: Schema = new Schema({
   masteredQuizIds: [{ type: Schema.Types.ObjectId, ref: 'Quiz' }],
   quizAttempts: [QuizAttemptSchema],
   calibrationHistory: [CalibrationEntrySchema],
+  readinessScore: { type: ReadinessScoreSchema, default: null },
   lastAccessedAt: { type: Date, default: Date.now },
   totalStudyTimeSeconds: { type: Number, default: 0 },
 }, {

@@ -26,6 +26,9 @@ export interface ISource extends Document {
   fileName?: string;
   fileSize?: number;
   mimeType?: string;
+  // Exam date (for readiness projection)
+  examDate?: Date;
+  examName?: string;
   // Error tracking
   errorType?: string;
   errorMessage?: string;
@@ -57,6 +60,9 @@ const SourceSchema: Schema = new Schema({
   fileName: { type: String },
   fileSize: { type: Number },
   mimeType: { type: String },
+  // Exam date for readiness projection
+  examDate: { type: Date },
+  examName: { type: String },
   // Error tracking
   errorType: { type: String },
   errorMessage: { type: String },
