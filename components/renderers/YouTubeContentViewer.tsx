@@ -18,7 +18,7 @@ export default function YouTubeContentViewer({
   autoplayVideos,
 }: ContentViewerProps) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {materials.summary && (
         <div className="shrink-0">
           <VideoSummaryButton
@@ -27,7 +27,7 @@ export default function YouTubeContentViewer({
           />
         </div>
       )}
-      <div className="flex-1 min-h-0">
+      <div>
         <VideoAndTranscriptViewer
           transcript={materials.transcript}
           videoId={materials.video.videoId}

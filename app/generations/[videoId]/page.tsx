@@ -652,7 +652,7 @@ export default function VideoMaterialsPage() {
         </div>
 
         {/* Content Scroll Area */}
-        <div className="flex-1 overflow-y-auto scrollbar-themed p-4 md:p-6 lg:p-8 scroll-smooth will-change-transform">
+        <div className="flex-1 overflow-y-auto scrollbar-themed p-4 md:p-5 lg:p-6 scroll-smooth will-change-transform">
            
            {/* Responsive Container - Using flex to allow child to expand */}
            <div className="w-full h-full flex flex-col">
