@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import Groq from 'groq-sdk';
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,40 +15,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'text required' }, { status: 400 });
     }
 
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: 'ElevenLabs not configured' }, { status: 503 });
-
-    const voiceId = process.env.ELEVENLABS_VOICE_ID ?? '21m00Tcm4TlvDq8ikWAM'; // Rachel
-
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-      method: 'POST',
-      headers: {
-        'xi-api-key': apiKey,
-        'Content-Type': 'application/json',
-        Accept: 'audio/mpeg',
-      },
-      body: JSON.stringify({
-        text,
-        model_id: 'eleven_turbo_v2_5',
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-      }),
+    const speed = parseFloat(process.env.GROQ_TTS_SPEED ?? '1.1');
+    const speech = await groq.audio.speech.create({
+      model: 'canopylabs/orpheus-v1-english',
+      voice: (process.env.GROQ_TTS_VOICE ?? 'hannah') as 'hannah',
+      input: text,
+      response_format: 'wav',
+      speed,
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('ElevenLabs TTS error:', err);
-      return NextResponse.json({ error: 'TTS failed' }, { status: 502 });
-    }
-
-    const buffer = await res.arrayBuffer();
+    const buffer = await speech.arrayBuffer();
     return new NextResponse(buffer, {
       headers: {
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': 'audio/wav',
         'Cache-Control': 'no-store',
       },
     });
   } catch (error) {
-    console.error('TTS route error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Return 503 so the client falls back to browser TTS gracefully
+    const message = error instanceof Error ? error.message : 'TTS failed';
+    console.error('TTS route error:', message);
+    return NextResponse.json({ error: 'TTS unavailable' }, { status: 503 });
   }
 }

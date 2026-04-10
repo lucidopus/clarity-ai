@@ -2,15 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X, Mic, MicOff, Volume2, VolumeX, ChevronRight, CheckCircle2, Brain, AlertCircle } from 'lucide-react';
+import { X, Mic, MicOff, Volume2, VolumeX, ChevronRight, CheckCircle2, Brain, AlertCircle, Plus } from 'lucide-react';
 import Button from '@/components/Button';
 import { Rating } from '@/lib/services/fsrs';
-import {
-  speak,
-  cancelSpeech,
-  startVoiceRatingListener,
-} from '@/lib/services/elevenLabsVoice';
-import type { RatingWord } from '@/lib/services/elevenLabsVoice';
+import { speak, cancelSpeech, matchRating } from '@/lib/services/voice';
+import type { RatingWord } from '@/lib/services/voice';
 
 interface DueCard {
   _id: string;
@@ -53,20 +49,35 @@ interface Props {
 export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Props) {
   const shouldReduceMotion = useReducedMotion();
   const triggerRef = useRef<Element | null>(null);
-  const recognitionStopRef = useRef<(() => void) | null>(null);
+
+  // Audio refs
+  const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const phaseRef = useRef<Phase>('loading');
+  const voiceHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [cards, setCards] = useState<DueCard[]>([]);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>('loading');
   const [countdown, setCountdown] = useState(RECALL_PAUSE_SECONDS);
-  const [listening, setListening] = useState(false);
+  const [totalPause, setTotalPause] = useState(RECALL_PAUSE_SECONDS);
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [submitError, setSubmitError] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
-  const [micBlocked, setMicBlocked] = useState(false);
+  const [micReady, setMicReady] = useState(false);
+  const [micError, setMicError] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [slowProcessing, setSlowProcessing] = useState(false);
   const [pendingRating, setPendingRating] = useState<RatingWord | null>(null);
   const [pendingCountdown, setPendingCountdown] = useState(VOICE_CONFIRM_SECONDS);
+  const [voiceHint, setVoiceHint] = useState<string | null>(null);
+
+  // Keep phaseRef in sync
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
 
   // Restore focus on close
   useEffect(() => {
@@ -99,13 +110,46 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
 
   const currentCard = cards[index];
 
-  // ── TTS for question phase ──────────────────────────────────────────────────
+  // ── Open mic stream once when voiceEnabled ──────────────────────────────────
+  useEffect(() => {
+    if (!voiceEnabled) {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setMicReady(false);
+      return;
+    }
+
+    let cancelled = false;
+    navigator.mediaDevices
+      .getUserMedia({ audio: true, video: false })
+      .then((s) => {
+        if (cancelled) { s.getTracks().forEach((t) => t.stop()); return; }
+        streamRef.current = s;
+        setMicReady(true);
+        setMicError(false);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMicError(true);
+          setVoiceEnabled(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setMicReady(false);
+    };
+  }, [voiceEnabled]);
+
+  // ── TTS for question phase — only advance if speech completed naturally ──────
   useEffect(() => {
     if (phase !== 'question' || !currentCard) return;
     if (!ttsEnabled) { setPhase('recall_pause'); return; }
 
     speak(`Card ${index + 1} of ${cards.length}. ${currentCard.question}`)
-      .then(() => setPhase('recall_pause'))
+      .then(({ cancelled }) => { if (!cancelled) setPhase('recall_pause'); })
       .catch(() => setPhase('recall_pause'));
 
     return () => cancelSpeech();
@@ -115,6 +159,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   useEffect(() => {
     if (phase !== 'recall_pause') return;
     setCountdown(RECALL_PAUSE_SECONDS);
+    setTotalPause(RECALL_PAUSE_SECONDS);
     const interval = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) { clearInterval(interval); setPhase('answer'); return 0; }
@@ -124,47 +169,96 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     return () => clearInterval(interval);
   }, [phase]);
 
-  // ── TTS for answer phase ────────────────────────────────────────────────────
+  // ── TTS for answer phase — only advance if speech completed naturally ────────
   useEffect(() => {
     if (phase !== 'answer' || !currentCard) return;
     if (!ttsEnabled) { setPhase('rating'); return; }
 
     speak(`The answer is: ${currentCard.answer}`)
-      .then(() => setPhase('rating'))
+      .then(({ cancelled }) => { if (!cancelled) setPhase('rating'); })
       .catch(() => setPhase('rating'));
 
     return () => cancelSpeech();
   }, [phase, index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── ElevenLabs STT listener — active during rating phase ───────────────────
-  useEffect(() => {
-    if (phase !== 'rating' || !voiceEnabled || pendingRating !== null) return;
+  // ── Show voice hint with auto-clear ─────────────────────────────────────────
+  const showVoiceHint = useCallback((hint: string) => {
+    if (voiceHintTimerRef.current) clearTimeout(voiceHintTimerRef.current);
+    setVoiceHint(hint);
+    voiceHintTimerRef.current = setTimeout(() => setVoiceHint(null), 3500);
+  }, []);
 
-    // 500ms delay so audio hardware finishes playback before mic opens
-    const timer = setTimeout(() => {
-      recognitionStopRef.current = startVoiceRatingListener({
-        onRating: (rating) => {
-          recognitionStopRef.current?.();
-          recognitionStopRef.current = null;
-          setPendingCountdown(VOICE_CONFIRM_SECONDS);
-          setPendingRating(rating);
-        },
-        onPermissionDenied: () => {
-          setMicBlocked(true);
-          setVoiceEnabled(false);
-          setListening(false);
-        },
-        onListening: setListening,
-      });
-    }, 500);
+  // ── Send recorded audio to Groq Whisper ─────────────────────────────────────
+  const sendAudio = useCallback(async () => {
+    const mimeType = mediaRecorderRef.current?.mimeType ?? 'audio/webm';
+    const blob = new Blob(chunksRef.current, { type: mimeType });
+    chunksRef.current = [];
 
-    return () => {
-      clearTimeout(timer);
-      recognitionStopRef.current?.();
-      recognitionStopRef.current = null;
-      setListening(false);
-    };
-  }, [phase, voiceEnabled, pendingRating]);
+    if (blob.size < 500) {
+      showVoiceHint('Hold longer and speak clearly');
+      return;
+    }
+
+    setProcessing(true);
+    slowTimerRef.current = setTimeout(() => setSlowProcessing(true), 3000);
+
+    try {
+      const form = new FormData();
+      form.append('audio', blob, 'recording.webm');
+      const res = await fetch('/api/voice/stt', { method: 'POST', body: form });
+
+      if (!res.ok) {
+        showVoiceHint("Couldn't reach voice service — use the buttons below");
+        return;
+      }
+      if (phaseRef.current !== 'rating') return;
+
+      const { text } = await res.json() as { text?: string };
+      const rating = matchRating(text ?? '');
+
+      if (rating && phaseRef.current === 'rating') {
+        setPendingRating(rating);
+      } else if (text) {
+        showVoiceHint(`Heard "${text.trim()}" — say Again, Hard, Good, or Easy`);
+      } else {
+        showVoiceHint('No speech detected — try again');
+      }
+    } catch {
+      showVoiceHint("Couldn't reach voice service — use the buttons below");
+    } finally {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+      setSlowProcessing(false);
+      setProcessing(false);
+    }
+  }, [showVoiceHint]);
+
+  // ── Start / stop recording ──────────────────────────────────────────────────
+  const startRecording = useCallback(() => {
+    if (!streamRef.current || recording) return;
+    setVoiceHint(null);
+    chunksRef.current = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/mp4')
+      ? 'audio/mp4'
+      : '';
+    try {
+      const recorder = new MediaRecorder(streamRef.current, mimeType ? { mimeType } : undefined);
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.onstop = sendAudio;
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setRecording(true);
+    } catch {
+      // MediaRecorder not available
+    }
+  }, [recording, sendAudio]);
+
+  const stopRecordingAndSend = useCallback(() => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === 'inactive') return;
+    try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
+    setRecording(false);
+  }, []);
 
   // ── Voice confirmation: countdown timer ─────────────────────────────────────
   useEffect(() => {
@@ -187,17 +281,22 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
 
   const cancelPendingRating = useCallback(() => {
     setPendingRating(null);
-    // STT listener restarts automatically when pendingRating → null
   }, []);
 
   const submitRating = useCallback(async (rating: Rating) => {
     if (!currentCard || phase === 'submitting') return;
-    recognitionStopRef.current?.();
-    recognitionStopRef.current = null;
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
+    }
+    if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+    setRecording(false);
+    setProcessing(false);
+    setSlowProcessing(false);
+    setVoiceHint(null);
     setPendingRating(null);
     setPhase('submitting');
     setSubmitError(false);
-    setListening(false);
     cancelSpeech();
 
     try {
@@ -212,11 +311,12 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
       setReviewedCount(newCount);
 
       if (index + 1 >= cards.length) {
-        if (ttsEnabled) {
-          await speak(`Session complete! You reviewed ${newCount} card${newCount !== 1 ? 's' : ''}. Great job!`).catch(() => {});
-        }
+        // Fix #10: show done screen immediately, speak over it (no await)
         setPhase('done');
         onSessionComplete?.(newCount);
+        if (ttsEnabled) {
+          speak(`Session complete! You reviewed ${newCount} card${newCount !== 1 ? 's' : ''}. Great job!`).catch(() => {});
+        }
       } else {
         setIndex((i) => i + 1);
         setPhase('question');
@@ -228,37 +328,85 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   }, [currentCard, phase, index, cards.length, reviewedCount, ttsEnabled, onSessionComplete]);
 
   const handleClose = () => {
-    recognitionStopRef.current?.();
-    recognitionStopRef.current = null;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop(); } catch { /* ignore */ }
+    }
+    if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+    if (voiceHintTimerRef.current) clearTimeout(voiceHintTimerRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     cancelSpeech();
     onClose();
   };
 
-  // ── Keyboard shortcuts during rating ───────────────────────────────────────
+  // ── Keyboard shortcuts: 1-4 + Space PTT during rating AND answer phases ─────
   useEffect(() => {
-    if (phase !== 'rating') return;
-    const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === '1') submitRating(Rating.Again);
-      if (e.key === '2') submitRating(Rating.Hard);
-      if (e.key === '3') submitRating(Rating.Good);
-      if (e.key === '4') submitRating(Rating.Easy);
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [phase, submitRating]);
+    if (phase !== 'rating' && phase !== 'answer') return;
 
-  // ── Countdown ring SVG ──────────────────────────────────────────────────────
-  const ringR = 28;
-  const ringC = 2 * Math.PI * ringR;
-  const ringOffset = ringC - (countdown / RECALL_PAUSE_SECONDS) * ringC;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      // Fix #5: guard buttons too so Space on a focused button doesn't double-fire
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+
+      if (phase === 'rating') {
+        if (e.key === '1') { submitRating(Rating.Again); return; }
+        if (e.key === '2') { submitRating(Rating.Hard); return; }
+        if (e.key === '3') { submitRating(Rating.Good); return; }
+        if (e.key === '4') { submitRating(Rating.Easy); return; }
+      }
+
+      // Fix #8: Space PTT works in answer phase too — cancels TTS and starts recording
+      if (e.code === 'Space' && !e.repeat && voiceEnabled && micReady && !recording && pendingRating === null) {
+        e.preventDefault();
+        if (phase === 'answer') {
+          cancelSpeech();
+          setPhase('rating');
+        }
+        startRecording();
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && recording) {
+        e.preventDefault();
+        stopRecordingAndSend();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [phase, voiceEnabled, micReady, recording, pendingRating, submitRating, startRecording, stopRecordingAndSend]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (phase === 'loading') {
     return (
-      <div role="dialog" aria-modal="true" aria-label="Voice Flashcard Review" className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex items-center justify-center">
-        <Brain className="w-10 h-10 text-accent animate-pulse" />
+      <div role="dialog" aria-modal="true" aria-label="Voice Flashcard Review" className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col items-center justify-center gap-5">
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          {/* Outer spinning ring */}
+          <motion.div
+            className="absolute inset-0 rounded-full border-2 border-accent/20 border-t-accent"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.1, repeat: Infinity, ease: 'linear' }}
+          />
+          {/* Inner breathing icon */}
+          <motion.div
+            animate={{ scale: [0.92, 1.04, 0.92], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <Brain className="w-7 h-7 text-accent" />
+          </motion.div>
+        </div>
+        <motion.p
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
+          className="text-sm text-muted-foreground"
+        >
+          Loading cards...
+        </motion.p>
       </div>
     );
   }
@@ -318,6 +466,8 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   }
 
   const progress = cards.length > 0 ? ((index + 1) / cards.length) * 100 : 0;
+  const showVoiceControls = (phase === 'rating') && voiceEnabled && micReady && !pendingRating;
+  const recallBarPct = totalPause > 0 ? (countdown / totalPause) * 100 : 0;
 
   return (
     <div
@@ -334,38 +484,42 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
           <span className="text-sm text-muted-foreground" aria-live="polite">
             {index + 1} / {cards.length}
           </span>
-          {listening && !micBlocked && (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-red-500 dark:text-red-400" aria-live="polite" aria-label="Microphone active">
+          {recording && (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-red-500 dark:text-red-400" aria-live="polite" aria-label="Microphone recording">
               <span className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 animate-pulse shrink-0" aria-hidden="true" />
-              Mic on
+              Recording
             </span>
           )}
-          {micBlocked && (
+          {micError && (
             <span className="text-xs font-medium text-amber-500 dark:text-amber-400" aria-live="assertive">
               Mic blocked
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {/* TTS toggle */}
+        {/* Fix #3: bumped to p-2.5 (44px targets), close visually separated */}
+        <div className="flex items-center gap-1">
           <button
+            type="button"
             onClick={() => { setTtsEnabled((v) => !v); cancelSpeech(); }}
-            className={`p-2 rounded-xl transition-colors cursor-pointer ${ttsEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
+            className={`p-2.5 rounded-xl transition-colors cursor-pointer ${ttsEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
             aria-label={ttsEnabled ? 'Mute text-to-speech' : 'Enable text-to-speech'}
           >
             {ttsEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
           </button>
-          {/* Voice input toggle */}
           <button
+            type="button"
             onClick={() => setVoiceEnabled((v) => !v)}
-            className={`p-2 rounded-xl transition-colors cursor-pointer ${voiceEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
+            className={`p-2.5 rounded-xl transition-colors cursor-pointer ${voiceEnabled ? 'text-accent bg-accent/10' : 'text-muted-foreground hover:bg-muted/20'}`}
             aria-label={voiceEnabled ? 'Disable voice input' : 'Enable voice input'}
           >
             {voiceEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
           </button>
+          {/* Separator before close */}
+          <div className="w-px h-5 bg-border mx-2" aria-hidden="true" />
           <button
+            type="button"
             onClick={handleClose}
-            className="p-2 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+            className="p-2.5 rounded-xl hover:bg-muted/30 transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
             aria-label="Exit review session (Escape)"
           >
             <X className="w-5 h-5" />
@@ -393,41 +547,61 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
             transition={{ duration: 0.25 }}
             className="w-full"
           >
-            {/* Question */}
-            <div className="bg-card-bg border-2 border-border rounded-2xl p-8 mb-6 min-h-[140px] flex items-center justify-center">
-              <p className="text-xl font-medium text-foreground text-center leading-relaxed">
-                {currentCard?.question}
-              </p>
-            </div>
-
-            {/* Recall pause countdown */}
-            {phase === 'recall_pause' && (
-              <div className="flex flex-col items-center gap-3 mb-6">
-                <div className="relative" aria-label={`${countdown} seconds to recall`}>
-                  <svg width="72" height="72" viewBox="0 0 72 72">
-                    <circle cx="36" cy="36" r={ringR} fill="none" stroke="currentColor" strokeWidth="4" className="text-muted/30" />
-                    <motion.circle
-                      cx="36" cy="36" r={ringR}
-                      fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round"
-                      strokeDasharray={ringC}
-                      initial={{ strokeDashoffset: 0 }}
-                      animate={{ strokeDashoffset: ringOffset }}
-                      transition={{ duration: 1, ease: 'linear' }}
-                      transform="rotate(-90 36 36)"
-                      className="text-accent"
+            {/* Question card */}
+            <div className="bg-card-bg border-2 border-border rounded-2xl mb-3 min-h-[140px] flex flex-col">
+              <div className="flex-1 flex items-center justify-center p-8">
+                <p className="text-xl font-medium text-foreground text-center leading-relaxed">
+                  {currentCard?.question}
+                </p>
+              </div>
+              {/* Centered pill bar — recall countdown */}
+              {phase === 'recall_pause' && (
+                <div className="flex justify-center pb-5" role="timer" aria-label={`${countdown} seconds to recall`}>
+                  <div className="w-20 h-[3px] rounded-full bg-muted/20 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-accent"
+                      style={{ width: `${recallBarPct}%`, transition: 'width 1s linear' }}
                     />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xl font-bold text-foreground tabular-nums">{countdown}</span>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Try to recall the answer...</p>
+              )}
+            </div>
+
+            {/* Fix #6 + #12: recall controls row — hint text, countdown number, +5s, skip */}
+            {phase === 'recall_pause' && (
+              <div className="flex items-center justify-between mb-4 px-1">
+                <p className="text-xs text-muted-foreground/60">
+                  Try to recall the answer...{' '}
+                  <span className="tabular-nums">{countdown}s</span>
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCountdown((c) => c + 5);
+                      setTotalPause((t) => t + 5);
+                    }}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-accent/50 hover:bg-accent/5 cursor-pointer transition-all duration-150"
+                    aria-label="Add 5 more seconds to recall"
+                  >
+                    <Plus className="w-3 h-3" />
+                    5s
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhase('answer')}
+                    className="flex items-center gap-0.5 text-xs text-muted-foreground/60 hover:text-muted-foreground cursor-pointer transition-colors"
+                  >
+                    Skip
+                    <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             )}
 
             {/* Answer reveal */}
             {(phase === 'answer' || phase === 'rating' || phase === 'submitting') && (
-              <div className="bg-accent/5 border-2 border-accent/30 rounded-2xl p-6 mb-6">
+              <div className="bg-accent/5 border-2 border-accent/30 rounded-2xl p-6 mb-4">
                 <p className="text-sm font-medium text-muted-foreground mb-2">Answer</p>
                 <p className="text-lg text-foreground leading-relaxed">{currentCard?.answer}</p>
               </div>
@@ -442,7 +616,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
             )}
 
             {/* Mic permission blocked */}
-            {micBlocked && (
+            {micError && (
               <div className="flex flex-col gap-1 px-4 py-3 mb-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
                 <div className="flex items-center gap-2 font-medium">
                   <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -454,7 +628,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
               </div>
             )}
 
-            {/* Voice confirmation banner */}
+            {/* Voice confirmation banner — Fix #7: hint that rating buttons correct it */}
             {pendingRating && (
               <div
                 className="flex items-center justify-between px-4 py-3 mb-4 rounded-xl bg-accent/10 border border-accent/30 text-sm"
@@ -465,8 +639,10 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                   <span className="text-muted-foreground">Heard: </span>
                   <span className="font-semibold">{RATING_WORD[pendingRating]}</span>
                   <span className="text-muted-foreground"> — submitting in {pendingCountdown}s</span>
+                  <span className="text-muted-foreground/60 text-xs block mt-0.5">Tap a button below to correct</span>
                 </span>
                 <button
+                  type="button"
                   onClick={cancelPendingRating}
                   className="text-accent hover:text-accent/70 font-semibold cursor-pointer ml-4 shrink-0 min-h-[44px] px-2"
                 >
@@ -475,15 +651,58 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
               </div>
             )}
 
-            {/* Listening indicator */}
-            {listening && !pendingRating && !micBlocked && (
-              <div className="flex items-center justify-center gap-2 px-4 py-2 mb-4 rounded-xl bg-accent/10 border border-accent/20 text-accent text-sm">
-                <Mic className="w-4 h-4 animate-pulse" aria-hidden="true" />
-                <span>Listening — say Again, Hard, Good, or Easy</span>
+            {/* Push-to-talk status + hold button */}
+            {(phase === 'rating' || phase === 'submitting') && voiceEnabled && micReady && !pendingRating && (
+              <div className="flex flex-col items-center gap-3 mb-4">
+                {/* Fix #4: animated processing dots + slow-processing fallback message */}
+                <div className="text-sm text-center h-5" aria-live="polite">
+                  {recording ? (
+                    <span className="flex items-center justify-center gap-1.5 text-red-500 dark:text-red-400 font-medium">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" aria-hidden="true" />
+                      Recording... release to send
+                    </span>
+                  ) : processing ? (
+                    <span className="text-muted-foreground">
+                      {slowProcessing ? "Taking longer than usual — or use the buttons" : (
+                        <>
+                          Processing
+                          <motion.span
+                            animate={{ opacity: [1, 0.3, 1] }}
+                            transition={{ repeat: Infinity, duration: 1.2 }}
+                          >...</motion.span>
+                        </>
+                      )}
+                    </span>
+                  ) : voiceHint ? (
+                    <span className="text-amber-600 dark:text-amber-400">{voiceHint}</span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Hold <kbd className="px-1.5 py-0.5 rounded bg-muted/40 border border-border text-xs font-mono">Space</kbd> to speak
+                    </span>
+                  )}
+                </div>
+
+                {/* Mobile hold button */}
+                <button
+                  type="button"
+                  onPointerDown={(e) => { e.preventDefault(); if (showVoiceControls && !processing) startRecording(); }}
+                  onPointerUp={() => { if (recording) stopRecordingAndSend(); }}
+                  onPointerLeave={() => { if (recording) stopRecordingAndSend(); }}
+                  disabled={phase === 'submitting' || processing || !micReady}
+                  aria-label={recording ? 'Release to send' : 'Hold to speak (or hold Space)'}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full border-2 transition-all duration-150 cursor-pointer select-none touch-none disabled:opacity-40 ${
+                    recording
+                      ? 'border-red-500 bg-red-500/10 text-red-500 dark:text-red-400 scale-95'
+                      : 'border-accent/50 text-accent hover:bg-accent/10 hover:border-accent'
+                  }`}
+                >
+                  <Mic className={`w-4 h-4 ${recording ? 'animate-pulse' : ''}`} aria-hidden="true" />
+                  <span className="text-sm font-medium">{recording ? 'Recording...' : 'Hold to Speak'}</span>
+                </button>
               </div>
             )}
 
-            {/* Rating buttons */}
+            {/* Rating buttons — Fix #5: added type="button", key indicator opacity bumped */}
             {(phase === 'rating' || phase === 'submitting') && (
               <div>
                 <p className="text-sm text-muted-foreground text-center mb-3">
@@ -493,6 +712,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {RATING_LABELS.map(({ rating, label, key, color }) => (
                     <button
+                      type="button"
                       key={rating}
                       onClick={() => submitRating(rating)}
                       disabled={phase === 'submitting'}
@@ -500,33 +720,24 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
                       className={`flex flex-col items-center py-3 px-2 border-2 rounded-xl transition-all duration-150 cursor-pointer disabled:opacity-50 bg-card-bg ${color}`}
                     >
                       <span className="font-semibold text-sm">{label}</span>
-                      <span className="text-xs opacity-40 mt-0.5" aria-hidden="true">{key}</span>
+                      <span className="text-xs opacity-60 mt-0.5" aria-hidden="true">{key}</span>
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Skip recall */}
-            {phase === 'recall_pause' && (
-              <div className="text-center mt-2">
-                <button
-                  onClick={() => setPhase('answer')}
-                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground cursor-pointer mx-auto transition-colors"
-                >
-                  Skip pause
-                  <ChevronRight className="w-4 h-4" />
-                </button>
               </div>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
 
-      {/* Footer hint */}
-      <div className="pb-4 text-center shrink-0" aria-hidden="true">
+      {/* Fix #11: removed aria-hidden so Space shortcut is discoverable by screen readers */}
+      <div className="pb-4 text-center shrink-0">
         <p className="text-xs text-muted-foreground">
-          {phase === 'rating' ? '1 Again · 2 Hard · 3 Good · 4 Easy · Esc to exit' : 'Esc to exit'}
+          {phase === 'rating'
+            ? voiceEnabled && micReady
+              ? 'Hold Space · 1 Again · 2 Hard · 3 Good · 4 Easy · Esc to exit'
+              : '1 Again · 2 Hard · 3 Good · 4 Easy · Esc to exit'
+            : 'Esc to exit'}
         </p>
       </div>
     </div>
