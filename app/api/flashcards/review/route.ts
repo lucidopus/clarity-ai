@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
 import FlashcardReview from '@/lib/models/FlashcardReview';
 import { initFSRSCard, processReview, Rating } from '@/lib/services/fsrs';
+import { recordStudyActivity } from '@/lib/services/streaks';
 
 interface DecodedToken {
   userId: string;
@@ -64,6 +65,9 @@ export async function POST(request: NextRequest) {
       responseTimeMs: responseTimeMs ?? undefined,
       stateBefore,
     });
+
+    // Record streak activity (fire-and-forget)
+    recordStudyActivity(decoded.userId, 'flashcard_review').catch(() => {});
 
     return NextResponse.json({
       success: true,

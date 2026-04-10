@@ -18,6 +18,8 @@ import VideoEngagementList from '@/components/VideoEngagementList';
 import FlashcardDifficultyDonut from '@/components/FlashcardDifficultyDonut';
 import CardsDueWidget from '@/components/CardsDueWidget';
 import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
+import StreakWidget from '@/components/StreakWidget';
+import DailyChallengesCard from '@/components/DailyChallengesCard';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface StatsResponse {
@@ -323,8 +325,12 @@ export default function DashboardHomePage() {
 
       {!loading && !error && stats && (
         <div className="space-y-8">
-          {/* Smart Review Widget */}
-          <CardsDueWidget />
+          {/* Smart Review + Streak + Daily Challenges */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <CardsDueWidget />
+            <StreakWidget />
+            <DailyChallengesCard />
+          </div>
 
           {/* Heatmap + Weekly Rhythm */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

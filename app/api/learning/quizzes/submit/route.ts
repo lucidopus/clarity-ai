@@ -6,6 +6,7 @@ import User from '@/lib/models/User';
 import Progress, { IQuizAttempt } from '@/lib/models/Progress';
 import Quiz from '@/lib/models/Quiz';
 import { computeBrierScore } from '@/lib/services/calibration';
+import { recordStudyActivity } from '@/lib/services/streaks';
 
 interface DecodedToken {
   userId: string;
@@ -183,6 +184,9 @@ export async function POST(request: NextRequest) {
     }
 
     await progress.save();
+
+    // Record streak activity (fire-and-forget)
+    recordStudyActivity(decoded.userId, 'quiz_completed').catch(() => {});
 
     // Calculate overall statistics for response
     const totalQuestions = results.length;
