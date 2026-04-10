@@ -448,12 +448,6 @@ body {
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(6, 182, 212, 0.03) 100%);
   border: 1px solid rgba(6, 182, 212, 0.2);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.feature-card:hover {
-  border-color: rgba(6, 182, 212, 0.5);
-  transform: translateY(-4px);
 }
 
 /* Code cube effect */
