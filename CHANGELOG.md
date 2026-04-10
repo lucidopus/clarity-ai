@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **App-Wide Performance Improvements (Issue #102)**: Eliminated N+1 query patterns, replaced ephemeral in-memory caches with Redis, and reduced initial JS bundle size.
+  - New `lib/cache.ts`: centralized `getCached<T>()` helper (Redis hit → DB fallback on error), `CacheKeys` factory, and `invalidate*` helpers for readiness, insights, dashStats
+  - `lib/redis.ts`: lazy `getRedis()` initialization — no crash on missing `REDIS_URL` at module import time
+  - `lib/services/readinessScore.ts` + `clarityInsights.ts`: in-memory `Map` caches replaced with Redis (previously wiped on every serverless cold start)
+  - `app/api/dashboard/stats/route.ts`: wrapped in `getCached(dashStats, 300s)`; fixed dynamic `Quiz` import to top-level
+  - `app/api/dashboard/activity/route.ts`: 2×N per-video flashcard/quiz counts replaced with 2 batch aggregations
+  - `app/api/admin/users/route.ts`: 80–100 queries per page replaced with 5 parallel `$group` aggregations + Map lookup
+  - `app/api/flashcards/review` + `quizzes/submit`: fire-and-forget recompute replaced with targeted cache invalidation
+  - All read-only GET routes now return `private, max-age=N` Cache-Control headers instead of `no-store`
+  - `FocusHoursChart`, `FlashcardDifficultyDonut`, `WeekdayConsistencyBars` lazy-loaded via `next/dynamic({ ssr: false })` — chart.js excluded from initial bundle
+
 - **Trigger.dev Background Video Processing**: Migrated the video processing pipeline from synchronous Vercel serverless functions to Trigger.dev background tasks (15-minute max duration), eliminating the 60s timeout constraint.
   - Thin API route returns 202 immediately after triggering the background task
   - New `GET /api/videos/[videoId]/status` polling endpoint for processing state

@@ -59,11 +59,11 @@ All React UI components for the Clarity AI platform. Mostly flat structure with 
 | `StatCard.tsx` | Metric card with icon, value, label, and trend indicator. |
 | `StudyActivityHeatmap.tsx` | GitHub-style calendar heatmap of daily study activity. |
 | `WeeklyActivityChart.tsx` | Line chart of weekly study activity (Chart.js). |
-| `FocusHoursChart.tsx` | Bar chart of study activity by hour of day. |
-| `WeekdayConsistencyBars.tsx` | Bar chart of study consistency by day of week. |
+| `FocusHoursChart.tsx` | Bar chart of study activity by hour of day. Lazy-loaded via `next/dynamic` (ssr:false) to exclude chart.js from initial bundle. |
+| `WeekdayConsistencyBars.tsx` | Bar chart of study consistency by day of week. Lazy-loaded via `next/dynamic` (ssr:false). |
 | `VideoEngagementList.tsx` | Ranked list of most-engaged videos. |
 | `ActivityFunnelCard.tsx` | Drop-off funnel from video generation to quiz completion. |
-| `FlashcardDifficultyDonut.tsx` | Doughnut chart of flashcard difficulty distribution. |
+| `FlashcardDifficultyDonut.tsx` | Doughnut chart of flashcard difficulty distribution. Lazy-loaded via `next/dynamic` (ssr:false). |
 | `ProgressBarCard.tsx` | Simple progress bar card with title and percentage. |
 | `ProgressBar.tsx` | Reusable animated progress bar (Framer Motion). |
 | `WelcomeBanner.tsx` | Personalized welcome heading with user's first name. |

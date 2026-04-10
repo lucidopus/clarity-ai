@@ -38,8 +38,8 @@ All Next.js API route handlers. Every leaf directory contains a `route.ts` file 
 
 | Route | Methods | Description |
 |-------|---------|-------------|
-| `dashboard/stats` | GET | Aggregate stats: video count, flashcard mastery, quiz score, streak. |
-| `dashboard/activity` | GET | Recent activity log entries for the home tab feed. |
+| `dashboard/stats` | GET | Aggregate stats: video count, flashcard mastery, quiz score, streak. Redis-cached 5 min (`dashStats` key); invalidated after quiz/flashcard activity. |
+| `dashboard/activity` | GET | Recent activity log entries for the home tab feed. Flashcard/quiz counts batched into 2 aggregations (not N+1). |
 | `dashboard/activity-heatmap` | GET | Daily activity counts for the calendar heatmap. |
 | `dashboard/insights` | GET | AI-generated learning insights and motivational nudges. |
 

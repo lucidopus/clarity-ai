@@ -24,7 +24,8 @@ All shared server-side and isomorphic library code for the Clarity AI platform.
 | `adminAuth.ts` | Admin JWT utilities: issue, verify, and extract admin tokens from cookies. |
 | `email.ts` | SendGrid integration for OTP verification emails; dev-mode fallback logs to console. |
 | `otp.ts` | OTP utilities: generate 6-digit codes, hash with bcrypt, verify. |
-| `redis.ts` | ioredis client singleton for Discover tab caching and rate limiting. |
+| `redis.ts` | ioredis client with lazy `getRedis()` initialization (no crash on missing `REDIS_URL` at import time). Proxy-based default export for backward compatibility. |
+| `cache.ts` | Centralized Redis cache module: `getCached<T>(key, fallback, ttlSec)` with transparent DB fallback on any Redis error, `CacheKeys` factory, and `invalidate*` helpers (`invalidateReadiness`, `invalidateUserInsights`, `invalidateDashStats`, `invalidateAllUserCaches`). |
 | `catalog.ts` | Static catalog of curated educational videos organized by `CategoryType`. |
 | `content-validator.ts` | LLM-based content validation: determines if a video is educational before processing. |
 | `video-retry-processing.ts` | Retry logic for failed video processing with error classification. |
