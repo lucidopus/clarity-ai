@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Zap, CheckCircle2, ChevronRight, AlertCircle } from 'lucide-react';
+import { Brain, Zap, CheckCircle2, ChevronRight, AlertCircle, Mic } from 'lucide-react';
 import SmartReviewSession from './SmartReviewSession';
+import VoiceFlashcardReview from './study/VoiceFlashcardReview';
 
 interface FSRSStats {
   totalCards: number;
@@ -81,6 +82,7 @@ export default function CardsDueWidget() {
   const [stats, setStats] = useState<FSRSStats | null>(null);
   const [error, setError] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [voiceReviewOpen, setVoiceReviewOpen] = useState(false);
 
   const loadStats = () => {
     setError(false);
@@ -112,7 +114,7 @@ export default function CardsDueWidget() {
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <AlertCircle className="w-4 h-4" />
           <span>Couldn&apos;t load review stats.</span>
-          <button onClick={loadStats} className="text-accent hover:underline cursor-pointer">Retry</button>
+          <button onClick={loadStats} className="text-accent hover:underline cursor-pointer min-h-[44px] px-2">Retry</button>
         </div>
       </div>
     );
@@ -145,17 +147,27 @@ export default function CardsDueWidget() {
 
         {/* Main action */}
         {dueToday > 0 ? (
-          <button
-            onClick={() => setReviewOpen(true)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer mb-4 ${button}`}
-            aria-label={`Study now — ${dueToday} card${dueToday !== 1 ? 's' : ''} due`}
-          >
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Study Now
-            </div>
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setReviewOpen(true)}
+              className={`flex-1 flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${button}`}
+              aria-label={`Study now — ${dueToday} card${dueToday !== 1 ? 's' : ''} due`}
+            >
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Study Now
+              </div>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setVoiceReviewOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-semibold border border-border text-muted-foreground hover:border-accent/50 hover:text-accent transition-all duration-200 cursor-pointer shrink-0"
+              aria-label="Voice study mode"
+            >
+              <Mic className="w-4 h-4" />
+              Voice
+            </button>
+          </div>
         ) : (
           <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/20 mb-4">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -191,6 +203,12 @@ export default function CardsDueWidget() {
         <SmartReviewSession
           onClose={() => setReviewOpen(false)}
           onSessionComplete={handleSessionComplete}
+        />
+      )}
+      {voiceReviewOpen && (
+        <VoiceFlashcardReview
+          onClose={() => setVoiceReviewOpen(false)}
+          onSessionComplete={() => { setVoiceReviewOpen(false); loadStats(); }}
         />
       )}
     </>
