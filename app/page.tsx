@@ -806,59 +806,40 @@ export default function Home() {
         {/* Features Grid Section */}
         <section className="py-24 relative z-10" id="features">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12"
-            >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
               {[
                 {
                   icon: <Layers className="w-8 h-8" />,
                   title: "Structure your learning",
                   description: "Automatically break down long videos into logical chapters, key concepts, and summaries.",
-                  delay: 0
                 },
                 {
                   icon: <Cpu className="w-8 h-8" />,
                   title: "Generated automatically",
                   description: "Our AI agent watches the video for you, extracting every important detail so you don't miss a thing.",
-                  delay: 0.1
                 },
                 {
                   icon: <Globe className="w-8 h-8" />,
                   title: "Always accessible",
                   description: "Access your study materials from any device, anywhere. Your knowledge base is always with you.",
-                  delay: 0.2
                 },
                 {
                   icon: <Code2 className="w-8 h-8" />,
                   title: "Linked back to source",
                   description: "Every note and flashcard is timestamp-linked to the original video. Never lose context.",
-                  delay: 0.3
                 }
               ].map((feature, index) => (
-                <motion.div 
-                  key={index}
-                  className="feature-card p-8 rounded-3xl relative overflow-hidden group"
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: feature.delay }}
-                >
-                  <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div key={index} className="feature-card p-8 rounded-3xl">
+                  <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center text-accent mb-6">
                     {feature.icon}
                   </div>
-                  <h3 className="text-2xl font-bold mb-3 group-hover:text-accent transition-colors">{feature.title}</h3>
+                  <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
                   <p className="text-secondary text-lg leading-relaxed">
                     {feature.description}
                   </p>
-                  
-                  {/* Hover effect glow */}
-                  <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-accent/20 rounded-full blur-[50px] group-hover:bg-accent/30 transition-colors duration-500"></div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -902,11 +883,7 @@ export default function Home() {
                   </div>
                   
                   {/* Floating Elements */}
-                   <motion.div 
-                    className="absolute top-[20%] right-[10%] bg-background/80 backdrop-blur border border-accent/20 p-4 rounded-xl shadow-xl max-w-[200px]"
-                    animate={{ y: [-10, 10, -10] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  >
+                   <div className="absolute top-[20%] right-[10%] bg-card-bg border border-accent/20 p-4 rounded-xl shadow-xl max-w-[200px]">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
                       <span className="text-xs font-mono text-secondary">Knowledge Synthesized</span>
@@ -914,13 +891,9 @@ export default function Home() {
                     <div className="h-1.5 w-full bg-accent/20 rounded-full overflow-hidden">
                       <div className="h-full bg-accent w-full"></div>
                     </div>
-                  </motion.div>
+                  </div>
 
-                  <motion.div 
-                    className="absolute bottom-[20%] left-[10%] bg-background/80 backdrop-blur border border-accent/20 p-4 rounded-xl shadow-xl"
-                    animate={{ y: [10, -10, 10] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                  >
+                  <div className="absolute bottom-[20%] left-[10%] bg-card-bg border border-accent/20 p-4 rounded-xl shadow-xl">
                     <div className="flex items-center gap-2">
                        <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
                          <span className="text-xs font-bold text-accent">A</span>
@@ -930,7 +903,7 @@ export default function Home() {
                          <div className="h-2 w-12 bg-secondary/20 rounded"></div>
                        </div>
                     </div>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -206,7 +206,7 @@ export default function DocumentContentViewer({
               return (
                 <div key={pageKey} className="border-b border-border/50 last:border-b-0">
                   {pageKey !== 'none' && (
-                    <div className="sticky top-0 z-10 px-4 py-2 bg-background/80 backdrop-blur-sm border-b border-border/30">
+                    <div className="sticky top-0 z-10 px-4 py-2 bg-background/95 border-b border-border/30">
                       <span className="text-xs font-medium text-blue-400">
                         Page {pageKey}
                       </span>

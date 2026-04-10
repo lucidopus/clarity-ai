@@ -201,9 +201,9 @@ export default function StreakWidget() {
               aria-label={`${studyStreak} of ${nextMilestone} days to next milestone`}
             >
               <motion.div
-                className="h-full rounded-full bg-orange-400"
-                initial={{ width: 0 }}
-                animate={{ width: `${milestoneProgress}%` }}
+                className="h-full w-full rounded-full bg-orange-400 origin-left"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: milestoneProgress / 100 }}
                 transition={{ duration: shouldReduceMotion ? 0 : 0.5, ease: 'easeOut' }}
               />
             </div>

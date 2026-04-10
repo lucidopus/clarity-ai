@@ -187,9 +187,9 @@ export default function FlashcardViewer({
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-accent"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
+            className="h-full w-full bg-accent origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
             transition={{ duration: 0.3 }}
           />
         </div>

@@ -656,9 +656,9 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
         </div>
         <div className="h-2 bg-muted rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-accent"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
+            className="h-full w-full bg-accent origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
             transition={{ duration: 0.3 }}
           />
         </div>
@@ -721,10 +721,10 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
         <AnimatePresence>
           {showFeedback && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className={`mt-6 p-4 rounded-xl border-2 transition-colors ${explanationClasses}`}
             >
               <div className="flex items-center gap-2 mb-2 font-semibold">

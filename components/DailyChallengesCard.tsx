@@ -22,9 +22,9 @@ function ProgressBar({ current, target, reduced }: { current: number; target: nu
       aria-valuemax={target}
     >
       <motion.div
-        className="h-full rounded-full bg-accent"
-        initial={{ width: 0 }}
-        animate={{ width: `${pct}%` }}
+        className="h-full w-full rounded-full bg-accent origin-left"
+        initial={{ scaleX: 0 }}
+        animate={{ scaleX: pct / 100 }}
         transition={{ duration: reduced ? 0 : 0.4, ease: 'easeOut' }}
       />
     </div>

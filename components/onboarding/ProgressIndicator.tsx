@@ -62,9 +62,9 @@ export default function ProgressIndicator({ currentStep, totalSteps }: ProgressI
         animate={{ opacity: 1 }}
       >
         <motion.div
-          className="h-full bg-accent rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+          className="h-full w-full bg-accent rounded-full origin-left"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: (currentStep + 1) / totalSteps }}
           transition={{ duration: 0.5, ease: 'easeInOut' }}
         />
       </motion.div>

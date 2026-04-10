@@ -165,11 +165,11 @@ export default function ConfidenceMap({ quizzes, answers, confidenceRatings }: C
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="mt-2 space-y-2 overflow-hidden"
+                        className="mt-2 space-y-2"
                       >
                         <p className="text-xs text-foreground font-medium leading-snug">
                           {item.quiz.questionText}

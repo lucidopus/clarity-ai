@@ -41,9 +41,9 @@ function ClusterBar({ cluster, reduced }: { cluster: TopicCluster; reduced: bool
         aria-label={`${cluster.name}: ${scoreDisplay}, ${tier.label}. ${cluster.coveredCount} of ${cluster.sourceCount} sources studied.`}
       >
         <motion.div
-          className={`h-full rounded-full ${tier.bar}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${cluster.score ?? 0}%` }}
+          className={`h-full w-full rounded-full origin-left ${tier.bar}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: (cluster.score ?? 0) / 100 }}
           transition={{ duration: reduced ? 0 : 0.6, ease: 'easeOut' }}
         />
       </div>

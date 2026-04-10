@@ -38,9 +38,9 @@ export default function ProgressBar({
     <div className={`w-full ${className}`}>
       <div className={`w-full bg-border rounded-full overflow-hidden ${sizeClasses[size]}`}>
         <motion.div
-          className={`h-full ${colorClasses[color]} rounded-full`}
-          initial={{ width: 0 }}
-          animate={{ width: `${clampedProgress}%` }}
+          className={`h-full w-full ${colorClasses[color]} rounded-full origin-left`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: clampedProgress / 100 }}
           transition={{
             duration: animated ? 0.5 : 0,
             ease: 'easeOut'

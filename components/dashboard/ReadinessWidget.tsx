@@ -77,9 +77,9 @@ function DimensionBar({
         aria-label={`${label}: ${value}%, weighted ${weight}%`}
       >
         <motion.div
-          className={`h-full rounded-full ${barColor}`}
-          initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
+          className={`h-full w-full rounded-full origin-left ${barColor}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: value / 100 }}
           transition={{ duration: reduced ? 0 : 0.7, ease: 'easeOut' }}
         />
       </div>
