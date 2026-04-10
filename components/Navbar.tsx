@@ -14,7 +14,7 @@ export default function Navbar() {
   const showMarketingLinks = !pathname?.startsWith('/onboarding') && !pathname?.startsWith('/auth');
 
   return (
-    <nav className="sticky top-0 z-50 bg-[color-mix(in_srgb,var(--background)_72%,transparent)] backdrop-blur-xl backdrop-saturate-[1.8] border-b border-white/50 dark:border-white/6 px-8 h-14 flex items-center after:absolute after:-bottom-px after:left-0 after:right-0 after:h-[2px] after:bg-linear-to-r after:from-transparent after:via-accent/40 after:to-transparent">
+    <nav className="sticky top-0 z-50 bg-[color-mix(in_srgb,var(--background)_72%,transparent)] backdrop-blur-md border-b border-white/50 dark:border-white/6 px-8 h-14 flex items-center after:absolute after:-bottom-px after:left-0 after:right-0 after:h-[2px] after:bg-linear-to-r after:from-transparent after:via-accent/40 after:to-transparent">
       <div className="max-w-7xl mx-auto w-full">
         <div className="flex items-center justify-between">
           {/* Logo */}

@@ -152,9 +152,9 @@ export default function RankedChipSelector({
       {/* Selected Order Display (Optional - shows ranking visually) */}
       {selectedOptions.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          transition={{ duration: 0.3 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
           className="pt-2 space-y-2"
         >
           <p className="text-xs font-medium text-foreground">Your ranking:</p>

@@ -57,9 +57,9 @@ function DimensionBar({ label, value, icon, reduced }: DimensionBarProps) {
       </div>
       <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
         <motion.div
-          className="h-full rounded-full bg-accent"
-          initial={{ width: 0 }}
-          animate={{ width: `${value}%` }}
+          className="h-full w-full rounded-full bg-accent origin-left"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: value / 100 }}
           transition={{ duration: reduced ? 0 : 0.6, ease: 'easeOut' }}
         />
       </div>

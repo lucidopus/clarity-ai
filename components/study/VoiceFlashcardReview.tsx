@@ -528,10 +528,11 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-muted/30 shrink-0" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={cards.length}>
+      <div className="h-1 bg-muted/30 shrink-0 overflow-hidden" role="progressbar" aria-valuenow={index + 1} aria-valuemin={1} aria-valuemax={cards.length}>
         <motion.div
-          className="h-full bg-accent"
-          animate={{ width: `${progress}%` }}
+          className="h-full w-full bg-accent origin-left"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: progress / 100 }}
           transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
         />
       </div>

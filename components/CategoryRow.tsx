@@ -60,7 +60,7 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
           <div className={`absolute left-0 top-0 bottom-0 w-12 bg-linear-to-r from-background to-transparent z-10 flex items-center justify-start pl-2 transition-opacity duration-300 ${showLeftArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
              <button 
                 onClick={() => scroll('left')}
-                className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-background/95 border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
              >
                 <ChevronLeft className="w-5 h-5" />
              </button>
@@ -70,7 +70,7 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
           <div className={`absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-background to-transparent z-10 flex items-center justify-end pr-2 transition-opacity duration-300 ${showRightArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <button 
                 onClick={() => scroll('right')}
-                className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full bg-background/95 border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
                 aria-label="Scroll right"
              >
                 <ChevronRight className="w-5 h-5" />

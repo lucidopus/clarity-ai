@@ -79,7 +79,7 @@ export default function VideoCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className={`bg-card-bg/70 backdrop-blur-sm border border-border rounded-2xl overflow-hidden shadow-lg cursor-pointer group relative ${variant === 'compact' ? 'min-w-[240px] w-[240px]' : ''} ${className}`}
+      className={`bg-card-bg border border-border rounded-2xl overflow-hidden shadow-lg cursor-pointer group relative ${variant === 'compact' ? 'min-w-[240px] w-[240px]' : ''} ${className}`}
       onClick={() => onClick?.(id)}
     >
       {/* Thumbnail / Live Lecture Waveform */}

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // still used for layoutId indicator + opacity fade
 import { 
   Home, 
   Compass, 
@@ -50,11 +50,8 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: isCollapsed ? 80 : 256 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="bg-card-bg border-r border-border shrink-0 z-40 flex flex-col h-screen sticky top-0"
+    <aside
+      className={`bg-card-bg border-r border-border shrink-0 z-40 flex flex-col h-screen sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-64'}`}
     >
       {/* Sidebar Header: Logo & Toggle */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
@@ -162,6 +159,6 @@ export default function Sidebar() {
                </button>
           </div>
       </div>
-    </motion.aside>
+    </aside>
   );
 }

@@ -697,11 +697,10 @@ export default function GenerateModal({
                           <AnimatePresence>
                             {isExpanded && (
                               <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.2, ease: 'easeOut' }}
-                                className="overflow-hidden"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.15, ease: 'easeOut' }}
                               >
                                 <div className="px-3 pb-2.5 border-t border-border/40">
                                   {source.type === 'youtube' ? (

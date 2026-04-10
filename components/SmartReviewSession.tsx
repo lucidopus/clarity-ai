@@ -161,9 +161,9 @@ export default function SmartReviewSession({ onClose, onSessionComplete }: Smart
   };
 
   const revealVariants = {
-    initial: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 },
-    animate: shouldReduceMotion ? { opacity: 1 } : { opacity: 1, height: 'auto' },
-    exit:    shouldReduceMotion ? { opacity: 0 } : { opacity: 0, height: 0 },
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit:    { opacity: 0 },
   };
 
   // Loading
@@ -271,10 +271,11 @@ export default function SmartReviewSession({ onClose, onSessionComplete }: Smart
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-muted/30" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={cards.length}>
+      <div className="h-1 bg-muted/30 overflow-hidden" role="progressbar" aria-valuenow={currentIndex + 1} aria-valuemin={1} aria-valuemax={cards.length}>
         <motion.div
-          className="h-full bg-accent"
-          animate={{ width: `${progress}%` }}
+          className="h-full w-full bg-accent origin-left"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: progress / 100 }}
           transition={{ duration: shouldReduceMotion ? 0 : 0.3 }}
         />
       </div>

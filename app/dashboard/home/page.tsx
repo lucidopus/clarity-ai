@@ -98,7 +98,7 @@ export default function DashboardHomePage() {
     };
   }, []);
 
-  // Refresh when page becomes visible (tab switching, returning to browser)
+  // Refresh when tab becomes visible (covers tab switching + returning to browser)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -106,19 +106,13 @@ export default function DashboardHomePage() {
       }
     };
 
-    const handleFocus = () => {
-      setRefreshTick((t) => t + 1);
-    };
-
     if (typeof window !== 'undefined') {
       document.addEventListener('visibilitychange', handleVisibilityChange);
-      window.addEventListener('focus', handleFocus);
     }
 
     return () => {
       if (typeof window !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilityChange);
-        window.removeEventListener('focus', handleFocus);
       }
     };
   }, []);
@@ -293,11 +287,7 @@ export default function DashboardHomePage() {
                 <div className="w-8 h-8 rounded-lg bg-secondary/20" />
                 <div className="h-4 w-36 rounded bg-secondary/20" />
               </div>
-              <div className="grid grid-cols-[repeat(18,1fr)] gap-1 mb-3">
-                {Array.from({ length: 126 }).map((_, i) => (
-                  <div key={i} className="aspect-square bg-secondary/10 rounded-sm" />
-                ))}
-              </div>
+              <div className="h-32 bg-secondary/10 rounded-lg mb-3" />
               <div className="flex justify-between">
                 <div className="h-3 w-20 rounded bg-secondary/10" />
                 <div className="h-3 w-20 rounded bg-secondary/10" />
