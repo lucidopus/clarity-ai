@@ -17,7 +17,42 @@ import {
   Target
 } from 'lucide-react';
 import Button from '@/components/Button';
+import { SplineScene } from '@/components/ui/splite';
+import { Card } from '@/components/ui/card';
+import { Spotlight } from '@/components/ui/spotlight';
 import { useState, useRef, useEffect } from 'react';
+
+function SplineSceneBasic() {
+  return (
+    <Card className="w-full h-[500px] bg-black/[0.96] relative overflow-hidden">
+      <Spotlight
+        className="-top-40 left-0 md:left-60 md:-top-20"
+        fill="white"
+      />
+      <div className="flex h-full">
+        <div className="flex-1 p-8 relative z-10 flex flex-col justify-center">
+          <h2 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-b from-neutral-50 to-neutral-400">
+            Learn in<br />3D
+          </h2>
+          <p className="mt-4 text-neutral-400 max-w-xs text-base leading-relaxed">
+            Clarity AI turns any lecture into a full interactive study kit — flashcards, quizzes, timestamps, and an AI tutor, instantly.
+          </p>
+          <div className="mt-8">
+            <Button href="/auth/signup" variant="primary" size="md" className="rounded-full px-6">
+              Try it free
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 relative">
+          <SplineScene
+            scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+            className="w-full h-full"
+          />
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -800,6 +835,13 @@ export default function Home() {
                 </div>
               </motion.div>
             </div>
+          </div>
+        </section>
+
+        {/* Interactive 3D Section */}
+        <section className="py-16 relative z-10 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
+            <SplineSceneBasic />
           </div>
         </section>
 
