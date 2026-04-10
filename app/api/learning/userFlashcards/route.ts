@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const { initFSRSCard } = await import('@/lib/services/fsrs');
+
     // Create new user flashcard in Flashcard collection
     const newFlashcard = new Flashcard({
       userId: decoded.userId,
@@ -54,6 +56,7 @@ export async function POST(request: NextRequest) {
       answer: answer.trim(),
       difficulty: null, // User-created cards have no difficulty rating
       generationType: 'human',
+      fsrs: initFSRSCard(),
     });
 
     await newFlashcard.save();

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Brain, Trophy, FileText, RotateCw, Trash2 } from 'lucide-react';
 import Button from './Button';
+import ConfidenceMap from './ConfidenceMap';
 import { logActivity } from '@/lib/activityLogger';
 
 export type QuestionType = 'multiple-choice' | 'true-false' | 'fill-in-blank';
@@ -62,13 +63,49 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
     initialAnswers
   );
   // We don't want to show feedback immediately for restored sessions unless we're reviewing
-  const [submitted, setSubmitted] = useState(false); 
+  const [submitted, setSubmitted] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [fillInAnswer, setFillInAnswer] = useState('');
   const [quizCompleted, setQuizCompleted] = useState(allAttempted);
   const [finalScore, setFinalScore] = useState(calculateInitialScore());
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<number>>(initialSubmitted);
   const [isResetting, setIsResetting] = useState(false);
+  const [confidenceRatings, setConfidenceRatings] = useState<(1 | 2 | 3 | null)[]>(
+    new Array(quizzes.length).fill(null)
+  );
+
+  const currentConfidence = confidenceRatings[currentQuestionIndex];
+
+  const setCurrentConfidence = (rating: 1 | 2 | 3) => {
+    setConfidenceRatings(prev => {
+      const next = [...prev];
+      next[currentQuestionIndex] = rating;
+      return next;
+    });
+  };
+
+  // Keyboard shortcuts: G = Guessing, S = Somewhat Sure, C = Confident
+  // Guard against firing while user is typing in an input/textarea
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return;
+      if (submitted || quizCompleted) return;
+      const q = quizzes[currentQuestionIndex];
+      const hasAnswer = q && (
+        q.type === 'fill-in-blank'
+          ? fillInAnswer.trim() !== ''
+          : selectedAnswers[currentQuestionIndex] !== null
+      );
+      if (!hasAnswer) return;
+      if (e.key === 'g' || e.key === 'G') setCurrentConfidence(1);
+      if (e.key === 's' || e.key === 'S') setCurrentConfidence(2);
+      if (e.key === 'c' || e.key === 'C') setCurrentConfidence(3);
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submitted, quizCompleted, currentQuestionIndex, fillInAnswer, selectedAnswers]);
 
   const handleResetProgress = async () => {
     try {
@@ -97,6 +134,7 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
       setQuizCompleted(false);
       setFinalScore(0);
       setSubmittedQuestions(new Set());
+      setConfidenceRatings(new Array(quizzes.length).fill(null));
       
       // Force refresh of the page data to clear "isMastered" from upstream? 
       // Or just rely on local state until reload. 
@@ -192,6 +230,13 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
             <div className="text-sm text-muted-foreground">Score</div>
           </div>
         </motion.div> */}
+
+        {/* Confidence Map */}
+        <ConfidenceMap
+          quizzes={quizzes}
+          answers={selectedAnswers}
+          confidenceRatings={confidenceRatings}
+        />
 
         {/* Questions Review */}
         <motion.div
@@ -314,6 +359,7 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
               setQuizCompleted(false);
               setFinalScore(0);
               setSubmittedQuestions(new Set());
+              setConfidenceRatings(new Array(quizzes.length).fill(null));
             }}
             className="px-8"
             disabled={isResetting}
@@ -393,7 +439,8 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
           return {
             quizId: quiz.id,
             isCorrect: isCorrect,
-            userAnswerIndex: typeof answer === 'number' ? answer : undefined
+            userAnswerIndex: typeof answer === 'number' ? answer : undefined,
+            confidenceRating: confidenceRatings[index] ?? undefined,
           };
         });
 
@@ -632,6 +679,44 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
 
         {renderQuestion()}
 
+        {/* Confidence Rating */}
+        <AnimatePresence>
+          {!submitted && (currentAnswer !== null || (currentQuestion.type === 'fill-in-blank' && fillInAnswer.trim() !== '')) && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2 }}
+              className="mt-5"
+            >
+              <p className="text-sm text-muted-foreground mb-2 font-medium">
+                How confident are you? <span className="text-xs opacity-60">(G / S / C)</span>
+              </p>
+              <div className="flex gap-2">
+                {([
+                  { rating: 1 as const, label: 'Guessing', key: 'G' },
+                  { rating: 2 as const, label: 'Somewhat Sure', key: 'S' },
+                  { rating: 3 as const, label: 'Confident', key: 'C' },
+                ]).map(({ rating, label, key }) => (
+                  <button
+                    key={rating}
+                    onClick={() => setCurrentConfidence(rating)}
+                    className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all duration-200 cursor-pointer ${
+                      currentConfidence === rating
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-border bg-card-bg text-muted-foreground hover:border-accent/40 hover:text-foreground'
+                    }`}
+                    aria-pressed={currentConfidence === rating}
+                    title={`Press ${key}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Explanation */}
         <AnimatePresence>
           {showFeedback && (
@@ -668,18 +753,25 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
           Previous
         </Button>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col items-end gap-1">
           {!submitted ? (
-            <Button
-              onClick={handleSubmitAnswer}
-              variant="primary"
-              disabled={
-                currentAnswer === null &&
-                currentQuestion.type !== 'fill-in-blank'
-              }
-            >
-              Submit Answer
-            </Button>
+            <>
+              <Button
+                onClick={handleSubmitAnswer}
+                variant="primary"
+                disabled={
+                  currentConfidence === null ||
+                  (currentAnswer === null && currentQuestion.type !== 'fill-in-blank') ||
+                  (currentQuestion.type === 'fill-in-blank' && !fillInAnswer.trim())
+                }
+              >
+                Submit Answer
+              </Button>
+              {currentConfidence === null && (currentAnswer !== null || (currentQuestion.type === 'fill-in-blank' && fillInAnswer.trim() !== '')) && (
+                <p className="text-xs text-muted-foreground">Select your confidence level above</p>
+              )}
+            </>
+
           ) : (
             <Button onClick={handleNext} variant="primary">
               {currentQuestionIndex === quizzes.length - 1 ? 'Finish Quiz' : 'Next Question'}

@@ -318,6 +318,7 @@ export async function generateMaterials(
 export async function saveLearningMaterials(userId: string, videoId: string, materials: any) {
   const modelInfo = getCurrentModelInfo(GEMINI_MODEL_NAME);
 
+  const { initFSRSCard } = await import('@/lib/services/fsrs');
   await Flashcard.insertMany(
     materials.flashcards.map((fc: { question: string; answer: string; difficulty: string }) => ({
       userId,
@@ -326,6 +327,7 @@ export async function saveLearningMaterials(userId: string, videoId: string, mat
       answer: fc.answer,
       difficulty: fc.difficulty,
       generationType: 'ai',
+      fsrs: initFSRSCard(),
     }))
   );
 

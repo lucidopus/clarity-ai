@@ -69,10 +69,16 @@ export interface IUser extends Document {
   preferences?: IUserPreferences;
   createdAt: Date;
   updatedAt: Date;
-  // Streak tracking fields
+  // Legacy login-based streak fields (kept for backward compat)
   lastLoginDate?: Date;
   loginStreak: number;
   longestStreak: number;
+  // Study Streaks 2.0 — activity-qualified streaks
+  studyStreak: number;
+  longestStudyStreak: number;
+  lastStudyDate?: string; // YYYY-MM-DD (UTC)
+  streakShields: number;  // 0–3 shield charges
+  milestones: number[];   // achieved milestone days [7, 30, 100, 365]
 }
 
 const UserSchema: Schema = new Schema({
@@ -119,10 +125,16 @@ const UserSchema: Schema = new Schema({
     // Track learning profile update timestamps for rate limiting (max 2/month)
     learningProfileUpdates: [{ type: Date }],
   },
-  // Streak tracking fields with defaults
+  // Legacy login-based streak fields
   lastLoginDate: { type: Date, default: null },
   loginStreak: { type: Number, default: 0 },
   longestStreak: { type: Number, default: 0 },
+  // Study Streaks 2.0 — activity-qualified
+  studyStreak: { type: Number, default: 0 },
+  longestStudyStreak: { type: Number, default: 0 },
+  lastStudyDate: { type: String, default: null }, // YYYY-MM-DD (UTC)
+  streakShields: { type: Number, default: 0, min: 0, max: 3 },
+  milestones: [{ type: Number }],
   // Email verification status
   emailVerified: { type: Boolean, default: false },
 }, {

@@ -16,7 +16,11 @@ import FocusHoursChart from '@/components/FocusHoursChart';
 import ActivityFunnelCard from '@/components/ActivityFunnelCard';
 import VideoEngagementList from '@/components/VideoEngagementList';
 import FlashcardDifficultyDonut from '@/components/FlashcardDifficultyDonut';
+import CardsDueWidget from '@/components/CardsDueWidget';
 import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
+import StreakWidget from '@/components/StreakWidget';
+import DailyChallengesCard from '@/components/DailyChallengesCard';
+import ReadinessWidget from '@/components/dashboard/ReadinessWidget';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface StatsResponse {
@@ -322,6 +326,16 @@ export default function DashboardHomePage() {
 
       {!loading && !error && stats && (
         <div className="space-y-8">
+          {/* Smart Review + Streak + Daily Challenges */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <CardsDueWidget />
+            <StreakWidget />
+            <DailyChallengesCard />
+          </div>
+
+          {/* Exam Readiness */}
+          <ReadinessWidget />
+
           {/* Heatmap + Weekly Rhythm */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             <div className="xl:col-span-2">
