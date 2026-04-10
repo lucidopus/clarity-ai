@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ListOrdered, X } from 'lucide-react';
@@ -34,26 +34,40 @@ export default function ChapterButton({
 }: ChapterButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true); }, []);
+
+  // Escape key closes modal
   useEffect(() => {
-    // eslint-disable-next-line
-    setMounted(true);
-  }, []);
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
+  // Focus close button when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => closeButtonRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
 
   return (
     <>
-      {/* Inline pill button — sits above the video player */}
+      {/* Inline pill button — elevated secondary style, sits above the video player */}
       <motion.button
         initial={{ opacity: 0, y: -4 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card-bg hover:bg-accent/5 hover:border-accent/30 text-xs font-medium text-muted-foreground hover:text-accent transition-all duration-200 cursor-pointer"
+        className="flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-lg bg-accent/10 text-accent hover:bg-accent/15 text-sm font-medium transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         aria-label="View video chapters"
       >
-        <ListOrdered className="w-3.5 h-3.5 text-accent shrink-0" />
+        <ListOrdered className="w-3.5 h-3.5 shrink-0" />
         Chapters
-        <span className="ml-0.5 px-1.5 py-0.5 bg-accent/10 text-accent text-[10px] font-semibold rounded-full">
+        <span className="ml-0.5 px-1.5 py-0.5 bg-accent/20 text-accent text-[10px] font-bold rounded-full">
           {chapters.length}
         </span>
       </motion.button>
@@ -69,16 +83,19 @@ export default function ChapterButton({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm cursor-pointer"
+                className="fixed inset-0 z-60 bg-black/50 backdrop-blur-sm cursor-pointer"
                 onClick={() => setIsOpen(false)}
               />
 
               {/* Modal Content */}
               <div
-                className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none"
+                className="fixed inset-0 z-70 flex items-center justify-center p-4 pointer-events-none"
+                role="dialog"
+                aria-modal="true"
+                aria-label={videoTitle ? `Chapters: ${videoTitle}` : 'Video Chapters'}
               >
-                <div 
-                  className="w-full h-full flex items-center justify-center" 
+                <div
+                  className="w-full h-full flex items-center justify-center"
                   onClick={() => setIsOpen(false)}
                 >
                   <motion.div
@@ -96,19 +113,16 @@ export default function ChapterButton({
                           <ListOrdered className="w-5 h-5 text-accent" />
                         </div>
                         <div className="min-w-0">
-                          <h2 className="text-lg font-semibold text-foreground truncate">
-                            Chapters
-                          </h2>
+                          <h2 className="text-lg font-semibold text-foreground truncate">Chapters</h2>
                           {videoTitle && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              {videoTitle}
-                            </p>
+                            <p className="text-xs text-muted-foreground truncate">{videoTitle}</p>
                           )}
                         </div>
                       </div>
                       <button
+                        ref={closeButtonRef}
                         onClick={() => setIsOpen(false)}
-                        className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+                        className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         aria-label="Close chapters"
                       >
                         <X className="w-5 h-5" />
@@ -116,22 +130,12 @@ export default function ChapterButton({
                     </div>
 
                     {/* Content - Chapter Timeline */}
-                    <div className="flex-1 overflow-y-auto px-6 py-4 pr-4">
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
                       <ChapterTimeline
                         chapters={chapters}
                         currentTime={currentTime}
                         playerRef={playerRef}
                       />
-                    </div>
-
-                    {/* Footer */}
-                    <div className="sticky bottom-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-card-bg">
-                      <button
-                        onClick={() => setIsOpen(false)}
-                        className="px-4 py-2 rounded-lg bg-accent text-white font-medium hover:bg-accent/90 transition-colors cursor-pointer"
-                      >
-                        Close
-                      </button>
                     </div>
                   </motion.div>
                 </div>

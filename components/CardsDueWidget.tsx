@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Zap, CheckCircle2, ChevronRight, AlertCircle, Mic } from 'lucide-react';
 import SmartReviewSession from './SmartReviewSession';
@@ -36,6 +36,7 @@ function urgencyLabel(due: number): string {
   return `${due} overdue`;
 }
 
+// All accent-family — urgency expressed via label text and opacity, not semantic red/amber
 function urgencyClasses(due: number): { badge: string; button: string } {
   if (due === 0) return {
     badge: 'bg-muted/20 text-muted-foreground',
@@ -46,12 +47,12 @@ function urgencyClasses(due: number): { badge: string; button: string } {
     button: 'bg-accent text-white hover:bg-accent/90',
   };
   if (due <= 15) return {
-    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    badge: 'bg-accent/15 text-accent font-bold',
     button: 'bg-accent text-white hover:bg-accent/90',
   };
   return {
-    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    button: 'bg-accent text-white hover:bg-accent/90',
+    badge: 'bg-accent/20 text-accent font-bold',
+    button: 'bg-accent text-white hover:bg-accent/90 ring-2 ring-accent/30',
   };
 }
 
@@ -84,22 +85,17 @@ export default function CardsDueWidget() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [voiceReviewOpen, setVoiceReviewOpen] = useState(false);
 
-  const loadStats = () => {
-    setError(false);
+  // Single fetch implementation — used both on mount and for refresh
+  const loadStats = useCallback(() => {
     fetch('/api/flashcards/stats')
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setStats)
       .catch(() => setError(true));
-  };
+  }, []);
 
   useEffect(() => {
-    let mounted = true;
-    fetch('/api/flashcards/stats')
-      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((data) => { if (mounted) setStats(data); })
-      .catch(() => { if (mounted) setError(true); });
-    return () => { mounted = false; };
-  }, []);
+    loadStats();
+  }, [loadStats]);
 
   const handleSessionComplete = () => {
     setReviewOpen(false);
@@ -114,7 +110,12 @@ export default function CardsDueWidget() {
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <AlertCircle className="w-4 h-4" />
           <span>Couldn&apos;t load review stats.</span>
-          <button onClick={loadStats} className="text-accent hover:underline cursor-pointer min-h-[44px] px-2">Retry</button>
+          <button
+            onClick={() => { setError(false); loadStats(); }}
+            className="text-accent hover:underline cursor-pointer min-h-[44px] px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -140,7 +141,7 @@ export default function CardsDueWidget() {
             </div>
             <span className="font-semibold text-foreground">Smart Review</span>
           </div>
-          <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full ${badge}`} aria-label={`${label} for review`}>
+          <span className={`text-sm px-2.5 py-0.5 rounded-full ${badge}`} aria-label={`${label} for review`}>
             {label}
           </span>
         </div>
@@ -150,7 +151,7 @@ export default function CardsDueWidget() {
           <div className="flex flex-col gap-2 mb-4">
             <button
               onClick={() => setReviewOpen(true)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${button}`}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 ${button}`}
               aria-label={`Study now — ${dueToday} card${dueToday !== 1 ? 's' : ''} due`}
             >
               <div className="flex items-center gap-2">
@@ -161,22 +162,23 @@ export default function CardsDueWidget() {
             </button>
             <button
               onClick={() => setVoiceReviewOpen(true)}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-border text-xs text-muted-foreground hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all duration-200 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/10 text-accent hover:bg-accent/15 text-sm font-medium transition-all duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               aria-label="Start voice review session"
             >
-              <Mic className="w-3.5 h-3.5" />
-              Try Voice Review
+              <Mic className="w-4 h-4" />
+              Voice Review
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/20 mb-4">
-            <CheckCircle2 className="w-4 h-4 text-green-500" />
-            <span className="text-sm text-muted-foreground">
-              All caught up!
+          // Celebratory "all caught up" state — uses accent to feel rewarding, not flat gray
+          <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-accent/5 border border-accent/15 mb-4">
+            <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />
+            <div className="text-sm">
+              <span className="text-foreground font-medium">All caught up.</span>
               {nextReviewDate && (
-                <span> Next review {formatNextReview(nextReviewDate)}.</span>
+                <span className="text-muted-foreground"> Next review {formatNextReview(nextReviewDate)}.</span>
               )}
-            </span>
+            </div>
           </div>
         )}
 

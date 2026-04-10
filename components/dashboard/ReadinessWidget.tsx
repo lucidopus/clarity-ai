@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { AlertCircle, Sparkles, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -12,27 +12,28 @@ interface AggregateData {
   avgDimensions: AvgDimensions | null;
 }
 
+// Visually distinct tiers — all accent-family, but clearly differentiated
 function scoreConfig(score: number): { text: string; ring: string; badge: string; label: string; barColor: string } {
   if (score >= 70) return {
     text: 'text-accent',
     ring: 'stroke-accent',
-    badge: 'bg-accent/10 text-accent',
+    badge: 'bg-accent/15 text-accent',
     label: 'Crystal Clear',
     barColor: 'bg-accent',
   };
   if (score >= 40) return {
-    text: 'text-accent',
-    ring: 'stroke-accent',
-    badge: 'bg-accent/10 text-accent',
+    text: 'text-accent/75',
+    ring: 'stroke-accent/60',
+    badge: 'bg-accent/10 text-accent/75',
     label: 'Gaining Clarity',
-    barColor: 'bg-accent',
+    barColor: 'bg-accent/65',
   };
   return {
-    text: 'text-accent/60',
-    ring: 'stroke-accent/50',
-    badge: 'bg-accent/10 text-accent/70',
+    text: 'text-muted-foreground',
+    ring: 'stroke-accent/30',
+    badge: 'bg-muted/30 text-muted-foreground',
     label: 'Just Starting',
-    barColor: 'bg-accent/40',
+    barColor: 'bg-accent/35',
   };
 }
 
@@ -101,7 +102,6 @@ function Skeleton() {
       <div className="flex flex-col sm:flex-row gap-6">
         <div className="flex flex-col items-center gap-3 shrink-0">
           <div className="w-24 h-24 rounded-full bg-secondary/20" />
-          <div className="h-3 w-32 rounded bg-secondary/20" />
         </div>
         <div className="flex-1 space-y-3.5">
           {[1, 2, 3, 4].map((i) => (
@@ -126,6 +126,7 @@ export default function ClarityScoreWidget() {
   const router = useRouter();
   const [data, setData] = useState<AggregateData | null>(null);
   const [error, setError] = useState(false);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -135,6 +136,19 @@ export default function ClarityScoreWidget() {
       .catch(() => { if (mounted) setError(true); });
     return () => { mounted = false; };
   }, []);
+
+  // Close breakdown on Escape
+  useEffect(() => {
+    if (!breakdownOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setBreakdownOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [breakdownOpen]);
+
+  // Close on outside click
+  const handleOutsideClick = useCallback(() => {
+    if (breakdownOpen) setBreakdownOpen(false);
+  }, [breakdownOpen]);
 
   if (!data && !error) return <Skeleton />;
 
@@ -181,6 +195,7 @@ export default function ClarityScoreWidget() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className="bg-card-bg border border-border rounded-2xl p-5 h-full flex flex-col"
+      onClick={handleOutsideClick}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -197,12 +212,14 @@ export default function ClarityScoreWidget() {
 
       {/* Body: ring + dimension bars */}
       <div className="flex items-center gap-5">
-        {/* Score ring with hover tooltip */}
-        <div className="group relative flex flex-col items-center shrink-0">
-          <div
-            role="img"
-            aria-label={`Clarity Score: ${overallScore} out of 100. ${config.label}. Based on ${sources.length} ${sources.length === 1 ? 'source' : 'sources'}.`}
-            className="relative cursor-help"
+        {/* Score ring — click or hover to see breakdown */}
+        <div className="relative flex flex-col items-center shrink-0">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setBreakdownOpen(v => !v); }}
+            aria-label={`Clarity Score: ${overallScore} out of 100. ${config.label}. Activate to see how it's calculated.`}
+            aria-expanded={breakdownOpen}
+            className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-card-bg group"
           >
             <svg aria-hidden="true" width="80" height="80" viewBox="0 0 80 80">
               <circle
@@ -225,25 +242,31 @@ export default function ClarityScoreWidget() {
               <span className={`text-xl font-bold tabular-nums leading-none ${config.text}`}>{overallScore}</span>
               <span className="text-[10px] text-muted-foreground mt-0.5">/ 100</span>
             </div>
-          </div>
+          </button>
 
-          {/* Hover tooltip: how it's calculated */}
-          <div className="absolute top-[90px] left-0 w-52 bg-card-bg border border-border rounded-xl p-3 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-            <p className="text-xs font-semibold text-foreground mb-2">How it&apos;s calculated</p>
-            <div className="space-y-1.5">
-              {[
-                { label: 'Quiz scores', weight: '40%' },
-                { label: 'Flashcard mastery', weight: '25%' },
-                { label: 'Topics covered', weight: '20%' },
-                { label: 'Study consistency', weight: '15%' },
-              ].map(({ label, weight }) => (
-                <div key={label} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium text-foreground">{weight}</span>
-                </div>
-              ))}
+          {/* Breakdown popover — click/hover/focus triggered */}
+          {breakdownOpen && (
+            <div
+              role="tooltip"
+              className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-52 bg-card-bg border border-border rounded-xl p-3 shadow-xl z-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-xs font-semibold text-foreground mb-2">How it&apos;s calculated</p>
+              <div className="space-y-1.5">
+                {[
+                  { label: 'Quiz scores', weight: '40%' },
+                  { label: 'Flashcard mastery', weight: '25%' },
+                  { label: 'Topics covered', weight: '20%' },
+                  { label: 'Study consistency', weight: '15%' },
+                ].map(({ label, weight }) => (
+                  <div key={label} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium text-foreground">{weight}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Dimension breakdown */}
@@ -268,7 +291,7 @@ export default function ClarityScoreWidget() {
         </span>
         <button
           onClick={() => router.push('/dashboard/gallery')}
-          className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors font-medium cursor-pointer"
+          className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 transition-colors font-medium cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 rounded"
           aria-label="View per-source clarity scores"
         >
           View per-source details
