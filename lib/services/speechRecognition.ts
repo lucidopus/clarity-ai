@@ -144,7 +144,8 @@ export function cancelSpeech(): void {
  * Returns a cleanup/stop function.
  */
 export function startContinuousRatingListener(
-  onRating: (rating: RatingWord) => void
+  onRating: (rating: RatingWord) => void,
+  onPermissionDenied?: () => void
 ): () => void {
   if (!isSpeechRecognitionSupported()) return () => {};
 
@@ -179,8 +180,13 @@ export function startContinuousRatingListener(
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       if (stopped) return;
       active = null;
-      if (event.error === 'not-allowed' || event.error === 'aborted') {
-        stopped = true; // Permission denied or explicitly stopped — don't retry
+      if (event.error === 'aborted') {
+        stopped = true;
+        return;
+      }
+      if (event.error === 'not-allowed') {
+        stopped = true;
+        onPermissionDenied?.();
         return;
       }
       setTimeout(startSession, 300);

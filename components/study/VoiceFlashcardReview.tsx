@@ -66,6 +66,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
   const [voiceEnabled, setVoiceEnabled] = useState(isSpeechRecognitionSupported());
   const [submitError, setSubmitError] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const [micBlocked, setMicBlocked] = useState(false);
   // Voice confirmation: voice pre-selects a rating; user has VOICE_CONFIRM_SECONDS to cancel
   const [pendingRating, setPendingRating] = useState<RatingWord | null>(null);
   const [pendingCountdown, setPendingCountdown] = useState(VOICE_CONFIRM_SECONDS);
@@ -166,14 +167,22 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     // Brief delay so the audio system finishes TTS before the mic opens
     const timer = setTimeout(() => {
       setListening(true);
-      recognitionStopRef.current = startContinuousRatingListener((rating) => {
-        // Stop listening immediately on match
-        recognitionStopRef.current?.();
-        recognitionStopRef.current = null;
-        setListening(false);
-        setPendingCountdown(VOICE_CONFIRM_SECONDS);
-        setPendingRating(rating);
-      });
+      setMicBlocked(false);
+      recognitionStopRef.current = startContinuousRatingListener(
+        (rating) => {
+          recognitionStopRef.current?.();
+          recognitionStopRef.current = null;
+          setListening(false);
+          setPendingCountdown(VOICE_CONFIRM_SECONDS);
+          setPendingRating(rating);
+        },
+        () => {
+          // Permission denied — mic is blocked at browser or OS level
+          setListening(false);
+          setMicBlocked(true);
+          setVoiceEnabled(false);
+        }
+      );
     }, 500);
 
     return () => {
@@ -334,10 +343,15 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
           <span className="text-sm text-muted-foreground" aria-live="polite">
             {index + 1} / {cards.length}
           </span>
-          {listening && (
+          {listening && !micBlocked && (
             <span className="flex items-center gap-1.5 text-xs font-medium text-red-500 dark:text-red-400" aria-live="polite" aria-label="Microphone active">
               <span className="w-2 h-2 rounded-full bg-red-500 dark:bg-red-400 animate-pulse shrink-0" aria-hidden="true" />
               Mic on
+            </span>
+          )}
+          {micBlocked && (
+            <span className="text-xs font-medium text-amber-500 dark:text-amber-400" aria-live="assertive">
+              Mic blocked
             </span>
           )}
         </div>
@@ -463,8 +477,21 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
               </div>
             )}
 
+            {/* Mic permission blocked */}
+            {micBlocked && (
+              <div className="flex flex-col gap-1 px-4 py-3 mb-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Microphone access blocked — use the buttons below
+                </div>
+                <p className="text-xs opacity-80 ml-6">
+                  To enable voice: open <strong>System Settings → Privacy &amp; Security → Microphone</strong> and allow your browser, then reload.
+                </p>
+              </div>
+            )}
+
             {/* Listening indicator */}
-            {listening && !pendingRating && (
+            {listening && !pendingRating && !micBlocked && (
               <div className="flex items-center justify-center gap-2 px-4 py-2 mb-4 rounded-xl bg-accent/10 border border-accent/20 text-accent text-sm">
                 <Mic className="w-4 h-4 animate-pulse" aria-hidden="true" />
                 <span>Listening for: Again / Hard / Good / Easy</span>
