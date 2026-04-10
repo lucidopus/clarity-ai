@@ -20,22 +20,17 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
 
   return (
     <>
-      {/* Corner Button - Top Right */}
+      {/* Inline pill button — sits above the video player */}
       <motion.button
-        initial={{ opacity: 0, x: 10 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 10 }}
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="fixed top-10 right-6 z-[60] group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-accent text-accent dark:text-secondary hover:text-accent animate-pulse-subtle"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card-bg hover:bg-accent/5 hover:border-accent/30 text-xs font-medium text-muted-foreground hover:text-accent transition-all duration-200 cursor-pointer"
         aria-label="View video summary"
       >
-        <BookOpen className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-
-        {/* Tooltip on Hover */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-3 py-2 bg-card-bg border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md z-50">
-          View Summary
-        </div>
+        <BookOpen className="w-3.5 h-3.5 text-accent shrink-0" />
+        Summary
       </motion.button>
 
       {/* Summary Modal - Portaled to body to correctly overlay sidebar/navbar */}
@@ -57,8 +52,8 @@ export default function VideoSummaryButton({ summary, videoTitle }: VideoSummary
               <div
                 className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none"
               >
-                <div 
-                  className="w-full h-full flex items-center justify-center" 
+                <div
+                  className="w-full h-full flex items-center justify-center"
                   onClick={() => setIsOpen(false)}
                 >
                   <motion.div

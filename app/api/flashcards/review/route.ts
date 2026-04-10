@@ -6,6 +6,8 @@ import Flashcard from '@/lib/models/Flashcard';
 import FlashcardReview from '@/lib/models/FlashcardReview';
 import { initFSRSCard, processReview, Rating } from '@/lib/services/fsrs';
 import { recordStudyActivity } from '@/lib/services/streaks';
+import { computeReadinessScore } from '@/lib/services/readinessScore';
+import { clearInsightsCache } from '@/lib/services/clarityInsights';
 
 interface DecodedToken {
   userId: string;
@@ -68,6 +70,10 @@ export async function POST(request: NextRequest) {
 
     // Record streak activity (fire-and-forget)
     recordStudyActivity(decoded.userId, 'flashcard_review').catch(() => {});
+
+    // Recompute Clarity Score (fire-and-forget) and clear insights cache
+    computeReadinessScore(decoded.userId, flashcard.sourceId).catch(() => {});
+    clearInsightsCache(decoded.userId);
 
     return NextResponse.json({
       success: true,

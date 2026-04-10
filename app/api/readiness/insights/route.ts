@@ -1,26 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { getReadinessScore } from '@/lib/services/readinessScore';
+import { getClarityInsights } from '@/lib/services/clarityInsights';
 
 interface DecodedToken {
   userId: string;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ sourceId: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('jwt')?.value;
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-    const { sourceId } = await params;
-
-    const result = await getReadinessScore(decoded.userId, sourceId);
+    const result = await getClarityInsights(decoded.userId);
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error computing clarity score:', error);
+    console.error('Error computing clarity insights:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

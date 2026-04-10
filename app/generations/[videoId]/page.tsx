@@ -728,8 +728,8 @@ export default function VideoMaterialsPage() {
                   )}
 
                   {activeTab === 'prerequisites' && (
-                    <div className="max-w-7xl mx-auto w-full">
-                        <PrerequisitesView prerequisites={materials.prerequisites} isReadOnly={materials.isReadOnly} />
+                    <div className="max-w-7xl mx-auto w-full space-y-6">
+                      <PrerequisitesView prerequisites={materials.prerequisites} isReadOnly={materials.isReadOnly} />
                     </div>
                   )}
 

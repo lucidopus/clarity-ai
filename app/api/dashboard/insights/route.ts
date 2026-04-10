@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import { ActivityLog, Flashcard, Video } from '@/lib/models';
+import { ActivityLog, Flashcard, Source } from '@/lib/models';
 import mongoose from 'mongoose';
 
 interface DecodedToken { userId: string }
@@ -108,18 +108,18 @@ export async function GET(request: NextRequest) {
       count: funnelMap.get(type) || 0,
     }));
 
-    // 3. Video Engagement (last 30 days, top 5 videos)
+    // 3. Video Engagement (last 30 days, top 5 sources by interactions)
     const videoEngagementData = await ActivityLog.aggregate([
       {
         $match: {
           userId: new mongoose.Types.ObjectId(userId),
           timestamp: { $gte: thirtyDaysAgo },
-          videoId: { $exists: true, $ne: null },
+          sourceId: { $exists: true, $ne: null },
         },
       },
       {
         $group: {
-          _id: '$videoId',
+          _id: '$sourceId',
           count: { $sum: 1 },
         },
       },
@@ -127,23 +127,23 @@ export async function GET(request: NextRequest) {
       { $limit: 5 },
     ]);
 
-    // Lookup video details
-    const videoIds = videoEngagementData.map((d) => d._id);
-    const videos = await Video.find(
-      { videoId: { $in: videoIds }, userId: new mongoose.Types.ObjectId(userId) },
-      { videoId: 1, title: 1, thumbnail: 1 }
+    // Lookup source details
+    const sourceIds = videoEngagementData.map((d) => d._id);
+    const sources = await Source.find(
+      { sourceId: { $in: sourceIds }, userId: new mongoose.Types.ObjectId(userId) },
+      { sourceId: 1, title: 1, thumbnail: 1 }
     ).lean();
 
-    const videoMap = new Map(videos.map((v) => [v.videoId, v]));
+    const videoMap = new Map(sources.map((s) => [s.sourceId, s]));
 
     const totalInteractions = videoEngagementData.reduce((sum, d) => sum + d.count, 0);
 
     const videoEngagement = videoEngagementData.map((d) => {
-      const video = videoMap.get(d._id);
+      const source = videoMap.get(d._id);
       return {
         videoId: d._id,
-        title: video?.title || 'Unknown Video',
-        thumbnail: video?.thumbnail || null,
+        title: source?.title || 'Unknown Source',
+        thumbnail: source?.thumbnail || null,
         interactions: d.count,
         percentage: totalInteractions > 0 ? Math.round((d.count / totalInteractions) * 100) : 0,
       };

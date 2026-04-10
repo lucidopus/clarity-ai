@@ -42,27 +42,20 @@ export default function ChapterButton({
 
   return (
     <>
-      {/* Corner Button - Top Right (below summary button) */}
+      {/* Inline pill button — sits above the video player */}
       <motion.button
-        initial={{ opacity: 0, x: 10 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 10 }}
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.2 }}
         onClick={() => setIsOpen(true)}
-        className="fixed top-45 right-6 z-20 group cursor-pointer relative flex items-center justify-center w-10 h-10 bg-white dark:bg-card-bg border border-accent/40 dark:border-border rounded-lg shadow-lg dark:shadow-md transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-accent text-accent dark:text-secondary hover:text-accent"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card-bg hover:bg-accent/5 hover:border-accent/30 text-xs font-medium text-muted-foreground hover:text-accent transition-all duration-200 cursor-pointer"
         aria-label="View video chapters"
       >
-        <ListOrdered className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
-
-        {/* Badge showing chapter count */}
-        <span className="absolute -top-1 -right-1 px-1.5 py-0.5 bg-accent text-white text-[10px] font-semibold rounded-full">
+        <ListOrdered className="w-3.5 h-3.5 text-accent shrink-0" />
+        Chapters
+        <span className="ml-0.5 px-1.5 py-0.5 bg-accent/10 text-accent text-[10px] font-semibold rounded-full">
           {chapters.length}
         </span>
-
-        {/* Tooltip on Hover */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-3 py-2 bg-card-bg border border-border rounded-lg text-xs text-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none shadow-md z-50">
-          View Chapters
-        </div>
       </motion.button>
 
       {/* Chapter Modal - Portaled to body */}

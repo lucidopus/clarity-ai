@@ -5,6 +5,8 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Progress from '@/lib/models/Progress';
 import Flashcard from '@/lib/models/Flashcard';
+import { computeReadinessScore } from '@/lib/services/readinessScore';
+import { clearInsightsCache } from '@/lib/services/clarityInsights';
 
 interface DecodedToken {
   userId: string;
@@ -114,6 +116,10 @@ export async function POST(request: NextRequest) {
 
     // Save progress
     await progress.save();
+
+    // Recompute Clarity Score (fire-and-forget) and clear insights cache
+    computeReadinessScore(decoded.userId, sourceId).catch(() => {});
+    clearInsightsCache(decoded.userId);
 
     return NextResponse.json({
       success: true,

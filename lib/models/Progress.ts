@@ -17,7 +17,7 @@ export interface ICalibrationEntry {
   misinformedQuizIds: mongoose.Types.ObjectId[];
 }
 
-export interface IReadinessScore {
+export interface IClarityScore {
   score: number;
   quizDimension: number;
   masteryDimension: number;
@@ -25,6 +25,9 @@ export interface IReadinessScore {
   trendDimension: number;
   computedAt: Date;
 }
+
+/** @deprecated Use IClarityScore */
+export type IReadinessScore = IClarityScore;
 
 export interface IProgress extends Document {
   _id: mongoose.Types.ObjectId;

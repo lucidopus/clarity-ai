@@ -9,6 +9,7 @@ import Button from './Button';
 import NotesEditor from './NotesEditor';
 import Tooltip from './Tooltip';
 import ChapterButton from './ChapterButton';
+import VideoSummaryButton from './VideoSummaryButton';
 
 interface TranscriptSegment {
   text: string;
@@ -29,6 +30,7 @@ interface VideoAndTranscriptViewerProps {
   youtubeUrl: string;
   chapters?: Chapter[];
   videoTitle?: string;
+  summary?: string;
   notes: {
     generalNote: string;
     segmentNotes: Array<{
@@ -78,6 +80,7 @@ export default function VideoAndTranscriptViewer({
   youtubeUrl,
   chapters = [],
   videoTitle,
+  summary,
   notes,
   onSaveNotes,
   autoplayVideos = false
@@ -283,20 +286,26 @@ export default function VideoAndTranscriptViewer({
 
   return (
     <div className="w-full">
-      {/* Floating Chapter Button */}
-      {chapters && chapters.length > 0 && (
-        <ChapterButton
-          chapters={chapters}
-          currentTime={currentTime}
-          playerRef={playerRef}
-          videoTitle={videoTitle}
-        />
-      )}
-
       {/* Video and Transcript Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
         {/* Video Player */}
-        <div className="space-y-4 lg:sticky lg:top-6">
+        <div className="space-y-3 lg:sticky lg:top-6">
+          {/* Inline action buttons above video */}
+          {(summary || (chapters && chapters.length > 0)) && (
+            <div className="flex items-center gap-2">
+              {summary && (
+                <VideoSummaryButton summary={summary} videoTitle={videoTitle} />
+              )}
+              {chapters && chapters.length > 0 && (
+                <ChapterButton
+                  chapters={chapters}
+                  currentTime={currentTime}
+                  playerRef={playerRef}
+                  videoTitle={videoTitle}
+                />
+              )}
+            </div>
+          )}
           {/* Video Player */}
           <div className="bg-card-bg border-2 border-border rounded-2xl p-4">
             <div className="aspect-video bg-black rounded-xl overflow-hidden">

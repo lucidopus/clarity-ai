@@ -198,7 +198,7 @@ export default function StudyActivityHeatmap({ currentStreak, longestStreak }: S
   const railWidthPx = 28;
 
   return (
-    <div className="bg-card-bg border border-border rounded-2xl p-6 heatmap-grid-container">
+    <div className="bg-card-bg border border-border rounded-2xl p-6 heatmap-grid-container h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4">
           <h3 className="text-lg font-semibold text-foreground">Study Activity</h3>

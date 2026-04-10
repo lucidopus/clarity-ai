@@ -20,7 +20,8 @@ import CardsDueWidget from '@/components/CardsDueWidget';
 import WeekdayConsistencyBars from '@/components/WeekdayConsistencyBars';
 import StreakWidget from '@/components/StreakWidget';
 import DailyChallengesCard from '@/components/DailyChallengesCard';
-import ReadinessWidget from '@/components/dashboard/ReadinessWidget';
+import ClarityScoreWidget from '@/components/dashboard/ReadinessWidget';
+import ClarityInsightsPanel from '@/components/dashboard/ClarityInsightsPanel';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface StatsResponse {
@@ -325,42 +326,34 @@ export default function DashboardHomePage() {
       )}
 
       {!loading && !error && stats && (
-        <div className="space-y-8">
-          {/* Smart Review + Streak + Daily Challenges */}
+        <div className="space-y-5">
+          {/* Row 1: Clarity Score + Activity Heatmap (GitHub-style) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ClarityScoreWidget />
+            <StudyActivityHeatmap currentStreak={stats.currentStreak} longestStreak={stats.longestStreak} />
+          </div>
+
+          {/* Row 2: Smart Review + Streak + Daily Challenges */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <CardsDueWidget />
             <StreakWidget />
             <DailyChallengesCard />
           </div>
 
-          {/* Exam Readiness */}
-          <ReadinessWidget />
+          {/* Knowledge Map */}
+          <ClarityInsightsPanel />
 
-          {/* Heatmap + Weekly Rhythm */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            <div className="xl:col-span-2">
-              <StudyActivityHeatmap currentStreak={stats.currentStreak} longestStreak={stats.longestStreak} />
-            </div>
-            <div className="h-full">
-              <WeekdayConsistencyBars />
-            </div>
-          </div>
+          {/* Weekly Rhythm */}
+          <WeekdayConsistencyBars />
 
-          {/* Insights Section */}
+          {/* Learning Insights — analytics */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Learning Insights</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {/* Focus Hours - full width on mobile, half on lg+ */}
-              <FocusHoursChart />
-
-              {/* Activity Funnel */}
-              <ActivityFunnelCard />
-
-              {/* Video Engagement */}
               <VideoEngagementList />
-
-              {/* Flashcard Difficulty */}
+              <ActivityFunnelCard />
               <FlashcardDifficultyDonut />
+              <FocusHoursChart />
             </div>
           </div>
 

@@ -129,10 +129,12 @@ export async function computeReadinessScore(
     computedAt,
   };
 
-  // Persist cache on the Progress document
-  if (progress) {
-    await Progress.updateOne({ userId, sourceId }, { $set: { readinessScore } });
-  }
+  // Persist to Progress (upsert so flashcard-only users without a quiz attempt also get a score)
+  await Progress.updateOne(
+    { userId, sourceId },
+    { $set: { readinessScore } },
+    { upsert: true }
+  );
 
   // ── Improvement suggestions ─────────────────────────────────────────────────
   const suggestions: Suggestion[] = [];
@@ -197,24 +199,94 @@ export async function getReadinessScore(
   return computeReadinessScore(userId, sourceId);
 }
 
+type SourceWithDimensions = {
+  sourceId: string;
+  score: number;
+  quizDimension: number;
+  masteryDimension: number;
+  coverageDimension: number;
+  trendDimension: number;
+};
+
+export interface AvgDimensions {
+  quiz: number;
+  mastery: number;
+  coverage: number;
+  trend: number;
+}
+
 /** Aggregate readiness across all of a user's sources. */
-export async function getAggregateReadiness(
-  userId: string
-): Promise<{ overallScore: number; sources: { sourceId: string; score: number }[] }> {
+export async function getAggregateReadiness(userId: string): Promise<{
+  overallScore: number;
+  sources: { sourceId: string; score: number }[];
+  avgDimensions: AvgDimensions | null;
+}> {
   await dbConnect();
 
   const progresses = await Progress.find({ userId })
-    .select('sourceId readinessScore')
-    .lean();
+    .select('sourceId readinessScore masteredFlashcardIds quizAttempts')
+    .lean() as unknown as { sourceId: string; readinessScore?: IReadinessScore | null; masteredFlashcardIds?: unknown[]; quizAttempts?: unknown[] }[];
 
-  const sourcesWithScore = progresses
+  // Sources with a fresh cached score (include all dimension fields)
+  const cached: SourceWithDimensions[] = progresses
     .filter((p) => p.readinessScore != null)
-    .map((p) => ({ sourceId: p.sourceId, score: p.readinessScore!.score }));
+    .map((p) => ({
+      sourceId: p.sourceId,
+      score: p.readinessScore!.score,
+      quizDimension: p.readinessScore!.quizDimension,
+      masteryDimension: p.readinessScore!.masteryDimension,
+      coverageDimension: p.readinessScore!.coverageDimension,
+      trendDimension: p.readinessScore!.trendDimension,
+    }));
+
+  // Sources with activity but no cached score — compute inline so the dashboard
+  // reflects existing progress on first load (not just after a new review).
+  const needsCompute = progresses.filter(
+    (p) =>
+      p.readinessScore == null &&
+      ((p.masteredFlashcardIds?.length ?? 0) > 0 || (p.quizAttempts?.length ?? 0) > 0)
+  );
+
+  const fresh: SourceWithDimensions[] =
+    needsCompute.length > 0
+      ? (
+          await Promise.all(
+            needsCompute.map((p) =>
+              computeReadinessScore(userId, p.sourceId)
+                .then((r) => ({
+                  sourceId: p.sourceId,
+                  score: r.score,
+                  quizDimension: r.quizDimension,
+                  masteryDimension: r.masteryDimension,
+                  coverageDimension: r.coverageDimension,
+                  trendDimension: r.trendDimension,
+                }))
+                .catch(() => null)
+            )
+          )
+        ).filter((r): r is SourceWithDimensions => r !== null)
+      : [];
+
+  const sourcesWithScore = [...cached, ...fresh];
 
   const overallScore =
     sourcesWithScore.length > 0
       ? Math.round(sourcesWithScore.reduce((s, p) => s + p.score, 0) / sourcesWithScore.length)
       : 0;
 
-  return { overallScore, sources: sourcesWithScore };
+  const avgDimensions: AvgDimensions | null =
+    sourcesWithScore.length > 0
+      ? {
+          quiz: Math.round(sourcesWithScore.reduce((s, p) => s + p.quizDimension, 0) / sourcesWithScore.length),
+          mastery: Math.round(sourcesWithScore.reduce((s, p) => s + p.masteryDimension, 0) / sourcesWithScore.length),
+          coverage: Math.round(sourcesWithScore.reduce((s, p) => s + p.coverageDimension, 0) / sourcesWithScore.length),
+          trend: Math.round(sourcesWithScore.reduce((s, p) => s + p.trendDimension, 0) / sourcesWithScore.length),
+        }
+      : null;
+
+  return {
+    overallScore,
+    sources: sourcesWithScore.map((s) => ({ sourceId: s.sourceId, score: s.score })),
+    avgDimensions,
+  };
 }

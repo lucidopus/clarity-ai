@@ -42,16 +42,16 @@ function urgencyClasses(due: number): { badge: string; button: string } {
     button: '',
   };
   if (due <= 5) return {
-    badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    badge: 'bg-accent/10 text-accent',
     button: 'bg-accent text-white hover:bg-accent/90',
   };
   if (due <= 15) return {
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-    button: 'bg-amber-500 text-white hover:bg-amber-600',
+    button: 'bg-accent text-white hover:bg-accent/90',
   };
   return {
     badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    button: 'bg-red-500 text-white hover:bg-red-600',
+    button: 'bg-accent text-white hover:bg-accent/90',
   };
 }
 
@@ -147,10 +147,10 @@ export default function CardsDueWidget() {
 
         {/* Main action */}
         {dueToday > 0 ? (
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-col gap-2 mb-4">
             <button
               onClick={() => setReviewOpen(true)}
-              className={`flex-1 flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${button}`}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${button}`}
               aria-label={`Study now — ${dueToday} card${dueToday !== 1 ? 's' : ''} due`}
             >
               <div className="flex items-center gap-2">
@@ -161,11 +161,11 @@ export default function CardsDueWidget() {
             </button>
             <button
               onClick={() => setVoiceReviewOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-3 rounded-xl text-sm font-semibold border border-border text-muted-foreground hover:border-accent/50 hover:text-accent transition-all duration-200 cursor-pointer shrink-0"
-              aria-label="Voice study mode"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-border text-xs text-muted-foreground hover:text-accent hover:border-accent/40 hover:bg-accent/5 transition-all duration-200 cursor-pointer"
+              aria-label="Start voice review session"
             >
-              <Mic className="w-4 h-4" />
-              Voice
+              <Mic className="w-3.5 h-3.5" />
+              Try Voice Review
             </button>
           </div>
         ) : (
