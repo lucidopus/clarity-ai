@@ -77,6 +77,21 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     return () => { (triggerRef.current as HTMLElement | null)?.focus(); };
   }, []);
 
+  // Explicitly request mic permission via getUserMedia — SpeechRecognition alone
+  // does not reliably trigger the macOS permission dialog or yellow dot indicator.
+  // We request, immediately release the stream, then let SpeechRecognition take over.
+  useEffect(() => {
+    if (!voiceEnabled) return;
+    navigator.mediaDevices?.getUserMedia({ audio: true })
+      .then((stream) => {
+        stream.getTracks().forEach((t) => t.stop());
+      })
+      .catch(() => {
+        setMicBlocked(true);
+        setVoiceEnabled(false);
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Escape to exit
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
