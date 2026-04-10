@@ -1,6 +1,7 @@
 /**
- * ElevenLabs-backed TTS and STT for voice flashcard review.
- * All browser-side code — guard with typeof window checks where needed.
+ * Voice service for voice flashcard review.
+ * TTS: browser SpeechSynthesis (free, no API).
+ * STT: getUserMedia + MediaRecorder + VAD → /api/voice/stt (Groq Whisper).
  */
 
 export type RatingWord = 'again' | 'hard' | 'good' | 'easy';
@@ -20,63 +21,24 @@ function matchRating(transcript: string): RatingWord | null {
   return null;
 }
 
-// ── TTS ─────────────────────────────────────────────────────────────────────
+// ── TTS (browser SpeechSynthesis) ───────────────────────────────────────────
 
-let currentAudio: HTMLAudioElement | null = null;
-
-/**
- * Speaks text via ElevenLabs TTS (/api/voice/tts).
- * Resolves when audio finishes playing.
- */
+/** Speak text using the browser's built-in SpeechSynthesis. Resolves when done. */
 export async function speak(text: string): Promise<void> {
-  // Cancel any ongoing playback
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
-
-  // Try ElevenLabs TTS first; fall back to browser SpeechSynthesis on any failure
-  // (free plan returns 502 payment_required for library voices)
-  try {
-    const res = await fetch('/api/voice/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    });
-
-    if (res.ok) {
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      currentAudio = audio;
-      await new Promise<void>((resolve, reject) => {
-        audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; resolve(); };
-        audio.onerror = () => { URL.revokeObjectURL(url); currentAudio = null; reject(new Error('Playback error')); };
-        audio.play().catch((e) => { URL.revokeObjectURL(url); currentAudio = null; reject(e); });
-      });
-      return;
-    }
-  } catch {
-    // Network error or non-OK — fall through
-  }
-
-  // Browser SpeechSynthesis fallback
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-    await new Promise<void>((resolve) => {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      window.speechSynthesis.speak(utterance);
-    });
-  }
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  await new Promise<void>((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve(); // always advance
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
-/** Stop any currently playing TTS audio. */
+/** Cancel any ongoing TTS. */
 export function cancelSpeech(): void {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
   }
 }
 
