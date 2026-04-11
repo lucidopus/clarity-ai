@@ -1,77 +1,209 @@
 'use client';
 
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { 
-  BookOpen, 
-  Zap, 
-  MessageSquare, 
-  Search, 
-  Code2, 
-  Layers, 
-  Cpu, 
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import {
+  BookOpen,
+  Zap,
+  MessageSquare,
+  Search,
+  Code2,
+  Layers,
+  Cpu,
   Globe,
   Sparkles,
   Brain,
   Users,
   GitGraph,
-  Target
+  Target,
+  FileText,
+  Mic,
+  Type,
+  Radio
 } from 'lucide-react';
 import Button from '@/components/Button';
 import { useState, useRef, useEffect } from 'react';
 
-const DEMO_URL = 'youtube.com/watch?v=MIT_6.006_Lecture';
+type SourceState = 'youtube' | 'pdf' | 'audio' | 'text' | 'live';
 
-const PROCESSING_STEPS = [
-  'Extracting transcript…',
-  'Analysing key concepts…',
-  'Generating study materials…',
-];
+const SOURCE_ORDER: SourceState[] = ['youtube', 'pdf', 'audio', 'text', 'live'];
 
-const MATERIALS = [
-  { emoji: '🃏', label: 'Flash Cards', meta: '24 cards generated', accent: 'bg-accent/10 text-accent' },
-  { emoji: '🧠', label: 'Quiz', meta: '12 questions', accent: 'bg-purple-500/10 text-purple-500' },
-  { emoji: '⏱️', label: 'Timestamps', meta: '9 chapters', accent: 'bg-orange-500/10 text-orange-500' },
-  { emoji: '✨', label: 'Ask Clara', meta: 'AI tutor ready', accent: 'bg-green-500/10 text-green-500' },
-];
-
-function PipelineDemo() {
-  const [phase, setPhase] = useState<'typing' | 'processing' | 'done'>('typing');
-  const [typedUrl, setTypedUrl] = useState('');
-  const [processingStep, setProcessingStep] = useState(0);
-  const [visibleCards, setVisibleCards] = useState(0);
+function YouTubeSource() {
+  const [typed, setTyped] = useState('');
+  const url = 'youtube.com/watch?v=algo-lecture-05';
 
   useEffect(() => {
-    if (phase !== 'typing') return;
-    setTypedUrl('');
+    setTyped('');
     let i = 0;
     const iv = setInterval(() => {
       i++;
-      setTypedUrl(DEMO_URL.slice(0, i));
-      if (i >= DEMO_URL.length) {
-        clearInterval(iv);
-        setTimeout(() => setPhase('processing'), 600);
-      }
-    }, 55);
+      setTyped(url.slice(0, i));
+      if (i >= url.length) clearInterval(iv);
+    }, 45);
     return () => clearInterval(iv);
-  }, [phase]);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
+      <div className="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center">
+        <svg className="w-8 h-8 text-red-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/>
+        </svg>
+      </div>
+      <div className="text-sm text-foreground font-semibold">YouTube Video</div>
+      <div className="w-full flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-2.5">
+        <span className="text-xs font-mono text-foreground/80 flex-1 truncate">
+          {typed}
+          <span className="inline-block w-px h-3 bg-accent ml-0.5 align-middle animate-pulse" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PdfSource() {
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
+      <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center">
+        <FileText className="w-7 h-7 text-accent" />
+      </div>
+      <div className="text-sm text-foreground font-semibold">PDF Document</div>
+      <div className="w-full flex items-center gap-3 bg-background border border-border rounded-xl px-4 py-3">
+        <div className="w-9 h-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+          <FileText className="w-4 h-4 text-accent" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-foreground truncate">algorithms-chapter-5.pdf</div>
+          <div className="text-[10px] text-secondary">2.4 MB</div>
+        </div>
+        <div className="w-16 h-1.5 rounded-full bg-border overflow-hidden shrink-0">
+          <motion.div
+            className="h-full w-full bg-accent rounded-full origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 2, ease: 'easeOut' }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AudioSource() {
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
+      <div className="w-14 h-14 rounded-2xl bg-purple-500/10 flex items-center justify-center">
+        <Mic className="w-7 h-7 text-purple-500" />
+      </div>
+      <div className="text-sm text-foreground font-semibold">Audio File</div>
+      <div className="w-full flex items-center gap-3 bg-background border border-border rounded-xl px-4 py-3">
+        <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center shrink-0">
+          <Mic className="w-4 h-4 text-purple-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-medium text-foreground truncate">lecture-recording.mp3</div>
+          <div className="text-[10px] text-secondary">42:18</div>
+        </div>
+        <div className="flex items-end gap-0.5 h-6 shrink-0">
+          {[0.5, 0.9, 0.4, 1, 0.7, 0.5, 0.8].map((h, i) => (
+            <motion.div
+              key={i}
+              className="w-0.5 bg-purple-500 rounded-full origin-bottom"
+              animate={{ scaleY: [h * 0.4, h, h * 0.4] }}
+              transition={{ duration: 0.9, delay: i * 0.08, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ height: '100%' }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TextSource() {
+  const [text, setText] = useState('');
+  const full = 'The binary search algorithm works by repeatedly dividing the sorted array in half until the target element is found...';
 
   useEffect(() => {
-    if (phase !== 'processing') return;
-    setProcessingStep(0);
-    PROCESSING_STEPS.forEach((_, i) => {
-      setTimeout(() => setProcessingStep(i + 1), (i + 1) * 900);
-    });
-    setTimeout(() => setPhase('done'), PROCESSING_STEPS.length * 900 + 400);
-  }, [phase]);
+    setText('');
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      setText(full.slice(0, i));
+      if (i >= full.length) clearInterval(iv);
+    }, 22);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
+      <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+        <Type className="w-7 h-7 text-emerald-500" />
+      </div>
+      <div className="text-sm text-foreground font-semibold">Plain Text</div>
+      <div className="w-full bg-background border border-border rounded-xl px-4 py-3 min-h-[76px]">
+        <div className="text-xs text-foreground/80 leading-relaxed">
+          {text}
+          <span className="inline-block w-px h-3 bg-accent ml-0.5 align-middle animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LiveSource() {
+  const [seconds, setSeconds] = useState(754); // starts at 12:34
 
   useEffect(() => {
-    if (phase !== 'done') return;
-    setVisibleCards(0);
-    MATERIALS.forEach((_, i) => {
-      setTimeout(() => setVisibleCards(i + 1), i * 180 + 100);
-    });
-    setTimeout(() => setPhase('typing'), 5500);
-  }, [phase]);
+    const iv = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const hh = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+  const ss = String(seconds % 60).padStart(2, '0');
+
+  return (
+    <div className="flex flex-col items-center gap-4 w-full max-w-sm mx-auto">
+      <div className="relative w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center">
+        <Radio className="w-7 h-7 text-red-500" />
+        <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse border-2 border-card-bg" />
+      </div>
+      <div className="text-sm text-foreground font-semibold">Live Lecture</div>
+      <div className="w-full flex items-center gap-3 bg-background border border-border rounded-xl px-4 py-3">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">REC</span>
+        </div>
+        <div className="flex items-end gap-0.5 h-5 flex-1">
+          {Array.from({ length: 14 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="flex-1 bg-red-500/70 rounded-full origin-bottom"
+              animate={{ scaleY: [0.3, 0.9, 0.5, 1, 0.4, 0.3] }}
+              transition={{ duration: 1.3, delay: i * 0.07, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ height: '100%' }}
+            />
+          ))}
+        </div>
+        <div className="text-[11px] font-mono text-foreground shrink-0 tabular-nums">
+          {hh}:{mm}:{ss}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SourceUploadDemo() {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setIdx((i) => (i + 1) % SOURCE_ORDER.length);
+    }, 3600);
+    return () => clearInterval(iv);
+  }, []);
+
+  const state = SOURCE_ORDER[idx];
 
   return (
     <div className="bg-card-bg border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -82,88 +214,46 @@ function PipelineDemo() {
           <div className="w-3 h-3 rounded-full bg-yellow-400/50" />
           <div className="w-3 h-3 rounded-full bg-green-400/50" />
         </div>
-        <div className="flex-1 mx-2 bg-muted/30 border border-border rounded-md px-3 py-1 flex items-center gap-1.5">
+        <div className="flex-1 mx-2 bg-background/60 border border-border rounded-md px-3 py-1 flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-accent shrink-0" />
-          <span className="text-xs text-muted-foreground font-mono">clarity.ai / generate</span>
+          <span className="text-xs text-secondary font-mono">clarity.ai / generate</span>
         </div>
       </div>
 
-      {/* Demo body */}
-      <div className="p-5 min-h-[260px] flex flex-col gap-4">
-
-        {/* URL input row */}
-        <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-2.5">
-          {/* YouTube icon */}
-          <svg className="w-4 h-4 text-red-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.07 0 12 0 12s0 3.93.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.93 24 12 24 12s0-3.93-.5-5.81zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/>
-          </svg>
-          <span className="text-sm font-mono text-foreground/80 flex-1 truncate">
-            {typedUrl}
-            <span className="inline-block w-px h-3.5 bg-accent ml-0.5 align-middle animate-pulse" />
-          </span>
-          {phase === 'typing' && typedUrl.length > 10 && (
-            <span className="px-3 py-1 bg-accent text-white text-xs rounded-lg font-medium shrink-0 opacity-90">
-              Generate →
-            </span>
-          )}
-        </div>
-
-        {/* Processing steps */}
-        {phase === 'processing' && (
+      {/* Content */}
+      <div className="p-8 min-h-[280px] flex flex-col items-center justify-center">
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
+            key={state}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col gap-2.5 py-1"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="w-full"
           >
-            {PROCESSING_STEPS.map((step, i) => {
-              const done = processingStep > i;
-              const active = processingStep === i + 1;
-              return (
-                <div key={step} className="flex items-center gap-2.5">
-                  <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300 ${done ? 'bg-accent' : 'border border-border'}`}>
-                    {done && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    {active && !done && <div className="w-2 h-2 rounded-full border border-accent border-t-transparent animate-spin" />}
-                  </div>
-                  <span className={`text-sm transition-colors duration-300 ${done ? 'text-foreground' : 'text-muted-foreground/50'}`}>
-                    {step}
-                  </span>
-                </div>
-              );
-            })}
+            {state === 'youtube' && <YouTubeSource />}
+            {state === 'pdf' && <PdfSource />}
+            {state === 'audio' && <AudioSource />}
+            {state === 'text' && <TextSource />}
+            {state === 'live' && <LiveSource />}
           </motion.div>
-        )}
+        </AnimatePresence>
+      </div>
 
-        {/* Result cards */}
-        {phase === 'done' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-2 gap-2.5"
-          >
-            {MATERIALS.map((m, i) => (
-              <motion.div
-                key={m.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: i < visibleCards ? 1 : 0, y: i < visibleCards ? 0 : 10 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border bg-background"
-              >
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 ${m.accent}`}>
-                  {m.emoji}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-foreground truncate">{m.label}</div>
-                  <div className="text-xs text-muted-foreground truncate">{m.meta}</div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
+      {/* Step indicators */}
+      <div className="px-4 py-3 border-t border-border bg-background/40 flex items-center justify-center gap-2">
+        {SOURCE_ORDER.map((s, i) => (
+          <div
+            key={s}
+            className={`h-1 rounded-full transition-all duration-300 ${
+              i === idx ? 'w-6 bg-accent' : 'w-1.5 bg-border'
+            }`}
+          />
+        ))}
       </div>
     </div>
   );
 }
-
 export default function Home() {
   const [url, setUrl] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -948,7 +1038,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Pipeline Demo Section */}
+        {/* Feature Showcase Section */}
         <section className="py-20 relative z-10 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -957,25 +1047,25 @@ export default function Home() {
               <div className="space-y-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-medium">
                   <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-                  See it in action
+                  Bring anything you learn from
                 </div>
                 <h2 className="text-4xl md:text-5xl font-bold leading-tight text-foreground">
-                  Paste a URL.<br />
-                  <span className="text-gradient">Get a study kit.</span>
+                  Drop in any source.<br />
+                  <span className="text-gradient">We&apos;ll do the rest.</span>
                 </h2>
                 <p className="text-lg text-secondary leading-relaxed max-w-md">
-                  Drop any YouTube lecture and Clarity AI extracts the transcript, identifies key concepts, and generates a complete set of study materials — in under 60 seconds.
+                  Paste a YouTube link, upload a PDF or audio file, drop in notes, or capture a live lecture as it happens. Clarity AI turns any of them into a full interactive study kit — automatically.
                 </p>
 
                 <div className="flex flex-wrap gap-6 pt-2">
                   {[
-                    { value: '< 60s', label: 'Generation time' },
-                    { value: '5', label: 'Study tools' },
-                    { value: '100%', label: 'From your video' },
+                    { value: '5+', label: 'Source types' },
+                    { value: '8', label: 'Study tools' },
+                    { value: '< 60s', label: 'To generate' },
                   ].map((stat) => (
                     <div key={stat.label}>
                       <div className="text-2xl font-bold text-accent">{stat.value}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{stat.label}</div>
+                      <div className="text-xs text-secondary mt-0.5">{stat.label}</div>
                     </div>
                   ))}
                 </div>
@@ -985,8 +1075,8 @@ export default function Home() {
                 </Button>
               </div>
 
-              {/* Right: animated demo */}
-              <PipelineDemo />
+              {/* Right: animated source upload demo */}
+              <SourceUploadDemo />
             </div>
           </div>
         </section>
