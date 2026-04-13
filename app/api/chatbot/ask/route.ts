@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { chatbotLlm, CHATBOT_MODEL_NAME } from '@/lib/sdk';
 import { getChatbotContext } from '@/lib/chatbot-context';
@@ -23,15 +23,6 @@ import { INPUT_LIMITS } from '@/lib/limits';
 import { AnimationSpecSchema } from '@/lib/types/animation';
 
 const ANIMATION_TOOL_ENABLED = process.env.ENABLE_ANIMATION_TOOL === 'true';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 interface IChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -73,12 +64,7 @@ async function executeTool(
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     // 2. Parse request (capped at 512KB to prevent DoS via large payloads)
     const bodyOrError = await parseJsonBody<{

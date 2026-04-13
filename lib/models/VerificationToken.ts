@@ -20,7 +20,7 @@ const VerificationTokenSchema: Schema = new Schema({
   resendCount: { type: Number, default: 0 },
   lastAttemptAt: { type: Date },
   lastResendAt: { type: Date },
-  createdAt: { type: Date, default: Date.now, expires: 600 }, // TTL index: 600 seconds = 10 minutes
+  createdAt: { type: Date, default: Date.now, expires: 3600 }, // TTL index: 3600s = 1 hour (accommodates password reset; app-level expiresAt handles shorter lifetimes)
   expiresAt: { type: Date, required: true },
 });
 

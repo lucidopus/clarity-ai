@@ -1,27 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { MindMap } from '@/lib/models';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
 export async function PUT(request: NextRequest) {
   try {
-    // Verify authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     await dbConnect();
 

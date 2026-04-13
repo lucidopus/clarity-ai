@@ -1,26 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import ActivityLog from '@/lib/models/ActivityLog';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
-function authenticate(request: NextRequest): DecodedToken {
-  const token = request.cookies.get('jwt')?.value;
-  if (!token) {
-    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-  }
-  return jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/token — Generate ElevenLabs Scribe token + create LiveSession
@@ -28,7 +11,7 @@ function authenticate(request: NextRequest): DecodedToken {
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = authenticate(request);
+    const decoded = getAuthUser(request);
     await dbConnect();
 
     const body = await request.json();
@@ -171,15 +154,8 @@ export async function POST(request: NextRequest) {
       sessionId: session.sessionId,
       title: session.title,
     });
-  } catch (error: unknown) {
-    const err = error as Error & { statusCode?: number };
-    if (err.statusCode === 401) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('❌ [LIVE-LECTURE] Token route error:', err);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error('❌ [LIVE-LECTURE] Token route error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

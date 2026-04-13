@@ -1,16 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import { loadChatHistory, deleteChatHistory, loadChatHistoryByChannel, deleteChatHistoryByChannel } from '@/lib/chat-db';
 import { generateSessionId, generateContextId } from '@/lib/types/chat';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 /**
  * GET /api/chatbot/history
@@ -23,12 +14,7 @@ interface DecodedToken {
 export async function GET(request: NextRequest) {
   try {
     // 1. Authenticate
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     // 2. Parse query params
     const { searchParams } = new URL(request.url);
@@ -97,12 +83,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // 1. Authenticate
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     // 2. Parse query params
     const { searchParams } = new URL(request.url);

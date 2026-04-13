@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog } from '@/lib/models';
 import mongoose from 'mongoose';
-
-interface DecodedToken { userId: string }
 
 type View = 'month' | 'year';
 
@@ -35,9 +33,8 @@ function calcLevel(count: number, thresholds: { low: number; medium: number }): 
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
+    const { userId } = decoded;
 
     const { searchParams } = new URL(request.url);
     const view = (searchParams.get('view') as View) || 'month';

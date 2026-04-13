@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
@@ -8,28 +8,13 @@ import Flashcard from '@/lib/models/Flashcard';
 import { computeReadinessScore } from '@/lib/services/readinessScore';
 import { clearInsightsCache } from '@/lib/services/clarityInsights';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
 /**
  * POST /api/learning/flashcards/progress
  * Update flashcard mastery status in Progress collection
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     const body = await request.json();
     const sourceId = body.sourceId || body.videoId;

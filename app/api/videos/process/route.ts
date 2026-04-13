@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import { extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
@@ -9,15 +9,6 @@ import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
 import { checkRateLimitMongo } from '@/lib/rate-limit';
 import { RATE_LIMITS } from '@/lib/limits';
 import type { SourceType } from '@/lib/models/Source';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 interface SourceItem {
   sourceType: SourceType;
@@ -31,16 +22,6 @@ interface SourceItem {
   mimeType?: string;
 }
 
-// ─── Helper: Authenticate request ───────────────────────────────────────────
-
-function authenticate(request: NextRequest): DecodedToken {
-  const token = request.cookies.get('jwt')?.value;
-  if (!token) {
-    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-  }
-  return jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/videos/process — Trigger content processing pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -50,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   try {
     // 1. Authenticate
-    const decoded = authenticate(request);
+    const decoded = getAuthUser(request);
     console.log(`✅ [PROCESS] Authenticated: ${decoded.userId}`);
 
     const rl = await checkRateLimitMongo(`process:${decoded.userId}`, RATE_LIMITS.process.max, RATE_LIMITS.process.windowSec);
@@ -280,9 +261,6 @@ export async function POST(request: NextRequest) {
       statusCode = error.statusCode;
       errorMessage = error.message;
     } else if (error instanceof Error) {
-      if ('statusCode' in error && (error as { statusCode: number }).statusCode === 401) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
       errorMessage = error.message;
     }
 

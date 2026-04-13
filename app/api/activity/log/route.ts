@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog, type ActivityType } from '@/lib/models';
 import { resolveClientDay } from '@/lib/date.utils';
 
-interface DecodedToken {
-  userId: string;
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     const body = await request.json();
     const {

@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import SourceContent from '@/lib/models/SourceContent';
 import Video from '@/lib/models/Video';
-
-interface DecodedToken {
-  userId: string;
-  iat: number;
-  exp: number;
-}
 
 // GET /api/videos/[videoId]/segments — Return transcript segments for a source
 // Supports both primary videoId and secondary sourceIds (multi-source)
@@ -17,12 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
     const { videoId } = await params;
 
     await dbConnect();

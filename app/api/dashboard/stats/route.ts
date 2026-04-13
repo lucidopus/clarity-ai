@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { Video, Flashcard, Quiz, Progress, ActivityLog } from '@/lib/models';
 import mongoose from 'mongoose';
 import { getCached, CacheKeys } from '@/lib/cache';
-
-interface DecodedToken { userId: string }
 
 function startOfWeek(date = new Date()): Date {
   const d = new Date(date);
@@ -166,9 +164,8 @@ async function computeStats(userId: string) {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
+    const { userId } = decoded;
 
     const stats = await getCached(
       CacheKeys.dashStats(userId),

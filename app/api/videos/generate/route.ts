@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 // Deprecated: mock pipeline removed. This endpoint is deprecated in favor of /api/videos/process
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET!);
+    getAuthUser(request);
 
     const { youtubeUrl } = await request.json();
 

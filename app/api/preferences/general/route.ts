@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User, { IGeneralPreferences } from '@/lib/models/User';
 
@@ -13,12 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const decoded = getAuthUser(request);
     const user = await User.findById(decoded.userId);
 
     if (!user) {
@@ -43,12 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const decoded = getAuthUser(request);
     const requestBody: GeneralPreferencesPayload = await request.json();
 
     // Extract ONLY the three allowed boolean fields

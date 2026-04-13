@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-
-interface DecodedToken {
-  userId: string;
-}
 
 function daysBetween(d1: Date, d2: Date): number {
   const a = new Date(d1);
@@ -18,12 +14,7 @@ function daysBetween(d1: Date, d2: Date): number {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     await dbConnect();
 

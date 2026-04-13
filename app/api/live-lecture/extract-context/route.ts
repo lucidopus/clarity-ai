@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import SourceContent from '@/lib/models/SourceContent';
 import { extractDocument } from '@/lib/extractors/document';
 // safeFetch is used indirectly via extractDocument which calls it internally
-
-interface DecodedToken {
-  userId: string;
-  iat: number;
-  exp: number;
-}
-
-function authenticate(request: NextRequest): DecodedToken {
-  const token = request.cookies.get('jwt')?.value;
-  if (!token) {
-    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-  }
-  return jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/extract-context — Extract text from uploaded context doc
@@ -27,7 +13,7 @@ function authenticate(request: NextRequest): DecodedToken {
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = authenticate(request);
+    const decoded = getAuthUser(request);
     await dbConnect();
 
     const { fileUrl, fileName, mimeType } = await request.json();
@@ -109,12 +95,8 @@ export async function POST(request: NextRequest) {
       wordCount,
       pageCount: result.metadata?.pageCount || segments.length,
     });
-  } catch (error: unknown) {
-    const err = error as Error & { statusCode?: number };
-    if (err.statusCode === 401) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('[LIVE-LECTURE] Extract context error:', err);
+  } catch (error) {
+    console.error('[LIVE-LECTURE] Extract context error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

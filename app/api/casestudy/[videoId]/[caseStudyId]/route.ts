@@ -1,17 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { LearningMaterial, Solution, Video, User } from '@/lib/models';
 import Note from '@/lib/models/Note';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 /**
  * GET /api/casestudy/[videoId]/[caseStudyId]
@@ -24,12 +15,7 @@ export async function GET(
 ) {
   try {
     // 1. Authenticate
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     await dbConnect();
 

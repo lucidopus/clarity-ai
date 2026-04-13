@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
@@ -8,19 +8,9 @@ import { initFSRSCard, processReview, Rating } from '@/lib/services/fsrs';
 import { recordStudyActivity } from '@/lib/services/streaks';
 import { invalidateReadiness, invalidateUserInsights, invalidateDashStats } from '@/lib/cache';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-}
-
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
     const { flashcardId, rating, responseTimeMs } = await request.json();
 
     if (!flashcardId || !rating || ![1, 2, 3, 4].includes(rating)) {

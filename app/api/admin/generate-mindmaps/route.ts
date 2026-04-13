@@ -3,18 +3,13 @@ import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import MindMap from '@/lib/models/MindMap';
 import { generateLearningMaterials } from '@/lib/llm';
-import { verifyAdminToken } from '@/lib/adminAuth';
+import { requireAdmin } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   console.log('🚀 [MINDMAP MIGRATION] Starting mind map generation for existing videos...');
 
   try {
-    // Verify admin authentication
-    const isAdmin = await verifyAdminToken(request);
-    if (!isAdmin) {
-      console.log('❌ [MINDMAP MIGRATION] Authentication failed: Not admin');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    requireAdmin(request);
     console.log('✅ [MINDMAP MIGRATION] Admin authentication successful');
 
     await dbConnect();

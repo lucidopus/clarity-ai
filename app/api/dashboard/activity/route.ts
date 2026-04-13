@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog, Video, Flashcard, Quiz } from '@/lib/models';
-
-interface DecodedToken { userId: string }
 
 function formatYmd(date: Date): string {
   // Use UTC methods to ensure consistent date formatting
@@ -16,9 +14,8 @@ function formatYmd(date: Date): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
+    const { userId } = decoded;
 
     await dbConnect();
 

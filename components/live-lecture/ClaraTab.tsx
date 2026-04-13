@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Bot, User } from 'lucide-react';
+import { Send, Bot, User } from 'lucide-react';
+import ThinkingIndicator from '@/components/ThinkingIndicator';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -199,10 +200,7 @@ export default function ClaraTab({ syncToServer, partialText }: ClaraTabProps) {
                 : 'bg-card-bg/80 text-foreground border border-border/50 rounded-bl-sm'
             }`}>
               {!msg.content ? (
-                <span className="inline-flex items-center gap-1 text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Thinking...
-                </span>
+                <ThinkingIndicator className="text-muted-foreground" />
               ) : msg.role === 'user' ? (
                 <span className="whitespace-pre-wrap">{msg.content}</span>
               ) : (

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import SourceContent from '@/lib/models/SourceContent';
@@ -15,30 +15,13 @@ import type { IServiceUsage } from '@/lib/models/Cost';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
-function authenticate(request: NextRequest): DecodedToken {
-  const token = request.cookies.get('jwt')?.value;
-  if (!token) {
-    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-  }
-  return jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/ask — Q&A during live lecture (streaming)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = authenticate(request);
+    const decoded = getAuthUser(request);
     await dbConnect();
 
     const bodyOrError = await parseJsonBody<{
@@ -248,12 +231,8 @@ export async function POST(request: NextRequest) {
         'X-RateLimit-Remaining': rateCheck.remaining.toString(),
       },
     });
-  } catch (error: unknown) {
-    const err = error as Error & { statusCode?: number };
-    if (err.statusCode === 401) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('❌ [LIVE-LECTURE] Ask error:', err);
+  } catch (error) {
+    console.error('❌ [LIVE-LECTURE] Ask error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

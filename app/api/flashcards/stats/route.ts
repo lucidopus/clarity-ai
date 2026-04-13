@@ -1,23 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
 import FlashcardReview from '@/lib/models/FlashcardReview';
 import { ensureFSRSInitialized } from '@/lib/services/fsrs-migrate';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
     await dbConnect();
     await ensureFSRSInitialized(decoded.userId);
 

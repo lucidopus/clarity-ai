@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog, Flashcard, Source } from '@/lib/models';
 import mongoose from 'mongoose';
-
-interface DecodedToken { userId: string }
 
 // Activity type to friendly label mapping
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -28,9 +26,8 @@ const FUNNEL_ORDER = [
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
+    const { userId } = decoded;
 
     await dbConnect();
 

@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import mongoose from 'mongoose';
-
-interface DecodedToken {
-  userId: string;
-  iat: number;
-  exp: number;
-}
 
 export async function PATCH(
   request: NextRequest,
@@ -16,14 +10,8 @@ export async function PATCH(
 ) {
   try {
     const { videoId } = await params;
-    
-    // Check authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
     const userId = new mongoose.Types.ObjectId(decoded.userId);
 
     const body = await request.json();

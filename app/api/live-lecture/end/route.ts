@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import Video from '@/lib/models/Video';
@@ -10,30 +10,13 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import { clearSessionHeartbeat } from '@/lib/live-lecture/redis';
 import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
-function authenticate(request: NextRequest): DecodedToken {
-  const token = request.cookies.get('jwt')?.value;
-  if (!token) {
-    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-  }
-  return jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/end — End lecture, create Source, trigger pipeline
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export async function POST(request: NextRequest) {
   try {
-    const decoded = authenticate(request);
+    const decoded = getAuthUser(request);
     await dbConnect();
 
     const body = await request.json();
@@ -216,12 +199,8 @@ export async function POST(request: NextRequest) {
       wordCount,
       runId: handle.id,
     });
-  } catch (error: unknown) {
-    const err = error as Error & { statusCode?: number };
-    if (err.statusCode === 401) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    console.error('❌ [LIVE-LECTURE] End error:', err);
+  } catch (error) {
+    console.error('❌ [LIVE-LECTURE] End error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { groqLlm, GROQ_MODEL_NAME } from '@/lib/sdk';
 import { checkChatbotRateLimit } from '@/lib/rate-limit';
@@ -12,15 +12,6 @@ import { logGenerationCost, formatCost } from '@/lib/cost/logger';
 import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 interface IChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -35,12 +26,7 @@ interface IChatMessage {
 export async function POST(request: NextRequest) {
   try {
     // 1. Authenticate
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     // 2. Parse request
     const {

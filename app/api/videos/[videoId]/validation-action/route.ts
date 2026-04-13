@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import { logValidationOverride } from '@/lib/content-validator';
 
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
-
 /**
  * POST /api/videos/[videoId]/validation-action
- * 
+ *
  * Handle user actions for validation-rejected videos:
  * - "reject": Mark as failed (don't generate)
  * - "override": Mark as completed_with_warning (generate anyway via retry task)
@@ -26,15 +17,9 @@ export async function POST(
 ) {
   const params = await props.params;
   console.log('🎯 [VALIDATION ACTION] Starting validation action handler...');
-  
-  try {
-    // 1. Verify authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+  try {
+    const decoded = getAuthUser(request);
     console.log(`✅ [VALIDATION ACTION] Authentication successful for user: ${decoded.userId}`);
 
     // 2. Parse request body

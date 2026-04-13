@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import { getSupabase, UPLOADS_BUCKET } from '@/lib/supabase';
 import { checkRateLimit, recordFailedAttempt } from '@/lib/rate-limit-auth';
-
-interface DecodedToken {
-  userId: string;
-  iat: number;
-  exp: number;
-}
 
 const ALLOWED_MIME_TYPES = [
   // Documents
@@ -66,21 +60,13 @@ function validateMagicNumber(buffer: ArrayBuffer, mimeType: string): boolean {
   });
 }
 
-function authenticate(request: NextRequest): DecodedToken {
-  const token = request.cookies.get('jwt')?.value;
-  if (!token) {
-    throw Object.assign(new Error('Unauthorized'), { statusCode: 401 });
-  }
-  return jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
-}
-
 /**
  * POST /api/upload — Upload a file to Supabase Storage
  * Returns the public URL for the uploaded file.
  */
 export async function POST(request: NextRequest) {
   try {
-    const decoded = authenticate(request);
+    const decoded = getAuthUser(request);
 
     // Rate limiting: 10 uploads per hour per user
     const uploadRateKey = `upload:${decoded.userId}`;
@@ -163,9 +149,6 @@ export async function POST(request: NextRequest) {
       mimeType: file.type,
     });
   } catch (error) {
-    if (error instanceof Error && 'statusCode' in error && (error as { statusCode: number }).statusCode === 401) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
     console.error('Upload error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

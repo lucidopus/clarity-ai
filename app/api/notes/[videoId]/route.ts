@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Note from '@/lib/models/Note';
@@ -14,22 +14,13 @@ const noteUpdateSchema = z.object({
   })).optional(),
 });
 
-interface DecodedToken {
-  userId: string;
-}
-
 // GET handler to fetch all notes for a video
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const { userId } = getAuthUser(request);
     const { videoId: sourceId } = await params;
 
     await dbConnect();
@@ -52,12 +43,7 @@ export async function PUT(
   { params }: { params: Promise<{ videoId: string }> }
 ) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { userId } = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const { userId } = getAuthUser(request);
     const { videoId: sourceId } = await params;
     const body = await request.json();
     const parsed = noteUpdateSchema.parse(body);

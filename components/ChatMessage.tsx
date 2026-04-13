@@ -12,6 +12,7 @@ import { Bot, User } from 'lucide-react';
 import { AnimationSpecSchema } from '@/lib/types/animation';
 import type { AnimationSpec } from '@/lib/types/animation';
 import type { ToolEvent } from '@/hooks/useChatBot';
+import ThinkingIndicator from '@/components/ThinkingIndicator';
 
 // Lazy-load AnimationRenderer — three.js and manim-web must NOT be in the main bundle
 const AnimationRenderer = dynamic(
@@ -384,10 +385,7 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
                 message.toolEvents && message.toolEvents.length > 0 ? (
                   <ToolActivityTimeline events={message.toolEvents} />
                 ) : (
-                  <div className="flex items-center gap-1 text-sm text-secondary">
-                    <span>Thinking</span>
-                    <PulsingDots />
-                  </div>
+                  <ThinkingIndicator />
                 )
               )}
             </>

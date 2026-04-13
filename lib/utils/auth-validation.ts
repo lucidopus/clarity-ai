@@ -22,12 +22,16 @@ export const PASSWORD_ERROR_MESSAGE =
 export const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must be at most 128 characters')
   .regex(PASSWORD_REGEX, PASSWORD_ERROR_MESSAGE);
 
 /** Simple validation helper for client-side use. */
 export function validatePassword(password: string): { isValid: boolean; error?: string } {
   if (password.length < 8) {
     return { isValid: false, error: 'Password must be at least 8 characters' };
+  }
+  if (password.length > 128) {
+    return { isValid: false, error: 'Password must be at most 128 characters' };
   }
   if (!PASSWORD_REGEX.test(password)) {
     return { isValid: false, error: PASSWORD_ERROR_MESSAGE };

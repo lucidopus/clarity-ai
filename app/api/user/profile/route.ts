@@ -5,15 +5,7 @@ import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { escapeRegex } from '@/lib/utils/escape-regex';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
+import { getAuthUser } from '@/lib/auth';
 
 // Rate limiting map: userId -> { attempts: number, resetAt: Date }
 const passwordAttempts = new Map<string, { attempts: number; resetAt: Date }>();
@@ -44,23 +36,8 @@ const updateProfileSchema = z.object({
 
 export async function PATCH(request: NextRequest) {
   try {
-    // 1. Authenticate user
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not configured');
-    }
-
-    let decoded: DecodedToken;
-    try {
-      decoded = jwt.verify(token, jwtSecret) as DecodedToken;
-    } catch {
-      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
-    }
+    // 1. Authenticate user (verified by proxy middleware)
+    const decoded = getAuthUser(request);
 
     // 2. Parse and validate request body
     const body = await request.json();
@@ -201,7 +178,7 @@ export async function PATCH(request: NextRequest) {
           firstName: user.firstName,
           lastName: user.lastName,
         },
-        jwtSecret,
+        process.env.JWT_SECRET!,
         signOptions
       );
     }

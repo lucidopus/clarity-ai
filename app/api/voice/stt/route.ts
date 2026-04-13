@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import Groq from 'groq-sdk';
 import { checkRateLimitMongo } from '@/lib/rate-limit';
 import { RATE_LIMITS, INPUT_LIMITS } from '@/lib/limits';
 
-interface DecodedToken { userId: string }
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     // Rate limit: 30 STT requests per 10 minutes per user
     const rl = await checkRateLimitMongo(`stt:${decoded.userId}`, RATE_LIMITS.stt.max, RATE_LIMITS.stt.windowSec);

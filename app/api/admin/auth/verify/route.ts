@@ -1,30 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/adminAuth';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const isAdmin = await verifyAdminToken(request);
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        {
-          authenticated: false,
-        },
-        { status: 401 }
-      );
-    }
+    // Middleware already verified the admin JWT before this handler runs.
+    // If we reach here, the admin is authenticated.
+    requireAdmin(request);
 
     return NextResponse.json({
       authenticated: true,
       role: 'admin',
     });
-  } catch (error) {
-    console.error('Admin verification error:', error);
-    return NextResponse.json(
-      {
-        authenticated: false,
-      },
-      { status: 500 }
-    );
+  } catch {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 }

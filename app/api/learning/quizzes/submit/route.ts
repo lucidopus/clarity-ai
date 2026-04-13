@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
+import { getAuthUser } from '@/lib/auth';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
@@ -8,15 +8,6 @@ import Quiz from '@/lib/models/Quiz';
 import { computeBrierScore } from '@/lib/services/calibration';
 import { recordStudyActivity } from '@/lib/services/streaks';
 import { invalidateReadiness, invalidateUserInsights, invalidateDashStats } from '@/lib/cache';
-
-interface DecodedToken {
-  userId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  iat: number;
-  exp: number;
-}
 
 interface QuizResult {
   quizId: string; // MongoDB ObjectId as string
@@ -33,13 +24,7 @@ interface SubmitQuizRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const token = request.cookies.get('jwt')?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = getAuthUser(request);
 
     const body: SubmitQuizRequest = await request.json();
     const sourceId = body.sourceId || body.videoId;

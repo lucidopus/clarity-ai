@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminToken } from '@/lib/adminAuth';
+import { requireAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Video from '@/lib/models/Video';
@@ -9,18 +9,7 @@ import ActivityLog from '@/lib/models/ActivityLog';
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const isAdmin = await verifyAdminToken(request);
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Unauthorized',
-        },
-        { status: 401 }
-      );
-    }
+    requireAdmin(request);
 
     await dbConnect();
 
