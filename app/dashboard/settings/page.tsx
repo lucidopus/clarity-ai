@@ -10,7 +10,7 @@ import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
-import { Edit2, Save, X } from 'lucide-react';
+import { Edit2, Save, X, Info } from 'lucide-react';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 
 const PASSWORD_ATTEMPT_KEY = 'settings-email-password-attempts';
@@ -761,12 +761,21 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-foreground">Learning Profile</h2>
           <div className="flex items-center gap-3">
-            <div className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${
-              updatesRemaining > 0 
-                ? 'bg-accent/10 text-accent border-accent/20' 
-                : 'bg-red-500/10 text-red-500 border-red-500/20'
-            }`}>
-              {updatesRemaining} / {MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} Updates Left
+            <div className="flex items-center gap-2">
+              <div className={`px-3 py-1.5 rounded-full text-xs font-medium border flex items-center gap-1.5 ${
+                updatesRemaining > 0
+                  ? 'bg-accent/10 text-accent border-accent/20'
+                  : 'bg-red-500/10 text-red-500 border-red-500/20'
+              }`}>
+                {updatesRemaining} / {MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} Updates Left
+              </div>
+              <div className="relative group">
+                <Info className="w-4 h-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
+                <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <p className="font-medium text-foreground mb-1">Why the limit?</p>
+                  <p>Clarity personalizes your flashcards, quizzes, case studies, and Clara&apos;s tutoring based on your learning profile. Changing it often would make your existing materials inconsistent, so we limit updates to {MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} per month to keep things deliberate.</p>
+                </div>
+              </div>
             </div>
 
             <Button

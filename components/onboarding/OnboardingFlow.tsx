@@ -154,7 +154,10 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
         {isEditMode && (
           <div className="mb-6 p-4 bg-accent/10 border border-accent/20 rounded-xl">
             <p className="text-sm text-accent font-medium">
-              ✏️ You are updating your learning profile
+              You are updating your learning profile
+            </p>
+            <p className="text-xs text-accent/70 mt-1">
+              Your materials, quizzes, and Clara&apos;s tutoring are personalized around these choices — make sure you&apos;re happy with them. You can only update your profile twice per month.
             </p>
           </div>
         )}

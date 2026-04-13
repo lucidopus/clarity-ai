@@ -91,6 +91,9 @@ export default function Step1GoalsContext({
         <p className="text-lg text-muted-foreground">
           We&apos;ll use this to personalize your materials. The more real you are, the better they&apos;ll be.
         </p>
+        <p className="text-xs text-muted-foreground/70 mt-2">
+          Everything you see on Clarity is shaped by your goals and interests — so take your time. You can update your profile up to 2 times per month after this.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
