@@ -24,6 +24,37 @@ import { useAuth } from '@/lib/auth-context';
 import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
 
+// ─── Processing screen tips (shuffled per session, rotated every 8s) ────────
+
+const PROCESSING_TIPS = [
+  // Learning science
+  "Taking a practice quiz beats re-reading your notes — it's called the Testing Effect.",
+  "Active recall strengthens neural pathways more than passive review ever could.",
+  "Without review, you lose ~50% of new info within 24 hours. Your new flashcards fix that.",
+  "Combining words with visuals (dual coding) nearly doubles your retention.",
+  "Mixing different topics in one session helps your brain distinguish similar concepts better.",
+  "Struggling to remember something is actually good — it's your neural connections getting stronger.",
+  // Material usage tips
+  "Use timestamps to jump straight to the moments where complex concepts finally click.",
+  "When you hit a 'Hard' card, the algorithm shows it to you sooner until it sticks.",
+  "Case Studies show how theories work in the real world — the gap between definition and understanding.",
+  "Try 'Blurting': look at a Mind Map node, cover it, write everything you remember. Then check.",
+  "Quiz yourself before you feel ready. It highlights gaps before the real exam does.",
+  "Study in 25-minute bursts. Your brain stays sharper when it knows a break is coming.",
+  // Behind the scenes
+  "Mapping how every concept connects to the next in your Knowledge Graph...",
+  "Crafting plausible wrong answers for your quiz — they test nuance, not just memory.",
+  "Scanning for key terminology so your Study Guide is high-signal, zero fluff.",
+  "Indexing every second so you can search for a keyword and jump straight to the explanation.",
+  "Calculating the optimal review schedule so you never study more than you need to.",
+  // Motivational
+  "The average student spends 40% of study time just organizing notes. You're about to skip that entirely.",
+  "You brought the curiosity. We're building the structure around it.",
+  "Great learners aren't born — they're built through consistent, small wins.",
+  "These aren't just summaries. They're a personalized roadmap to mastery.",
+  "We're filtering the noise so you can go straight to the core concepts.",
+];
+
 interface VideoMaterials {
   sourceType?: 'youtube' | 'document' | 'audio' | 'media' | 'text' | 'live_lecture';
   video: {
@@ -182,6 +213,7 @@ export default function VideoMaterialsPage() {
   const [bannedDismissed, setBannerDismissed] = useState(false);
   const [autoplayVideos, setAutoplayVideos] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Loading specific materials...');
+  const [processingTip, setProcessingTip] = useState(0);
 
   // Layout UI State
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -196,6 +228,15 @@ export default function VideoMaterialsPage() {
     ];
     setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
   }, []);
+
+  // Rotate processing tips every 8 seconds
+  useEffect(() => {
+    if (processingStatus !== 'processing' && processingStatus !== 'pending') return;
+    const interval = setInterval(() => {
+      setProcessingTip(prev => (prev + 1) % PROCESSING_TIPS.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [processingStatus]);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -484,9 +525,20 @@ export default function VideoMaterialsPage() {
           <h2 className="mt-6 text-2xl font-bold text-foreground">
             Transforming content into mastery
           </h2>
-          <p className="mt-2 text-muted-foreground max-w-sm mx-auto">
-            Our AI is analyzing your content and crafting personalized flashcards, quizzes, mind maps, and more.
-          </p>
+          <div className="mt-3 h-12 flex items-center justify-center">
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={processingTip}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.4 }}
+                className="text-sm text-muted-foreground max-w-sm mx-auto"
+              >
+                {PROCESSING_TIPS[processingTip]}
+              </motion.p>
+            </AnimatePresence>
+          </div>
           <p className="mt-5 text-xs text-muted-foreground/50">
             This usually takes about a minute. Feel free to leave &mdash; we&apos;ll have everything ready when you&apos;re back.
           </p>
