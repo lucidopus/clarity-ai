@@ -13,6 +13,7 @@ import { calculateLLMCost } from '@/lib/cost/calculator';
 import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 
 interface DecodedToken {
   userId: string;
@@ -40,7 +41,14 @@ export async function POST(request: NextRequest) {
     const decoded = authenticate(request);
     await dbConnect();
 
-    const { sessionId, message, isExplainLast2Min, partialTranscript } = await request.json();
+    const bodyOrError = await parseJsonBody<{
+      sessionId?: string;
+      message?: string;
+      isExplainLast2Min?: boolean;
+      partialTranscript?: string;
+    }>(request, 256_000); // 256KB max
+    if (isErrorResponse(bodyOrError)) return bodyOrError;
+    const { sessionId, message, isExplainLast2Min, partialTranscript } = bodyOrError;
 
     if (!sessionId || !message) {
       return NextResponse.json({ error: 'sessionId and message are required' }, { status: 400 });

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import { setSessionHeartbeat } from '@/lib/live-lecture/redis';
+import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 
 interface DecodedToken {
   userId: string;
@@ -27,8 +28,15 @@ export async function POST(request: NextRequest) {
     const decoded = authenticate(request);
     await dbConnect();
 
-    const body = await request.json();
-    const { sessionId, newSegments, focusNotes, newMarkers, markInterrupted } = body;
+    const bodyOrError = await parseJsonBody<{
+      sessionId?: string;
+      newSegments?: { text?: string }[];
+      focusNotes?: string;
+      newMarkers?: unknown[];
+      markInterrupted?: boolean;
+    }>(request, 512_000); // 512KB max for sync payloads
+    if (isErrorResponse(bodyOrError)) return bodyOrError;
+    const { sessionId, newSegments, focusNotes, newMarkers, markInterrupted } = bodyOrError;
 
     if (!sessionId) {
       return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
@@ -65,12 +73,14 @@ export async function POST(request: NextRequest) {
       // Filter out empty segments (noise gate artifacts)
       const validSegments = newSegments.filter((s: { text?: string }) => s.text && s.text.trim());
       if (validSegments.length > 0) {
-        pushOps.transcriptSegments = { $each: validSegments };
+        // Cap at 5000 segments (~14 hours at 10s intervals) to prevent 16MB BSON limit
+        pushOps.transcriptSegments = { $each: validSegments, $slice: -5000 };
       }
     }
 
     if (Array.isArray(newMarkers) && newMarkers.length > 0) {
-      pushOps.importanceMarkers = { $each: newMarkers };
+      // Cap importance markers at 500
+      pushOps.importanceMarkers = { $each: newMarkers, $slice: -500 };
     }
 
     if (typeof focusNotes === 'string') {

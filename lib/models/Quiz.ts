@@ -30,5 +30,6 @@ const QuizSchema: Schema = new Schema({
 
 // Indexes
 QuizSchema.index({ sourceId: 1, userId: 1 });
+QuizSchema.index({ userId: 1, createdAt: -1 }); // User quiz listing sorted by date
 
 export default mongoose.models.Quiz || mongoose.model<IQuiz>('Quiz', QuizSchema);

@@ -56,5 +56,6 @@ const FlashcardSchema: Schema = new Schema({
 FlashcardSchema.index({ sourceId: 1, userId: 1 });
 FlashcardSchema.index({ userId: 1, generationType: 1 });
 FlashcardSchema.index({ userId: 1, 'fsrs.due': 1 });
+FlashcardSchema.index({ userId: 1, sourceId: 1, createdAt: -1 }); // Dashboard activity + sorted queries
 
 export default mongoose.models.Flashcard || mongoose.model<IFlashcard>('Flashcard', FlashcardSchema);

@@ -173,6 +173,74 @@ export async function getReadinessScore(
   );
 }
 
+/** Compute readiness score inline from pre-fetched data (no DB calls). */
+function _computeScoreInline(
+  progress: { sourceId: string; masteredFlashcardIds?: unknown[]; quizAttempts?: unknown[] },
+  flashcards: { fsrs?: { state?: number; due?: Date | string }; masteredAt?: Date }[],
+  totalQuizzes: number
+): SourceWithDimensions {
+  const quizAttempts = (progress.quizAttempts ?? []) as { score: number; completedAt: Date }[];
+  const masteredFlashcardIds = progress.masteredFlashcardIds ?? [];
+  const totalFlashcards = flashcards.length;
+  const now = new Date();
+
+  // Quiz dimension (40%)
+  let quizDimension = 0;
+  if (quizAttempts.length > 0) {
+    const DECAY = 0.95;
+    let weightedSum = 0, weightSum = 0;
+    for (const attempt of quizAttempts) {
+      const weeksSince = (now.getTime() - new Date(attempt.completedAt).getTime()) / (7 * 24 * 3600 * 1000);
+      const weight = Math.pow(DECAY, weeksSince);
+      weightedSum += (attempt.score / 100) * weight;
+      weightSum += weight;
+    }
+    quizDimension = weightSum > 0 ? (weightedSum / weightSum) * 100 : 0;
+  }
+
+  // Mastery dimension (25%)
+  let masteryDimension = 0;
+  if (totalFlashcards > 0) {
+    const fsrsMastered = flashcards.filter(
+      (f) => (f.fsrs?.state ?? 0) >= 2 && f.fsrs?.due && new Date(f.fsrs.due) >= now
+    ).length;
+    masteryDimension = fsrsMastered > 0
+      ? (fsrsMastered / totalFlashcards) * 100
+      : masteredFlashcardIds.length > 0
+        ? (masteredFlashcardIds.length / totalFlashcards) * 100
+        : 0;
+  }
+
+  // Coverage dimension (20%)
+  const flashcardCoverage = totalFlashcards > 0 ? flashcards.filter((f) => (f.fsrs?.state ?? 0) > 0).length / totalFlashcards : null;
+  const quizCoverage = totalQuizzes > 0 ? Math.min(quizAttempts.length / totalQuizzes, 1) : null;
+  const parts = [flashcardCoverage, quizCoverage].filter((v): v is number => v !== null);
+  const coverageDimension = parts.length > 0 ? (parts.reduce((s, v) => s + v, 0) / parts.length) * 100 : 0;
+
+  // Trend dimension (15%)
+  let trendDimension = 50;
+  if (quizAttempts.length >= 4) {
+    const sorted = [...quizAttempts].sort((a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime());
+    const mid = Math.floor(sorted.length / 2);
+    const avg = (arr: typeof sorted) => arr.reduce((s, a) => s + a.score, 0) / arr.length;
+    const diff = avg(sorted.slice(mid)) - avg(sorted.slice(0, mid));
+    if (diff > 5) trendDimension = 100;
+    else if (diff < -5) trendDimension = 0;
+  }
+
+  const rawScore = quizDimension * 0.4 + masteryDimension * 0.25 + coverageDimension * 0.2 + trendDimension * 0.15;
+  const score = Math.min(100, Math.max(0, Math.round(rawScore)));
+
+  return {
+    sourceId: progress.sourceId,
+    score,
+    quizDimension: Math.round(quizDimension),
+    masteryDimension: Math.round(masteryDimension),
+    coverageDimension: Math.round(coverageDimension),
+    trendDimension: Math.round(trendDimension),
+  };
+}
+
 type SourceWithDimensions = {
   sourceId: string;
   score: number;
@@ -227,31 +295,56 @@ async function _computeAggregateReadiness(userId: string): Promise<{
 
   // Sources with activity but no cached score — compute inline so the dashboard
   // reflects existing progress on first load (not just after a new review).
-  const needsCompute = progresses.filter(
-    (p) =>
-      p.readinessScore == null &&
-      ((p.masteredFlashcardIds?.length ?? 0) > 0 || (p.quizAttempts?.length ?? 0) > 0)
-  );
+  // Cap at 10 to prevent excessive DB calls on users with many sources.
+  const needsCompute = progresses
+    .filter(
+      (p) =>
+        p.readinessScore == null &&
+        ((p.masteredFlashcardIds?.length ?? 0) > 0 || (p.quizAttempts?.length ?? 0) > 0)
+    )
+    .slice(0, 10);
 
-  const fresh: SourceWithDimensions[] =
-    needsCompute.length > 0
-      ? (
-          await Promise.all(
-            needsCompute.map((p) =>
-              computeReadinessScore(userId, p.sourceId)
-                .then((r) => ({
-                  sourceId: p.sourceId,
-                  score: r.score,
-                  quizDimension: r.quizDimension,
-                  masteryDimension: r.masteryDimension,
-                  coverageDimension: r.coverageDimension,
-                  trendDimension: r.trendDimension,
-                }))
-                .catch(() => null)
-            )
-          )
-        ).filter((r): r is SourceWithDimensions => r !== null)
-      : [];
+  let fresh: SourceWithDimensions[] = [];
+  if (needsCompute.length > 0) {
+    // Batch-compute: 3 queries total instead of 3N
+    const sourceIds = needsCompute.map((p) => p.sourceId);
+    type FlashcardLean = { sourceId: string; fsrs?: { state?: number; due?: Date | string }; masteredAt?: Date };
+    const [allFlashcards, allQuizCounts] = await Promise.all([
+      Flashcard.find({ userId, sourceId: { $in: sourceIds } }).select('sourceId fsrs masteredAt').lean() as unknown as Promise<FlashcardLean[]>,
+      Quiz.aggregate<{ _id: string; count: number }>([
+        { $match: { sourceId: { $in: sourceIds }, userId } },
+        { $group: { _id: '$sourceId', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const fcBySource = new Map<string, FlashcardLean[]>();
+    for (const fc of allFlashcards) {
+      const sid = fc.sourceId;
+      if (!fcBySource.has(sid)) fcBySource.set(sid, []);
+      fcBySource.get(sid)!.push(fc);
+    }
+    const qcBySource = new Map(allQuizCounts.map((r) => [r._id, r.count]));
+
+    fresh = needsCompute
+      .map((p) => {
+        try {
+          return _computeScoreInline(p, fcBySource.get(p.sourceId) ?? [], qcBySource.get(p.sourceId) ?? 0);
+        } catch {
+          return null;
+        }
+      })
+      .filter((r): r is SourceWithDimensions => r !== null);
+
+    // Persist computed scores in background (don't block response)
+    Promise.all(
+      fresh.map((s) =>
+        Progress.updateOne(
+          { userId, sourceId: s.sourceId },
+          { $set: { readinessScore: { score: s.score, quizDimension: s.quizDimension, masteryDimension: s.masteryDimension, coverageDimension: s.coverageDimension, trendDimension: s.trendDimension, computedAt: new Date() } } }
+        )
+      )
+    ).catch(() => {});
+  }
 
   const sourcesWithScore = [...cached, ...fresh];
 

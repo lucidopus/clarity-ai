@@ -8,12 +8,13 @@ import { CHATBOT_SYSTEM_PROMPT, ANIMATION_TOOL_PROMPT_ADDENDUM, VISUALIZE_COMMAN
 import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
+import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 import { resolveClientDay } from '@/lib/date.utils';
 import { calculateLLMCost, getCurrentModelInfo } from '@/lib/cost/calculator';
 import { logGenerationCost, formatCost } from '@/lib/cost/logger';
 import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
-import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage, AIMessage, ToolMessage, BaseMessage } from '@langchain/core/messages';
 import type { AIMessageChunk } from '@langchain/core/messages';
 import { ToolCallAccumulator } from '@/lib/tools';
 import { renderAnimationTool } from '@/lib/tools/render-animation';
@@ -79,7 +80,17 @@ export async function POST(request: NextRequest) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
 
-    // 2. Parse request
+    // 2. Parse request (capped at 512KB to prevent DoS via large payloads)
+    const bodyOrError = await parseJsonBody<{
+      videoId?: string;
+      message?: string;
+      conversationHistory?: IChatMessage[];
+      clientTimestamp?: string;
+      timezoneOffsetMinutes?: number;
+      timeZone?: string;
+      forceVisualize?: boolean;
+    }>(request, 512_000);
+    if (isErrorResponse(bodyOrError)) return bodyOrError;
     const {
       videoId,
       message,
@@ -88,7 +99,7 @@ export async function POST(request: NextRequest) {
       timezoneOffsetMinutes,
       timeZone,
       forceVisualize,
-    } = await request.json();
+    } = bodyOrError;
     if (!videoId || !message) {
       return NextResponse.json({ error: 'videoId and message are required' }, { status: 400 });
     }
@@ -187,6 +198,10 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const encoder = new TextEncoder();
 
+        // 60s timeout to prevent hung LLM connections from holding resources indefinitely
+        const abortController = new AbortController();
+        const streamTimeout = setTimeout(() => abortController.abort(), 60000);
+
         try {
           const requestStart = Date.now();
           console.log(`🤖 [CLARA] Streaming | model: ${CHATBOT_MODEL_NAME} | user: ${decoded.userId} | source: ${videoId}`);
@@ -195,7 +210,7 @@ export async function POST(request: NextRequest) {
           const toolAccumulator = new ToolCallAccumulator();
           let firstCallText = '';
 
-          const stream = await model.stream(langchainMessages, { callbacks: [tokenCallback] });
+          const stream = await model.stream(langchainMessages, { callbacks: [tokenCallback], signal: abortController.signal });
 
           for await (const chunk of stream) {
             const aiChunk = chunk as AIMessageChunk;
@@ -274,7 +289,7 @@ export async function POST(request: NextRequest) {
               console.log(`⚡ [CLARA] Tools executed in ${Date.now() - toolExecStart}ms`);
 
               // Build conversation with tool results for the second LLM call
-              const messagesWithTools = [
+              const messagesWithTools: BaseMessage[] = [
                 ...langchainMessages,
                 new AIMessage({ content: firstCallText, tool_calls: lookupCallsForHistory }),
               ];
@@ -294,7 +309,7 @@ export async function POST(request: NextRequest) {
 
               // ── Second LLM call: stream the final answer ──
               const secondStart = Date.now();
-              const answerStream = await model.stream(messagesWithTools, { callbacks: [tokenCallback] });
+              const answerStream = await model.stream(messagesWithTools, { callbacks: [tokenCallback], signal: abortController.signal });
 
               for await (const chunk of answerStream) {
                 const content = (chunk as AIMessageChunk).content as string;
@@ -398,14 +413,17 @@ export async function POST(request: NextRequest) {
             console.error('⚠️ [CHATBOT] Failed to log cost (non-critical):', costError);
           }
         } catch (error) {
-          console.error('[CHATBOT] Stream error:', error);
+          const isAbort = error instanceof Error && error.name === 'AbortError';
+          console.error('[CHATBOT] Stream error:', isAbort ? 'Timed out after 60s' : error);
           try {
             emitSSE(controller, encoder, {
               type: 'error',
-              message: 'Something went wrong. Please try again.',
+              message: isAbort ? 'Response timed out. Please try again.' : 'Something went wrong. Please try again.',
             });
           } catch { /* stream may already be closed */ }
           controller.close();
+        } finally {
+          clearTimeout(streamTimeout);
         }
       },
     });

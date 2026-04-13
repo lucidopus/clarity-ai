@@ -39,6 +39,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // SSRF protection: only allow files from trusted Supabase storage
+    try {
+      const parsedUrl = new URL(fileUrl);
+      const ALLOWED_HOSTS = [
+        'ddjefcxwptnmgyztepdi.supabase.co',
+      ];
+      if (!ALLOWED_HOSTS.some((host) => parsedUrl.hostname === host)) {
+        return NextResponse.json(
+          { error: 'File URL must be from an allowed storage provider' },
+          { status: 400 }
+        );
+      }
+      if (parsedUrl.protocol !== 'https:') {
+        return NextResponse.json(
+          { error: 'File URL must use HTTPS' },
+          { status: 400 }
+        );
+      }
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid file URL' },
+        { status: 400 }
+      );
+    }
+
     // Extract document content (PDF or PPTX)
     const result = await extractDocument({ sourceType: 'document', fileUrl, fileName, mimeType });
 

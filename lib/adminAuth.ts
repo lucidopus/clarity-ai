@@ -9,12 +9,13 @@ export interface AdminJWTPayload {
 }
 
 /**
- * Get the admin JWT secret. Falls back to JWT_SECRET if ADMIN_JWT_SECRET is not set.
+ * Get the admin JWT secret. Requires ADMIN_JWT_SECRET — no fallback to JWT_SECRET
+ * to prevent privilege escalation via regular user tokens.
  */
 function getAdminSecret(): string {
-  const secret = process.env.ADMIN_JWT_SECRET || process.env.JWT_SECRET;
+  const secret = process.env.ADMIN_JWT_SECRET;
   if (!secret) {
-    throw new Error('ADMIN_JWT_SECRET (or JWT_SECRET) not configured');
+    throw new Error('ADMIN_JWT_SECRET is required. Do not reuse JWT_SECRET — admin tokens must use a separate secret.');
   }
   return secret;
 }

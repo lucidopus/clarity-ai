@@ -48,20 +48,30 @@ export async function GET(request: NextRequest) {
 
     // 2. Fetch Candidates from Redis (Logic A Output)
     const redisKey = `discover_pool:${userId}`;
-    const cachedData = await redis.get(redisKey);
+    let cachedData: string | null = null;
+    try {
+      cachedData = await redis.get(redisKey);
+    } catch (redisError) {
+      console.error('[DISCOVER] Redis unavailable, falling back to empty recommendations:', redisError);
+    }
 
     if (!cachedData) {
-      // Logic: Fallback if cache is empty (New user or cron hasn't run)
-      // Ideally, we might trigger an immediate generation here, or return a "Popular" list.
-      return NextResponse.json({ 
-        success: true, 
-        recommended: [], 
+      // Fallback if cache is empty (new user, cron hasn't run, or Redis is down)
+      return NextResponse.json({
+        success: true,
+        recommended: [],
         categories: [],
-        message: "Recommendations are being generated." 
+        message: "Recommendations are being generated."
       });
     }
 
-    const parsedCache = JSON.parse(cachedData);
+    let parsedCache: { candidates?: RedisCandidate[] };
+    try {
+      parsedCache = JSON.parse(cachedData);
+    } catch {
+      console.error('[DISCOVER] Corrupted Redis data, returning empty');
+      return NextResponse.json({ success: true, recommended: [], categories: [], message: "Recommendations are being generated." });
+    }
     const candidates: RedisCandidate[] = parsedCache.candidates || [];
 
     // 3. Logic B: Deduplication (Filter Sufficiently-Completed Videos)

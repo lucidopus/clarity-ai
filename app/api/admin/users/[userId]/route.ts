@@ -98,34 +98,45 @@ export async function GET(
       .sort({ createdAt: -1 })
       .lean()) as unknown as VideoDocument[];
 
-    // Get generation counts by video
-    const videosWithCounts = await Promise.all(
-      videos.map(async (video) => {
-        const [flashcardCount, quizCount, hasLearningMaterial, hasMindMap, hasNotes] = await Promise.all([
-          Flashcard.countDocuments({ userId, sourceId: video.videoId }),
-          Quiz.countDocuments({ userId, sourceId: video.videoId }),
-          LearningMaterial.exists({ userId, sourceId: video.videoId }),
-          MindMap.exists({ userId, sourceId: video.videoId }),
-          Note.exists({ userId, sourceId: video.videoId }),
-        ]);
+    // Batch-fetch all generation counts in 5 aggregate queries (instead of 5N)
+    const videoIds = videos.map((v) => v.videoId);
 
-        return {
-          id: String(video._id),
-          videoId: video.videoId,
-          title: video.title,
-          thumbnail: video.thumbnail,
-          createdAt: video.createdAt,
-          processingStatus: video.processingStatus,
-          stats: {
-            flashcards: flashcardCount,
-            quizzes: quizCount,
-            hasLearningMaterial: !!hasLearningMaterial,
-            hasMindMap: !!hasMindMap,
-            hasNotes: !!hasNotes,
-          },
-        };
-      })
-    );
+    type CountRow = { _id: string; count: number };
+    const [flashcardCounts, quizCounts, lmIds, mindmapIds, noteIds] = await Promise.all([
+      Flashcard.aggregate<CountRow>([
+        { $match: { userId, sourceId: { $in: videoIds } } },
+        { $group: { _id: '$sourceId', count: { $sum: 1 } } },
+      ]),
+      Quiz.aggregate<CountRow>([
+        { $match: { userId, sourceId: { $in: videoIds } } },
+        { $group: { _id: '$sourceId', count: { $sum: 1 } } },
+      ]),
+      LearningMaterial.distinct('sourceId', { userId, sourceId: { $in: videoIds } }) as Promise<string[]>,
+      MindMap.distinct('sourceId', { userId, sourceId: { $in: videoIds } }) as Promise<string[]>,
+      Note.distinct('sourceId', { userId, sourceId: { $in: videoIds } }) as Promise<string[]>,
+    ]);
+
+    const fcMap = new Map(flashcardCounts.map((r) => [r._id, r.count]));
+    const qzMap = new Map(quizCounts.map((r) => [r._id, r.count]));
+    const lmSet = new Set(lmIds);
+    const mmSet = new Set(mindmapIds);
+    const ntSet = new Set(noteIds);
+
+    const videosWithCounts = videos.map((video) => ({
+      id: String(video._id),
+      videoId: video.videoId,
+      title: video.title,
+      thumbnail: video.thumbnail,
+      createdAt: video.createdAt,
+      processingStatus: video.processingStatus,
+      stats: {
+        flashcards: fcMap.get(video.videoId) ?? 0,
+        quizzes: qzMap.get(video.videoId) ?? 0,
+        hasLearningMaterial: lmSet.has(video.videoId),
+        hasMindMap: mmSet.has(video.videoId),
+        hasNotes: ntSet.has(video.videoId),
+      },
+    }));
 
     // Get activity summary
     const [totalActivities, activityBreakdown] = await Promise.all([
@@ -313,23 +324,30 @@ export async function DELETE(
       await deleteSupabaseFiles(fileUrls);
     }
 
-    // Cascade delete all user data
-    await Promise.all([
-      Video.deleteMany({ userId }),
-      Source.deleteMany({ userId }),
-      Flashcard.deleteMany({ userId }),
-      Quiz.deleteMany({ userId }),
-      LearningMaterial.deleteMany({ userId }),
-      Progress.deleteMany({ userId }),
-      ActivityLog.deleteMany({ userId }),
-      Note.deleteMany({ userId }),
-      MindMap.deleteMany({ userId }),
-      Solution.deleteMany({ userId }),
-      Cost.deleteMany({ userId }),
-      SourceContent.deleteMany({ userId }),
-      LiveSession.deleteMany({ userId }),
-      User.findByIdAndDelete(userId),
-    ]);
+    // Cascade delete all user data within a transaction for atomicity
+    const session = await mongoose.startSession();
+    try {
+      await session.withTransaction(async () => {
+        await Promise.all([
+          Video.deleteMany({ userId }, { session }),
+          Source.deleteMany({ userId }, { session }),
+          Flashcard.deleteMany({ userId }, { session }),
+          Quiz.deleteMany({ userId }, { session }),
+          LearningMaterial.deleteMany({ userId }, { session }),
+          Progress.deleteMany({ userId }, { session }),
+          ActivityLog.deleteMany({ userId }, { session }),
+          Note.deleteMany({ userId }, { session }),
+          MindMap.deleteMany({ userId }, { session }),
+          Solution.deleteMany({ userId }, { session }),
+          Cost.deleteMany({ userId }, { session }),
+          SourceContent.deleteMany({ userId }, { session }),
+          LiveSession.deleteMany({ userId }, { session }),
+          User.findByIdAndDelete(userId, { session }),
+        ]);
+      });
+    } finally {
+      await session.endSession();
+    }
 
     return NextResponse.json({
       success: true,

@@ -25,12 +25,12 @@ export async function POST(request: Request) {
     const { email } = result.data;
 
     const user = await User.findOne({ email: { $regex: new RegExp(`^${escapeRegex(email)}$`, 'i') } });
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
-    }
 
-    if (user.emailVerified) {
-      return NextResponse.json({ success: false, message: 'Email already verified' }, { status: 400 });
+    // Return the same message for all cases to prevent email enumeration
+    const safeResponse = { success: true, message: 'If an account exists with that email, a verification code has been sent.' };
+
+    if (!user || user.emailVerified) {
+      return NextResponse.json(safeResponse);
     }
 
     // Rate limiting check

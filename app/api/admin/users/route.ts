@@ -87,32 +87,19 @@ export async function GET(request: NextRequest) {
     let users: Array<UserData | UserWithVideoCount>;
 
     if (sortBy === 'videos') {
-      // For video sorting, we need to get all users and sort by video count
-      const allUsers = (await User.find(searchQuery)
-        .select('_id username email firstName lastName createdAt lastLoginDate loginStreak')
-        .lean()) as unknown as UserData[];
-
-      // Batch fetch video counts for all users in one aggregation
-      const allUserIds = allUsers.map((u) => new mongoose.Types.ObjectId(u._id));
-      const videoBatch = await Video.aggregate([
-        { $match: { userId: { $in: allUserIds } } },
-        { $group: { _id: '$userId', count: { $sum: 1 } } },
-      ]);
-      const videoCountMap = new Map(videoBatch.map((r: { _id: mongoose.Types.ObjectId; count: number }) => [r._id.toString(), r.count]));
-
-      const usersWithVideoCounts = allUsers.map((user: UserData) => ({
-        ...user,
-        videoCount: videoCountMap.get(user._id.toString()) ?? 0,
-      }));
-
-      // Sort by video count
-      usersWithVideoCounts.sort((a, b) => {
-        const order = sortOrder === 'asc' ? 1 : -1;
-        return (a.videoCount - b.videoCount) * order;
-      });
-
-      // Apply pagination
-      users = usersWithVideoCounts.slice((page - 1) * limit, page * limit) as UserWithVideoCount[];
+      // Server-side sort by video count using aggregation pipeline (no in-memory loading)
+      const order = sortOrder === 'asc' ? 1 : -1;
+      const pipeline = [
+        { $match: searchQuery },
+        { $project: { _id: 1, username: 1, email: 1, firstName: 1, lastName: 1, createdAt: 1, lastLoginDate: 1, loginStreak: 1 } },
+        { $lookup: { from: 'videos', localField: '_id', foreignField: 'userId', as: '_vids', pipeline: [{ $project: { _id: 1 } }] } },
+        { $addFields: { videoCount: { $size: '$_vids' } } },
+        { $project: { _vids: 0 } },
+        { $sort: { videoCount: order as 1 | -1 } },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+      ];
+      users = (await User.aggregate(pipeline)) as UserWithVideoCount[];
     } else {
       // Build sort object for other sorts
       const order = sortOrder === 'asc' ? 1 : -1;

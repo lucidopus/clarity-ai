@@ -16,12 +16,16 @@ function startOfWeek(date = new Date()): Date {
 }
 
 async function calculateStudyStreak(userId: string): Promise<{ current: number; longest: number }> {
-  // Aggregate distinct study dates from ActivityLog (exclude video_generated as it's not active learning)
+  // Aggregate distinct study dates from ActivityLog (bounded to last 365 days for performance)
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
   const studyDates = await ActivityLog.aggregate([
     {
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
-        activityType: { $in: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created'] }
+        activityType: { $in: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created'] },
+        date: { $gte: oneYearAgo }
       }
     },
     {

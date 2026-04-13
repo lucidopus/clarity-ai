@@ -60,26 +60,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Find or create Progress document for this user and source
-    let progress = await Progress.findOne({
-      userId: decoded.userId,
-      sourceId: sourceId
-    });
+    // Atomically find or create Progress document (prevents race condition on concurrent submissions)
+    const progress = await Progress.findOneAndUpdate(
+      { userId: decoded.userId, sourceId },
+      {
+        $setOnInsert: {
+          masteredFlashcardIds: [],
+          masteredQuizIds: [],
+          quizAttempts: [],
+          totalStudyTimeSeconds: 0,
+        },
+        $set: { lastAccessedAt: new Date() },
+      },
+      { upsert: true, new: true }
+    );
 
     if (!progress) {
-      progress = new Progress({
-        userId: decoded.userId,
-        sourceId: sourceId,
-        masteredFlashcardIds: [],
-        masteredQuizIds: [],
-        quizAttempts: [],
-        lastAccessedAt: new Date(),
-        totalStudyTimeSeconds: 0
-      });
+      return NextResponse.json({ error: 'Failed to create progress record' }, { status: 500 });
     }
-
-    // Update lastAccessedAt
-    progress.lastAccessedAt = new Date();
 
     // Fetch all quizzes involved in the submission for validation
     const quizIds = results.map(r => r.quizId);
@@ -178,6 +176,14 @@ export async function POST(request: NextRequest) {
         misinformedCount: misinformedQuizIds.length,
         misinformedQuizIds,
       });
+    }
+
+    // Cap unbounded arrays to prevent 16MB BSON limit
+    if (progress.quizAttempts.length > 200) {
+      progress.quizAttempts = progress.quizAttempts.slice(-200);
+    }
+    if (progress.calibrationHistory && progress.calibrationHistory.length > 50) {
+      progress.calibrationHistory = progress.calibrationHistory.slice(-50);
     }
 
     await progress.save();

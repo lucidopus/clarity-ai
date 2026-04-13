@@ -6,6 +6,7 @@ import { generateEmbeddings } from '@/lib/embedding';
 import { constructUserProfileString } from '@/lib/service-utils';
 import { generateUserRecommendations } from '@/trigger/recommendations';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
+import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 
 type LearningPreferencesPayload = Partial<ILearningPreferences>;
 
@@ -79,7 +80,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const requestBody: LearningPreferencesPayload = await request.json();
+    const bodyOrError = await parseJsonBody<LearningPreferencesPayload>(request, 64_000); // 64KB max for preferences
+    if (isErrorResponse(bodyOrError)) return bodyOrError;
+    const requestBody = bodyOrError;
 
     // Extract ONLY allowed learning preferences fields (ignore any extra fields from old onboarding steps or localStorage)
     const learningPreferences: Partial<ILearningPreferences> = {};

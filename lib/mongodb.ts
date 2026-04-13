@@ -1,10 +1,9 @@
 import mongoose from 'mongoose';
+import { validateEnv } from '@/lib/env';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
+// Validate all required env vars on first import (fail-fast)
+const validatedEnv = validateEnv();
+const MONGODB_URI = validatedEnv.MONGODB_URI;
 
 type MongooseCache = {
   conn: typeof mongoose | null;

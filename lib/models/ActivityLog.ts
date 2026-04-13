@@ -29,5 +29,7 @@ const ActivityLogSchema: Schema<IActivityLog> = new Schema({
 // Compound indexes for fast aggregations
 ActivityLogSchema.index({ userId: 1, date: 1 });
 ActivityLogSchema.index({ userId: 1, activityType: 1, date: 1 });
+// TTL index: auto-delete activity logs older than 180 days to prevent unbounded growth
+ActivityLogSchema.index({ timestamp: 1 }, { expireAfterSeconds: 180 * 24 * 60 * 60 });
 
 export default mongoose.models.ActivityLog || mongoose.model<IActivityLog>('ActivityLog', ActivityLogSchema);

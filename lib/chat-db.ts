@@ -1,4 +1,4 @@
-import { MongoClient, Db, Collection } from 'mongodb';
+import { Db, Collection } from 'mongodb';
 import dbConnect from './mongodb';
 import crypto from 'crypto';
 import { ChatMessage } from './types/chat';
@@ -6,17 +6,20 @@ import { ChatMessage } from './types/chat';
 let cachedDb: Db | null = null;
 
 /**
- * Get MongoDB database instance
+ * Get MongoDB database instance.
+ * Reuses Mongoose's pooled connection instead of creating a separate MongoClient.
  */
 async function getDb(): Promise<Db> {
   if (cachedDb) {
     return cachedDb;
   }
 
-  await dbConnect();
-
-  const client = await MongoClient.connect(process.env.MONGODB_URI!);
-  cachedDb = client.db('clarity-ai');
+  const conn = await dbConnect();
+  const db = conn.connection.db;
+  if (!db) {
+    throw new Error('Failed to get database from Mongoose connection');
+  }
+  cachedDb = db;
 
   return cachedDb;
 }
@@ -98,13 +101,14 @@ export async function loadChatHistory(
   sessionId: string,
   limit: number = 50
 ): Promise<ChatMessage[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 200);
   try {
     const chats = await getChatsCollection();
 
     const messages = await chats
       .find({ sessionId })
       .sort({ timestamp: 1 }) // Oldest first
-      .limit(limit)
+      .limit(safeLimit)
       .toArray();
 
     return messages;
@@ -129,6 +133,7 @@ export async function loadChatHistoryByChannel(
   contextId: string,
   limit: number = 50
 ): Promise<ChatMessage[]> {
+  const safeLimit = Math.min(Math.max(limit, 1), 200);
   try {
     const chats = await getChatsCollection();
 
@@ -139,7 +144,7 @@ export async function loadChatHistoryByChannel(
         contextId
       })
       .sort({ timestamp: 1 }) // Oldest first
-      .limit(limit)
+      .limit(safeLimit)
       .toArray();
 
     return messages;

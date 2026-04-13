@@ -75,5 +75,7 @@ VideoSchema.index({ userId: 1, createdAt: -1 });
 VideoSchema.index({ videoId: 1 });
 VideoSchema.index({ userId: 1, videoId: 1 }, { unique: true });
 VideoSchema.index({ visibility: 1, createdAt: -1 }); // Index for Discover feed queries
+VideoSchema.index({ userId: 1, processingStatus: 1 }); // User's pending/failed videos
+VideoSchema.index({ visibility: 1, category: 1, createdAt: -1 }); // Discover feed with category filter
 
 export default mongoose.models.Video || mongoose.model<IVideo>('Video', VideoSchema);
