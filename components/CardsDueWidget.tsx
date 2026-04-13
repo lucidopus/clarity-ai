@@ -139,7 +139,10 @@ export default function CardsDueWidget() {
             <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
               <Brain className="w-4 h-4 text-accent" />
             </div>
-            <span className="font-semibold text-foreground">Smart Review</span>
+            <div>
+              <span className="font-semibold text-foreground">Smart Review</span>
+              <p className="text-xs text-muted-foreground">Review cards due now</p>
+            </div>
           </div>
           <span className={`text-sm px-2.5 py-0.5 rounded-full ${badge}`} aria-label={`${label} for review`}>
             {label}

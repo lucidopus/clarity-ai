@@ -8,6 +8,7 @@ export const CacheKeys = {
   readinessAggregate: (userId: string)          => `readiness-agg:${userId}`,
   dashStats: (userId: string)                   => `dash:stats:${userId}`,
   claraGreeting: (userId: string)               => `clara-greeting:${userId}`,
+  progressNarrative: (userId: string)           => `progress-narrative:${userId}`,
 };
 
 // ── Core helper ────────────────────────────────────────────────────────────────
@@ -68,6 +69,8 @@ export async function invalidateAllUserCaches(userId: string, sourceId?: string)
       CacheKeys.insights(userId),
       CacheKeys.readinessAggregate(userId),
       CacheKeys.dashStats(userId),
+      CacheKeys.progressNarrative(userId),
+      CacheKeys.claraGreeting(userId),
     ];
     if (sourceId) keys.push(CacheKeys.readiness(userId, sourceId));
     await getRedis().del(...keys);

@@ -18,3 +18,4 @@ export { default as SystemLog, type ISystemLog, type SystemLogCategory, type Sys
 export { default as FlashcardReview, type IFlashcardReview } from './FlashcardReview';
 export { default as StudyDay, type IStudyDay } from './StudyDay';
 export { default as DailyChallenge, type IDailyChallenge, type IChallenge, type ChallengeType } from './DailyChallenge';
+export { default as TodaysMix, type ITodaysMix, type ITodaysMixItem } from './TodaysMix';

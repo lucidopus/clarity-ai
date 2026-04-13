@@ -25,6 +25,7 @@ const WeekdayConsistencyBars = dynamic(() => import('@/components/WeekdayConsist
 import DailyChallengesCard from '@/components/DailyChallengesCard';
 import ClarityScoreWidget from '@/components/dashboard/ReadinessWidget';
 import ClarityInsightsPanel from '@/components/dashboard/ClarityInsightsPanel';
+import TodaysMixCard from '@/components/TodaysMixCard';
 import { getErrorConfig } from '@/lib/errorMessages';
 
 interface StatsResponse {
@@ -65,6 +66,7 @@ export default function DashboardHomePage() {
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [recentVideos, setRecentVideos] = useState<RecentVideo[]>([]);
   const [claraGreeting, setClaraGreeting] = useState<string | undefined>(undefined);
+  const [progressNarrative, setProgressNarrative] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
@@ -125,20 +127,23 @@ export default function DashboardHomePage() {
       setLoading(true);
       setError(null);
       try {
-        const [sRes, aRes, gRes] = await Promise.all([
+        const [sRes, aRes, gRes, nRes] = await Promise.all([
           fetch('/api/dashboard/stats'),
           fetch('/api/dashboard/activity'),
           fetch('/api/dashboard/clara-greeting'),
+          fetch('/api/dashboard/progress-narrative'),
         ]);
         if (!sRes.ok) throw new Error('Failed to load stats');
         if (!aRes.ok) throw new Error('Failed to load activity');
         const s = await sRes.json();
         const a = await aRes.json();
         const g = gRes.ok ? await gRes.json() : null;
+        const n = nRes.ok ? await nRes.json() : null;
         if (mounted) {
           setStats(s);
           setRecentVideos(a.recentVideos || []);
           if (g?.text) setClaraGreeting(g.text);
+          if (n?.narrative && n.category !== 'welcome') setProgressNarrative(n.narrative);
         }
       } catch (e: unknown) {
         if (mounted) setError(e instanceof Error ? e.message : 'Error loading dashboard');
@@ -249,7 +254,7 @@ export default function DashboardHomePage() {
       {/* Page Header */}
       <DashboardHeader
         title={`${greeting}, ${user.firstName}`}
-        claraGreeting={claraGreeting}
+        claraGreeting={progressNarrative || claraGreeting}
         onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
         onLiveLectureClick={openLiveLecture}
         isGenerateModalOpen={showGenerateModal}
@@ -416,6 +421,9 @@ export default function DashboardHomePage() {
             <ClarityScoreWidget />
             <StudyActivityHeatmap currentStreak={stats.currentStreak} longestStreak={stats.longestStreak} />
           </div>
+
+          {/* Row 1.5: Today's Mix */}
+          <TodaysMixCard />
 
           {/* Row 2: Smart Review + Streak + Daily Challenges */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

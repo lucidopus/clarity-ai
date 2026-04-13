@@ -25,7 +25,11 @@ interface SessionStats {
 interface SmartReviewSessionProps {
   onClose: () => void;
   onSessionComplete?: (stats: SessionStats) => void;
+  /** Pre-loaded cards — skips the /api/flashcards/due fetch when provided */
+  initialCards?: DueCard[];
 }
+
+export type { DueCard };
 
 const RATING_CONFIG = [
   { rating: Rating.Again, label: 'Again', key: '1', colorClass: 'border-red-500 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30' },
@@ -34,7 +38,7 @@ const RATING_CONFIG = [
   { rating: Rating.Easy,  label: 'Easy',  key: '4', colorClass: 'border-accent text-accent hover:bg-accent/10' },
 ];
 
-export default function SmartReviewSession({ onClose, onSessionComplete }: SmartReviewSessionProps) {
+export default function SmartReviewSession({ onClose, onSessionComplete, initialCards }: SmartReviewSessionProps) {
   const shouldReduceMotion = useReducedMotion();
 
   const [cards, setCards] = useState<DueCard[]>([]);
@@ -64,6 +68,11 @@ export default function SmartReviewSession({ onClose, onSessionComplete }: Smart
   const sessionMinutes = Math.floor(elapsedSeconds / 60);
 
   useEffect(() => {
+    if (initialCards) {
+      setCards(initialCards);
+      setLoading(false);
+      return;
+    }
     fetch('/api/flashcards/due')
       .then((r) => r.json())
       .then((data) => {
@@ -71,7 +80,7 @@ export default function SmartReviewSession({ onClose, onSessionComplete }: Smart
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [initialCards]);
 
   // Auto-focus "Show Answer" button when card changes
   useEffect(() => {
