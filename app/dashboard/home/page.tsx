@@ -64,6 +64,7 @@ export default function DashboardHomePage() {
 
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [recentVideos, setRecentVideos] = useState<RecentVideo[]>([]);
+  const [claraGreeting, setClaraGreeting] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
@@ -124,17 +125,20 @@ export default function DashboardHomePage() {
       setLoading(true);
       setError(null);
       try {
-        const [sRes, aRes] = await Promise.all([
+        const [sRes, aRes, gRes] = await Promise.all([
           fetch('/api/dashboard/stats'),
           fetch('/api/dashboard/activity'),
+          fetch('/api/dashboard/clara-greeting'),
         ]);
         if (!sRes.ok) throw new Error('Failed to load stats');
         if (!aRes.ok) throw new Error('Failed to load activity');
         const s = await sRes.json();
         const a = await aRes.json();
+        const g = gRes.ok ? await gRes.json() : null;
         if (mounted) {
           setStats(s);
           setRecentVideos(a.recentVideos || []);
+          if (g?.text) setClaraGreeting(g.text);
         }
       } catch (e: unknown) {
         if (mounted) setError(e instanceof Error ? e.message : 'Error loading dashboard');
@@ -245,6 +249,7 @@ export default function DashboardHomePage() {
       {/* Page Header */}
       <DashboardHeader
         title={`${greeting}, ${user.firstName}`}
+        claraGreeting={claraGreeting}
         onGenerateClick={() => setShowGenerateModal(!showGenerateModal)}
         onLiveLectureClick={openLiveLecture}
         isGenerateModalOpen={showGenerateModal}

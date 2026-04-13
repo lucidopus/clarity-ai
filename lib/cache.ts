@@ -7,6 +7,7 @@ export const CacheKeys = {
   readiness: (userId: string, sourceId: string) => `readiness:${userId}:${sourceId}`,
   readinessAggregate: (userId: string)          => `readiness-agg:${userId}`,
   dashStats: (userId: string)                   => `dash:stats:${userId}`,
+  claraGreeting: (userId: string)               => `clara-greeting:${userId}`,
 };
 
 // ── Core helper ────────────────────────────────────────────────────────────────

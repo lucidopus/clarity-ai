@@ -10,12 +10,13 @@ import { Sparkles, FileText, Mic } from 'lucide-react';
 interface DashboardHeaderProps {
   title: string;
   subtitle?: string;
+  claraGreeting?: string;
   onGenerateClick?: () => void;
   onLiveLectureClick?: () => void;
   isGenerateModalOpen?: boolean;
 }
 
-export default function DashboardHeader({ title, subtitle, onGenerateClick, onLiveLectureClick, isGenerateModalOpen }: DashboardHeaderProps) {
+export default function DashboardHeader({ title, subtitle, claraGreeting, onGenerateClick, onLiveLectureClick, isGenerateModalOpen }: DashboardHeaderProps) {
   useAuth(); // Keep hook for potential future usage
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -45,6 +46,9 @@ export default function DashboardHeader({ title, subtitle, onGenerateClick, onLi
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-1">{title}</h1>
           {subtitle && subtitle !== 'undefined' && <p className="text-muted-foreground">{subtitle}</p>}
+          {claraGreeting && (
+            <p className="text-sm text-muted-foreground/80 mt-1.5 italic">{claraGreeting}</p>
+          )}
         </div>
         <div className="flex items-center space-x-4">
           {onGenerateClick && (
