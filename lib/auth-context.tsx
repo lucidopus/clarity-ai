@@ -52,9 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const performAuthCheck = async (attempt = 1): Promise<void> => {
      try {
-       const response = await fetch('/api/auth/me', {
-         signal: AbortSignal.timeout(3000),
-       });
+       const response = await fetch('/api/auth/me');
 
        if (response.status >= 500) {
          throw new Error(`Server error: ${response.status}`);

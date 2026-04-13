@@ -131,7 +131,10 @@ export default function ClarityScore({ sourceId, refreshKey }: Props) {
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-accent" aria-hidden="true" />
           </div>
-          <span className="font-semibold text-foreground">Clarity Score</span>
+          <div>
+            <span className="font-semibold text-foreground">Clarity Score</span>
+            <span className="block text-[11px] text-muted-foreground leading-tight">This source only</span>
+          </div>
         </div>
         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${scoreBadge(score)}`}>
           {scoreLabel(score)}

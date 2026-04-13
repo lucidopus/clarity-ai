@@ -132,11 +132,12 @@ async function fetchProgress(userId: string, sourceId: string): Promise<string> 
 
   if (p.readinessScore) {
     const r = p.readinessScore;
-    lines.push(`\nClarity Score: ${r.score.toFixed(0)}/100`);
+    lines.push(`\nClarity Score (this source only): ${r.score.toFixed(0)}/100`);
     lines.push(`  Quiz dimension: ${r.quizDimension.toFixed(0)}/100`);
     lines.push(`  Mastery dimension: ${r.masteryDimension.toFixed(0)}/100`);
     lines.push(`  Coverage dimension: ${r.coverageDimension.toFixed(0)}/100`);
     lines.push(`  Trend dimension: ${r.trendDimension.toFixed(0)}/100`);
+    lines.push(`  Note: The dashboard shows your overall Clarity Score averaged across ALL sources, which may differ from this per-source score.`);
   }
 
   if (p.totalStudyTimeSeconds > 0) {

@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'sha256-uSMJens+XsW9xR5EgcVp2X6phQsXONFTzmV4vx5HPV0='", // theme script hash (layout.tsx)
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-inline for Next.js streaming hydration, unsafe-eval for React dev mode
       "style-src 'self' 'unsafe-inline'",      // Tailwind + dynamic styles
       "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com https://images.unsplash.com https://via.placeholder.com https://*.supabase.co",
       "font-src 'self'",

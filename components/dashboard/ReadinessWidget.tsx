@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { AlertCircle, Sparkles, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -22,18 +22,18 @@ function scoreConfig(score: number): { text: string; ring: string; badge: string
     barColor: 'bg-accent',
   };
   if (score >= 40) return {
-    text: 'text-accent/75',
-    ring: 'stroke-accent/60',
-    badge: 'bg-accent/10 text-accent/75',
+    text: 'text-accent',
+    ring: 'stroke-accent',
+    badge: 'bg-accent/15 text-accent',
     label: 'Gaining Clarity',
-    barColor: 'bg-accent/65',
+    barColor: 'bg-accent',
   };
   return {
-    text: 'text-muted-foreground',
-    ring: 'stroke-accent/30',
-    badge: 'bg-muted/30 text-muted-foreground',
+    text: 'text-accent',
+    ring: 'stroke-accent',
+    badge: 'bg-accent/15 text-accent',
     label: 'Just Starting',
-    barColor: 'bg-accent/35',
+    barColor: 'bg-accent',
   };
 }
 
@@ -48,13 +48,11 @@ const DIMENSIONS = [
 
 function DimensionBar({
   label,
-  weight,
   value,
   barColor,
   reduced,
 }: {
   label: string;
-  weight: number;
   value: number;
   barColor: string;
   reduced: boolean;
@@ -63,10 +61,7 @@ function DimensionBar({
     <div>
       <div className="flex items-center justify-between text-xs mb-1.5">
         <span className="text-foreground font-medium">{label}</span>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[11px] text-muted-foreground">{weight}%</span>
-          <span className="font-semibold text-foreground w-7 text-right">{value}%</span>
-        </div>
+        <span className="font-semibold text-foreground tabular-nums">{value}%</span>
       </div>
       <div
         className="h-1.5 rounded-full bg-muted/30 overflow-hidden"
@@ -74,7 +69,7 @@ function DimensionBar({
         aria-valuenow={value}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${label}: ${value}%, weighted ${weight}%`}
+        aria-label={`${label}: ${value}%`}
       >
         <motion.div
           className={`h-full w-full rounded-full origin-left ${barColor}`}
@@ -126,7 +121,6 @@ export default function ClarityScoreWidget() {
   const router = useRouter();
   const [data, setData] = useState<AggregateData | null>(null);
   const [error, setError] = useState(false);
-  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -136,19 +130,6 @@ export default function ClarityScoreWidget() {
       .catch(() => { if (mounted) setError(true); });
     return () => { mounted = false; };
   }, []);
-
-  // Close breakdown on Escape
-  useEffect(() => {
-    if (!breakdownOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setBreakdownOpen(false); };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [breakdownOpen]);
-
-  // Close on outside click
-  const handleOutsideClick = useCallback(() => {
-    if (breakdownOpen) setBreakdownOpen(false);
-  }, [breakdownOpen]);
 
   if (!data && !error) return <Skeleton />;
 
@@ -194,8 +175,7 @@ export default function ClarityScoreWidget() {
       initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className="bg-card-bg border border-border rounded-2xl p-5 h-full flex flex-col"
-      onClick={handleOutsideClick}
+      className="bg-card-bg border border-border rounded-2xl p-5 h-full flex flex-col overflow-visible"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -203,7 +183,10 @@ export default function ClarityScoreWidget() {
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
             <Sparkles className="w-4 h-4 text-accent" aria-hidden="true" />
           </div>
-          <span className="font-semibold text-foreground">Clarity Score</span>
+          <div>
+            <span className="font-semibold text-foreground">Clarity Score</span>
+            <span className="block text-[11px] text-muted-foreground leading-tight">Averaged across all sources</span>
+          </div>
         </div>
         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${config.badge}`}>
           {config.label}
@@ -212,14 +195,11 @@ export default function ClarityScoreWidget() {
 
       {/* Body: ring + dimension bars */}
       <div className="flex items-center gap-5">
-        {/* Score ring — click or hover to see breakdown */}
-        <div className="relative flex flex-col items-center shrink-0">
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setBreakdownOpen(v => !v); }}
-            aria-label={`Clarity Score: ${overallScore} out of 100. ${config.label}. Activate to see how it's calculated.`}
-            aria-expanded={breakdownOpen}
-            className="relative rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-card-bg group"
+        {/* Score ring — hover to see breakdown */}
+        <div className="relative flex flex-col items-center shrink-0 group/ring">
+          <div
+            aria-label={`Clarity Score: ${overallScore} out of 100. ${config.label}. Hover to see how it's calculated.`}
+            className="relative rounded-full cursor-default"
           >
             <svg aria-hidden="true" width="80" height="80" viewBox="0 0 80 80">
               <circle
@@ -242,31 +222,28 @@ export default function ClarityScoreWidget() {
               <span className={`text-xl font-bold tabular-nums leading-none ${config.text}`}>{overallScore}</span>
               <span className="text-[10px] text-muted-foreground mt-0.5">/ 100</span>
             </div>
-          </button>
+          </div>
 
-          {/* Breakdown popover — click/hover/focus triggered */}
-          {breakdownOpen && (
-            <div
-              role="tooltip"
-              className="absolute top-full mt-2 left-1/2 -translate-x-1/2 w-52 bg-card-bg border border-border rounded-xl p-3 shadow-xl z-50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="text-xs font-semibold text-foreground mb-2">How it&apos;s calculated</p>
-              <div className="space-y-1.5">
-                {[
-                  { label: 'Quiz scores', weight: '40%' },
-                  { label: 'Flashcard mastery', weight: '25%' },
-                  { label: 'Topics covered', weight: '20%' },
-                  { label: 'Study consistency', weight: '15%' },
-                ].map(({ label, weight }) => (
-                  <div key={label} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-medium text-foreground">{weight}</span>
-                  </div>
-                ))}
-              </div>
+          {/* Breakdown popover — hover triggered, positioned to the right */}
+          <div
+            role="tooltip"
+            className="absolute left-full top-1/2 -translate-y-1/2 ml-3 w-48 bg-card-bg border border-border rounded-xl p-3 shadow-xl z-[60] opacity-0 pointer-events-none group-hover/ring:opacity-100 group-hover/ring:pointer-events-auto transition-opacity duration-200"
+          >
+            <p className="text-xs font-semibold text-foreground mb-2">How it&apos;s calculated</p>
+            <div className="space-y-1.5">
+              {[
+                { label: 'Quiz scores', weight: '40%' },
+                { label: 'Flashcard mastery', weight: '25%' },
+                { label: 'Topics covered', weight: '20%' },
+                { label: 'Study consistency', weight: '15%' },
+              ].map(({ label, weight }) => (
+                <div key={label} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="font-medium text-foreground">{weight}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Dimension breakdown */}
@@ -275,7 +252,6 @@ export default function ClarityScoreWidget() {
             <DimensionBar
               key={d.key}
               label={d.label}
-              weight={d.weight}
               value={dims[d.key]}
               barColor={config.barColor}
               reduced={shouldReduceMotion}

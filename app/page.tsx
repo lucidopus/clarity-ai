@@ -265,6 +265,12 @@ export default function Home() {
   const smoothX = useSpring(mouseX, springConfig);
   const smoothY = useSpring(mouseY, springConfig);
 
+  // Torch reveal mask — must be at top level (Rules of Hooks)
+  const torchMask = useTransform(
+    [smoothX, smoothY],
+    ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
+  );
+
   const handleMouseMove = (e: React.MouseEvent | MouseEvent) => {
     if (!containerRef.current) return;
     const { left, top } = containerRef.current.getBoundingClientRect();
@@ -316,14 +322,8 @@ export default function Home() {
             <motion.div
                 className="absolute inset-0 z-20 pointer-events-none select-none"
                 style={{
-                    maskImage: useTransform(
-                        [smoothX, smoothY],
-                        ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
-                    ),
-                    WebkitMaskImage: useTransform(
-                        [smoothX, smoothY],
-                        ([x, y]: number[]) => `radial-gradient(circle 250px at ${x}px ${y}px, black 30%, transparent 100%)`
-                    ),
+                    maskImage: torchMask,
+                    WebkitMaskImage: torchMask,
                 }}
             >
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-6 flex flex-wrap items-center justify-center gap-x-4">
