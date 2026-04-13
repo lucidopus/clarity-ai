@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import { groqLlm, GROQ_MODEL_NAME } from '@/lib/sdk';
+import { chatbotLlm, CHATBOT_MODEL_NAME } from '@/lib/sdk';
 import { getChatbotContext } from '@/lib/chatbot-context';
 import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
-import { CHATBOT_SYSTEM_PROMPT, ANIMATION_TOOL_PROMPT_ADDENDUM } from '@/lib/prompts';
+import { CHATBOT_SYSTEM_PROMPT, ANIMATION_TOOL_PROMPT_ADDENDUM, VISUALIZE_COMMAND_ADDENDUM } from '@/lib/prompts';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     if (useAnimationTool) {
       systemPrompt += ANIMATION_TOOL_PROMPT_ADDENDUM;
       if (forceVisualize) {
-        systemPrompt += '\n\nThe user explicitly requested a visualization via /visualize. If the concept genuinely maps to one of your 8 animation types (functions, vectors, matrices, shapes, number lines, unit circle, derivatives, integrals), use the render_animation tool and pair it with a text explanation. If the concept does NOT fit any template (e.g., algorithms, data structures, code concepts, NLP processes), do NOT use the tool — instead explain why a visual animation isn\'t available for this concept and provide an excellent text-based explanation with examples, ASCII diagrams, or step-by-step walkthroughs.';
+        systemPrompt += VISUALIZE_COMMAND_ADDENDUM;
       }
     }
 
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       ? [...claraTools, renderAnimationTool]
       : claraTools;
 
-    const model = groqLlm.bindTools(allTools);
+    const model = chatbotLlm.bindTools(allTools);
 
     // 9. Prepare messages
     const langchainMessages = [
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
 
         try {
           const requestStart = Date.now();
-          console.log(`🤖 [CLARA] Streaming | model: ${GROQ_MODEL_NAME} | user: ${decoded.userId} | source: ${videoId}`);
+          console.log(`🤖 [CLARA] Streaming | model: ${CHATBOT_MODEL_NAME} | user: ${decoded.userId} | source: ${videoId}`);
 
           // ── First LLM call: stream text or detect tool calls ──
           const toolAccumulator = new ToolCallAccumulator();
@@ -342,7 +342,7 @@ export async function POST(request: NextRequest) {
           }
 
           try {
-            const modelInfo = getCurrentModelInfo(GROQ_MODEL_NAME);
+            const modelInfo = getCurrentModelInfo(CHATBOT_MODEL_NAME);
             let isEstimated = false;
 
             if (totalPromptTokens === 0 && totalCompletionTokens === 0) {
@@ -353,11 +353,11 @@ export async function POST(request: NextRequest) {
             }
 
             if (totalPromptTokens > 0 || totalCompletionTokens > 0) {
-              const llmCost = calculateLLMCost(totalPromptTokens, totalCompletionTokens, GROQ_MODEL_NAME);
+              const llmCost = calculateLLMCost(totalPromptTokens, totalCompletionTokens, CHATBOT_MODEL_NAME);
               const llmCalls = toolsUsed.length > 0 ? 2 : 1;
 
               const services: IServiceUsage[] = [{
-                service: ServiceType.GROQ_LLM,
+                service: ServiceType.GEMINI_LLM,
                 usage: {
                   cost: llmCost,
                   unitDetails: {

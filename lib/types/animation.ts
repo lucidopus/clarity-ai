@@ -116,14 +116,13 @@ export type AnimationSpec = z.infer<typeof AnimationSpecSchema>;
 /**
  * Flat schema for the LLM tool definition.
  *
- * Groq validates tool call output against the JSON Schema and does NOT support
- * discriminated unions (anyOf/oneOf) — it checks ALL branches at once and rejects
- * when type-specific fields from other branches are missing.
- *
- * This flat schema makes all type-specific fields optional so Groq accepts the output.
- * The route handler then re-validates with AnimationSpecSchema (discriminated union)
- * to ensure the correct fields are present for the chosen type.
+ * Uses z.array() instead of z.tuple() because Gemini's API does not support
+ * the `prefixItems` JSON Schema keyword that z.tuple() generates.
+ * The route handler re-validates with AnimationSpecSchema (discriminated union
+ * with proper tuples) to ensure correctness.
  */
+const pair = z.array(z.number()).min(2).max(2);
+
 export const AnimationToolSchema = z.object({
   type: z.enum([
     'shape_transform',
@@ -146,15 +145,15 @@ export const AnimationToolSchema = z.object({
     .describe('(shape_transform) Target shape'),
 
   // vector_addition fields
-  vectorA: z.tuple([z.number(), z.number()]).optional()
+  vectorA: pair.optional()
     .describe('(vector_addition) First vector [x, y]'),
-  vectorB: z.tuple([z.number(), z.number()]).optional()
+  vectorB: pair.optional()
     .describe('(vector_addition) Second vector [x, y]'),
   showResultant: z.boolean().optional()
     .describe('(vector_addition) Show the resultant vector'),
 
   // matrix_transform fields
-  matrix: z.tuple([z.tuple([z.number(), z.number()]), z.tuple([z.number(), z.number()])]).optional()
+  matrix: z.array(pair).min(2).max(2).optional()
     .describe('(matrix_transform) 2x2 transformation matrix [[a, b], [c, d]]'),
   showGrid: z.boolean().optional()
     .describe('(matrix_transform) Show the deformed grid'),
@@ -162,9 +161,9 @@ export const AnimationToolSchema = z.object({
   // function_graph / derivative_tangent / area_under_curve fields
   expression: z.string().max(200).optional()
     .describe('(function_graph, derivative_tangent, area_under_curve) Math expression e.g. "x^2", "sin(x)"'),
-  xRange: z.tuple([z.number(), z.number()]).optional()
+  xRange: pair.optional()
     .describe('(function_graph) X-axis range [min, max]'),
-  yRange: z.tuple([z.number(), z.number()]).optional()
+  yRange: pair.optional()
     .describe('(function_graph) Y-axis range [min, max]'),
   color: z.string().optional()
     .describe('(shape_transform, function_graph) Color hex string'),
@@ -172,7 +171,7 @@ export const AnimationToolSchema = z.object({
     .describe('(function_graph) Animate the function being traced'),
 
   // number_line fields
-  range: z.tuple([z.number(), z.number()]).optional()
+  range: pair.optional()
     .describe('(number_line) Range of the number line [min, max]'),
   points: z.array(z.object({
     value: z.number(),
@@ -200,7 +199,7 @@ export const AnimationToolSchema = z.object({
     .describe('(derivative_tangent) Animate the tangent sliding along the curve'),
 
   // area_under_curve fields
-  interval: z.tuple([z.number(), z.number()]).optional()
+  interval: pair.optional()
     .describe('(area_under_curve) Integration interval [a, b]'),
   numRectangles: z.number().optional()
     .describe('(area_under_curve) Number of Riemann sum rectangles (1-100)'),

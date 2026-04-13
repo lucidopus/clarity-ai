@@ -12,14 +12,17 @@ const getModels = () => {
   return {
     gemini: process.env.CONTENT_GENERATION_MODEL,
     groq: process.env.CHATBOT_MODEL || 'mixtral-8x7b-32768',
+    chatbot: process.env.CLARA_MODEL || 'gemini-3-flash-preview',
   };
 }
 
 export const GEMINI_MODEL_NAME = getModels().gemini;
 export const GROQ_MODEL_NAME = getModels().groq;
+export const CHATBOT_MODEL_NAME = getModels().chatbot;
 
 // Lazy initialization wrapper
 let _geminiLlm: ChatGoogleGenerativeAI | null = null;
+let _chatbotLlm: ChatGoogleGenerativeAI | null = null;
 let _groqLlm: ChatGroq | null = null;
 let _groq: Groq | null = null;
 
@@ -40,6 +43,25 @@ export const getGeminiLlm = () => {
     });
   }
   return _geminiLlm;
+};
+
+/** Clara chatbot LLM — Gemini Flash for fast, high-context tool-calling responses. */
+export const getChatbotLlm = () => {
+  if (!_chatbotLlm) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (!apiKey) {
+      console.warn('⚠️ GEMINI_API_KEY/GOOGLE_API_KEY is not set. Chatbot calls will fail.');
+    }
+
+    console.log(`🔌 [SDK] Initializing chatbot provider with model: ${CHATBOT_MODEL_NAME}`);
+    _chatbotLlm = new ChatGoogleGenerativeAI({
+      model: CHATBOT_MODEL_NAME,
+      apiKey: apiKey || 'dummy-key-for-build',
+      temperature: 0.7,
+      maxRetries: 3,
+    });
+  }
+  return _chatbotLlm;
 };
 
 export const getGroqLlm = () => {
@@ -63,6 +85,14 @@ export const getGroqLlm = () => {
 export const geminiLlm = new Proxy({} as ChatGoogleGenerativeAI, {
   get: (_target, prop) => {
     const instance = getGeminiLlm();
+    // @ts-expect-error -- Safe proxy binding
+    return typeof instance[prop] === 'function' ? instance[prop].bind(instance) : instance[prop];
+  }
+});
+
+export const chatbotLlm = new Proxy({} as ChatGoogleGenerativeAI, {
+  get: (_target, prop) => {
+    const instance = getChatbotLlm();
     // @ts-expect-error -- Safe proxy binding
     return typeof instance[prop] === 'function' ? instance[prop].bind(instance) : instance[prop];
   }

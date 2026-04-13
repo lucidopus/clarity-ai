@@ -18,7 +18,7 @@ import Progress from '@/lib/models/Progress';
 
 /** Human-readable labels shown in the UI per source key. */
 export const TOOL_LABELS: Record<string, string> = {
-  // source: 'Reading source content', // TODO: Re-enable once we implement smart chunking to stay within Groq TPM limits. Full source text (~7.5k tokens) blows the 8k/12k free-tier budget. For now the system prompt summary handles general content questions.
+  source: 'Reading source content',
   flashcards: 'Looking at your flashcards',
   quizzes: 'Checking your quiz questions',
   progress: 'Reviewing your study progress',
@@ -28,7 +28,6 @@ const MAX_SOURCE_CHARS = 30_000; // ~7.5k tokens — keep context manageable
 
 // ── Individual fetchers (module-level, accept userId + sourceId) ─────
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Kept for re-enabling source lookup after smart chunking
 async function fetchSource(userId: string, sourceId: string): Promise<string> {
   await dbConnect();
   const doc = await SourceContent.findOne({ userId, sourceId })
@@ -151,12 +150,11 @@ async function fetchProgress(userId: string, sourceId: string): Promise<string> 
 
 // ── Fetcher registry (used by the tool) ─────────────────────────────
 
-// TODO: Add 'source' back once smart chunking is implemented (see TOOL_LABELS comment)
-type SourceKey = /* 'source' | */ 'flashcards' | 'quizzes' | 'progress';
+type SourceKey = 'source' | 'flashcards' | 'quizzes' | 'progress';
 
 function buildFetchers(userId: string, sourceId: string): Record<SourceKey, () => Promise<string>> {
   return {
-    // source: () => fetchSource(userId, sourceId), // Disabled — full source text exceeds Groq free-tier TPM. Summary in system prompt covers general content questions.
+    source: () => fetchSource(userId, sourceId),
     flashcards: () => fetchFlashcards(userId, sourceId),
     quizzes: () => fetchQuizzes(userId, sourceId),
     progress: () => fetchProgress(userId, sourceId),
@@ -193,13 +191,12 @@ export function createClaraTools(userId: string, sourceId: string) {
     {
       name: 'lookup_study_materials',
       description:
-        'Look up the student\'s learning materials for this source. Retrieves one or more types of study data in a single call — flashcards, quizzes, and/or study progress. Always request everything you need at once.',
+        'Look up the student\'s learning materials for this source. Retrieves one or more types of study data in a single call — flashcards, quizzes, source content, and/or study progress. Always request everything you need at once.',
       schema: z.object({
         sources: z
-          // TODO: Add 'source' back once smart chunking is implemented
-          .array(z.enum([/* 'source', */ 'flashcards', 'quizzes', 'progress']))
+          .array(z.enum(['source', 'flashcards', 'quizzes', 'progress']))
           .min(1)
-          .describe('Which data to fetch. Options: flashcards (Q&A pairs), quizzes (quiz questions), progress (study stats).'),
+          .describe('Which data to fetch. Options: source (full text), flashcards (Q&A pairs), quizzes (quiz questions), progress (study stats).'),
       }),
     },
   );

@@ -163,12 +163,13 @@ ${context.materials.prerequisiteTopics.length > 0 ? `- Prerequisites identified:
 You have one tool: \`lookup_study_materials\`. It accepts a \`sources\` array listing what data you need. **Request everything you need in a single call.**
 
 **Available sources:**
+- \`source\` — Full source text (transcript, PDF, notes). Use when the student asks about specific details, passages, examples, quotes, or wants to know how study materials relate to the original content.
 - \`flashcards\` — All flashcard Q&A pairs. Use when the student mentions flashcards, asks about specific cards, or wants help with flashcard content.
 - \`quizzes\` — Quiz questions with options, answers, and explanations. Use when the student asks about quiz questions or why an answer was wrong.
 - \`progress\` — Study stats including mastery, scores, cards due, and clarity score. Use when the student asks about their progress, what to focus on, or readiness.
 
 **Examples:**
-- "How well do my flashcards cover the material?" → request \`["flashcards"]\`
+- "How well do my flashcards cover the source?" → request \`["flashcards", "source"]\`
 - "What are my weak areas?" → request \`["progress", "quizzes"]\`
 - "Tell me about my second flashcard and quiz performance" → request \`["flashcards", "quizzes", "progress"]\`
 
@@ -375,6 +376,20 @@ DURATION (config.duration field — ALWAYS set this explicitly):
 - Minimum 5s so the student has time to understand what's happening
 
 IMPORTANT: ALWAYS provide a text explanation alongside the animation. The animation enhances your explanation — it does not replace it.`;
+
+/**
+ * Addendum appended when the user explicitly invokes /visualize.
+ * Scopes the animation tool to any math concept that fits a template,
+ * regardless of whether it appears in the current source material.
+ */
+export const VISUALIZE_COMMAND_ADDENDUM = `
+
+# /visualize Command
+
+The user explicitly used the /visualize command to request an animation. This changes the scope rules:
+
+- The "Guardrails & Scope" section about staying on-topic does NOT apply to this request. You may visualize ANY mathematical or geometric concept — it does not need to appear in the current source material.
+- The ONLY constraint is whether the concept fits one of your 8 animation templates. If it does, use render_animation and pair it with a brief text explanation. If it doesn't (e.g., algorithms, data structures, code concepts), explain why a visual animation isn't available for this concept and offer a text-based explanation instead.`;
 
 export const AI_GUIDE_SYSTEM_PROMPT = (context: {
   userProfile: { firstName: string };
