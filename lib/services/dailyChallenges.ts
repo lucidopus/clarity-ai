@@ -73,14 +73,14 @@ const CANDIDATE_POOL: ChallengeCandidate[] = [
   },
   {
     type: 'review_cards',
-    labelTemplate: 'Quick review: {t} {s|card|cards}',
+    labelTemplate: 'Review {t} due {s|flashcard|flashcards}',
     baseTarget: 3,
     baseWeight: 20,
     isFeasible: (inv) => inv.dueFlashcards >= 1,
   },
   {
     type: 'review_cards',
-    labelTemplate: 'Review {t} due {s|card|cards}',
+    labelTemplate: 'Review {t} {s|flashcard|flashcards}',
     baseTarget: 2,
     baseWeight: 10,
     isFeasible: (inv) => inv.dueFlashcards >= 1,
@@ -123,13 +123,6 @@ const CANDIDATE_POOL: ChallengeCandidate[] = [
 ];
 
 // ─── Target Scaling ─────────────────────────────────────────────────────────
-
-const MINUTES_PER_UNIT: Record<ChallengeType, number> = {
-  review_cards: 0.5,
-  complete_quiz: 2,
-  process_video: 5,
-  create_flashcards: 1,
-};
 
 const MAX_TARGET: Record<ChallengeType, number> = {
   review_cards: 30,

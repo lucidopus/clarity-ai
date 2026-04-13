@@ -121,7 +121,7 @@ export default function CardsDueWidget() {
     );
   }
 
-  const { dueToday, reviewsToday, averageRetention, nextReviewDate, totalCards } = stats!;
+  const { dueToday, nextReviewDate } = stats!;
   const { badge, button } = urgencyClasses(dueToday);
   const label = urgencyLabel(dueToday);
 
@@ -185,23 +185,6 @@ export default function CardsDueWidget() {
           </div>
         )}
 
-        {/* Mini stats */}
-        <div className="grid grid-cols-3 gap-2 text-center text-xs">
-          <div>
-            <div className="font-semibold text-foreground">{totalCards}</div>
-            <div className="text-muted-foreground">Total cards</div>
-          </div>
-          <div>
-            <div className="font-semibold text-foreground">{reviewsToday}</div>
-            <div className="text-muted-foreground">Reviewed today</div>
-          </div>
-          <div>
-            <div className="font-semibold text-foreground">
-              {averageRetention !== null ? `${averageRetention}%` : '—'}
-            </div>
-            <div className="text-muted-foreground">Retention</div>
-          </div>
-        </div>
       </motion.div>
 
       {reviewOpen && (
