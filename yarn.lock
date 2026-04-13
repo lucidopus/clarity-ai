@@ -1022,12 +1022,13 @@
   resolved "https://registry.npmjs.org/@kurkle/color/-/color-0.3.4.tgz"
   integrity sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==
 
-"@langchain/core@^1.1.28":
-  version "1.1.28"
-  resolved "https://registry.npmjs.org/@langchain/core/-/core-1.1.28.tgz"
-  integrity sha512-6FAGdezEp8zHY92LtnsAiv54KaG41nBdsuukk+R+1484edV20cVOyIc36ANuGKPx0pmYFCBWhCUdO0jxB/zn2Q==
+"@langchain/core@^1.1.33":
+  version "1.1.39"
+  resolved "https://registry.yarnpkg.com/@langchain/core/-/core-1.1.39.tgz#c84dec834a61c4efb328227548a91b2464ad6091"
+  integrity sha512-DP9c7TREy6iA7HnywstmUAsNyJNYTFpRg2yBfQ+6H0l1HnvQzei9GsQ36GeOLxgRaD3vm9K8urCcawSC7yQpCw==
   dependencies:
     "@cfworker/json-schema" "^4.0.2"
+    "@standard-schema/spec" "^1.1.0"
     ansi-styles "^5.0.0"
     camelcase "6"
     decamelize "1.2.0"
@@ -1035,13 +1036,13 @@
     langsmith ">=0.5.0 <1.0.0"
     mustache "^4.2.0"
     p-queue "^6.6.2"
-    uuid "^10.0.0"
+    uuid "^11.1.0"
     zod "^3.25.76 || ^4"
 
-"@langchain/google-genai@^2.0.0":
-  version "2.0.0"
-  resolved "https://registry.npmjs.org/@langchain/google-genai/-/google-genai-2.0.0.tgz"
-  integrity sha512-PaAWkogQdF+Y2bhhXWXUrC2nO7sTgWLtobBbZl/0V8Aa1F/KG2wrMECie3S17bAdFu/6VmQOuFFrlgSMwQC5KA==
+"@langchain/google-genai@^2.1.26":
+  version "2.1.26"
+  resolved "https://registry.yarnpkg.com/@langchain/google-genai/-/google-genai-2.1.26.tgz#9f758cbc595e6c93b875bcd73dfc1c257908c1f8"
+  integrity sha512-202ZBVEIXxKhNbDzktLKSffb9pNfrYBGPV7j54nvAR0uqfoh5reRlX8wmOZEDflojvX/GHc69jTOsc0eZKgRsA==
   dependencies:
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
@@ -1535,9 +1536,9 @@
     on-change "4.0.0"
     semver-compare "1.0.0"
 
-"@standard-schema/spec@1.1.0", "@standard-schema/spec@^1.0.0":
+"@standard-schema/spec@1.1.0", "@standard-schema/spec@^1.0.0", "@standard-schema/spec@^1.1.0":
   version "1.1.0"
-  resolved "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/@standard-schema/spec/-/spec-1.1.0.tgz#a79b55dbaf8604812f52d140b2c9ab41bc150bb8"
   integrity sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==
 
 "@supabase/auth-js@2.99.3":

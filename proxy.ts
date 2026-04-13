@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import dbConnect from '@/lib/mongodb';
-import User from '@/lib/models/User';
 
 // ── API routes that do NOT require authentication ──
 const PUBLIC_API_PATHS = new Set([
@@ -139,18 +137,13 @@ async function handlePageProtection(request: NextRequest, pathname: string) {
       return NextResponse.redirect(new URL('/auth/signin', request.url));
     }
 
-    const { payload } = await jwtVerify(
+    // JWT signature verification is sufficient for page protection.
+    // Route handlers verify user existence when they hit the DB.
+    await jwtVerify(
       token,
       new TextEncoder().encode(secret),
       { algorithms: ['HS256'] }
     );
-
-    // Verify user still exists in the database
-    await dbConnect();
-    const user = await User.findById(payload.userId as string);
-    if (!user) {
-      return NextResponse.redirect(new URL('/auth/signin', request.url));
-    }
 
     return NextResponse.next();
   } catch {

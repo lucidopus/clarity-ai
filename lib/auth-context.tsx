@@ -52,18 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const performAuthCheck = async (attempt = 1): Promise<void> => {
      try {
-       const response = await fetch('/api/auth/me');
-       
+       const response = await fetch('/api/auth/me', {
+         signal: AbortSignal.timeout(3000),
+       });
+
        if (response.status >= 500) {
          throw new Error(`Server error: ${response.status}`);
        }
-       
+
        const data = await response.json();
        setUser(data.user);
        setError(null);
      } catch (err) {
-       if (attempt < 3) {
-         await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+       if (attempt < 2) {
+         await new Promise(resolve => setTimeout(resolve, 500));
          return performAuthCheck(attempt + 1);
        }
        console.error('Auth check failed after retries:', err);
