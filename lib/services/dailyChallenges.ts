@@ -139,11 +139,6 @@ const MAX_TARGET: Record<ChallengeType, number> = {
 };
 
 function scaleTarget(baseTarget: number, type: ChallengeType, profile: UserChallengeProfile): number {
-  // Procrastination override: tiny wins
-  if (profile.learningChallenges.includes('procrastination')) {
-    return Math.max(1, Math.floor(baseTarget * 0.5));
-  }
-
   // Time factor: ratio to 30-min baseline
   const timeFactor = profile.dailyTimeMinutes / 30;
 
@@ -153,10 +148,12 @@ function scaleTarget(baseTarget: number, type: ChallengeType, profile: UserChall
     efficacyFactor *= 0.75;
   }
 
-  // Each challenge gets ~1/3 of daily time
-  const timeBasedTarget = Math.floor((profile.dailyTimeMinutes / 3) / MINUTES_PER_UNIT[type]);
+  let scaled = Math.round(baseTarget * timeFactor * efficacyFactor);
 
-  const scaled = Math.round(Math.max(baseTarget, timeBasedTarget) * timeFactor * efficacyFactor);
+  // Procrastination: halve the scaled target for achievable quick wins
+  if (profile.learningChallenges.includes('procrastination')) {
+    scaled = Math.round(scaled * 0.5);
+  }
 
   return Math.max(1, Math.min(scaled, MAX_TARGET[type]));
 }
