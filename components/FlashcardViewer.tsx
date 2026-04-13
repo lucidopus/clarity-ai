@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, RotateCw, Check, Edit, Trash2, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RotateCw, Check, Edit, Trash2, User, Sparkles } from 'lucide-react';
 import Button from './Button';
 import Dialog from './Dialog';
 import { logActivity } from '@/lib/activityLogger';
@@ -164,6 +164,16 @@ export default function FlashcardViewer({
     }
   };
 
+  const handleAskClara = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't flip the card
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).dispatchEvent(new CustomEvent('chatbot:open', {
+      detail: {
+        question: `I'm reviewing a flashcard about: "${currentCard.question}". Can you look up the source material and help me understand this concept more deeply? I want to know the reasoning behind it, how it fits into the bigger picture, and see a concrete example.`
+      }
+    }));
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft') handlePrev();
     if (e.key === 'ArrowRight') handleNext();
@@ -248,7 +258,14 @@ export default function FlashcardViewer({
                 <p className="text-2xl font-semibold text-foreground text-center">
                   {currentCard.answer}
                 </p>
-                <div className="mt-8 text-sm text-muted-foreground">
+                <button
+                  onClick={handleAskClara}
+                  className="mt-6 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-accent bg-accent/10 border border-accent/20 rounded-lg transition-all duration-200 hover:bg-accent/20 hover:border-accent/40 hover:shadow-md hover:shadow-accent/10 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Go deeper with Clara
+                </button>
+                <div className="mt-4 text-sm text-muted-foreground">
                   Click to see question
                 </div>
               </div>

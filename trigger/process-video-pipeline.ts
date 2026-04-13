@@ -2,10 +2,12 @@ import { task, logger, auth } from "@trigger.dev/sdk";
 import mongoose from "mongoose";
 import Video from "../lib/models/Video";
 import Source from "../lib/models/Source";
+import User from "../lib/models/User";
 import LiveSession from "../lib/models/LiveSession";
 import type { SourceType } from "../lib/models/Source";
 import type { IServiceUsage } from "../lib/models/Cost";
 import type { ExtractorInput } from "../lib/extractors/types";
+import type { LearnerContext } from "../lib/prompts";
 import {
   extractContent,
   saveExtraction,
@@ -288,11 +290,34 @@ export const processVideoPipelineTask = task({
       sourceDescription,
     });
 
-    // 6. Generate learning materials via LLM
+    // 6. Fetch learner context for personalized generation
+    let learnerContext: LearnerContext | undefined;
+    try {
+      const user = await User.findById(userId).select('preferences.learning').lean();
+      const learning = (user as Record<string, unknown>)?.preferences as Record<string, unknown> | undefined;
+      const lp = learning?.learning as Record<string, unknown> | undefined;
+      if (lp) {
+        const pp = lp.personalityProfile as Record<string, number> | undefined;
+        learnerContext = {
+          role: lp.role as string | undefined,
+          learningGoals: lp.learningGoals as string[] | undefined,
+          learningChallenges: lp.learningChallenges as string[] | undefined,
+          selfEfficacy: pp?.selfEfficacy,
+          masteryOrientation: pp?.masteryOrientation,
+          performanceOrientation: pp?.performanceOrientation,
+        };
+        logger.info("Learner context loaded for personalized generation", { role: learnerContext.role, goals: learnerContext.learningGoals });
+      }
+    } catch (e) {
+      logger.warn("Failed to load learner context, proceeding without personalization", { error: e });
+    }
+
+    // 7. Generate learning materials via LLM
     const llmResult = await generateMaterials(combinedContent, sourceId, services, {
       sourceType,
       hasTimestamps,
       sourceDescription,
+      learnerContext,
     });
 
     let materials = null;
@@ -308,20 +333,20 @@ export const processVideoPipelineTask = task({
       logger.info("Materials generated successfully");
     }
 
-    // 7. Save learning materials (if LLM succeeded)
+    // 8. Save learning materials (if LLM succeeded)
     if (materials) {
       await saveLearningMaterials(userId, sourceId, materials);
     }
 
-    // 8. Update final status (Video + Source)
+    // 9. Update final status (Video + Source)
     await updateFinalStatus(userId, videoDocId, sourceId, primaryExtraction.text, materials, llmError, llmErrorCode);
 
-    // 9. Log activity (if materials generated)
+    // 10. Log activity (if materials generated)
     if (materials) {
       await logActivity(userId, sourceId, materials, clientTimestamp, timezoneOffsetMinutes, timeZone);
     }
 
-    // 10. Log costs
+    // 11. Log costs
     await logCosts(userId, videoDocId, services);
 
     if (llmError) {

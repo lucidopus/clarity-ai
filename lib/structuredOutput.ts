@@ -30,8 +30,9 @@ export const LearningMaterialsSchema = z.object({
       options: z.array(z.string()),
       correctAnswerIndex: z.number().int(),
       explanation: z.string(),
+      difficulty: z.enum(['easy', 'medium', 'hard']),
     })
-  ).describe('Multiple-choice quiz questions (10-15 questions)'),
+  ).describe('Multiple-choice quiz questions (10-15 questions, balanced mix of easy/medium/hard)'),
 
   chapters: z.array(
     z.object({

@@ -8,7 +8,19 @@ import Source from '@/lib/models/Source';
 export interface ChatbotContext {
   userProfile: {
     firstName: string;
-    userType: 'Undergraduate' | 'Graduate';
+    userType: string;
+    learningGoals?: string[];
+    learningChallenges?: string[];
+    role?: string;
+    personalityProfile?: {
+      conscientiousness: number;
+      emotionalStability: number;
+      selfEfficacy: number;
+      masteryOrientation: number;
+      performanceOrientation: number;
+    };
+    preferredMaterialsRanked?: string[];
+    dailyTimeMinutes?: number;
   };
   summary: string;
   sourceTitle?: string;
@@ -42,10 +54,18 @@ export async function getChatbotContext(
 
   const sourceDoc = source as { title?: string; sourceType?: string } | null;
 
+  const learning = user.preferences?.learning;
+
   return {
     userProfile: {
       firstName: user.firstName,
       userType: user.userType,
+      ...(learning?.learningGoals?.length && { learningGoals: learning.learningGoals }),
+      ...(learning?.learningChallenges?.length && { learningChallenges: learning.learningChallenges }),
+      ...(learning?.role && { role: learning.role }),
+      ...(learning?.personalityProfile && { personalityProfile: learning.personalityProfile }),
+      ...(learning?.preferredMaterialsRanked?.length && { preferredMaterialsRanked: learning.preferredMaterialsRanked }),
+      ...(learning?.dailyTimeMinutes != null && { dailyTimeMinutes: learning.dailyTimeMinutes }),
     },
     summary,
     sourceTitle: sourceDoc?.title,

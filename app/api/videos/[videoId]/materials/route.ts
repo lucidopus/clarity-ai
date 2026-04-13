@@ -87,6 +87,23 @@ export async function GET(
       authorUsername,
     });
 
+    // Server-side quiz ordering: sort by difficulty based on user's self-efficacy
+    const selfEfficacy = user.preferences?.learning?.personalityProfile?.selfEfficacy;
+    if (selfEfficacy != null && materials.quizzes?.length > 1) {
+      const difficultyOrder: Record<string, Record<string, number>> = {
+        low:  { easy: 0, medium: 1, hard: 2 },
+        high: { hard: 0, medium: 1, easy: 2 },
+      };
+      const tier = selfEfficacy <= 3 ? 'low' : selfEfficacy >= 5 ? 'high' : null;
+      if (tier) {
+        const order = difficultyOrder[tier];
+        materials.quizzes.sort(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (a: any, b: any) => (order[a.difficulty] ?? 1) - (order[b.difficulty] ?? 1)
+        );
+      }
+    }
+
     // Set the correct sourceType
     materials.sourceType = sourceType as typeof materials.sourceType;
 

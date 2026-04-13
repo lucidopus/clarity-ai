@@ -17,6 +17,7 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import { getExtractor } from '@/lib/extractors';
 import type { ExtractorInput } from '@/lib/extractors';
 import { generateLearningMaterials } from '@/lib/llm';
+import type { LearnerContext } from '@/lib/prompts';
 import type { SourceType } from '@/lib/models/Source';
 import { generateEmbeddings } from '@/lib/embedding';
 import { GEMINI_MODEL_NAME } from '@/lib/sdk';
@@ -255,7 +256,7 @@ export async function generateMaterials(
   contentText: string,
   sourceId: string,
   services: IServiceUsage[],
-  options?: { sourceType?: SourceType; hasTimestamps?: boolean; sourceDescription?: string }
+  options?: { sourceType?: SourceType; hasTimestamps?: boolean; sourceDescription?: string; learnerContext?: LearnerContext }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<{ materials: any; usage: any } | { error: unknown; errorCode: string }> {
   const modelInfo = getCurrentModelInfo(GEMINI_MODEL_NAME);
@@ -265,6 +266,7 @@ export async function generateMaterials(
     const llmResponse = await generateLearningMaterials(contentText, {
       hasTimestamps: options?.hasTimestamps ?? true,
       sourceDescription: options?.sourceDescription ?? 'educational content',
+      learnerContext: options?.learnerContext,
     });
     const { materials, usage } = llmResponse;
 
@@ -332,14 +334,14 @@ export async function saveLearningMaterials(userId: string, videoId: string, mat
   );
 
   await Quiz.insertMany(
-    materials.quizzes.map((quiz: { questionText: string; options: string[]; correctAnswerIndex: number; explanation: string }) => ({
+    materials.quizzes.map((quiz: { questionText: string; options: string[]; correctAnswerIndex: number; explanation: string; difficulty?: string }) => ({
       userId,
       sourceId: videoId,
       questionText: quiz.questionText,
       options: quiz.options,
       correctAnswerIndex: quiz.correctAnswerIndex,
       explanation: quiz.explanation,
-      difficulty: 'medium',
+      difficulty: quiz.difficulty || 'medium',
       generationType: 'ai',
     }))
   );

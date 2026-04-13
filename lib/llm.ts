@@ -1,5 +1,5 @@
 import { geminiLlm } from './sdk';
-import { buildLearningMaterialsPrompt } from './prompts';
+import { buildLearningMaterialsPrompt, type LearnerContext } from './prompts';
 import { LearningMaterialsSchema, LearningMaterials } from './structuredOutput';
 import {
   VideoMetadataSchema,
@@ -52,15 +52,16 @@ export interface ChunkedGenerationResponse {
 
 export async function generateLearningMaterials(
   content: string,
-  options?: { hasTimestamps?: boolean; sourceDescription?: string }
+  options?: { hasTimestamps?: boolean; sourceDescription?: string; learnerContext?: LearnerContext }
 ): Promise<LLMGenerationResponse> {
   console.log('🤖 [LLM] Starting LLM generation...');
   console.log(`🤖 [LLM] Content length: ${content.length} characters`);
-  console.log(`🤖 [LLM] Options: hasTimestamps=${options?.hasTimestamps ?? true}, sourceDescription="${options?.sourceDescription ?? 'educational content'}"`);
+  console.log(`🤖 [LLM] Options: hasTimestamps=${options?.hasTimestamps ?? true}, sourceDescription="${options?.sourceDescription ?? 'educational content'}", hasLearnerContext=${!!options?.learnerContext}`);
   try {
     const promptTemplate = buildLearningMaterialsPrompt({
       hasTimestamps: options?.hasTimestamps ?? true,
       sourceDescription: options?.sourceDescription ?? 'educational content',
+      learnerContext: options?.learnerContext,
     });
     const prompt = promptTemplate.replace('[CONTENT_HERE]', content);
     console.log(`🤖 [LLM] Prompt prepared, total length: ${prompt.length} characters`);
