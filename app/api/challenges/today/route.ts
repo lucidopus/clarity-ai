@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     if (!doc) {
       doc = await DailyChallenge.findOneAndUpdate(
         { userId: decoded.userId, date: today },
-        { $setOnInsert: { challenges: generateDailyChallenges(today), allCompleted: false } },
+        { $setOnInsert: { challenges: await generateDailyChallenges(decoded.userId, today), allCompleted: false } },
         { upsert: true, new: true }
       ).lean() as IDailyChallengeDoc | null;
     }

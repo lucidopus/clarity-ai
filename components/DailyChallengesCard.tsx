@@ -152,8 +152,8 @@ export default function DailyChallengesCard() {
 
       {/* Challenge list (read-only status indicators, not interactive) */}
       <ul className="space-y-3" aria-label="Daily challenges">
-        {challenges.map((challenge) => (
-          <li key={challenge.type} className="flex items-start gap-3 select-none">
+        {challenges.map((challenge, i) => (
+          <li key={i} className="flex items-start gap-3 select-none">
             <div className="mt-0.5 shrink-0">
               {challenge.done ? (
                 <CheckCircle2
@@ -176,15 +176,12 @@ export default function DailyChallengesCard() {
               >
                 {challenge.label}
               </div>
-              {!challenge.done && challenge.target > 1 && (
-                <div className="text-xs text-muted-foreground mt-0.5" aria-hidden="true">
-                  {challenge.current}/{challenge.target}
-                  <ProgressBar
-                    current={challenge.current}
-                    target={challenge.target}
-                    reduced={shouldReduceMotion ?? false}
-                  />
-                </div>
+              {!challenge.done && challenge.current > 0 && (
+                <ProgressBar
+                  current={challenge.current}
+                  target={challenge.target}
+                  reduced={shouldReduceMotion ?? false}
+                />
               )}
             </div>
           </li>
