@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -11,6 +11,7 @@ import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Bot, User } from 'lucide-react';
 import { AnimationSpecSchema } from '@/lib/types/animation';
 import type { AnimationSpec } from '@/lib/types/animation';
+import type { ToolEvent } from '@/hooks/useChatBot';
 
 // Lazy-load AnimationRenderer — three.js and manim-web must NOT be in the main bundle
 const AnimationRenderer = dynamic(
@@ -46,6 +47,69 @@ function AnimationLoadingInline() {
   );
 }
 
+/** Pulsing dots — reused by both the Thinking indicator and timeline items. */
+function PulsingDots({ className = 'bg-secondary' }: { className?: string }) {
+  return (
+    <div className="flex gap-1">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className={`h-1 w-1 rounded-full ${className}`}
+          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Vertical timeline of tool calls + a persistent "Thinking" indicator at the bottom.
+ * Each completed tool shows a check, active tools show a pulsing dot.
+ */
+function ToolActivityTimeline({ events }: { events: ToolEvent[] }) {
+  return (
+    <div className="flex flex-col gap-0">
+      {/* Tool timeline */}
+      <div className="flex flex-col">
+        <AnimatePresence mode="popLayout">
+          {events.map((evt, i) => (
+            <motion.div
+              key={`${evt.tool}-${i}`}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="flex items-center gap-2 py-0.5"
+            >
+              {/* Timeline dot */}
+              {evt.status === 'done' ? (
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+              ) : (
+                <motion.div
+                  className="h-1.5 w-1.5 rounded-full bg-accent shrink-0"
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                />
+              )}
+              <span className={`text-xs ${
+                evt.status === 'done' ? 'text-secondary/70' : 'text-secondary'
+              }`}>
+                {evt.label}
+              </span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Thinking indicator — always visible */}
+      <div className="flex items-center gap-1 text-sm text-secondary mt-1">
+        <span>Thinking</span>
+        <PulsingDots />
+      </div>
+    </div>
+  );
+}
+
 interface ChatMessageProps {
   message: {
     id: string;
@@ -53,6 +117,7 @@ interface ChatMessageProps {
     content: string;
     timestamp: Date;
     isVisualize?: boolean;
+    toolEvents?: ToolEvent[];
   };
   isStreaming?: boolean;
 }
@@ -314,21 +379,16 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
                 />
               )}
 
-              {/* Thinking Indicator */}
+              {/* Thinking / Tool Activity Indicator */}
               {isStreaming && !message.content && (
-                <div className="flex items-center gap-1 text-sm text-secondary">
-                  <span>Thinking</span>
-                  <div className="flex gap-1">
-                    {[0, 1, 2].map((i) => (
-                      <motion.div
-                        key={i}
-                        className="h-1 w-1 rounded-full bg-secondary"
-                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                      />
-                    ))}
+                message.toolEvents && message.toolEvents.length > 0 ? (
+                  <ToolActivityTimeline events={message.toolEvents} />
+                ) : (
+                  <div className="flex items-center gap-1 text-sm text-secondary">
+                    <span>Thinking</span>
+                    <PulsingDots />
                   </div>
-                </div>
+                )
               )}
             </>
           )}

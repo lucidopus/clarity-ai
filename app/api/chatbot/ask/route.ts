@@ -13,10 +13,11 @@ import { calculateLLMCost, getCurrentModelInfo } from '@/lib/cost/calculator';
 import { logGenerationCost, formatCost } from '@/lib/cost/logger';
 import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
-import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
+import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import type { AIMessageChunk } from '@langchain/core/messages';
 import { ToolCallAccumulator } from '@/lib/tools';
 import { renderAnimationTool } from '@/lib/tools/render-animation';
+import { createClaraTools, TOOL_LABELS } from '@/lib/tools/clara-tools';
 import { AnimationSpecSchema } from '@/lib/types/animation';
 
 const ANIMATION_TOOL_ENABLED = process.env.ENABLE_ANIMATION_TOOL === 'true';
@@ -33,6 +34,38 @@ interface DecodedToken {
 interface IChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+}
+
+/** Send a single SSE event to the stream controller. */
+function emitSSE(
+  controller: ReadableStreamDefaultController,
+  encoder: TextEncoder,
+  event: Record<string, unknown>,
+) {
+  controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+}
+
+/**
+ * Execute a Clara tool by name, returning the string result.
+ */
+async function executeTool(
+  toolName: string,
+  toolArgs: Record<string, unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tools: any[],
+): Promise<string> {
+  const matchedTool = tools.find((t: { name: string }) => t.name === toolName);
+  if (!matchedTool) return `Tool "${toolName}" not found.`;
+
+  const start = Date.now();
+  try {
+    const result = await matchedTool.invoke(toolArgs ?? {});
+    console.log(`⚡ [CLARA] Tool "${toolName}" completed in ${Date.now() - start}ms | ${(typeof result === 'string' ? result.length : JSON.stringify(result).length)} chars`);
+    return typeof result === 'string' ? result : JSON.stringify(result);
+  } catch (err) {
+    console.error(`[CHATBOT] Tool "${toolName}" failed after ${Date.now() - start}ms:`, err);
+    return `Tool "${toolName}" encountered an error.`;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -59,7 +92,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'videoId and message are required' }, { status: 400 });
     }
 
-    // /visualize command auto-enables animation tool for this request
     const useAnimationTool = ANIMATION_TOOL_ENABLED || forceVisualize === true;
 
     await dbConnect();
@@ -79,37 +111,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 4. Generate session and message identifiers
-    const sessionId = generateSessionId(decoded.userId, videoId); // LEGACY
+    const sessionId = generateSessionId(decoded.userId, videoId);
     const userMessageId = generateMessageId('user');
     const assistantMessageId = generateMessageId('assistant');
 
-    // Extract client IP once (use rightmost X-Forwarded-For entry)
     const xffHeader = request.headers.get('x-forwarded-for');
     const clientIp = xffHeader ? xffHeader.split(',').map(s => s.trim()).pop() : (request.headers.get('x-real-ip') || undefined);
 
     // 5. Save user message to database
     try {
       await saveChatMessage(
-        sessionId,
-        userMessageId,
-        'user',
-        message,
-        decoded.userId,
-        videoId,
-        clientIp,
-        'chatbot', // channel
-        videoId,   // contextId (same as videoId for chatbot channel)
-        undefined  // problemId (not used for chatbot channel)
+        sessionId, userMessageId, 'user', message,
+        decoded.userId, videoId, clientIp,
+        'chatbot', videoId, undefined,
       );
     } catch (saveError) {
       console.error('Failed to save user message:', saveError);
-      // Continue anyway - don't block the response
     }
 
     // 6. Fetch context
     const context = await getChatbotContext(decoded.userId, videoId);
 
-    // 7. Build system prompt (append animation tool addendum if enabled)
+    // 7. Build system prompt
     let systemPrompt = CHATBOT_SYSTEM_PROMPT(context);
     if (useAnimationTool) {
       systemPrompt += ANIMATION_TOOL_PROMPT_ADDENDUM;
@@ -118,8 +141,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 8. Prepare conversation history (last 3 exchanges = 6 messages)
-    // Convert to LangChain message format
+    // 8. Bind tools to model — Clara's lookup tool + optional animation tool
+    const claraTools = createClaraTools(decoded.userId, videoId);
+    const allTools = useAnimationTool
+      ? [...claraTools, renderAnimationTool]
+      : claraTools;
+
+    const model = groqLlm.bindTools(allTools);
+
+    // 9. Prepare messages
     const langchainMessages = [
       new SystemMessage(systemPrompt),
       ...(conversationHistory || []).slice(-6).map((msg: IChatMessage) => {
@@ -127,102 +157,174 @@ export async function POST(request: NextRequest) {
         if (msg.role === 'assistant') return new AIMessage(msg.content);
         return new SystemMessage(msg.content);
       }),
-      new HumanMessage(message)
+      new HumanMessage(message),
     ];
 
-    // 9. Call LLM with streaming using LangChain
-    // Optionally bind animation tool
-    const model = useAnimationTool
-      ? groqLlm.bindTools([renderAnimationTool])
-      : groqLlm;
-
-    let promptTokens = 0;
-    let completionTokens = 0;
-
-    const stream = await model.stream(langchainMessages, {
-      callbacks: [
-        {
-          handleLLMEnd: (output) => {
-            const tokenUsage = output.llmOutput?.tokenUsage;
-            if (tokenUsage) {
-              promptTokens = tokenUsage.promptTokens || 0;
-              completionTokens = tokenUsage.completionTokens || 0;
-            }
-          },
-        },
-      ],
-    });
-
-    // 10. Create streaming response and accumulate assistant response
+    // 10. Stream response — simple bindTools pattern (at most 2 LLM calls)
+    let totalPromptTokens = 0;
+    let totalCompletionTokens = 0;
     let assistantResponse = '';
     let animationEmitted = false;
-    const toolAccumulator = new ToolCallAccumulator();
+    const toolsUsed: string[] = [];
+
+    const tokenCallback = {
+      handleLLMEnd: (output: { llmOutput?: { tokenUsage?: { promptTokens?: number; completionTokens?: number } } }) => {
+        const tokenUsage = output.llmOutput?.tokenUsage;
+        if (tokenUsage) {
+          totalPromptTokens += tokenUsage.promptTokens || 0;
+          totalCompletionTokens += tokenUsage.completionTokens || 0;
+        }
+      },
+    };
 
     const readableStream = new ReadableStream({
       async start(controller) {
+        const encoder = new TextEncoder();
+
         try {
-          const encoder = new TextEncoder();
+          const requestStart = Date.now();
+          console.log(`🤖 [CLARA] Streaming | model: ${GROQ_MODEL_NAME} | user: ${decoded.userId} | source: ${videoId}`);
+
+          // ── First LLM call: stream text or detect tool calls ──
+          const toolAccumulator = new ToolCallAccumulator();
+          let firstCallText = '';
+
+          const stream = await model.stream(langchainMessages, { callbacks: [tokenCallback] });
 
           for await (const chunk of stream) {
-            // Stream text content immediately
-            const content = (chunk as AIMessageChunk).content as string;
+            const aiChunk = chunk as AIMessageChunk;
+            const content = aiChunk.content as string;
+
+            toolAccumulator.addChunk(aiChunk);
+
             if (content) {
-              assistantResponse += content;
-              controller.enqueue(encoder.encode(content));
-            }
-
-            // Accumulate tool call chunks (if any)
-            if (useAnimationTool) {
-              toolAccumulator.addChunk(chunk as AIMessageChunk);
-            }
-          }
-
-          // After streaming ends, check for tool calls and emit animation blocks
-          if (useAnimationTool && toolAccumulator.hasToolCalls()) {
-            const toolCalls = toolAccumulator.getToolCalls();
-
-            for (const tc of toolCalls) {
-              if (tc.name === 'render_animation') {
-                // Validate the AnimationSpec
-                const parsed = AnimationSpecSchema.safeParse(tc.args);
-
-                if (parsed.success) {
-                  const animationBlock = `\n\n\`\`\`animation\n${JSON.stringify(parsed.data)}\n\`\`\``;
-                  assistantResponse += animationBlock;
-                  controller.enqueue(encoder.encode(animationBlock));
-                  animationEmitted = true;
-                } else {
-                  console.warn('[CHATBOT] Invalid AnimationSpec from LLM:', parsed.error.message);
-                  // Fallback: just add a note about the visualization
-                  const fallbackNote = '\n\n> *Animation could not be generated for this explanation.*';
-                  assistantResponse += fallbackNote;
-                  controller.enqueue(encoder.encode(fallbackNote));
-                }
+              firstCallText += content;
+              // Stream text tokens directly when no tool calls are accumulating
+              if (!toolAccumulator.hasToolCalls()) {
+                emitSSE(controller, encoder, { type: 'token', content });
               }
             }
           }
 
+          console.log(`⏱️ [CLARA] First call done in ${Date.now() - requestStart}ms | text: ${firstCallText.length} chars | tools: ${toolAccumulator.hasToolCalls()}`);
+
+          // ── Handle tool calls (if any) ──
+          if (toolAccumulator.hasToolCalls()) {
+            const toolCalls = toolAccumulator.getToolCalls();
+
+            // Separate animation tool calls from data-lookup tool calls
+            const lookupCalls = toolCalls.filter(tc => tc.name !== 'render_animation');
+            const animationCall = toolCalls.find(tc => tc.name === 'render_animation');
+
+            // Handle animation tool — append code block directly (no second LLM call needed)
+            if (animationCall) {
+              const parsed = AnimationSpecSchema.safeParse(animationCall.args);
+              if (parsed.success) {
+                const animationBlock = `\n\n\`\`\`animation\n${JSON.stringify(parsed.data)}\n\`\`\``;
+                firstCallText += animationBlock;
+                emitSSE(controller, encoder, { type: 'token', content: animationBlock });
+                animationEmitted = true;
+              } else {
+                console.warn('[CHATBOT] Invalid AnimationSpec from LLM:', parsed.error.message);
+                const fallbackNote = '\n\n> *Animation could not be generated for this explanation.*';
+                firstCallText += fallbackNote;
+                emitSSE(controller, encoder, { type: 'token', content: fallbackNote });
+              }
+              toolsUsed.push('render_animation');
+            }
+
+            // Handle data-lookup tools — execute, then make second LLM call for the answer
+            if (lookupCalls.length > 0) {
+              const lookupCallsForHistory = lookupCalls.map((tc, i) => ({
+                id: `call_${i}`,
+                name: tc.name,
+                args: tc.args,
+              }));
+
+              // Emit tool_start per source
+              for (const tc of lookupCallsForHistory) {
+                if (tc.name === 'lookup_study_materials') {
+                  const sources = ((tc.args as { sources?: string[] })?.sources) || [];
+                  console.log(`🔧 [CLARA] lookup_study_materials: [${sources.join(', ')}]`);
+                  for (const src of sources) {
+                    toolsUsed.push(src);
+                    emitSSE(controller, encoder, {
+                      type: 'tool_start',
+                      tool: src,
+                      label: TOOL_LABELS[src] || `Fetching ${src}`,
+                    });
+                  }
+                }
+              }
+
+              // Execute lookup tools in parallel
+              const toolExecStart = Date.now();
+              const toolResults = await Promise.all(
+                lookupCallsForHistory.map(async (tc) => {
+                  const result = await executeTool(tc.name, tc.args as Record<string, unknown>, claraTools);
+                  return { id: tc.id, name: tc.name, result };
+                }),
+              );
+              console.log(`⚡ [CLARA] Tools executed in ${Date.now() - toolExecStart}ms`);
+
+              // Build conversation with tool results for the second LLM call
+              const messagesWithTools = [
+                ...langchainMessages,
+                new AIMessage({ content: firstCallText, tool_calls: lookupCallsForHistory }),
+              ];
+
+              for (const { id, name, result } of toolResults) {
+                messagesWithTools.push(new ToolMessage({ content: result, tool_call_id: id, name }));
+
+                // Emit tool_end per source
+                if (name === 'lookup_study_materials') {
+                  const tc = lookupCallsForHistory.find(t => t.name === 'lookup_study_materials');
+                  const sources = ((tc?.args as { sources?: string[] })?.sources) || [];
+                  for (const src of sources) {
+                    emitSSE(controller, encoder, { type: 'tool_end', tool: src });
+                  }
+                }
+              }
+
+              // ── Second LLM call: stream the final answer ──
+              const secondStart = Date.now();
+              const answerStream = await model.stream(messagesWithTools, { callbacks: [tokenCallback] });
+
+              for await (const chunk of answerStream) {
+                const content = (chunk as AIMessageChunk).content as string;
+                if (content) {
+                  assistantResponse += content;
+                  emitSSE(controller, encoder, { type: 'token', content });
+                }
+              }
+
+              console.log(`⏱️ [CLARA] Second call (answer) done in ${Date.now() - secondStart}ms | ${assistantResponse.length} chars`);
+            } else {
+              // Animation-only — first call text + animation block is the full response
+              assistantResponse = firstCallText;
+            }
+          } else {
+            // No tool calls — text was already streamed directly
+            assistantResponse = firstCallText;
+          }
+
+          console.log(`🏁 [CLARA] Complete | tools: [${toolsUsed.join(', ')}] | total: ${Date.now() - requestStart}ms`);
+
+          emitSSE(controller, encoder, { type: 'done' });
           controller.close();
 
-          // Save assistant message after streaming completes
+          // ── Post-stream: save message, log activity, log cost ──
+
           try {
             await saveChatMessage(
-              sessionId,
-              assistantMessageId,
-              'assistant',
-              assistantResponse,
-              decoded.userId,
-              videoId,
-              clientIp,
-              'chatbot', // channel
-              videoId,   // contextId (same as videoId for chatbot channel)
-              undefined  // problemId (not used for chatbot channel)
+              sessionId, assistantMessageId, 'assistant', assistantResponse,
+              decoded.userId, videoId, clientIp,
+              'chatbot', videoId, undefined,
             );
           } catch (saveError) {
             console.error('Failed to save assistant message:', saveError);
           }
 
-          // Log animation activity if emitted
           if (animationEmitted) {
             try {
               const { now, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
@@ -232,54 +334,49 @@ export async function POST(request: NextRequest) {
                 sourceId: videoId,
                 date: startOfDay,
                 timestamp: now,
-                metadata: {
-                  animationType: toolAccumulator.getToolCalls().find(tc => tc.name === 'render_animation')?.args?.type,
-                },
+                metadata: { source: 'tool_call' },
               });
             } catch (logError) {
               console.error('Failed to log animation activity:', logError);
             }
           }
 
-          // 13. Log cost after streaming completes
           try {
             const modelInfo = getCurrentModelInfo(GROQ_MODEL_NAME);
             let isEstimated = false;
 
-            // Estimate tokens if not available from stream callback
-            if (promptTokens === 0 && completionTokens === 0) {
-              // Rough estimation: ~4 chars per token
-              promptTokens = Math.ceil(message.length / 4);
-              completionTokens = Math.ceil(assistantResponse.length / 4);
+            if (totalPromptTokens === 0 && totalCompletionTokens === 0) {
+              totalPromptTokens = Math.ceil(message.length / 4);
+              totalCompletionTokens = Math.ceil(assistantResponse.length / 4);
               isEstimated = true;
               console.warn('⚠️ [CHATBOT] Using token estimation (LangChain callback did not provide usage)');
             }
 
-            if (promptTokens > 0 || completionTokens > 0) {
-              const llmCost = calculateLLMCost(promptTokens, completionTokens, GROQ_MODEL_NAME);
-              const serviceType = ServiceType.GROQ_LLM;
+            if (totalPromptTokens > 0 || totalCompletionTokens > 0) {
+              const llmCost = calculateLLMCost(totalPromptTokens, totalCompletionTokens, GROQ_MODEL_NAME);
+              const llmCalls = toolsUsed.length > 0 ? 2 : 1;
 
-              const services: IServiceUsage[] = [
-                {
-                  service: serviceType,
-                  usage: {
-                    cost: llmCost,
-                    unitDetails: {
-                      inputTokens: promptTokens,
-                      outputTokens: completionTokens,
-                      totalTokens: promptTokens + completionTokens,
-                      metadata: {
-                        model: modelInfo.model,
-                        messageLength: message.length,
-                        responseLength: assistantResponse.length,
-                        estimated: isEstimated,
-                        animationToolUsed: animationEmitted,
-                      },
+              const services: IServiceUsage[] = [{
+                service: ServiceType.GROQ_LLM,
+                usage: {
+                  cost: llmCost,
+                  unitDetails: {
+                    inputTokens: totalPromptTokens,
+                    outputTokens: totalCompletionTokens,
+                    totalTokens: totalPromptTokens + totalCompletionTokens,
+                    metadata: {
+                      model: modelInfo.model,
+                      messageLength: message.length,
+                      responseLength: assistantResponse.length,
+                      estimated: isEstimated,
+                      animationToolUsed: animationEmitted,
+                      toolsUsed,
+                      llmCalls,
                     },
                   },
-                  status: 'success',
                 },
-              ];
+                status: 'success',
+              }];
 
               await logGenerationCost({
                 userId: decoded.userId,
@@ -289,14 +386,20 @@ export async function POST(request: NextRequest) {
                 totalCost: llmCost,
               });
 
-              console.log(`💰 [COST] Learning chatbot (${modelInfo.model}): ${promptTokens} input + ${completionTokens} output tokens = ${formatCost(llmCost)} (estimated)`);
+              console.log(`💰 [COST] Chatbot (${modelInfo.model}): ${totalPromptTokens} in + ${totalCompletionTokens} out = ${formatCost(llmCost)}`);
             }
           } catch (costError) {
             console.error('⚠️ [CHATBOT] Failed to log cost (non-critical):', costError);
-            // Don't fail the entire request if cost logging fails
           }
         } catch (error) {
-          controller.error(error);
+          console.error('[CHATBOT] Stream error:', error);
+          try {
+            emitSSE(controller, encoder, {
+              type: 'error',
+              message: 'Something went wrong. Please try again.',
+            });
+          } catch { /* stream may already be closed */ }
+          controller.close();
         }
       },
     });
@@ -322,10 +425,12 @@ export async function POST(request: NextRequest) {
       console.error('Failed to log chatbot activity:', logError);
     }
 
-    // 12. Return streaming response
+    // 12. Return SSE streaming response
     return new NextResponse(readableStream, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
         'X-RateLimit-Remaining': rateLimit.remaining.toString(),
         'X-RateLimit-Reset': rateLimit.resetTime.toISOString(),
       },

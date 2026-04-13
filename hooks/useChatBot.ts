@@ -6,6 +6,14 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   isVisualize?: boolean;
+  /** Tool activity events that occurred before this message's text content. */
+  toolEvents?: ToolEvent[];
+}
+
+export interface ToolEvent {
+  tool: string;
+  label: string;
+  status: 'active' | 'done';
 }
 
 export interface UseChatBotOptions {
@@ -30,9 +38,25 @@ export interface UseChatBotReturn {
   isStreaming: boolean;
   error: string | null;
   remainingMessages: number;
+  /** Tools currently being executed by Clara (empty when not using tools). */
+  activeTools: ToolEvent[];
   sendMessage: (content: string) => Promise<void>;
   clearMessages: () => void;
   clearError: () => void;
+}
+
+/**
+ * Parse a single SSE line (data: {...}) into a typed event object.
+ * Returns null for non-data lines, keep-alive comments, etc.
+ */
+function parseSSELine(line: string): Record<string, unknown> | null {
+  const trimmed = line.trim();
+  if (!trimmed || !trimmed.startsWith('data: ')) return null;
+  try {
+    return JSON.parse(trimmed.slice(6));
+  } catch {
+    return null;
+  }
 }
 
 export function useChatBot(
@@ -52,6 +76,7 @@ export function useChatBot(
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remainingMessages, setRemainingMessages] = useState(20);
+  const [activeTools, setActiveTools] = useState<ToolEvent[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Load from database on mount (if history is enabled)
@@ -60,14 +85,9 @@ export function useChatBot(
 
     async function loadMessages() {
       try {
-        // Build history URL with channel and problemId if specified
         let historyUrl = `${historyEndpoint}?videoId=${videoId}`;
-        if (channel) {
-          historyUrl += `&channel=${channel}`;
-        }
-        if (problemId) {
-          historyUrl += `&problemId=${problemId}`;
-        }
+        if (channel) historyUrl += `&channel=${channel}`;
+        if (problemId) historyUrl += `&problemId=${problemId}`;
 
         const response = await fetch(historyUrl);
 
@@ -86,7 +106,6 @@ export function useChatBot(
         }
       } catch (error) {
         console.error('Failed to load chat messages:', error);
-        // No fallback, messages remain empty
       }
     }
 
@@ -107,8 +126,9 @@ export function useChatBot(
 
     setError(null);
     setIsLoading(true);
+    setActiveTools([]);
 
-    // Add user message immediately (show without the /visualize prefix)
+    // Add user message immediately
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -125,13 +145,13 @@ export function useChatBot(
       id: assistantMessageId,
       role: 'assistant',
       content: '',
-      timestamp: new Date()
+      timestamp: new Date(),
+      toolEvents: [],
     };
 
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      // Cancel previous request if any
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -140,7 +160,6 @@ export function useChatBot(
       setIsLoading(false);
       setIsStreaming(true);
 
-      // Prepare conversation history (last 3 exchanges = 6 messages)
       const conversationHistory = messages.slice(-6).map(msg => ({
         role: msg.role,
         content: msg.content
@@ -191,39 +210,135 @@ export function useChatBot(
         setRemainingMessages(parseInt(remaining));
       }
 
-      // Stream response
+      // Stream response — detect format from Content-Type
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body');
 
+      const contentType = response.headers.get('Content-Type') || '';
+      const isSSE = contentType.includes('text/event-stream');
       const decoder = new TextDecoder();
       let accumulatedContent = '';
+      const collectedToolEvents: ToolEvent[] = [];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      if (isSSE) {
+        // ── SSE format (agentic chatbot endpoint) ──
+        let sseBuffer = '';
 
-        const chunk = decoder.decode(value, { stream: true });
-        accumulatedContent += chunk;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        // Update message incrementally
-        setMessages(prev => prev.map(msg =>
-          msg.id === assistantMessageId
-            ? { ...msg, content: accumulatedContent }
-            : msg
-        ));
+          sseBuffer += decoder.decode(value, { stream: true });
+
+          // Process complete SSE lines (terminated by \n\n)
+          const parts = sseBuffer.split('\n\n');
+          sseBuffer = parts.pop() || '';
+
+          for (const part of parts) {
+            for (const line of part.split('\n')) {
+              const event = parseSSELine(line);
+              if (!event) continue;
+
+              switch (event.type) {
+                case 'tool_start': {
+                  const toolEvent: ToolEvent = {
+                    tool: event.tool as string,
+                    label: event.label as string,
+                    status: 'active',
+                  };
+                  collectedToolEvents.push(toolEvent);
+                  setActiveTools(prev => [...prev, toolEvent]);
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, toolEvents: [...collectedToolEvents] }
+                      : msg
+                  ));
+                  break;
+                }
+
+                case 'tool_end': {
+                  const toolName = event.tool as string;
+                  const existing = collectedToolEvents.find(
+                    t => t.tool === toolName && t.status === 'active'
+                  );
+                  if (existing) existing.status = 'done';
+                  setActiveTools(prev =>
+                    prev.map(t =>
+                      t.tool === toolName && t.status === 'active'
+                        ? { ...t, status: 'done' }
+                        : t
+                    ),
+                  );
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, toolEvents: [...collectedToolEvents] }
+                      : msg
+                  ));
+                  break;
+                }
+
+                case 'token': {
+                  accumulatedContent += event.content as string;
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: accumulatedContent }
+                      : msg
+                  ));
+                  break;
+                }
+
+                case 'animation': {
+                  const animationBlock = `\n\n\`\`\`animation\n${JSON.stringify(event.spec)}\n\`\`\``;
+                  accumulatedContent += animationBlock;
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: accumulatedContent }
+                      : msg
+                  ));
+                  break;
+                }
+
+                case 'error': {
+                  setError(event.message as string);
+                  break;
+                }
+
+                case 'done': {
+                  setActiveTools([]);
+                  break;
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // ── Plain text format (guide endpoint, legacy) ──
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedContent += chunk;
+          setMessages(prev => prev.map(msg =>
+            msg.id === assistantMessageId
+              ? { ...msg, content: accumulatedContent }
+              : msg
+          ));
+        }
       }
 
       setIsStreaming(false);
+      setActiveTools([]);
 
       // Remove empty message if streaming produced nothing
-      if (!accumulatedContent.trim()) {
+      if (!accumulatedContent.trim() && collectedToolEvents.length === 0) {
         setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
       }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setIsStreaming(false);
+      setActiveTools([]);
 
-      // Handle abort (user cancelled)
       if (error.name === 'AbortError') {
         setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
         return;
@@ -242,6 +357,7 @@ export function useChatBot(
     } finally {
       setIsLoading(false);
       setIsStreaming(false);
+      setActiveTools([]);
     }
   }, [messages, isLoading, isStreaming, videoId, endpoint, transformRequestBody]);
 
@@ -249,21 +365,13 @@ export function useChatBot(
     setMessages([]);
     setError(null);
 
-    // Clear from database (if history is enabled)
     if (enableHistory) {
       try {
-        // Build delete URL with channel and problemId if specified
         let deleteUrl = `${historyEndpoint}?videoId=${videoId}`;
-        if (channel) {
-          deleteUrl += `&channel=${channel}`;
-        }
-        if (problemId) {
-          deleteUrl += `&problemId=${problemId}`;
-        }
+        if (channel) deleteUrl += `&channel=${channel}`;
+        if (problemId) deleteUrl += `&problemId=${problemId}`;
 
-        await fetch(deleteUrl, {
-          method: 'DELETE'
-        });
+        await fetch(deleteUrl, { method: 'DELETE' });
       } catch (error) {
         console.error('Failed to clear database messages:', error);
       }
@@ -280,6 +388,7 @@ export function useChatBot(
     isStreaming,
     error,
     remainingMessages,
+    activeTools,
     sendMessage,
     clearMessages,
     clearError

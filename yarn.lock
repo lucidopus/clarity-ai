@@ -1060,6 +1060,23 @@
   dependencies:
     uuid "^10.0.0"
 
+"@langchain/langgraph-checkpoint@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@langchain/langgraph-checkpoint/-/langgraph-checkpoint-1.0.1.tgz#0ee5bdfeb9878d8d1d99347f23e199e5afd52995"
+  integrity sha512-HM0cJLRpIsSlWBQ/xuDC67l52SqZ62Bh2Y61DX+Xorqwoh5e1KxYvfCD7GnSTbWWhjBOutvnR0vPhu4orFkZfw==
+  dependencies:
+    uuid "^10.0.0"
+
+"@langchain/langgraph-sdk@~1.8.8":
+  version "1.8.8"
+  resolved "https://registry.yarnpkg.com/@langchain/langgraph-sdk/-/langgraph-sdk-1.8.8.tgz#83a8f15174be717796de70e4ecd22dc1a8823b24"
+  integrity sha512-4OoqFAvPloOTZ6oPxXbJngz4FLJO8QSXb+BQV3qvNTvmfu1LQA7cCEqSNLYX9MoC340PbnDkHNgUtjajwkDHRg==
+  dependencies:
+    "@types/json-schema" "^7.0.15"
+    p-queue "^9.0.1"
+    p-retry "^7.1.1"
+    uuid "^13.0.0"
+
 "@langchain/langgraph-sdk@~2.0.0":
   version "2.0.0"
   resolved "https://registry.npmjs.org/@langchain/langgraph-sdk/-/langgraph-sdk-2.0.0.tgz"
@@ -1077,6 +1094,16 @@
   dependencies:
     "@langchain/langgraph-checkpoint" "^1.0.0"
     "@langchain/langgraph-sdk" "~2.0.0"
+    "@standard-schema/spec" "1.1.0"
+    uuid "^10.0.0"
+
+"@langchain/langgraph@^1.2.8":
+  version "1.2.8"
+  resolved "https://registry.yarnpkg.com/@langchain/langgraph/-/langgraph-1.2.8.tgz#1a2b98b25d4029c4f24405dd292b3fbbb0e6d9fe"
+  integrity sha512-kKkRpC5xFz1e6vPivE7lwRJa5oahLAMaVQvVGZdTa6uJIchIYJDIuM1n93FqGvg8aYVcgYU4FENtKKC5Eh1JYw==
+  dependencies:
+    "@langchain/langgraph-checkpoint" "^1.0.1"
+    "@langchain/langgraph-sdk" "~1.8.8"
     "@standard-schema/spec" "1.1.0"
     uuid "^10.0.0"
 

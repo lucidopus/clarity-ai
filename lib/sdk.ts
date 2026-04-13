@@ -11,7 +11,7 @@ const getModels = () => {
 
   return {
     gemini: process.env.CONTENT_GENERATION_MODEL,
-    groq: process.env.CHATBOT_MODEL || 'mixtral-8x7b-32768'
+    groq: process.env.CHATBOT_MODEL || 'mixtral-8x7b-32768',
   };
 }
 

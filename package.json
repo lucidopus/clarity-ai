@@ -17,6 +17,7 @@
     "@langchain/core": "^1.1.28",
     "@langchain/google-genai": "^2.0.0",
     "@langchain/groq": "^1.0.2",
+    "@langchain/langgraph": "^1.2.8",
     "@sendgrid/mail": "^8.1.6",
     "@splinetool/react-spline": "^4.1.0",
     "@splinetool/runtime": "^1.12.81",
