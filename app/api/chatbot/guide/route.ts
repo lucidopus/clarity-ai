@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import { groqLlm, GROQ_MODEL_NAME } from '@/lib/sdk';
-import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
+import { checkChatbotRateLimit } from '@/lib/rate-limit';
 import { AI_GUIDE_SYSTEM_PROMPT } from '@/lib/prompts';
 import { LearningMaterial, Solution } from '@/lib/models';
 import { saveChatMessage } from '@/lib/chat-db';

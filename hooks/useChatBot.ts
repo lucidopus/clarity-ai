@@ -204,9 +204,9 @@ export function useChatBot(
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Update remaining count
+      // Update remaining count (-1 means unlimited)
       const remaining = response.headers.get('X-RateLimit-Remaining');
-      if (remaining) {
+      if (remaining && remaining !== '-1') {
         setRemainingMessages(parseInt(remaining));
       }
 

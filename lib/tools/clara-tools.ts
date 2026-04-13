@@ -15,6 +15,7 @@ import SourceContent from '@/lib/models/SourceContent';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import Progress from '@/lib/models/Progress';
+import { INPUT_LIMITS } from '@/lib/limits';
 
 /** Human-readable labels shown in the UI per source key. */
 export const TOOL_LABELS: Record<string, string> = {
@@ -23,8 +24,6 @@ export const TOOL_LABELS: Record<string, string> = {
   quizzes: 'Checking your quiz questions',
   progress: 'Reviewing your study progress',
 };
-
-const MAX_SOURCE_CHARS = 30_000; // ~7.5k tokens — keep context manageable
 
 // ── Individual fetchers (module-level, accept userId + sourceId) ─────
 
@@ -38,8 +37,8 @@ async function fetchSource(userId: string, sourceId: string): Promise<string> {
 
   const { fullText, wordCount } = doc as unknown as { fullText: string; wordCount: number };
 
-  if (fullText.length > MAX_SOURCE_CHARS) {
-    return `[Source content — ${wordCount} words, showing first ${MAX_SOURCE_CHARS} characters]\n\n${fullText.slice(0, MAX_SOURCE_CHARS)}\n\n[...truncated]`;
+  if (fullText.length > INPUT_LIMITS.sourceContentChars) {
+    return `[Source content — ${wordCount} words, showing first ${INPUT_LIMITS.sourceContentChars} characters]\n\n${fullText.slice(0, INPUT_LIMITS.sourceContentChars)}\n\n[...truncated]`;
   }
 
   return `[Source content — ${wordCount} words]\n\n${fullText}`;

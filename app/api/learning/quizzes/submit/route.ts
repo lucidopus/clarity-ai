@@ -103,14 +103,10 @@ export async function POST(request: NextRequest) {
       const quizObjectId = new mongoose.Types.ObjectId(result.quizId);
       const quiz = quizMap.get(result.quizId);
       
-      let isCorrect = false;
-      // If backend validation is possible (quiz found), use it. 
-      // Otherwise fallback to client provided isCorrect (legacy support)
-      if (quiz) {
-        isCorrect = quiz.correctAnswerIndex === result.userAnswerIndex;
-      } else if (typeof result.isCorrect === 'boolean') {
-        isCorrect = result.isCorrect;
-      }
+      // Skip results where the quiz wasn't found — never trust client-provided isCorrect
+      if (!quiz) continue;
+
+      const isCorrect = quiz.correctAnswerIndex === result.userAnswerIndex;
 
       if (isCorrect) correctCount++;
 

@@ -6,6 +6,8 @@ import Video from '@/lib/models/Video';
 import { extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { ApiError, InvalidURLError, DuplicateVideoError } from '@/lib/errors/ApiError';
 import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
+import { checkRateLimitMongo } from '@/lib/rate-limit';
+import { RATE_LIMITS } from '@/lib/limits';
 import type { SourceType } from '@/lib/models/Source';
 
 interface DecodedToken {
@@ -50,6 +52,14 @@ export async function POST(request: NextRequest) {
     // 1. Authenticate
     const decoded = authenticate(request);
     console.log(`✅ [PROCESS] Authenticated: ${decoded.userId}`);
+
+    const rl = await checkRateLimitMongo(`process:${decoded.userId}`, RATE_LIMITS.process.max, RATE_LIMITS.process.windowSec);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter ?? 60) } },
+      );
+    }
 
     // 2. Parse request body
     const body = await request.json();

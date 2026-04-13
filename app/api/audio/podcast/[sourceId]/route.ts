@@ -13,12 +13,12 @@ export async function GET(
     const token = request.cookies.get('jwt')?.value;
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
     const { sourceId } = await params;
 
     await dbConnect();
 
-    const source = await Source.findOne({ sourceId }).select('audioPodcast').lean();
+    const source = await Source.findOne({ sourceId, userId: decoded.userId }).select('audioPodcast').lean();
 
     if (!source || !(source as Record<string, unknown>).audioPodcast) {
       return NextResponse.json({ available: false });

@@ -215,6 +215,12 @@ export async function createChatIndexes(): Promise<void> {
       { name: 'user_channel_context_timestamp_idx' }
     );
 
+    // Rate-limit index: fast countDocuments({ userId, role, timestamp })
+    await chats.createIndex(
+      { userId: 1, role: 1, timestamp: 1 },
+      { name: 'user_role_timestamp_idx' }
+    );
+
     // TTL index - auto-delete messages after 30 days
     await chats.createIndex(
       { timestamp: 1 },

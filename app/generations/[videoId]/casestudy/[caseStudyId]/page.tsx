@@ -778,7 +778,7 @@ export default function CaseStudyWorkspacePage() {
                      )}
                    </div>
                    <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
-                     <div dangerouslySetInnerHTML={{ __html: data.authorSolution }} />
+                     <ReactMarkdown>{data.authorSolution}</ReactMarkdown>
                    </div>
                  </div>
                )}

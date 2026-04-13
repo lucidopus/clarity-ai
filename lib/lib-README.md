@@ -18,7 +18,8 @@ All shared server-side and isomorphic library code for the Clarity AI platform.
 | `embedding.ts` | Generates vector embeddings using Google Gemini (`text-embedding-004`) for semantic search and recommendations. |
 | `chat-db.ts` | MongoDB persistence for chat messages: save, load, and delete by session/channel. |
 | `chatbot-context.ts` | Assembles context objects (user profile, video materials) to inject into chatbot system prompts. |
-| `rate-limit-chatbot.ts` | MongoDB-backed per-user rate limiter for chatbot and AI guide messages. |
+| `limits.ts`             | Centralized rate limits, input size caps, and `UNLIMITED_MODE` switch. Single file to tune all limits. |
+| `rate-limit.ts`         | MongoDB-backed atomic rate limiter (`checkRateLimitMongo`, `checkChatbotRateLimit`). Uses `ratelimits` collection with TTL. |
 | `activityLogger.ts` | Client-side utility: POSTs activity events to `/api/activity/log`. |
 | `serverActivityLogger.ts` | Server-side activity logger for API routes; writes directly to MongoDB (best-effort). |
 | `adminAuth.ts` | Admin JWT utilities: issue, verify, and extract admin tokens from cookies. |

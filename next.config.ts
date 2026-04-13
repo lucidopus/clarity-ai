@@ -9,6 +9,20 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'sha256-uSMJens+XsW9xR5EgcVp2X6phQsXONFTzmV4vx5HPV0='", // theme script hash (layout.tsx)
+      "style-src 'self' 'unsafe-inline'",      // Tailwind + dynamic styles
+      "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com https://images.unsplash.com https://via.placeholder.com https://*.supabase.co",
+      "font-src 'self'",
+      "connect-src 'self' https://*.supabase.co",
+      "frame-src https://www.youtube.com",
+      "media-src 'self' blob: https://*.supabase.co",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ');
+
     return [
       {
         source: '/(.*)',
@@ -18,6 +32,7 @@ const nextConfig: NextConfig = {
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' },
+          { key: 'Content-Security-Policy', value: csp },
         ],
       },
     ];

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import { chatbotLlm, CHATBOT_MODEL_NAME } from '@/lib/sdk';
 import { getChatbotContext } from '@/lib/chatbot-context';
-import { checkChatbotRateLimit } from '@/lib/rate-limit-chatbot';
+import { checkChatbotRateLimit } from '@/lib/rate-limit';
 import { CHATBOT_SYSTEM_PROMPT, ANIMATION_TOOL_PROMPT_ADDENDUM, VISUALIZE_COMMAND_ADDENDUM } from '@/lib/prompts';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
@@ -18,6 +18,7 @@ import type { AIMessageChunk } from '@langchain/core/messages';
 import { ToolCallAccumulator } from '@/lib/tools';
 import { renderAnimationTool } from '@/lib/tools/render-animation';
 import { createClaraTools, TOOL_LABELS } from '@/lib/tools/clara-tools';
+import { INPUT_LIMITS } from '@/lib/limits';
 import { AnimationSpecSchema } from '@/lib/types/animation';
 
 const ANIMATION_TOOL_ENABLED = process.env.ENABLE_ANIMATION_TOOL === 'true';
@@ -92,6 +93,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'videoId and message are required' }, { status: 400 });
     }
 
+    if (typeof message !== 'string' || message.length > INPUT_LIMITS.chatMessageLength) {
+      return NextResponse.json({ error: `Message must be a string under ${INPUT_LIMITS.chatMessageLength} characters` }, { status: 400 });
+    }
+
     const useAnimationTool = ANIMATION_TOOL_ENABLED || forceVisualize === true;
 
     await dbConnect();
@@ -152,11 +157,12 @@ export async function POST(request: NextRequest) {
     // 9. Prepare messages
     const langchainMessages = [
       new SystemMessage(systemPrompt),
-      ...(conversationHistory || []).slice(-6).map((msg: IChatMessage) => {
-        if (msg.role === 'user') return new HumanMessage(msg.content);
-        if (msg.role === 'assistant') return new AIMessage(msg.content);
-        return new SystemMessage(msg.content);
-      }),
+      ...(conversationHistory || []).slice(-6)
+        .filter((msg: IChatMessage) => msg.role === 'user' || msg.role === 'assistant')
+        .map((msg: IChatMessage) => {
+          if (msg.role === 'user') return new HumanMessage(msg.content);
+          return new AIMessage(msg.content);
+        }),
       new HumanMessage(message),
     ];
 
