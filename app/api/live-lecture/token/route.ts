@@ -4,6 +4,9 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import ActivityLog from '@/lib/models/ActivityLog';
+import { checkSessionAlive, clearSessionHeartbeat } from '@/lib/live-lecture/redis';
+
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/token — Generate ElevenLabs Scribe token + create LiveSession
@@ -96,34 +99,55 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Clean up stale active sessions
-    await LiveSession.updateMany(
-      {
-        userId: decoded.userId,
-        status: 'active',
-        $or: [
-          {
-            transcriptSegments: { $size: 0 },
-            startedAt: { $lt: new Date(Date.now() - 5 * 60 * 1000) },
-          },
-          {
-            startedAt: { $lt: new Date(Date.now() - 12 * 60 * 60 * 1000) },
-          },
-        ],
-      },
-      { $set: { status: 'interrupted', endedAt: new Date() } }
-    );
-
+    // Staleness check: if user has an active session, verify it's actually
+    // alive via the Redis heartbeat (30s TTL, refreshed every 15s by the
+    // client bubble). If the heartbeat is gone OR the session is > 4 h old,
+    // treat it as abandoned and auto-interrupt. Otherwise surface a 409 with
+    // `errorType: 'STALE_SESSION'` so the UI can offer a recovery action.
     const existingActive = await LiveSession.findOne({
       userId: decoded.userId,
       status: 'active',
     });
 
     if (existingActive) {
-      return NextResponse.json(
-        { error: 'You already have an active session. End it before starting a new one.' },
-        { status: 409 }
-      );
+      let heartbeatAlive = true;
+      try {
+        heartbeatAlive = await checkSessionAlive(existingActive.sessionId);
+      } catch (err) {
+        // If Redis is unreachable, fall back to age-only and assume alive —
+        // we'd rather show the recovery UI than silently kill a live session.
+        console.warn('⚠️ [LIVE-LECTURE] Redis heartbeat check failed:', err);
+      }
+      const ageMs = Date.now() - new Date(existingActive.startedAt).getTime();
+      const isStale = !heartbeatAlive || ageMs > FOUR_HOURS_MS;
+
+      if (isStale) {
+        // Sweep ALL active sessions for this user — not just the one we
+        // read — in case rapid retries or races left more than one.
+        const staleActives = await LiveSession.find(
+          { userId: decoded.userId, status: 'active' },
+          { sessionId: 1 },
+        ).lean() as unknown as Array<{ sessionId: string }>;
+
+        await LiveSession.updateMany(
+          { userId: decoded.userId, status: 'active' },
+          { $set: { status: 'interrupted', endedAt: new Date() } },
+        );
+
+        await Promise.all(
+          staleActives.map((s) => clearSessionHeartbeat(s.sessionId).catch(() => {})),
+        );
+        // fall through to create a new session
+      } else {
+        return NextResponse.json(
+          {
+            error: "You have a previous session that wasn't ended properly.",
+            errorType: 'STALE_SESSION',
+            staleSessionId: existingActive.sessionId,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const sessionId = uuidv4();

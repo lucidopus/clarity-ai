@@ -35,27 +35,52 @@ export function useCrashRecovery(): UseCrashRecoveryReturn {
     async function checkRecovery() {
       try {
         const storedSession = await getActiveSession();
-        if (!storedSession || cancelled) return;
 
-        // Check if session is still active on server
-        const response = await fetch(`/api/live-lecture/${storedSession.sessionId}/status`);
-        if (!response.ok || cancelled) {
-          // Session doesn't exist on server or request failed — clean up
-          await clearSession(storedSession.sessionId);
+        if (storedSession) {
+          // Local IDB has a session — verify with server
+          const response = await fetch(`/api/live-lecture/${storedSession.sessionId}/status`);
+          if (!response.ok || cancelled) {
+            await clearSession(storedSession.sessionId);
+            return;
+          }
+
+          const serverStatus = await response.json();
+          if (serverStatus.status !== 'active') {
+            await clearSession(storedSession.sessionId);
+            return;
+          }
+
+          const segments = await getSegments(storedSession.sessionId);
+          if (!cancelled) {
+            setRecoveryData({ session: storedSession, segments });
+            setRecovering(true);
+          }
           return;
         }
 
-        const serverStatus = await response.json();
-        if (serverStatus.status !== 'active') {
-          // Session already ended — clean up
-          await clearSession(storedSession.sessionId);
-          return;
-        }
+        // No local session — check server for active session in another browser/device
+        if (cancelled) return;
+        const activeRes = await fetch('/api/live-lecture/active');
+        if (!activeRes.ok || cancelled) return;
 
-        // Session is still active — offer recovery
-        const segments = await getSegments(storedSession.sessionId);
+        const activeData = await activeRes.json();
+        if (!activeData.session || cancelled) return;
+
+        // Build a synthetic StoredSession — the resume flow will fetch full
+        // state from the server, so empty local data is fine here.
+        const synthetic: StoredSession = {
+          sessionId: activeData.session.sessionId,
+          title: activeData.session.title,
+          audioSource: activeData.session.audioSource,
+          startedAt: activeData.session.startedAt,
+          focusNotes: '',
+          importanceMarkers: [],
+          contextDocIds: activeData.session.contextDocIds ?? [],
+          token: '',
+        };
+
         if (!cancelled) {
-          setRecoveryData({ session: storedSession, segments });
+          setRecoveryData({ session: synthetic, segments: [] });
           setRecovering(true);
         }
       } catch {

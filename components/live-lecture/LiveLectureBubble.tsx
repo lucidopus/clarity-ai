@@ -95,9 +95,10 @@ export default function LiveLectureBubble() {
   const {
     phase, sessionId, token, config,
     focusNotes, markers, elapsed, error,
-    sourceId,
+    sourceId, staleSessionId,
     recovering, recoveryData,
     closeSetup, startSession, resumeSession, endSession, endSessionById,
+    forceEndAndRetry,
     dismissRecovery,
     addSegment,
     setIsConnected, setElapsed, setError,
@@ -603,6 +604,9 @@ export default function LiveLectureBubble() {
           isOpen={false}
           onClose={closeSetup}
           onStart={startSession}
+          externalError={error}
+          staleSessionId={staleSessionId}
+          onForceEndAndRetry={forceEndAndRetry}
         />
       </>
     );
@@ -615,6 +619,9 @@ export default function LiveLectureBubble() {
         isOpen={true}
         onClose={closeSetup}
         onStart={startSession}
+        externalError={error}
+        staleSessionId={staleSessionId}
+        onForceEndAndRetry={forceEndAndRetry}
       />
     );
   }

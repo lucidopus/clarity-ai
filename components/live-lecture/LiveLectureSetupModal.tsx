@@ -17,6 +17,9 @@ interface LiveLectureSetupModalProps {
   onClose: () => void;
   onStart: (config: LiveLectureConfig) => void;
   isLoading?: boolean;
+  externalError?: string | null;
+  staleSessionId?: string | null;
+  onForceEndAndRetry?: (config: LiveLectureConfig) => void;
 }
 
 export default function LiveLectureSetupModal({
@@ -24,6 +27,9 @@ export default function LiveLectureSetupModal({
   onClose,
   onStart,
   isLoading = false,
+  externalError = null,
+  staleSessionId = null,
+  onForceEndAndRetry,
 }: LiveLectureSetupModalProps) {
   const [title, setTitle] = useState('');
   const [audioSource, setAudioSource] = useState<'mic' | 'system'>('mic');
@@ -136,19 +142,32 @@ export default function LiveLectureSetupModal({
     setContextDocs(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleStart = () => {
+  const buildConfig = (): LiveLectureConfig | null => {
     if (!title.trim()) {
       setError('Please enter a lecture name');
-      return;
+      return null;
     }
-
-    onStart({
+    return {
       title: title.trim(),
       audioSource,
       contextDocIds: contextDocs.map(d => d.sourceId),
       contextDocs: contextDocs.map(d => ({ sourceId: d.sourceId, fileName: d.fileName })),
-    });
+    };
   };
+
+  const handleStart = () => {
+    const cfg = buildConfig();
+    if (cfg) onStart(cfg);
+  };
+
+  const handleForceEnd = () => {
+    if (!onForceEndAndRetry) return;
+    const cfg = buildConfig();
+    if (cfg) onForceEndAndRetry(cfg);
+  };
+
+  const hasStaleSession = !!staleSessionId;
+  const displayError = externalError || error;
 
   return (
     <AnimatePresence>
@@ -291,33 +310,67 @@ export default function LiveLectureSetupModal({
                 </p>
               </div>
 
-              {/* Error */}
-              {error && (
-                <p className="text-sm text-red-400">{error}</p>
+              {/* Stale session recovery banner */}
+              {hasStaleSession && (
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-500/5 border border-amber-500/30 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs text-muted-foreground">
+                    <p className="text-foreground font-medium mb-0.5">Previous session detected</p>
+                    <p>
+                      {displayError || "You have a previous session that wasn't ended properly. End it and start fresh?"}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error (non-stale) */}
+              {!hasStaleSession && displayError && (
+                <p className="text-sm text-red-400">{displayError}</p>
               )}
             </div>
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border">
               <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleStart}
-                disabled={isLoading || isUploading || !title.trim()}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-4 h-4 mr-2" />
-                    Start Listening
-                  </>
-                )}
-              </Button>
+              {hasStaleSession && onForceEndAndRetry ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleForceEnd}
+                  disabled={isLoading || isUploading || !title.trim()}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Ending previous...
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-4 h-4 mr-2" />
+                      End Previous & Start New
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleStart}
+                  disabled={isLoading || isUploading || !title.trim()}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-4 h-4 mr-2" />
+                      Start Listening
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </motion.div>
         </motion.div>

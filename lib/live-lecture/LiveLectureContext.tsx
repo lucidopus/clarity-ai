@@ -31,6 +31,7 @@ interface LiveLectureState {
   elapsed: number;
   isConnected: boolean;
   error: string | null;
+  staleSessionId: string | null; // set when startSession returns 409 STALE_SESSION
   sourceId: string | null; // post-lecture
   questionCount: number;
   startedAt: number; // epoch ms of session start (for elapsed/offset calculations)
@@ -46,6 +47,7 @@ interface LiveLectureActions {
   resumeSession: (sessionId: string) => Promise<void>;
   endSession: () => Promise<{ sourceId?: string } | void>;
   endSessionById: (sessionId: string) => Promise<{ sourceId?: string } | void>;
+  forceEndAndRetry: (config: LiveLectureConfig) => Promise<void>;
   setFocusNotes: (notes: string) => void;
   addMarker: (notePosition?: number) => void;
   addSegment: (segment: TranscriptSegment) => void;
@@ -79,6 +81,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
   const [elapsed, setElapsed] = useState(0);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [staleSessionId, setStaleSessionId] = useState<string | null>(null);
   const [sourceId, setSourceId] = useState<string | null>(null);
   const [questionCount, setQuestionCount] = useState(0);
 
@@ -122,6 +125,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
     setPhase('connecting');
     setConfig(cfg);
     setError(null);
+    setStaleSessionId(null);
 
     try {
       const response = await fetch('/api/live-lecture/token', {
@@ -135,8 +139,16 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to start session');
+        const data = await response.json().catch(() => ({}));
+        // Stale-session surface: keep the user on the setup modal so they can
+        // pick "End Previous & Start New" rather than staring at a dead error.
+        if (response.status === 409 && data?.errorType === 'STALE_SESSION') {
+          setStaleSessionId(data.staleSessionId ?? null);
+          setError(data.error || "You have a previous session that wasn't ended properly.");
+          setPhase('setup');
+          return;
+        }
+        throw new Error(data?.error || 'Failed to start session');
       }
 
       const data = await response.json();
@@ -156,6 +168,17 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
       setPhase('setup');
     }
   }, []);
+
+  const forceEndAndRetry = useCallback(async (cfg: LiveLectureConfig) => {
+    try {
+      await fetch('/api/live-lecture/force-end', { method: 'POST' });
+    } catch (err) {
+      console.error('❌ [LIVE-LECTURE] force-end failed:', err);
+    }
+    setStaleSessionId(null);
+    setError(null);
+    await startSession(cfg);
+  }, [startSession]);
 
   const resumeSession = useCallback(async (recoverySessionId: string) => {
     setPhase('connecting');
@@ -329,6 +352,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
     elapsed,
     isConnected,
     error,
+    staleSessionId,
     sourceId,
     questionCount,
     startedAt: startTimeRef.current,
@@ -340,6 +364,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
     resumeSession,
     endSession,
     endSessionById,
+    forceEndAndRetry,
     setFocusNotes,
     addMarker,
     addSegment,
