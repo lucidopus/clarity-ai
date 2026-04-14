@@ -23,6 +23,7 @@ import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
+import GenerationProgress from '@/components/GenerationProgress';
 
 // ─── Processing screen tips (shuffled per session, rotated every 8s) ────────
 
@@ -513,33 +514,37 @@ export default function VideoMaterialsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center max-w-lg"
+          className="w-full max-w-lg"
         >
           {processingThumbnail && (
-            <div className="mb-8 rounded-xl overflow-hidden shadow-lg mx-auto max-w-sm">
+            <div className="mb-6 rounded-xl overflow-hidden shadow-lg mx-auto max-w-sm">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={processingThumbnail} alt="Video thumbnail" className="w-full aspect-video object-cover" />
             </div>
           )}
-          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <h2 className="mt-6 text-2xl font-bold text-foreground">
-            Transforming content into mastery
-          </h2>
-          <div className="mt-3 h-12 flex items-center justify-center">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={processingTip}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.4 }}
-                className="text-sm text-muted-foreground max-w-sm mx-auto"
-              >
-                {PROCESSING_TIPS[processingTip]}
-              </motion.p>
-            </AnimatePresence>
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-foreground">
+              Transforming content into mastery
+            </h2>
+            <div className="mt-2 h-12 flex items-center justify-center">
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={processingTip}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-sm text-secondary max-w-sm mx-auto"
+                >
+                  {PROCESSING_TIPS[processingTip]}
+                </motion.p>
+              </AnimatePresence>
+            </div>
           </div>
-          <p className="mt-5 text-xs text-muted-foreground/50">
+
+          <GenerationProgress processingStatus={processingStatus} />
+
+          <p className="mt-5 text-center text-xs text-secondary/60">
             This usually takes about a minute. Feel free to leave &mdash; we&apos;ll have everything ready when you&apos;re back.
           </p>
         </motion.div>
