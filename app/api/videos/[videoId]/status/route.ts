@@ -15,7 +15,7 @@ export async function GET(
 
     const video = await Video.findOne(
       { userId: decoded.userId, videoId },
-      'processingStatus materialsStatus errorType errorMessage title thumbnail'
+      'processingStatus materialsStatus errorType errorMessage title thumbnail allSourceIds channelName'
     );
 
     if (!video) {

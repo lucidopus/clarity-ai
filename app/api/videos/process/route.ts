@@ -245,7 +245,6 @@ export async function POST(request: NextRequest) {
       success: true,
       videoId: primarySourceId,
       videoDocId,
-      runId: handle.id,
       status: 'processing',
     }, { status: 202 });
 

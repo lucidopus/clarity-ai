@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import AgentPlan, { AgentPlanStatus, AgentPlanTask } from "@/components/ui/agent-plan";
+import { ShiningText } from "@/components/ui/shining-text";
 
 export type SourceType =
   | "youtube"
@@ -13,218 +15,140 @@ export type SourceType =
   | "multi";
 
 interface GenerationProgressProps {
-  /** Backend-reported processing status; drives the final transition. */
+  /** Backend-reported processing status; drives final completed/failed state. */
   processingStatus: "pending" | "processing" | "completed" | "failed" | null;
-  /** Source type to tune the extraction step label. */
+  /** Source type used to tailor the extraction label. */
   sourceType?: SourceType;
-  /** Optional: milliseconds the current process has been running (for SSR/test). */
-  elapsedMs?: number;
 }
 
-// Stage schedule expressed in seconds of elapsed time. Honest estimates based on
-// the typical pipeline duration (~60s). The last stage stays "running" until the
-// backend confirms completion.
-const STAGE_SCHEDULE = {
-  extractStart: 0,
-  extractDone: 12,
-  validateDone: 18,
-  materialsStart: 18,
-  flashcardsDone: 30,
-  quizzesDone: 38,
-  timestampsDone: 44,
-  prereqsDone: 50,
-  challengesDone: 56,
-  mindmapDone: 62,
-  materialsDone: 64,
-  finalizeStart: 64,
-} as const;
+// Stage timings in milliseconds — chosen to roughly track typical pipeline
+// durations. The last stage is intentionally generic and sticks until the
+// backend reports completion, absorbing any remaining wall-clock time.
+const STAGE_TIMINGS_MS = [8000, 5000, 32000] as const;
 
-function extractionLabel(source?: SourceType): {
-  title: string;
-  description: string;
-} {
+const GENERATING_PHRASES = [
+  "Finding the key ideas…",
+  "Spotting the aha moments…",
+  "Deciding what's worth remembering…",
+  "Mapping how these ideas connect…",
+  "Picking what to quiz you on…",
+  "Reading between the lines…",
+  "Drawing the big picture…",
+  "Double-checking its own work…",
+  "Thinking harder than you'd expect…",
+  "Making sure this actually sticks…",
+  "Polishing the rough edges…",
+  "Weighing every concept…",
+];
+const ROTATION_MS = 3500;
+
+function extractionLabel(source?: SourceType): string {
   switch (source) {
     case "document":
-      return {
-        title: "Reading your document",
-        description: "Parsing pages and stripping boilerplate.",
-      };
+      return "Reading every page of your document";
     case "audio":
     case "media":
-      return {
-        title: "Transcribing audio",
-        description: "Turning speech into text with ElevenLabs.",
-      };
+      return "Transcribing every word you recorded";
     case "text":
-      return {
-        title: "Ingesting your notes",
-        description: "Normalising text for the model.",
-      };
+      return "Taking in your notes";
     case "live_lecture":
-      return {
-        title: "Preparing lecture transcript",
-        description: "Combining live capture segments.",
-      };
+      return "Piecing together your lecture";
     case "multi":
-      return {
-        title: "Collecting all sources",
-        description: "Merging your documents, notes and video into one context.",
-      };
+      return "Gathering everything you uploaded";
     case "youtube":
     default:
-      return {
-        title: "Extracting transcript",
-        description: "Pulling captions straight from YouTube.",
-      };
+      return "Pulling the transcript straight from YouTube";
   }
 }
 
 export default function GenerationProgress({
   processingStatus,
-  sourceType = "youtube",
-  elapsedMs: elapsedMsProp,
+  sourceType,
 }: GenerationProgressProps) {
-  const [elapsed, setElapsed] = useState(elapsedMsProp ?? 0);
+  const [stageIndex, setStageIndex] = useState(0);
+  const [phraseIndex, setPhraseIndex] = useState(() =>
+    Math.floor(Math.random() * GENERATING_PHRASES.length),
+  );
 
-  // Local ticking clock. Only runs while actually processing.
+  const isDone = processingStatus === "completed";
+  const isFailed = processingStatus === "failed";
+
+  // Advance through the first 3 stages on a timer; the 4th is sticky until
+  // the backend flips processingStatus to completed/failed and this component
+  // unmounts.
   useEffect(() => {
-    if (elapsedMsProp !== undefined) {
-      setElapsed(elapsedMsProp);
-      return;
-    }
-    if (processingStatus !== "processing" && processingStatus !== "pending") {
-      return;
-    }
-    const start = Date.now() - elapsed;
-    const interval = setInterval(() => {
-      setElapsed(Date.now() - start);
-    }, 500);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [processingStatus, elapsedMsProp]);
+    if (isDone || isFailed) return;
+    if (stageIndex >= STAGE_TIMINGS_MS.length) return;
+
+    const timeout = setTimeout(() => {
+      setStageIndex((i) => i + 1);
+    }, STAGE_TIMINGS_MS[stageIndex]);
+
+    return () => clearTimeout(timeout);
+  }, [stageIndex, isDone, isFailed]);
+
+  // Rotate the shimmer phrase while on the "crafting" stage.
+  useEffect(() => {
+    if (stageIndex !== 2 || isDone || isFailed) return;
+    const id = setInterval(() => {
+      setPhraseIndex((i) => (i + 1) % GENERATING_PHRASES.length);
+    }, ROTATION_MS);
+    return () => clearInterval(id);
+  }, [stageIndex, isDone, isFailed]);
+
+  const activeIndex = isDone ? 4 : stageIndex;
 
   const tasks: AgentPlanTask[] = useMemo(() => {
-    const s = elapsed / 1000;
-    const isFailed = processingStatus === "failed";
-    const isDone = processingStatus === "completed";
-
-    const step = (
-      start: number,
-      end: number,
-    ): AgentPlanStatus => {
+    const stageStatus = (index: number): AgentPlanStatus => {
       if (isDone) return "completed";
-      if (isFailed && s >= start && s < end) return "failed";
-      if (s < start) return "pending";
-      if (s < end) return "in-progress";
-      return "completed";
+      if (isFailed && index === activeIndex) return "failed";
+      if (index < activeIndex) return "completed";
+      if (index === activeIndex) return "in-progress";
+      return "pending";
     };
-
-    // The final "finalize" step stays in-progress until the backend confirms done.
-    const finalizeStatus: AgentPlanStatus = isDone
-      ? "completed"
-      : isFailed
-        ? "failed"
-        : s < STAGE_SCHEDULE.finalizeStart
-          ? "pending"
-          : "in-progress";
-
-    // Materials task: overall status derived from subtasks. While subtasks run,
-    // the parent shows in-progress; when all done, completed.
-    const materialsStatus: AgentPlanStatus = isDone
-      ? "completed"
-      : isFailed && s >= STAGE_SCHEDULE.materialsStart && s < STAGE_SCHEDULE.materialsDone
-        ? "failed"
-        : s < STAGE_SCHEDULE.materialsStart
-          ? "pending"
-          : s < STAGE_SCHEDULE.materialsDone
-            ? "in-progress"
-            : "completed";
-
-    const extract = extractionLabel(sourceType);
 
     return [
       {
         id: "extract",
-        title: extract.title,
-        description: extract.description,
-        status: step(STAGE_SCHEDULE.extractStart, STAGE_SCHEDULE.extractDone),
+        title: extractionLabel(sourceType),
+        status: stageStatus(0),
       },
       {
-        id: "validate",
-        title: "Checking it's educational material",
-        description: "Quick sanity pass so we only build study tools from real content.",
-        status: step(STAGE_SCHEDULE.extractDone, STAGE_SCHEDULE.validateDone),
+        id: "learner_context",
+        title: "Teaching the AI a bit about you",
+        status: stageStatus(1),
       },
       {
-        id: "materials",
-        title: "Generating your learning materials",
-        description: "One structured LLM call produces every study tool in parallel.",
-        status: materialsStatus,
-        subtasks: [
-          {
-            id: "flashcards",
-            title: "Writing flashcards",
-            description: "Active-recall cards with difficulty tiers.",
-            status: step(
-              STAGE_SCHEDULE.materialsStart,
-              STAGE_SCHEDULE.flashcardsDone,
-            ),
-          },
-          {
-            id: "quizzes",
-            title: "Drafting quiz questions",
-            description: "Multiple-choice with plausible distractors and explanations.",
-            status: step(
-              STAGE_SCHEDULE.flashcardsDone,
-              STAGE_SCHEDULE.quizzesDone,
-            ),
-          },
-          {
-            id: "timestamps",
-            title: "Mapping chapter timestamps",
-            description: "Key moments so you can jump back to anything.",
-            status: step(
-              STAGE_SCHEDULE.quizzesDone,
-              STAGE_SCHEDULE.timestampsDone,
-            ),
-          },
-          {
-            id: "prereqs",
-            title: "Identifying prerequisites",
-            description: "Background topics worth brushing up on first.",
-            status: step(
-              STAGE_SCHEDULE.timestampsDone,
-              STAGE_SCHEDULE.prereqsDone,
-            ),
-          },
-          {
-            id: "challenges",
-            title: "Building real-world challenges",
-            description: "Scenario-based problems to stress-test understanding.",
-            status: step(
-              STAGE_SCHEDULE.prereqsDone,
-              STAGE_SCHEDULE.challengesDone,
-            ),
-          },
-          {
-            id: "mindmap",
-            title: "Drawing the mind map",
-            description: "Concept graph connecting every idea.",
-            status: step(
-              STAGE_SCHEDULE.challengesDone,
-              STAGE_SCHEDULE.mindmapDone,
-            ),
-          },
-        ],
+        id: "generating",
+        title: "Crafting your study materials",
+        status: stageStatus(2),
       },
       {
-        id: "finalize",
-        title: "Saving everything to your library",
-        description: "Persisting materials and logging activity.",
-        status: finalizeStatus,
+        id: "finishing",
+        title: "Adding the finishing touches",
+        status: stageStatus(3),
       },
     ];
-  }, [elapsed, processingStatus, sourceType]);
+  }, [activeIndex, sourceType, isDone, isFailed]);
 
-  return <AgentPlan tasks={tasks} defaultExpandedTaskIds={["materials"]} />;
+  return (
+    <div className="space-y-3">
+      <AgentPlan tasks={tasks} />
+      {stageIndex === 2 && !isDone && !isFailed && (
+        <div className="px-5 pt-1" aria-live="polite">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={phraseIndex}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ShiningText text={GENERATING_PHRASES[phraseIndex]} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
 }

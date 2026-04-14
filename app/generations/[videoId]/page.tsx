@@ -542,7 +542,9 @@ export default function VideoMaterialsPage() {
             </div>
           </div>
 
-          <GenerationProgress processingStatus={processingStatus} />
+          <GenerationProgress
+            processingStatus={processingStatus as 'pending' | 'processing'}
+          />
 
           <p className="mt-5 text-center text-xs text-secondary/60">
             This usually takes about a minute. Feel free to leave &mdash; we&apos;ll have everything ready when you&apos;re back.

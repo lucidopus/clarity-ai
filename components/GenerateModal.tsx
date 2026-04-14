@@ -786,7 +786,7 @@ export default function GenerateModal({
                   )}
                   {sources.length > 1 && (
                     <p className="text-center text-[10px] text-muted-foreground mt-2">
-                      {sources.length} sources &middot; Combined
+                      {`${sources.length} sources · Combined`}
                     </p>
                   )}
                 </div>
