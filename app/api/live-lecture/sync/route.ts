@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import { setSessionHeartbeat } from '@/lib/live-lecture/redis';
 import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/sync — Batch sync segments, notes, markers (every 10s)
@@ -88,6 +89,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] Sync error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

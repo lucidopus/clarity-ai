@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { getUserFriendlyMessage, extractApiErrorMessage } from '@/lib/utils/user-error';
 
 export interface FocusHoursBucket {
   hour: number;
@@ -112,7 +113,8 @@ export function DashboardInsightsProvider({ children }: { children: ReactNode })
         const res = await fetch(`/api/dashboard/insights?timezone=${encodeURIComponent(timezone)}`);
 
         if (!res.ok) {
-          throw new Error('Failed to load insights');
+          const msg = await extractApiErrorMessage(res, 'We couldn\'t load your insights right now. Please try again shortly.');
+          throw new Error(msg);
         }
 
         const data = await res.json();
@@ -121,8 +123,7 @@ export function DashboardInsightsProvider({ children }: { children: ReactNode })
         }
       } catch (e: unknown) {
         if (mounted) {
-          const message = e instanceof Error ? e.message : 'Error loading insights';
-          setError(message);
+          setError(getUserFriendlyMessage(e, 'We couldn\'t load your insights right now. Please try again shortly.'));
         }
       } finally {
         if (mounted) {

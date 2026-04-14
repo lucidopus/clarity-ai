@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog } from '@/lib/models';
 import mongoose from 'mongoose';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 type View = 'month' | 'year';
 
@@ -93,6 +94,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Failed to load activity heatmap', error);
-    return NextResponse.json({ error: 'Failed to load activity heatmap' }, { status: 500 });
+    return apiErrorResponse('STATS_UNAVAILABLE', 500, 'We couldn\'t load your activity heatmap. Please refresh to try again.');
   }
 }

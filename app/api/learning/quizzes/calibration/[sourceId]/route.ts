@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Progress from '@/lib/models/Progress';
 import Quiz from '@/lib/models/Quiz';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function GET(
   request: NextRequest,
@@ -50,6 +51,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching calibration data:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

@@ -12,6 +12,7 @@ import { logGenerationCost, formatCost } from '@/lib/cost/logger';
 import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
 import { HumanMessage, SystemMessage, AIMessage } from '@langchain/core/messages';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 interface IChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -264,6 +265,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('AI Guide API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('CHAT_UNAVAILABLE', 500);
   }
 }

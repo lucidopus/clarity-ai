@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import { logValidationOverride } from '@/lib/content-validator';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 /**
  * POST /api/videos/[videoId]/validation-action
@@ -100,9 +101,6 @@ export async function POST(
 
   } catch (error) {
     console.error('❌ [VALIDATION ACTION] Error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return internalServerError();
   }
 }

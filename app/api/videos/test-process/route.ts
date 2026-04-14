@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import LearningMaterial from '@/lib/models/LearningMaterial';
 import { processVideoWithScenario } from '@/lib/test-pipeline';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 export async function POST(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
@@ -118,9 +119,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return internalServerError();
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { getReadinessScore } from '@/lib/services/readinessScore';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function GET(
   request: NextRequest,
@@ -16,6 +17,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error computing clarity score:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

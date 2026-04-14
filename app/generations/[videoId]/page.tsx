@@ -23,6 +23,7 @@ import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useAuth } from '@/lib/auth-context';
 import { ChatBot } from '@/components/ChatBot';
 import { getErrorConfig } from '@/lib/errorMessages';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 import GenerationProgress from '@/components/GenerationProgress';
 
 // ─── Processing screen tips (shuffled per session, rotated every 8s) ────────
@@ -424,7 +425,7 @@ export default function VideoMaterialsPage() {
           setAutoplayVideos(preferencesData.preferences?.autoplayVideos ?? false);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(getUserFriendlyMessage(err, 'We couldn\'t load this video right now. Please refresh and try again.'));
       } finally {
         setLoading(false);
       }

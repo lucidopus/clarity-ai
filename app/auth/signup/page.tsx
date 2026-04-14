@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import { validatePassword, PASSWORD_ERROR_MESSAGE } from '@/lib/utils/auth-validation';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 export default function SignupPage() {
   const { signup } = useAuth();
@@ -109,7 +110,7 @@ export default function SignupPage() {
         // Field-specific validation errors
         setErrors(err as Record<string, string[]>);
       } else {
-        setErrors({ general: [err instanceof Error ? err.message : 'Signup failed'] });
+        setErrors({ general: [getUserFriendlyMessage(err, 'We couldn\'t create your account. Please try again.')] });
       }
     } finally {
       setLoading(false);

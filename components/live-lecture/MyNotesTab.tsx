@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, FileText, Clock, Loader2 } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface Marker {
   offsetSeconds: number;
@@ -47,7 +48,7 @@ export default function MyNotesTab({ sessionId }: MyNotesTabProps) {
         const json = await res.json();
         setData(json);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load notes');
+        setError(getUserFriendlyMessage(err, 'We couldn\'t load your notes. Please try again shortly.'));
       } finally {
         setLoading(false);
       }

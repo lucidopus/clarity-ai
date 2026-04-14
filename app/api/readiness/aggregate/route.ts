@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { getAggregateReadiness } from '@/lib/services/readinessScore';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +27,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching aggregate clarity score:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

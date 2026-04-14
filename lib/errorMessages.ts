@@ -247,6 +247,75 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageConfig> = {
       { label: 'Try Again', variant: 'primary', onClick: 'retry' },
       { label: 'Cancel', variant: 'ghost', onClick: 'close' }
     ]
+  },
+
+  // Generic server-side fallback (shown when a route catches an unhandled exception)
+  INTERNAL_ERROR: {
+    title: 'Something Went Wrong',
+    message: 'Something went wrong on our end. Please try again in a moment.',
+    variant: 'error',
+    shouldRedirect: false,
+    actions: [
+      { label: 'Try Again', variant: 'primary', onClick: 'retry' },
+      { label: 'Cancel', variant: 'ghost', onClick: 'close' }
+    ]
+  },
+
+  // File / media upload failures
+  UPLOAD_FAILED: {
+    title: 'Upload Failed',
+    message: 'We couldn\'t upload your file. Please check your connection and try again.',
+    variant: 'error',
+    shouldRedirect: false,
+    actions: [
+      { label: 'Try Again', variant: 'primary', onClick: 'retry' },
+      { label: 'Cancel', variant: 'ghost', onClick: 'close' }
+    ]
+  },
+
+  // Clara / chatbot server-side failures
+  CHAT_UNAVAILABLE: {
+    title: 'Clara Is Unavailable',
+    message: 'Clara is having trouble responding right now. Please try again in a few moments.',
+    variant: 'error',
+    shouldRedirect: false,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  // Dashboard stats / analytics loads
+  STATS_UNAVAILABLE: {
+    title: 'Couldn\'t Load Stats',
+    message: 'We couldn\'t load your dashboard stats right now. Please refresh the page to try again.',
+    variant: 'warning',
+    shouldRedirect: false,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
+  },
+
+  // Learning material operations (flashcards, quizzes, notes)
+  MATERIAL_UNAVAILABLE: {
+    title: 'Couldn\'t Load Materials',
+    message: 'We couldn\'t load your learning materials right now. Please try again shortly.',
+    variant: 'warning',
+    shouldRedirect: false,
+    actions: [
+      { label: 'Try Again', variant: 'primary', onClick: 'retry' },
+      { label: 'Cancel', variant: 'ghost', onClick: 'close' }
+    ]
+  },
+
+  // Non-critical activity/telemetry logging
+  ACTIVITY_LOG_FAILED: {
+    title: 'Activity Not Saved',
+    message: 'We couldn\'t save that activity. Your progress is still safe — please try again.',
+    variant: 'warning',
+    shouldRedirect: false,
+    actions: [
+      { label: 'OK', variant: 'primary', onClick: 'close' }
+    ]
   }
 };
 

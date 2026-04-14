@@ -21,6 +21,7 @@ import { renderAnimationTool } from '@/lib/tools/render-animation';
 import { createClaraTools, TOOL_LABELS } from '@/lib/tools/clara-tools';
 import { INPUT_LIMITS } from '@/lib/limits';
 import { AnimationSpecSchema } from '@/lib/types/animation';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 const ANIMATION_TOOL_ENABLED = process.env.ENABLE_ANIMATION_TOOL === 'true';
 
@@ -448,6 +449,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Chatbot API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('CHAT_UNAVAILABLE', 500);
   }
 }

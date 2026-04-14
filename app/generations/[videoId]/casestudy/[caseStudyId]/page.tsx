@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import dynamic from 'next/dynamic';
 import { ChatMessage } from '@/components/ChatMessage';
 import ThemeToggle from '@/components/ThemeToggle';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 // Dynamically import rich text editor to avoid SSR issues
 const RichTextEditor = dynamic(() => import('@/components/RichTextEditor'), {
@@ -254,7 +255,7 @@ export default function CaseStudyWorkspacePage() {
         }
       } catch (err) {
         console.error('Error fetching case study:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        setError(getUserFriendlyMessage(err, 'We couldn\'t load this challenge. Please try again shortly.'));
       } finally {
         setLoading(false);
       }

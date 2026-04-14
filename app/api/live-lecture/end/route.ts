@@ -9,6 +9,7 @@ import SourceContent from '@/lib/models/SourceContent';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { clearSessionHeartbeat } from '@/lib/live-lecture/redis';
 import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/end — End lecture, create Source, trigger pipeline
@@ -201,6 +202,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] End error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

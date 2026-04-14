@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import { z } from 'zod';
 import dbConnect from '@/lib/mongodb';
 import Note from '@/lib/models/Note';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 const noteUpdateSchema = z.object({
   generalNote: z.string().optional(),
@@ -30,10 +31,7 @@ export async function GET(
     return NextResponse.json(note || { generalNote: '', segmentNotes: [] });
   } catch (error) {
     console.error('Error fetching notes:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }
 
@@ -59,9 +57,6 @@ export async function PUT(
     return NextResponse.json(updatedNote);
   } catch (error) {
     console.error('Error updating notes:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,6 +24,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ flashcards });
   } catch (error) {
     console.error('Error fetching flashcards by IDs:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

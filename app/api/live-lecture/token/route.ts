@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { checkSessionAlive, clearSessionHeartbeat } from '@/lib/live-lecture/redis';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
 
@@ -180,6 +181,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] Token route error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

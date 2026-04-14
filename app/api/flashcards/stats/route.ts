@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
 import FlashcardReview from '@/lib/models/FlashcardReview';
 import { ensureFSRSInitialized } from '@/lib/services/fsrs-migrate';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,6 +56,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching flashcard stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('STATS_UNAVAILABLE', 500);
   }
 }

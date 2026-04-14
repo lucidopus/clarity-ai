@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import { MindMap } from '@/lib/models';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -49,6 +50,6 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating mind map:', error);
-    return NextResponse.json({ error: 'Failed to update mind map' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500, 'We couldn\'t update your mind map. Please try again.');
   }
 }

@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import StudyDay from '@/lib/models/StudyDay';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 function getUTCDateString(): string {
   return new Date().toISOString().split('T')[0];
@@ -38,6 +39,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching streak data:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

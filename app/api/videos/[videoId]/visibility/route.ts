@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import mongoose from 'mongoose';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 export async function PATCH(
   request: NextRequest,
@@ -44,9 +45,6 @@ export async function PATCH(
 
   } catch (error) {
     console.error('Error updating video visibility:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return internalServerError();
   }
 }

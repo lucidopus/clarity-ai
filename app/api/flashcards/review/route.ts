@@ -7,6 +7,7 @@ import FlashcardReview from '@/lib/models/FlashcardReview';
 import { initFSRSCard, processReview, Rating } from '@/lib/services/fsrs';
 import { recordStudyActivity } from '@/lib/services/streaks';
 import { invalidateReadiness, invalidateUserInsights, invalidateDashStats } from '@/lib/cache';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function POST(request: NextRequest) {
   try {
@@ -76,6 +77,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error submitting flashcard review:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

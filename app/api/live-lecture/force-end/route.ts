@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import { clearSessionHeartbeat } from '@/lib/live-lecture/redis';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // POST /api/live-lecture/force-end
 // Marks all of the user's active sessions as `interrupted` and clears their
@@ -35,6 +36,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, endedCount: active.length });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] force-end error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

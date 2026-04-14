@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog, Video, Flashcard, Quiz } from '@/lib/models';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 function formatYmd(date: Date): string {
   // Use UTC methods to ensure consistent date formatting
@@ -80,6 +81,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Failed to load dashboard activity', error);
-    return NextResponse.json({ error: 'Failed to load activity' }, { status: 500 });
+    return apiErrorResponse('STATS_UNAVAILABLE', 500, 'We couldn\'t load your activity. Please refresh to try again.');
   }
 }

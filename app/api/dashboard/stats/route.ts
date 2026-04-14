@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import { Video, Flashcard, Quiz, Progress, ActivityLog } from '@/lib/models';
 import mongoose from 'mongoose';
 import { getCached, CacheKeys } from '@/lib/cache';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 function startOfWeek(date = new Date()): Date {
   const d = new Date(date);
@@ -178,7 +179,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Failed to load dashboard stats', error);
-    return NextResponse.json({ error: 'Failed to load stats' }, { status: 500 });
+    return apiErrorResponse('STATS_UNAVAILABLE', 500);
   }
 }
 

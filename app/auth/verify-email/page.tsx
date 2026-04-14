@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import Link from 'next/link';
@@ -160,7 +161,7 @@ function VerifyEmailForm() {
       }, 1500);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Verification failed');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t verify your code. Please check the code and try again.'));
     } finally {
       setLoading(false);
     }
@@ -199,7 +200,7 @@ function VerifyEmailForm() {
       setResendCooldown(60); // 1 minute cooldown
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to resend code');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t send a new code. Please try again in a moment.'));
     } finally {
       setLoading(false);
     }

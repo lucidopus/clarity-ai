@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 function daysBetween(d1: Date, d2: Date): number {
   const a = new Date(d1);
@@ -55,6 +56,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, currentStreak: loginStreak, longestStreak });
   } catch (error) {
     console.error('Failed to track login', error);
-    return NextResponse.json({ error: 'Failed to track login' }, { status: 500 });
+    return apiErrorResponse('ACTIVITY_LOG_FAILED', 500);
   }
 }

@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
 import { extractVideoId, isValidYouTubeUrl } from '@/lib/transcript';
 import { ApiError, InvalidURLError, DuplicateVideoError } from '@/lib/errors/ApiError';
+import { getErrorConfig } from '@/lib/errorMessages';
 import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
 import { checkRateLimitMongo } from '@/lib/rate-limit';
 import { RATE_LIMITS } from '@/lib/limits';
@@ -251,15 +252,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('💥 [PROCESS] FATAL ERROR:', error);
 
-    let errorCode = 'UNKNOWN_ERROR';
+    let errorCode = 'INTERNAL_ERROR';
     let statusCode = 500;
-    let errorMessage = 'Internal server error';
+    let errorMessage = getErrorConfig('INTERNAL_ERROR').message;
 
     if (error instanceof ApiError) {
       errorCode = error.code;
       statusCode = error.statusCode;
-      errorMessage = error.message;
-    } else if (error instanceof Error) {
       errorMessage = error.message;
     }
 

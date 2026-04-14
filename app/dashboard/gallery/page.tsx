@@ -12,6 +12,7 @@ import VideoListItem from '@/components/VideoListItem';
 import Dialog from '@/components/Dialog';
 import { ToastContainer, ToastType } from '@/components/Toast';
 import { getErrorConfig } from '@/lib/errorMessages';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 import { Library, Layers, HelpCircle, Clock, LayoutGrid, List } from 'lucide-react';
 
 const filterOptions = [
@@ -219,7 +220,7 @@ export default function GalleryPage() {
       }
     } catch (error: unknown) {
       console.error('❌ [FRONTEND] Generation failed:', error);
-      const message = error instanceof Error ? error.message : 'Failed to generate materials';
+      const message = getUserFriendlyMessage(error, 'We couldn\'t generate materials for this video. Please try again.');
       setErrorDialog({ show: true, message });
     } finally {
       setIsGenerating(false);
@@ -294,7 +295,7 @@ export default function GalleryPage() {
       addToast('Video deleted successfully', 'success');
     } catch (error) {
       console.error('Error deleting video:', error);
-      const message = error instanceof Error ? error.message : 'Failed to delete video';
+      const message = getUserFriendlyMessage(error, 'We couldn\'t delete this video. Please try again.');
       setErrorDialog({ show: true, message });
     } finally {
       setIsDeleting(false);

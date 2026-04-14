@@ -7,6 +7,7 @@ import Progress from '@/lib/models/Progress';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import mongoose from 'mongoose';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 export async function GET(request: NextRequest) {
   try {
@@ -95,9 +96,6 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching videos:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return internalServerError();
   }
 }

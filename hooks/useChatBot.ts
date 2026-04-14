@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 export interface ChatMessage {
   id: string;
@@ -192,8 +193,8 @@ export function useChatBot(
 
       // Handle rate limit
       if (response.status === 429) {
-        const errorData = await response.json();
-        setError(errorData.message);
+        const errorData = await response.json().catch(() => null);
+        setError(getUserFriendlyMessage(errorData, 'You\'ve reached your message limit for now. Please try again later.'));
         setRemainingMessages(0);
         setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
         setIsStreaming(false);
@@ -299,7 +300,10 @@ export function useChatBot(
                 }
 
                 case 'error': {
-                  setError(event.message as string);
+                  setError(getUserFriendlyMessage(
+                    { message: event.message },
+                    'Clara ran into an issue. Please try your message again.'
+                  ));
                   break;
                 }
 

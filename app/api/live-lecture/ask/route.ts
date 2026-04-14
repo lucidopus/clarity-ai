@@ -14,6 +14,7 @@ import { CostSource, ServiceType } from '@/lib/models/Cost';
 import type { IServiceUsage } from '@/lib/models/Cost';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/ask — Q&A during live lecture (streaming)
@@ -233,6 +234,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] Ask error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('CHAT_UNAVAILABLE', 500);
   }
 }

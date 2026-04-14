@@ -11,6 +11,7 @@ import Quiz from '@/lib/models/Quiz';
 import { MindMap } from '@/lib/models';
 import Progress from '@/lib/models/Progress';
 import { getAdapter } from '@/lib/adapters';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function GET(
   request: NextRequest,
@@ -144,9 +145,6 @@ export async function GET(
 
   } catch (error) {
     console.error('Error fetching video materials:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

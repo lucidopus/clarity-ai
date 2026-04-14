@@ -11,6 +11,7 @@ import Step3Personality from './steps/Step3Personality';
 import Step4Motivation from './steps/Step4Motivation';
 import Step5Preferences from './steps/Step5Preferences';
 import { IUserPreferences } from '@/lib/models/User';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 const steps = [
   { id: 'goals', component: Step1GoalsContext, title: 'Learning Goals & Context' },
@@ -133,7 +134,7 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
       router.push(isEditMode ? '/dashboard/settings' : '/dashboard');
     } catch (error) {
       console.error('Error saving preferences:', error);
-      setError(error instanceof Error ? error.message : 'Failed to save preferences');
+      setError(getUserFriendlyMessage(error, 'We couldn\'t save your preferences. Please try again in a moment.'));
     } finally {
       setLoading(false);
     }

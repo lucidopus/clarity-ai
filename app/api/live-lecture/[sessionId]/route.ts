@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GET /api/live-lecture/[sessionId] — Full LiveSession (crash recovery)
@@ -29,6 +30,6 @@ export async function GET(
     return NextResponse.json({ session });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] Get session error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

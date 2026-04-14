@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 
@@ -24,7 +25,7 @@ export default function SigninPage() {
     try {
       await login(formData.username, formData.password, formData.rememberMe);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(getUserFriendlyMessage(err, 'Unable to sign you in. Please check your credentials and try again.'));
     } finally {
       setLoading(false);
     }

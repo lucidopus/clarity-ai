@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog, type ActivityType } from '@/lib/models';
 import { resolveClientDay } from '@/lib/date.utils';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,6 +57,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, id: doc._id });
   } catch (error) {
     console.error('Failed to log activity', error);
-    return NextResponse.json({ error: 'Failed to log activity' }, { status: 500 });
+    return apiErrorResponse('ACTIVITY_LOG_FAILED', 500);
   }
 }

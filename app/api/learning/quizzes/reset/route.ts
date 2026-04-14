@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Progress from '@/lib/models/Progress';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 interface ResetQuizRequest {
   videoId?: string;
@@ -59,9 +60,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error resetting quiz progress:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

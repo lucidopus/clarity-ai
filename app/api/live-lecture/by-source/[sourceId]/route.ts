@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // GET /api/live-lecture/by-source/[sourceId] — Resolve sessionId from sourceId
 export async function GET(
@@ -26,6 +27,6 @@ export async function GET(
     return NextResponse.json({ sessionId: session.sessionId });
   } catch (error) {
     console.error('[LIVE-LECTURE] By-source error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

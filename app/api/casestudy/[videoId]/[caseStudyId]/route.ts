@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { LearningMaterial, Solution, Video, User } from '@/lib/models';
 import Note from '@/lib/models/Note';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 /**
  * GET /api/casestudy/[videoId]/[caseStudyId]
@@ -125,9 +126,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching case study data:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

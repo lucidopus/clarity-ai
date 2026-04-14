@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
+import { internalServerError } from '@/lib/errors/apiResponse';
 // Deprecated: mock pipeline removed. This endpoint is deprecated in favor of /api/videos/process
 
 export async function POST(request: NextRequest) {
@@ -35,9 +36,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error processing video with mock pipeline:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return internalServerError();
   }
 }

@@ -11,6 +11,7 @@ import {
   addMarkerToSession,
   type StoredSession,
 } from './indexeddb';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 export interface TranscriptSegment {
   text: string;
@@ -98,7 +99,7 @@ export function useLiveTranscription(config: UseLiveTranscriptionConfig): UseLiv
     },
     onError: (err) => {
       console.error('🎙️ [SCRIBE] Error:', err);
-      const msg = typeof err === 'string' ? err : 'Transcription error';
+      const msg = getUserFriendlyMessage(err, 'We hit a transcription error. Please try again.');
       setError(msg);
       onError?.(msg);
     },
@@ -255,7 +256,7 @@ export function useLiveTranscription(config: UseLiveTranscriptionConfig): UseLiv
       // Start silence timer
       resetSilenceTimer();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start transcription';
+      const msg = getUserFriendlyMessage(err, 'We couldn\'t start transcription. Please check your mic and try again.');
       setError(msg);
       onError?.(msg);
     }

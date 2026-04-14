@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import DailyChallenge from '@/lib/models/DailyChallenge';
 import { IChallenge } from '@/lib/models/DailyChallenge';
 import { generateDailyChallenges } from '@/lib/services/dailyChallenges';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 interface IDailyChallengeDoc {
   challenges: IChallenge[];
@@ -40,6 +41,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching daily challenges:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

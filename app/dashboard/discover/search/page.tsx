@@ -6,6 +6,7 @@ import { Loader2, Play, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import DiscoverNavbar from '@/components/DiscoverNavbar';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface VideoResult {
   _id: string;
@@ -47,11 +48,11 @@ function SearchPageContent() {
         if (data.success) {
           setResults(data.results || []);
         } else {
-          setError(data.message || 'Failed to search videos.');
+          setError(getUserFriendlyMessage(data, 'We couldn\'t complete your search. Please try again.'));
         }
       } catch (err) {
         console.error(err);
-        setError('Something went wrong. Please try again.');
+        setError(getUserFriendlyMessage(err, 'We couldn\'t complete your search. Please try again.'));
       } finally {
         setLoading(false);
       }

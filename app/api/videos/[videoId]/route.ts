@@ -13,6 +13,7 @@ import SourceContent from '@/lib/models/SourceContent';
 import LiveSession from '@/lib/models/LiveSession';
 import Cost from '@/lib/models/Cost';
 import { deleteSupabaseFiles } from '@/lib/supabase';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 export async function DELETE(
   request: NextRequest,
@@ -73,9 +74,6 @@ export async function DELETE(
 
   } catch (error) {
     console.error('Error deleting video:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return internalServerError();
   }
 }

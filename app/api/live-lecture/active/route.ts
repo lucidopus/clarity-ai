@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import { checkSessionAlive } from '@/lib/live-lecture/redis';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // GET /api/live-lecture/active
 // Returns the user's currently-active live session, if any, for
@@ -50,6 +51,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ [LIVE-LECTURE] active error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

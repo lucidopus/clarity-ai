@@ -4,6 +4,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import SourceContent from '@/lib/models/SourceContent';
 import { extractDocument } from '@/lib/extractors/document';
+import { internalServerError } from '@/lib/errors/apiResponse';
 // safeFetch is used indirectly via extractDocument which calls it internally
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -97,6 +98,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('[LIVE-LECTURE] Extract context error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

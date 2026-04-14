@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { loadChatHistory, deleteChatHistory, loadChatHistoryByChannel, deleteChatHistoryByChannel } from '@/lib/chat-db';
 import { generateSessionId, generateContextId } from '@/lib/types/chat';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 /**
  * GET /api/chatbot/history
@@ -65,10 +66,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Failed to load chat history:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('CHAT_UNAVAILABLE', 500);
   }
 }
 
@@ -124,9 +122,6 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Failed to delete chat history:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('CHAT_UNAVAILABLE', 500);
   }
 }

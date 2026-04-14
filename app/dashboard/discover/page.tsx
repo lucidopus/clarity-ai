@@ -8,6 +8,7 @@ import Button from '@/components/Button';
 import DiscoverNavbar from '@/components/DiscoverNavbar';
 import Image from 'next/image';
 import VideoDetailsModal from '@/components/VideoDetailsModal';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface Video {
     _id: string;
@@ -52,11 +53,11 @@ export default function DiscoverPage() {
                     setHeroVideo(data.categories[0].videos[0]);
                 }
             } else {
-                setError(data.message || 'Failed to load recommendations.');
+                setError(getUserFriendlyMessage(data, 'We couldn\'t load recommendations right now. Please try again shortly.'));
             }
         } catch (err) {
             console.error(err);
-            setError('An error occurred while fetching content.');
+            setError(getUserFriendlyMessage(err, 'We couldn\'t load recommendations right now. Please try again shortly.'));
         } finally {
             setLoading(false);
         }

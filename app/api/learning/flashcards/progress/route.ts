@@ -7,6 +7,7 @@ import Progress from '@/lib/models/Progress';
 import Flashcard from '@/lib/models/Flashcard';
 import { computeReadinessScore } from '@/lib/services/readinessScore';
 import { clearInsightsCache } from '@/lib/services/clarityInsights';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 /**
  * POST /api/learning/flashcards/progress
@@ -115,9 +116,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error updating flashcard progress:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

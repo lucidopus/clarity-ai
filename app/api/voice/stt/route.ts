@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import Groq from 'groq-sdk';
 import { checkRateLimitMongo } from '@/lib/rate-limit';
 import { RATE_LIMITS, INPUT_LIMITS } from '@/lib/limits';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -37,6 +38,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ text: transcription.text ?? '' });
   } catch (error) {
     console.error('STT route error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

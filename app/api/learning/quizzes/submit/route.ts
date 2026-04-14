@@ -8,6 +8,7 @@ import Quiz from '@/lib/models/Quiz';
 import { computeBrierScore } from '@/lib/services/calibration';
 import { recordStudyActivity } from '@/lib/services/streaks';
 import { invalidateReadiness, invalidateUserInsights, invalidateDashStats } from '@/lib/cache';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 interface QuizResult {
   quizId: string; // MongoDB ObjectId as string
@@ -199,9 +200,6 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error submitting quiz:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

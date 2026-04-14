@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import FlashcardReview from '@/lib/models/FlashcardReview';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 const MIN_REVIEWS_FOR_OPTIMIZATION = 100;
 
@@ -30,6 +31,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error optimizing FSRS parameters:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

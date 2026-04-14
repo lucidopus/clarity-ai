@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, User, MessageSquare, Loader2 } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface QAMessage {
   role: 'user' | 'assistant';
@@ -55,7 +56,7 @@ export default function QAHistoryTab({ videoId, sessionId }: QAHistoryTabProps) 
         );
         setMessages(mapped);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load history');
+        setError(getUserFriendlyMessage(err, 'We couldn\'t load your Q&A history. Please try again shortly.'));
       } finally {
         setLoading(false);
       }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Video from '@/lib/models/Video';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 export async function GET(
   request: NextRequest,
@@ -31,6 +32,6 @@ export async function GET(
       thumbnail: video.thumbnail,
     });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

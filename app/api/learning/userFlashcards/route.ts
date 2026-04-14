@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Flashcard from '@/lib/models/Flashcard';
 import { recordStudyActivity } from '@/lib/services/streaks';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 /**
  * POST /api/learning/userFlashcards
@@ -66,10 +67,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating user flashcard:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }
 
@@ -137,10 +135,7 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('Error updating user flashcard:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }
 
@@ -200,9 +195,6 @@ export async function DELETE(request: NextRequest) {
 
   } catch (error) {
     console.error('Error deleting user flashcard:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }

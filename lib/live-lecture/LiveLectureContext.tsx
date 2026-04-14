@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { useCrashRecovery, type CrashRecoveryData } from './use-crash-recovery';
 import { clearSession } from './indexeddb';
 import type { LiveLectureConfig } from '@/components/live-lecture/LiveLectureSetupModal';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 export type LiveLecturePhase = 'idle' | 'setup' | 'connecting' | 'active' | 'ending' | 'processing';
 
@@ -144,7 +145,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
         // pick "End Previous & Start New" rather than staring at a dead error.
         if (response.status === 409 && data?.errorType === 'STALE_SESSION') {
           setStaleSessionId(data.staleSessionId ?? null);
-          setError(data.error || "You have a previous session that wasn't ended properly.");
+          setError(getUserFriendlyMessage(data, "You have a previous session that wasn't ended properly."));
           setPhase('setup');
           return;
         }
@@ -163,8 +164,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
       setSourceId(null);
       setPhase('active');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start session';
-      setError(msg);
+      setError(getUserFriendlyMessage(err, 'We couldn\'t start your session. Please try again.'));
       setPhase('setup');
     }
   }, []);
@@ -236,8 +236,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
       // Dismiss the recovery prompt
       await dismissCrashRecovery();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to resume session';
-      setError(msg);
+      setError(getUserFriendlyMessage(err, 'We couldn\'t resume your session. Please try again.'));
       setPhase('idle');
     }
   }, [dismissCrashRecovery]);
@@ -309,8 +308,7 @@ export function LiveLectureProvider({ children }: { children: React.ReactNode })
 
       return { sourceId: data.sourceId };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to end session';
-      setError(msg);
+      setError(getUserFriendlyMessage(err, 'We couldn\'t end your session cleanly. Please try again.'));
       setPhase('active'); // revert so user can try again
     }
   }, [sessionId, focusNotes]);

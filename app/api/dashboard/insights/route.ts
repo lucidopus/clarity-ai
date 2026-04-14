@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog, Flashcard, Source } from '@/lib/models';
 import mongoose from 'mongoose';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 // Activity type to friendly label mapping
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -234,6 +235,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error('Failed to load dashboard insights', error);
-    return NextResponse.json({ error: 'Failed to load insights' }, { status: 500 });
+    return apiErrorResponse('STATS_UNAVAILABLE', 500, 'We couldn\'t load your insights. Please refresh to try again.');
   }
 }

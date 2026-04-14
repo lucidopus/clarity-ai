@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import SourceContent from '@/lib/models/SourceContent';
 import Video from '@/lib/models/Video';
+import { internalServerError } from '@/lib/errors/apiResponse';
 
 // GET /api/videos/[videoId]/segments — Return transcript segments for a source
 // Supports both primary videoId and secondary sourceIds (multi-source)
@@ -46,6 +47,6 @@ export async function GET(
       wordCount: sourceContent.wordCount,
     });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return internalServerError();
   }
 }

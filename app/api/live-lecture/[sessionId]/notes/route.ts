@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import LiveSession from '@/lib/models/LiveSession';
 import Source from '@/lib/models/Source';
+import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GET /api/live-lecture/[sessionId]/notes — Get lecture notes, markers & transcript
@@ -84,6 +85,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('[LIVE-LECTURE] Notes error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return apiErrorResponse('MATERIAL_UNAVAILABLE', 500);
   }
 }
