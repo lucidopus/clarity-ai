@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ShiningText } from '@/components/ui/shining-text';
 
 const PHRASES = [
   'Absorbing',
@@ -20,8 +22,9 @@ const PHRASES = [
 const ROTATE_INTERVAL_MS = 3000;
 
 /**
- * Lightweight thinking indicator with rotating phrases and CSS-only dots.
- * No framer-motion — uses pure CSS keyframes for minimal CPU usage.
+ * Clara's thinking indicator — a shimmering rotating verb. The shine sweeps
+ * left→right on a 2s loop to communicate "actively working" without the
+ * visual noise of a spinner.
  */
 export default function ThinkingIndicator({ className = '' }: { className?: string }) {
   const [index, setIndex] = useState(0);
@@ -34,28 +37,18 @@ export default function ThinkingIndicator({ className = '' }: { className?: stri
   }, []);
 
   return (
-    <div className={`flex items-center gap-1.5 text-sm text-secondary ${className}`}>
-      <span className="transition-opacity duration-300">{PHRASES[index]}</span>
-      <span className="flex gap-0.5" aria-hidden="true">
-        <span className="thinking-dot" />
-        <span className="thinking-dot [animation-delay:200ms]" />
-        <span className="thinking-dot [animation-delay:400ms]" />
-      </span>
-
-      {/* CSS-only animation — no JS animation frames */}
-      <style jsx>{`
-        .thinking-dot {
-          width: 3px;
-          height: 3px;
-          border-radius: 50%;
-          background: currentColor;
-          animation: pulse-dot 1s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.4); }
-        }
-      `}</style>
+    <div className={`flex items-center ${className}`} aria-live="polite">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={index}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.2 }}
+        >
+          <ShiningText text={`${PHRASES[index]}…`} />
+        </motion.span>
+      </AnimatePresence>
     </div>
   );
 }
