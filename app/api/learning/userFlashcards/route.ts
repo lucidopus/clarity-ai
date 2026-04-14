@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import Flashcard from '@/lib/models/Flashcard';
+import { recordStudyActivity } from '@/lib/services/streaks';
 
 /**
  * POST /api/learning/userFlashcards
@@ -45,6 +46,10 @@ export async function POST(request: NextRequest) {
     });
 
     await newFlashcard.save();
+
+    recordStudyActivity(decoded.userId, 'flashcard_created').catch((err) => {
+      console.error('Failed to record streak activity for flashcard creation:', err);
+    });
 
     return NextResponse.json({
       success: true,

@@ -15,6 +15,7 @@ export interface IDailyChallenge extends Document {
   date: string; // YYYY-MM-DD (UTC)
   challenges: IChallenge[];
   allCompleted: boolean;
+  bonusAwarded: boolean;
 }
 
 const ChallengeSchema = new Schema<IChallenge>(
@@ -34,6 +35,7 @@ const DailyChallengeSchema: Schema = new Schema(
     date: { type: String, required: true },
     challenges: [ChallengeSchema],
     allCompleted: { type: Boolean, default: false },
+    bonusAwarded: { type: Boolean, default: false },
   },
   { timestamps: false, collection: 'daily_challenges' }
 );

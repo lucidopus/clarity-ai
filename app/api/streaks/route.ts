@@ -15,13 +15,16 @@ export async function GET(request: NextRequest) {
 
     const [user, todayDoc] = await Promise.all([
       User.findById(decoded.userId)
-        .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate')
-        .lean() as Promise<{ studyStreak?: number; longestStudyStreak?: number; streakShields?: number; milestones?: number[]; lastStudyDate?: string } | null>,
+        .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate streakRecoveryDeadline')
+        .lean() as Promise<{ studyStreak?: number; longestStudyStreak?: number; streakShields?: number; milestones?: number[]; lastStudyDate?: string; streakRecoveryDeadline?: Date | null } | null>,
       StudyDay.findOne({ userId: decoded.userId, date: getUTCDateString() })
         .lean() as Promise<{ qualifies?: boolean } | null>,
     ]);
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    const deadline = user.streakRecoveryDeadline ?? null;
+    const isRecoveryActive = !!(deadline && deadline > new Date());
 
     return NextResponse.json({
       studyStreak: user.studyStreak ?? 0,
@@ -30,6 +33,8 @@ export async function GET(request: NextRequest) {
       milestones: user.milestones ?? [],
       lastStudyDate: user.lastStudyDate ?? null,
       todayQualifies: todayDoc?.qualifies ?? false,
+      isRecoveryActive,
+      recoveryDeadline: isRecoveryActive ? deadline : null,
     });
   } catch (error) {
     console.error('Error fetching streak data:', error);

@@ -63,6 +63,8 @@ function renderLabel(template: string, target: number): string {
     .replace(/{s\|([^|]+)\|([^}]+)}/g, (_, singular, plural) => target === 1 ? singular : plural);
 }
 
+// Pool for slots 2 & 3 (slot 1 is always the FSRS-driven challenge).
+// The "due flashcards" candidate is excluded here since it's reserved for slot 1.
 const CANDIDATE_POOL: ChallengeCandidate[] = [
   {
     type: 'review_cards',
@@ -70,20 +72,6 @@ const CANDIDATE_POOL: ChallengeCandidate[] = [
     baseTarget: 5,
     baseWeight: 30,
     isFeasible: (inv) => inv.totalFlashcards >= 10,
-  },
-  {
-    type: 'review_cards',
-    labelTemplate: 'Review {t} due {s|flashcard|flashcards}',
-    baseTarget: 3,
-    baseWeight: 20,
-    isFeasible: (inv) => inv.dueFlashcards >= 1,
-  },
-  {
-    type: 'review_cards',
-    labelTemplate: 'Review {t} {s|flashcard|flashcards}',
-    baseTarget: 2,
-    baseWeight: 10,
-    isFeasible: (inv) => inv.dueFlashcards >= 1,
   },
   {
     type: 'complete_quiz',
@@ -215,6 +203,8 @@ function selectChallenges(
   candidates: ChallengeCandidate[],
   profile: UserChallengeProfile,
   rng: () => number,
+  limit: number,
+  startingTypeCounts: Partial<Record<ChallengeType, number>> = {},
 ): ChallengeCandidate[] {
   const scored = candidates.map(c => ({
     candidate: c,
@@ -226,10 +216,10 @@ function selectChallenges(
   // Type diversity: max 2 of same type, or 1 if user needs variety
   const forceVariety = profile.learningChallenges.includes('staying-motivated');
   const selected: typeof scored = [];
-  const typeCounts: Partial<Record<ChallengeType, number>> = {};
+  const typeCounts: Partial<Record<ChallengeType, number>> = { ...startingTypeCounts };
 
   for (const item of scored) {
-    if (selected.length >= 3) break;
+    if (selected.length >= limit) break;
     const t = item.candidate.type;
     const count = typeCounts[t] || 0;
     if (count >= (forceVariety ? 1 : 2)) continue;
@@ -238,14 +228,38 @@ function selectChallenges(
   }
 
   // Defensive fallback
-  if (selected.length < 3) {
+  if (selected.length < limit) {
     for (const item of scored) {
-      if (selected.length >= 3) break;
+      if (selected.length >= limit) break;
       if (!selected.includes(item)) selected.push(item);
     }
   }
 
   return selected.map(s => s.candidate);
+}
+
+// Slot 1 is always an FSRS-due-cards challenge. Target = current due count (capped),
+// with a sensible fallback when the user has nothing due.
+function buildFSRSChallenge(dueFlashcards: number, profile: UserChallengeProfile): IChallenge {
+  if (dueFlashcards >= 1) {
+    const target = Math.min(dueFlashcards, MAX_TARGET.review_cards);
+    return {
+      type: 'review_cards',
+      label: renderLabel('Review {t} due {s|flashcard|flashcards}', target),
+      target,
+      current: 0,
+      done: false,
+    };
+  }
+  // No cards due — motivate general review from the library.
+  const target = scaleTarget(5, 'review_cards', profile);
+  return {
+    type: 'review_cards',
+    label: renderLabel('Review {t} {s|flashcard|flashcards} from your library', target),
+    target,
+    current: 0,
+    done: false,
+  };
 }
 
 // ─── Main Generator ─────────────────────────────────────────────────────────
@@ -292,15 +306,21 @@ export async function generateDailyChallenges(userId: string, date: string): Pro
 
   const inventory: ContentInventory = { totalFlashcards, dueFlashcards, totalQuizzes, totalSources };
 
-  // Filter → Weight → Select
-  const feasible = CANDIDATE_POOL.filter(c => c.isFeasible(inventory));
-  const chosen = selectChallenges(feasible, profile, rng);
+  // Slot 1: always FSRS-driven
+  const fsrsChallenge = buildFSRSChallenge(dueFlashcards, profile);
 
-  return chosen.map(c => {
+  // Slots 2 & 3: weighted selection from the remaining pool, counting the FSRS
+  // slot against review_cards diversity so we don't get three "review" challenges.
+  const feasible = CANDIDATE_POOL.filter(c => c.isFeasible(inventory));
+  const chosen = selectChallenges(feasible, profile, rng, 2, { review_cards: 1 });
+
+  const remaining: IChallenge[] = chosen.map(c => {
     const target = scaleTarget(c.baseTarget, c.type, profile);
     const label = renderLabel(c.labelTemplate, target);
     return { type: c.type, label, target, current: 0, done: false };
   });
+
+  return [fsrsChallenge, ...remaining];
 }
 
 // ─── Activity Recording ─────────────────────────────────────────────────────
@@ -356,7 +376,21 @@ export async function recordChallengeActivity(
 
   // Check if all challenges are now done
   const final = await DailyChallenge.findOne({ userId, date });
-  if (final && final.challenges.every((c: IChallenge) => c.current >= c.target)) {
-    await DailyChallenge.updateOne({ userId, date }, { $set: { allCompleted: true } });
-  }
+  if (!final || !final.challenges.every((c: IChallenge) => c.current >= c.target)) return;
+
+  // Atomically flip allCompleted → true the first time; award the shield bonus
+  // exactly once by gating on bonusAwarded: false in the same update.
+  const claimed = await DailyChallenge.findOneAndUpdate(
+    { userId, date, bonusAwarded: false },
+    { $set: { allCompleted: true, bonusAwarded: true } },
+    { new: false },
+  );
+
+  if (!claimed) return; // already awarded by a concurrent request
+
+  // Grant 1 shield if user has < 3, capping at 3. Badge-only otherwise.
+  await User.updateOne(
+    { _id: userId, streakShields: { $lt: 3 } },
+    { $inc: { streakShields: 1 } },
+  );
 }

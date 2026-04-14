@@ -12,6 +12,17 @@ interface StreakData {
   milestones: number[];
   lastStudyDate: string | null;
   todayQualifies: boolean;
+  isRecoveryActive?: boolean;
+  recoveryDeadline?: string | null;
+}
+
+function formatTimeLeft(deadline: string): string {
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (ms <= 0) return 'expiring';
+  const hours = Math.floor(ms / 3_600_000);
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
+  if (hours > 0) return `${hours}h ${minutes}m left`;
+  return `${minutes}m left`;
 }
 
 const NEXT_MILESTONE = (streak: number): number | null => {
@@ -110,7 +121,7 @@ export default function StreakWidget() {
     );
   }
 
-  const { studyStreak, longestStudyStreak, streakShields, todayQualifies } = data!;
+  const { studyStreak, longestStudyStreak, streakShields, todayQualifies, isRecoveryActive, recoveryDeadline } = data!;
   const nextMilestone = NEXT_MILESTONE(studyStreak);
   const prevMilestone = [...PREV_MILESTONES].reverse().find((m) => studyStreak >= m) ?? 0;
   const milestoneProgress = nextMilestone
@@ -140,6 +151,24 @@ export default function StreakWidget() {
           )}
         </div>
 
+        {isRecoveryActive && recoveryDeadline && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25 }}
+            className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300/60 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs"
+            role="status"
+          >
+            <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
+            <div className="flex-1">
+              <div className="font-medium text-amber-800 dark:text-amber-300">Recovery in progress</div>
+              <div className="text-amber-700/90 dark:text-amber-400/80">
+                Review 10 cards or complete 2 quizzes to save your streak — {formatTimeLeft(recoveryDeadline)}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Streak count + shields */}
         <div className="flex items-end justify-between mb-4">
           <div>
@@ -151,7 +180,7 @@ export default function StreakWidget() {
             </div>
             <div className="text-sm text-muted-foreground">
               {studyStreak === 1 ? 'day streak' : 'days streak'}
-              {todayQualifies && (
+              {todayQualifies && !isRecoveryActive && (
                 <span
                   className="ml-1.5 text-xs text-green-600 dark:text-green-400 font-medium"
                   aria-label="Counted today"

@@ -79,6 +79,7 @@ export interface IUser extends Document {
   lastStudyDate?: string; // YYYY-MM-DD (UTC)
   streakShields: number;  // 0–3 shield charges
   milestones: number[];   // achieved milestone days [7, 30, 100, 365]
+  streakRecoveryDeadline?: Date | null; // cutoff for 48h recovery window after a break
 }
 
 const UserSchema: Schema = new Schema({
@@ -135,6 +136,7 @@ const UserSchema: Schema = new Schema({
   lastStudyDate: { type: String, default: null }, // YYYY-MM-DD (UTC)
   streakShields: { type: Number, default: 0, min: 0, max: 3 },
   milestones: [{ type: Number }],
+  streakRecoveryDeadline: { type: Date, default: null },
   // Email verification status
   emailVerified: { type: Boolean, default: false },
 }, {

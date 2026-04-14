@@ -18,6 +18,7 @@ import {
   logActivity,
   logCosts,
 } from "../lib/pipeline-helpers";
+import { recordStudyActivity } from "../lib/services/streaks";
 
 // Configure auth for triggering from API routes
 auth.configure({
@@ -344,6 +345,11 @@ export const processVideoPipelineTask = task({
     // 10. Log activity (if materials generated)
     if (materials) {
       await logActivity(userId, sourceId, materials, clientTimestamp, timezoneOffsetMinutes, timeZone);
+      try {
+        await recordStudyActivity(userId, 'source_processed');
+      } catch (err) {
+        logger.warn("Failed to record streak activity", { err: err instanceof Error ? err.message : String(err) });
+      }
     }
 
     // 11. Log costs
