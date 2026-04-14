@@ -7,6 +7,7 @@ import { constructUserProfileString } from '@/lib/service-utils';
 import { generateUserRecommendations } from '@/trigger/recommendations';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
+import { invalidateAllUserCaches } from '@/lib/cache';
 
 type LearningPreferencesPayload = Partial<ILearningPreferences>;
 
@@ -200,18 +201,24 @@ export async function POST(request: NextRequest) {
     }
 
     // --- TRIGGER RECOMMENDATION UPDATE ---
-    // Now that the user has a new embedding/preferences, we immediately trigger 
+    // Now that the user has a new embedding/preferences, we immediately trigger
     // the recommendation engine so they see content right away (instead of waiting for the 6h cron).
     try {
        await generateUserRecommendations.trigger({
          userId: user._id.toString(),
-         username: user.username || 'User' 
+         username: user.username || 'User'
        });
        console.log(`🚀 Triggered immediate recommendation update for ${user.username}`);
     } catch (triggerError) {
        console.error('Failed to trigger recommendation task:', triggerError);
        // Non-blocking: we still return success to the UI
     }
+
+    // Bust all goal-dependent caches so the dashboard reflects the new
+    // learning-goal embedding immediately (aggregate clarity score,
+    // insights, narratives, etc.). Per-source clarity scores are untouched
+    // because they don't depend on goals.
+    await invalidateAllUserCaches(user._id.toString());
 
     return NextResponse.json({
       success: true,

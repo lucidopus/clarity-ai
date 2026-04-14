@@ -2,8 +2,26 @@ import dbConnect from '@/lib/mongodb';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import Progress from '@/lib/models/Progress';
+import Source from '@/lib/models/Source';
+import User from '@/lib/models/User';
 import type { IReadinessScore } from '@/lib/models/Progress';
 import { getCached, CacheKeys } from '@/lib/cache';
+
+// Minimum floor weight so sources unrelated to current goals still contribute
+// a small amount — avoids hiding mastery on pivoted content entirely.
+const MIN_GOAL_WEIGHT = 0.1;
+// Neutral weight assigned to sources that don't have an embedding (e.g.,
+// legacy sources processed before embeddings were rolled out). Keeps them
+// in the average without letting them dominate.
+const NEUTRAL_WEIGHT = 0.3;
+
+function cosine(a: number[], b: number[]): number {
+  // User + Source embeddings are L2-normalized at generation time
+  // (see lib/embedding.ts), so dot product = cosine similarity.
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+}
 
 const READINESS_TTL_SEC  = 24 * 60 * 60; // 24 hours — invalidated on quiz/flashcard review
 const AGGREGATE_TTL_SEC  = 60 * 60;       // 1 hour — aggregate changes less frequently
@@ -257,12 +275,19 @@ export interface AvgDimensions {
   trend: number;
 }
 
-/** Aggregate readiness across all of a user's sources. */
-export async function getAggregateReadiness(userId: string): Promise<{
+export interface AggregateReadinessResult {
   overallScore: number;
   sources: { sourceId: string; score: number }[];
   avgDimensions: AvgDimensions | null;
-}> {
+  // True when the overall score was weighted by similarity between the user's
+  // learning-goal embedding and each source's embedding. False when we fell
+  // back to a simple unweighted mean (no user embedding, no source embeddings,
+  // or all weights zero).
+  isGoalWeighted: boolean;
+}
+
+/** Aggregate readiness across all of a user's sources. */
+export async function getAggregateReadiness(userId: string): Promise<AggregateReadinessResult> {
   return getCached(
     CacheKeys.readinessAggregate(userId),
     () => _computeAggregateReadiness(userId),
@@ -270,11 +295,7 @@ export async function getAggregateReadiness(userId: string): Promise<{
   );
 }
 
-async function _computeAggregateReadiness(userId: string): Promise<{
-  overallScore: number;
-  sources: { sourceId: string; score: number }[];
-  avgDimensions: AvgDimensions | null;
-}> {
+async function _computeAggregateReadiness(userId: string): Promise<AggregateReadinessResult> {
   await dbConnect();
 
   const progresses = await Progress.find({ userId })
@@ -348,24 +369,75 @@ async function _computeAggregateReadiness(userId: string): Promise<{
 
   const sourcesWithScore = [...cached, ...fresh];
 
-  const overallScore =
-    sourcesWithScore.length > 0
-      ? Math.round(sourcesWithScore.reduce((s, p) => s + p.score, 0) / sourcesWithScore.length)
-      : 0;
+  if (sourcesWithScore.length === 0) {
+    return { overallScore: 0, sources: [], avgDimensions: null, isGoalWeighted: false };
+  }
 
-  const avgDimensions: AvgDimensions | null =
-    sourcesWithScore.length > 0
-      ? {
-          quiz: Math.round(sourcesWithScore.reduce((s, p) => s + p.quizDimension, 0) / sourcesWithScore.length),
-          mastery: Math.round(sourcesWithScore.reduce((s, p) => s + p.masteryDimension, 0) / sourcesWithScore.length),
-          coverage: Math.round(sourcesWithScore.reduce((s, p) => s + p.coverageDimension, 0) / sourcesWithScore.length),
-          trend: Math.round(sourcesWithScore.reduce((s, p) => s + p.trendDimension, 0) / sourcesWithScore.length),
-        }
-      : null;
+  // ── Goal-weighted aggregate ─────────────────────────────────────────────────
+  // Weight each source's score by its cosine similarity to the user's current
+  // learning-goal embedding. Per-source scores are never altered — only the
+  // aggregate is re-weighted, so that updating goals causes the dashboard
+  // number to feel responsive without invalidating historical mastery.
+  //
+  // Cold-start fallback: if the user has no embedding, or none of the scored
+  // sources have embeddings, fall through to a simple unweighted mean.
+  const sourceIds = sourcesWithScore.map((s) => s.sourceId);
+  const [userRow, sourceRows] = await Promise.all([
+    User.findById(userId).select('preferences.embedding').lean() as unknown as Promise<{
+      preferences?: { embedding?: number[] };
+    } | null>,
+    Source.find({ userId, sourceId: { $in: sourceIds } })
+      .select('sourceId embedding')
+      .lean() as unknown as Promise<{ sourceId: string; embedding?: number[] }[]>,
+  ]);
+
+  const userEmb = userRow?.preferences?.embedding;
+  const embBySource = new Map<string, number[] | undefined>(
+    sourceRows.map((s) => [s.sourceId, s.embedding]),
+  );
+
+  const canWeight =
+    Array.isArray(userEmb) &&
+    userEmb.length > 0 &&
+    sourceRows.some((s) => Array.isArray(s.embedding) && s.embedding!.length === userEmb.length);
+
+  let weights: number[];
+  if (canWeight) {
+    weights = sourcesWithScore.map((s) => {
+      const emb = embBySource.get(s.sourceId);
+      if (!emb || emb.length !== userEmb!.length) return NEUTRAL_WEIGHT;
+      const sim = cosine(userEmb!, emb);
+      return Math.max(MIN_GOAL_WEIGHT, sim);
+    });
+  } else {
+    // Simple mean — represent as uniform weights so the formulas below stay
+    // unified.
+    weights = new Array(sourcesWithScore.length).fill(1);
+  }
+
+  const weightSum = weights.reduce((s, w) => s + w, 0);
+
+  // Safety net: if weights somehow sum to zero (shouldn't happen given the
+  // MIN_GOAL_WEIGHT floor, but guard anyway), fall back to simple mean.
+  const useWeighted = canWeight && weightSum > 0;
+  const effectiveWeights = useWeighted ? weights : new Array(sourcesWithScore.length).fill(1);
+  const effectiveSum = useWeighted ? weightSum : sourcesWithScore.length;
+
+  const weightedAvg = (pick: (s: SourceWithDimensions) => number) =>
+    sourcesWithScore.reduce((sum, s, i) => sum + pick(s) * effectiveWeights[i], 0) / effectiveSum;
+
+  const overallScore = Math.round(weightedAvg((s) => s.score));
+  const avgDimensions: AvgDimensions = {
+    quiz: Math.round(weightedAvg((s) => s.quizDimension)),
+    mastery: Math.round(weightedAvg((s) => s.masteryDimension)),
+    coverage: Math.round(weightedAvg((s) => s.coverageDimension)),
+    trend: Math.round(weightedAvg((s) => s.trendDimension)),
+  };
 
   return {
     overallScore,
     sources: sourcesWithScore.map((s) => ({ sourceId: s.sourceId, score: s.score })),
     avgDimensions,
+    isGoalWeighted: useWeighted,
   };
 }

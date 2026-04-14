@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { AlertCircle, BookOpen, Brain, TrendingUp, Target, Sparkles } from 'lucide-react';
+import { AlertCircle, BookOpen, Brain, TrendingUp, Target, Sparkles, Info } from 'lucide-react';
 import type { Suggestion } from '@/lib/services/readinessScore';
 
 interface ClarityScoreData {
@@ -133,7 +133,22 @@ export default function ClarityScore({ sourceId, refreshKey }: Props) {
           </div>
           <div>
             <span className="font-semibold text-foreground">Clarity Score</span>
-            <span className="block text-[11px] text-muted-foreground leading-tight">This source only</span>
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground leading-tight relative group/info">
+              Mastery of this source
+              <button
+                type="button"
+                className="inline-flex text-muted-foreground/70 hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded"
+                aria-label="What does this score measure?"
+              >
+                <Info className="w-3 h-3" aria-hidden="true" />
+              </button>
+              <span
+                role="tooltip"
+                className="absolute left-0 top-full mt-1 w-56 bg-card-bg border border-border rounded-lg p-2.5 shadow-xl z-50 opacity-0 pointer-events-none group-hover/info:opacity-100 group-hover/info:pointer-events-auto transition-opacity duration-200 text-[11px] text-muted-foreground leading-snug"
+              >
+                Reflects how well you know this specific source. It doesn&apos;t change when your learning goals change.
+              </span>
+            </span>
           </div>
         </div>
         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${scoreBadge(score)}`}>

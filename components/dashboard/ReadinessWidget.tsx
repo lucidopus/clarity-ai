@@ -10,6 +10,7 @@ interface AggregateData {
   overallScore: number;
   sources: { sourceId: string; score: number }[];
   avgDimensions: AvgDimensions | null;
+  isGoalWeighted?: boolean;
 }
 
 // Visually distinct tiers — all accent-family, but clearly differentiated
@@ -144,7 +145,7 @@ export default function ClarityScoreWidget() {
     );
   }
 
-  const { overallScore, sources, avgDimensions } = data!;
+  const { overallScore, sources, avgDimensions, isGoalWeighted } = data!;
 
   // Empty state: no sources with any score yet
   if (sources.length === 0) {
@@ -185,7 +186,9 @@ export default function ClarityScoreWidget() {
           </div>
           <div>
             <span className="font-semibold text-foreground">Clarity Score</span>
-            <span className="block text-[11px] text-muted-foreground leading-tight">Averaged across all sources</span>
+            <span className="block text-[11px] text-muted-foreground leading-tight">
+              {isGoalWeighted ? 'Weighted toward your current goals' : 'Averaged across all sources'}
+            </span>
           </div>
         </div>
         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${config.badge}`}>
@@ -243,6 +246,11 @@ export default function ClarityScoreWidget() {
                 </div>
               ))}
             </div>
+            {isGoalWeighted && (
+              <p className="text-[11px] text-muted-foreground mt-2 pt-2 border-t border-border/50 leading-snug">
+                Sources that match your current learning goals count more toward this overall score. Per-source scores are unchanged.
+              </p>
+            )}
           </div>
         </div>
 
