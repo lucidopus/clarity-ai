@@ -65,14 +65,31 @@ export async function GET(request: NextRequest) {
       videos: videos.map(video => {
         const totalFlashcards = flashcardCountMap.get(video.videoId) || 0;
         const totalQuizzes = quizCountMap.get(video.videoId) || 0;
-        const totalItems = totalFlashcards + totalQuizzes;
 
         const progressDoc = progressMap.get(video.videoId);
         const masteredFlashcards = progressDoc?.masteredFlashcardIds?.length || 0;
         const masteredQuizzes = progressDoc?.masteredQuizIds?.length || 0;
-        const completedItems = masteredFlashcards + masteredQuizzes;
 
-        const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        // Per-category ratios averaged together so a long PDF can't drown out
+        // flashcard mastery (and vice versa). Categories with zero items are
+        // skipped — including unrated documents, mirroring readinessScore.ts so
+        // a fresh upload doesn't tank a card whose flashcards are mastered.
+        const dimensions: number[] = [];
+        if (totalFlashcards > 0) dimensions.push(masteredFlashcards / totalFlashcards);
+        if (totalQuizzes > 0) dimensions.push(masteredQuizzes / totalQuizzes);
+
+        const docReadiness = progressDoc?.documentReadiness;
+        const ratedPages = docReadiness
+          ? docReadiness.greenPages + docReadiness.yellowPages + docReadiness.redPages
+          : 0;
+        if (docReadiness && docReadiness.pageCount > 0 && ratedPages > 0) {
+          const docRatio = (docReadiness.greenPages + docReadiness.yellowPages * 0.5) / docReadiness.pageCount;
+          dimensions.push(Math.min(1, docRatio));
+        }
+
+        const progress = dimensions.length > 0
+          ? Math.round((dimensions.reduce((sum, d) => sum + d, 0) / dimensions.length) * 100)
+          : 0;
 
         return {
           id: video.videoId, // YouTube video ID for routing to /generations/${videoId}
