@@ -12,6 +12,7 @@ import {
   Legend,
 } from 'chart.js';
 import { AlertCircle } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 // Register Chart.js plugins and components once - safe to call multiple times
 try {
@@ -58,7 +59,7 @@ export default function DailyCostChart() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load the daily cost chart.'));
     } finally {
       setLoading(false);
     }

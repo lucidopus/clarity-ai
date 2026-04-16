@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getServiceLabel } from '@/lib/service-utils';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 // Register Chart.js plugins and components once - safe to call multiple times
 try {
@@ -54,7 +55,7 @@ export default function ServiceEfficiencyChart() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load service efficiency data.'));
     } finally {
       setLoading(false);
     }

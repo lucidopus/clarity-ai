@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { getServiceLabel } from '@/lib/service-utils';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface ServiceCost {
   service: string;
@@ -43,7 +44,7 @@ export default function CostDriversTable() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load cost drivers right now.'));
     } finally {
       setLoading(false);
     }

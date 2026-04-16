@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { DollarSign, TrendingUp, Activity, AlertCircle } from 'lucide-react';
 import { getServiceLabel, getServiceIcon } from '@/lib/service-utils';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface ServiceSummary {
   service: string;
@@ -39,7 +40,7 @@ export default function CostSummaryCards() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load cost summary data.'));
     } finally {
       setLoading(false);
     }

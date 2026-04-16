@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface HeatmapCell {
   date: string;
@@ -46,7 +47,7 @@ export default function SpendingHeatmap() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load the spending heatmap.'));
     } finally {
       setLoading(false);
     }

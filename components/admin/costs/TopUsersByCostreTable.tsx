@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 interface UserCost {
   userId: string;
@@ -37,7 +38,7 @@ export default function TopUsersByCostreTable() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load the top users table.'));
     } finally {
       setLoading(false);
     }

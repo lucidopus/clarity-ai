@@ -14,6 +14,7 @@ import {
   Filler,
 } from 'chart.js';
 import { AlertCircle } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -54,7 +55,7 @@ export default function TokenTrendChart() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load token trend data.'));
     } finally {
       setLoading(false);
     }

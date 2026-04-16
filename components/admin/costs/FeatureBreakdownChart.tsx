@@ -5,6 +5,7 @@ import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { AlertCircle } from 'lucide-react';
+import { getUserFriendlyMessage } from '@/lib/utils/user-error';
 
 // Register Chart.js plugins and components once - safe to call multiple times
 try {
@@ -45,7 +46,7 @@ export default function FeatureBreakdownChart() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
+      setError(getUserFriendlyMessage(err, 'We couldn\'t load the feature breakdown.'));
     } finally {
       setLoading(false);
     }
