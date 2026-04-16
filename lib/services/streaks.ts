@@ -7,7 +7,8 @@ export type ActivityType =
   | 'flashcard_review'
   | 'quiz_completed'
   | 'source_processed'
-  | 'flashcard_created';
+  | 'flashcard_created'
+  | 'document_study_session';
 
 export interface StreakResult {
   studyStreak: number;
@@ -29,6 +30,7 @@ const ACTIVITY_FIELD: Record<ActivityType, string> = {
   quiz_completed: 'quizzesCompleted',
   source_processed: 'sourcesProcessed',
   flashcard_created: 'flashcardsCreated',
+  document_study_session: 'documentStudySessions',
 };
 
 function getUTCDateString(date = new Date()): string {
@@ -48,6 +50,7 @@ interface DayActivity {
   quizzesCompleted: number;
   sourcesProcessed: number;
   flashcardsCreated: number;
+  documentStudySessions: number;
 }
 
 function meetsThreshold(day: DayActivity): boolean {
@@ -55,7 +58,8 @@ function meetsThreshold(day: DayActivity): boolean {
     day.flashcardReviews >= 5 ||
     day.quizzesCompleted >= 1 ||
     day.sourcesProcessed >= 1 ||
-    day.flashcardsCreated >= 3
+    day.flashcardsCreated >= 3 ||
+    day.documentStudySessions >= 1
   );
 }
 

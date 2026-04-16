@@ -35,14 +35,25 @@ interface Segment {
   endTime?: number;
 }
 
-const PAGE_SEGMENT_PREFIX = 'page-';
-const pageNoteId = (page: number) => `${PAGE_SEGMENT_PREFIX}${page}`;
-const pageFromSegmentId = (id: string): number | null => {
-  const m = /^page-(\d+)$/.exec(id);
-  if (!m) return null;
-  const n = parseInt(m[1], 10);
-  return Number.isFinite(n) ? n : null;
-};
+// Qualified page segmentId format: `pdf:{sourceId}:p{N}`. Added to
+// disambiguate page ratings across multiple PDFs in a single generation.
+// Pre-migration entries used bare `page-{N}`; those are still accepted by the
+// reader (they show on every PDF in the generation, matching the old buggy
+// behavior), and are cleaned up by the writer the next time that page is
+// rated — at which point the entry is replaced with a qualified one.
+const LEGACY_PAGE_RE = /^page-(\d+)$/;
+
+const qualifiedPageId = (sourceId: string, page: number) =>
+  `pdf:${sourceId}:p${page}`;
+
+// Writer-side helper: identify any existing segmentNote targeting the same
+// page as the current write — either the new qualified ID or the legacy ID.
+// Using this as the filter predicate on save gives cleanup-on-write: legacy
+// entries are replaced with qualified ones the first time a page is re-rated,
+// so both formats never coexist for the same page.
+function segmentIdMatchesPage(segmentId: string, sourceId: string, page: number): boolean {
+  return segmentId === qualifiedPageId(sourceId, page) || segmentId === `page-${page}`;
+}
 
 // Defense-in-depth: the PDF URL comes from Mongo (written by our upload
 // pipeline) but we still refuse anything that isn't http(s). Prevents
@@ -127,19 +138,40 @@ export default function DocumentContentViewer({
   }, [materials.chapters]);
 
   const signalsByPage = useMemo<Record<number, PageSignal>>(() => {
-    const map: Record<number, PageSignal> = {};
+    // Two-pass: seed with legacy entries (no sub-source), then let qualified
+    // entries for this sub-source override them. If both somehow coexist on
+    // the same page, the qualified one wins — it's the newer, more-specific
+    // rating. Under normal operation cleanup-on-write prevents this state.
+    const qualifiedPrefix = `pdf:${sourceId}:p`;
+    const legacyMap: Record<number, PageSignal> = {};
+    const qualifiedMap: Record<number, PageSignal> = {};
+
     for (const n of notes.segmentNotes) {
-      const p = pageFromSegmentId(n.segmentId);
-      if (p == null) continue;
-      map[p] = {
-        page: p,
-        content: n.content,
-        confidence: n.confidence,
-        updatedAt: n.updatedAt,
-      };
+      if (n.segmentId.startsWith(qualifiedPrefix)) {
+        const p = parseInt(n.segmentId.slice(qualifiedPrefix.length), 10);
+        if (!Number.isFinite(p) || p <= 0) continue;
+        qualifiedMap[p] = {
+          page: p,
+          content: n.content,
+          confidence: n.confidence,
+          updatedAt: n.updatedAt,
+        };
+      } else {
+        const m = LEGACY_PAGE_RE.exec(n.segmentId);
+        if (!m) continue;
+        const p = parseInt(m[1], 10);
+        if (!Number.isFinite(p) || p <= 0) continue;
+        legacyMap[p] = {
+          page: p,
+          content: n.content,
+          confidence: n.confidence,
+          updatedAt: n.updatedAt,
+        };
+      }
     }
-    return map;
-  }, [notes.segmentNotes]);
+
+    return { ...legacyMap, ...qualifiedMap };
+  }, [notes.segmentNotes, sourceId]);
 
   const handleSelectionAction = useCallback(
     (action: 'note' | 'copy', selectedText: string, pageNumber: number) => {
@@ -161,17 +193,26 @@ export default function DocumentContentViewer({
 
   const existingNote = useMemo(() => {
     if (composerPage == null) return undefined;
-    const id = pageNoteId(composerPage);
-    return notes.segmentNotes.find((n) => n.segmentId === id);
-  }, [composerPage, notes.segmentNotes]);
+    // Prefer a qualified entry; fall back to legacy. Never returns a
+    // qualified entry for a different sub-source.
+    return notes.segmentNotes.find((n) =>
+      segmentIdMatchesPage(n.segmentId, sourceId, composerPage),
+    );
+  }, [composerPage, notes.segmentNotes, sourceId]);
 
   const handleSaveNote = useCallback(
     async (content: string) => {
       if (composerPage == null) return;
-      const id = pageNoteId(composerPage);
+      const id = qualifiedPageId(sourceId, composerPage);
       const now = new Date();
-      const others = notes.segmentNotes.filter((n) => n.segmentId !== id);
-      const existing = notes.segmentNotes.find((n) => n.segmentId === id);
+      // Filter removes both the qualified entry for this sub-source AND any
+      // legacy `page-N` — cleanup-on-write, so the two formats never coexist.
+      const others = notes.segmentNotes.filter(
+        (n) => !segmentIdMatchesPage(n.segmentId, sourceId, composerPage),
+      );
+      const existing = notes.segmentNotes.find((n) =>
+        segmentIdMatchesPage(n.segmentId, sourceId, composerPage),
+      );
       const next = {
         generalNote: notes.generalNote,
         segmentNotes: [
@@ -188,17 +229,21 @@ export default function DocumentContentViewer({
       };
       await onSaveNotes(next);
     },
-    [composerPage, notes.segmentNotes, notes.generalNote, onSaveNotes]
+    [composerPage, notes.segmentNotes, notes.generalNote, onSaveNotes, sourceId]
   );
 
   const handleDeleteNote = useCallback(async () => {
     if (composerPage == null) return;
-    const id = pageNoteId(composerPage);
-    const existing = notes.segmentNotes.find((n) => n.segmentId === id);
+    const id = qualifiedPageId(sourceId, composerPage);
+    const existing = notes.segmentNotes.find((n) =>
+      segmentIdMatchesPage(n.segmentId, sourceId, composerPage),
+    );
     // If the page still carries a confidence rating, keep the segment record
     // and only clear its content. Otherwise drop the record entirely.
     const keepAsConfidenceOnly = !!existing?.confidence;
-    const others = notes.segmentNotes.filter((n) => n.segmentId !== id);
+    const others = notes.segmentNotes.filter(
+      (n) => !segmentIdMatchesPage(n.segmentId, sourceId, composerPage),
+    );
     const next = {
       generalNote: notes.generalNote,
       segmentNotes: keepAsConfidenceOnly
@@ -215,15 +260,19 @@ export default function DocumentContentViewer({
         : others,
     };
     await onSaveNotes(next);
-  }, [composerPage, notes.segmentNotes, notes.generalNote, onSaveNotes]);
+  }, [composerPage, notes.segmentNotes, notes.generalNote, onSaveNotes, sourceId]);
 
   const handleDeletePageNote = useCallback(
     async (page: number) => {
-      const id = pageNoteId(page);
-      const existing = notes.segmentNotes.find((n) => n.segmentId === id);
+      const id = qualifiedPageId(sourceId, page);
+      const existing = notes.segmentNotes.find((n) =>
+        segmentIdMatchesPage(n.segmentId, sourceId, page),
+      );
       if (!existing) return;
       const keepAsConfidenceOnly = !!existing.confidence;
-      const others = notes.segmentNotes.filter((n) => n.segmentId !== id);
+      const others = notes.segmentNotes.filter(
+        (n) => !segmentIdMatchesPage(n.segmentId, sourceId, page),
+      );
       const next = {
         generalNote: notes.generalNote,
         segmentNotes: keepAsConfidenceOnly
@@ -241,14 +290,18 @@ export default function DocumentContentViewer({
       };
       await onSaveNotes(next);
     },
-    [notes.segmentNotes, notes.generalNote, onSaveNotes]
+    [notes.segmentNotes, notes.generalNote, onSaveNotes, sourceId]
   );
 
   const handleSetPageConfidence = useCallback(
     async (page: number, level: PageConfidence | null) => {
-      const id = pageNoteId(page);
-      const existing = notes.segmentNotes.find((n) => n.segmentId === id);
-      const others = notes.segmentNotes.filter((n) => n.segmentId !== id);
+      const id = qualifiedPageId(sourceId, page);
+      const existing = notes.segmentNotes.find((n) =>
+        segmentIdMatchesPage(n.segmentId, sourceId, page),
+      );
+      const others = notes.segmentNotes.filter(
+        (n) => !segmentIdMatchesPage(n.segmentId, sourceId, page),
+      );
       // Clearing confidence when there is no note content means drop the
       // segment entirely — otherwise keep the record so the note survives.
       if (level === null && !existing?.content?.trim()) {
@@ -273,7 +326,7 @@ export default function DocumentContentViewer({
       };
       await onSaveNotes(next);
     },
-    [notes.segmentNotes, notes.generalNote, onSaveNotes]
+    [notes.segmentNotes, notes.generalNote, onSaveNotes, sourceId]
   );
 
   // ─── Loading ────────────────────────────────────────────────────────────

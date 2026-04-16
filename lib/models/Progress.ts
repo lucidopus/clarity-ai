@@ -29,6 +29,14 @@ export interface IClarityScore {
 /** @deprecated Use IClarityScore */
 export type IReadinessScore = IClarityScore;
 
+export interface IDocumentReadiness {
+  pageCount: number;
+  greenPages: number;
+  yellowPages: number;
+  redPages: number;
+  updatedAt: Date;
+}
+
 export interface IProgress extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -38,6 +46,11 @@ export interface IProgress extends Document {
   quizAttempts: IQuizAttempt[];
   calibrationHistory: ICalibrationEntry[];
   readinessScore?: IReadinessScore;
+  documentReadiness?: IDocumentReadiness;
+  /** UTC YYYY-MM-DD of the last day we counted a document_study_session for
+   *  this source. Used to dedupe — a single doc can only credit one study
+   *  session per calendar day, preventing scroll-spam from inflating streaks. */
+  documentSessionLoggedOn?: string;
   lastAccessedAt: Date;
   totalStudyTimeSeconds: number;
   createdAt: Date;
@@ -73,6 +86,17 @@ const ReadinessScoreSchema: Schema = new Schema(
   { _id: false }
 );
 
+const DocumentReadinessSchema: Schema = new Schema(
+  {
+    pageCount: { type: Number, required: true, min: 0 },
+    greenPages: { type: Number, required: true, min: 0, default: 0 },
+    yellowPages: { type: Number, required: true, min: 0, default: 0 },
+    redPages: { type: Number, required: true, min: 0, default: 0 },
+    updatedAt: { type: Date, required: true },
+  },
+  { _id: false }
+);
+
 const ProgressSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   sourceId: { type: String, required: true },
@@ -81,6 +105,8 @@ const ProgressSchema: Schema = new Schema({
   quizAttempts: [QuizAttemptSchema],
   calibrationHistory: [CalibrationEntrySchema],
   readinessScore: { type: ReadinessScoreSchema, default: null },
+  documentReadiness: { type: DocumentReadinessSchema, default: null },
+  documentSessionLoggedOn: { type: String, default: null },
   lastAccessedAt: { type: Date, default: Date.now },
   totalStudyTimeSeconds: { type: Number, default: 0 },
 }, {

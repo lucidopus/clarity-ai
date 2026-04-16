@@ -26,6 +26,60 @@ function cosine(a: number[], b: number[]): number {
 const READINESS_TTL_SEC  = 24 * 60 * 60; // 24 hours — invalidated on quiz/flashcard review
 const AGGREGATE_TTL_SEC  = 60 * 60;       // 1 hour — aggregate changes less frequently
 
+// Coverage-dimension weights. Flashcards and quizzes are validated signals;
+// document readiness is self-reported, so we down-weight it to prevent
+// green-washing (clicking "Got it" on every page without real recall).
+const COVERAGE_WEIGHT_FLASHCARD = 0.4;
+const COVERAGE_WEIGHT_QUIZ = 0.4;
+const COVERAGE_WEIGHT_DOCUMENT = 0.2;
+
+interface CoverageInputs {
+  totalFlashcards: number;
+  interactedFlashcards: number;
+  totalQuizzes: number;
+  attemptedQuizzes: number;
+  documentReadiness: {
+    pageCount: number;
+    greenPages: number;
+    yellowPages: number;
+    redPages: number;
+  } | null | undefined;
+}
+
+/** Weighted blend of the three coverage sub-signals. Signals that don't
+ *  apply to this source (null) are excluded from both numerator and
+ *  denominator so a flashcard-only source isn't penalised for having no
+ *  quiz or document readiness. */
+function computeCoverageDimension(inputs: CoverageInputs): number {
+  const flashcardCoverage = inputs.totalFlashcards > 0
+    ? inputs.interactedFlashcards / inputs.totalFlashcards
+    : null;
+
+  const quizCoverage = inputs.totalQuizzes > 0
+    ? Math.min(inputs.attemptedQuizzes / inputs.totalQuizzes, 1)
+    : null;
+
+  const docReadiness = inputs.documentReadiness;
+  const rated = docReadiness
+    ? docReadiness.greenPages + docReadiness.yellowPages + docReadiness.redPages
+    : 0;
+  // Treat an entirely unrated doc as "unknown" (null) rather than 0 — a fresh
+  // upload shouldn't drag coverage to zero for a user who has other signals.
+  const documentCoverage = docReadiness && docReadiness.pageCount > 0 && rated > 0
+    ? Math.min(1, (docReadiness.greenPages + docReadiness.yellowPages * 0.5) / docReadiness.pageCount)
+    : null;
+
+  const terms: { value: number; weight: number }[] = [];
+  if (flashcardCoverage !== null) terms.push({ value: flashcardCoverage, weight: COVERAGE_WEIGHT_FLASHCARD });
+  if (quizCoverage !== null) terms.push({ value: quizCoverage, weight: COVERAGE_WEIGHT_QUIZ });
+  if (documentCoverage !== null) terms.push({ value: documentCoverage, weight: COVERAGE_WEIGHT_DOCUMENT });
+
+  if (terms.length === 0) return 0;
+  const weightSum = terms.reduce((s, t) => s + t.weight, 0);
+  const weightedSum = terms.reduce((s, t) => s + t.value * t.weight, 0);
+  return (weightedSum / weightSum) * 100;
+}
+
 export interface Suggestion {
   action: string;
   impact: string;
@@ -95,21 +149,19 @@ export async function computeReadinessScore(
   }
 
   // ── Coverage dimension (20%) ────────────────────────────────────────────────
-  // Fraction of flashcards interacted with + fraction of quizzes attempted.
-  let coverageDimension = 0;
-  {
-    const flashcardCoverage =
-      totalFlashcards > 0
-        ? flashcards.filter((f) => (f.fsrs?.state ?? 0) > 0).length / totalFlashcards
-        : null;
-
-    const quizCoverage =
-      totalQuizzes > 0 ? Math.min(quizAttempts.length / totalQuizzes, 1) : null;
-
-    const parts = [flashcardCoverage, quizCoverage].filter((v): v is number => v !== null);
-    coverageDimension =
-      parts.length > 0 ? (parts.reduce((s, v) => s + v, 0) / parts.length) * 100 : 0;
-  }
+  // Weighted blend of flashcardCoverage + quizCoverage + documentCoverage.
+  // Flashcards and quizzes are validated signals (objective) so they each
+  // carry weight 0.4; documentCoverage is self-reported (subjective) so it
+  // carries weight 0.2. When a user hasn't rated any pages yet we treat the
+  // document as "unknown" (null) instead of 0 so brand-new uploads don't
+  // tank coverage for users who are learning via flashcards first.
+  const coverageDimension = computeCoverageDimension({
+    totalFlashcards,
+    interactedFlashcards: flashcards.filter((f) => (f.fsrs?.state ?? 0) > 0).length,
+    totalQuizzes,
+    attemptedQuizzes: quizAttempts.length,
+    documentReadiness: progress?.documentReadiness ?? null,
+  });
 
   // ── Trend dimension (15%) ───────────────────────────────────────────────────
   // Compare average quiz score of recent half vs. older half of attempts.
@@ -193,7 +245,17 @@ export async function getReadinessScore(
 
 /** Compute readiness score inline from pre-fetched data (no DB calls). */
 function _computeScoreInline(
-  progress: { sourceId: string; masteredFlashcardIds?: unknown[]; quizAttempts?: unknown[] },
+  progress: {
+    sourceId: string;
+    masteredFlashcardIds?: unknown[];
+    quizAttempts?: unknown[];
+    documentReadiness?: {
+      pageCount: number;
+      greenPages: number;
+      yellowPages: number;
+      redPages: number;
+    } | null;
+  },
   flashcards: { fsrs?: { state?: number; due?: Date | string }; masteredAt?: Date }[],
   totalQuizzes: number
 ): SourceWithDimensions {
@@ -230,10 +292,13 @@ function _computeScoreInline(
   }
 
   // Coverage dimension (20%)
-  const flashcardCoverage = totalFlashcards > 0 ? flashcards.filter((f) => (f.fsrs?.state ?? 0) > 0).length / totalFlashcards : null;
-  const quizCoverage = totalQuizzes > 0 ? Math.min(quizAttempts.length / totalQuizzes, 1) : null;
-  const parts = [flashcardCoverage, quizCoverage].filter((v): v is number => v !== null);
-  const coverageDimension = parts.length > 0 ? (parts.reduce((s, v) => s + v, 0) / parts.length) * 100 : 0;
+  const coverageDimension = computeCoverageDimension({
+    totalFlashcards,
+    interactedFlashcards: flashcards.filter((f) => (f.fsrs?.state ?? 0) > 0).length,
+    totalQuizzes,
+    attemptedQuizzes: quizAttempts.length,
+    documentReadiness: progress.documentReadiness ?? null,
+  });
 
   // Trend dimension (15%)
   let trendDimension = 50;
@@ -299,8 +364,14 @@ async function _computeAggregateReadiness(userId: string): Promise<AggregateRead
   await dbConnect();
 
   const progresses = await Progress.find({ userId })
-    .select('sourceId readinessScore masteredFlashcardIds quizAttempts')
-    .lean() as unknown as { sourceId: string; readinessScore?: IReadinessScore | null; masteredFlashcardIds?: unknown[]; quizAttempts?: unknown[] }[];
+    .select('sourceId readinessScore masteredFlashcardIds quizAttempts documentReadiness')
+    .lean() as unknown as {
+      sourceId: string;
+      readinessScore?: IReadinessScore | null;
+      masteredFlashcardIds?: unknown[];
+      quizAttempts?: unknown[];
+      documentReadiness?: { pageCount: number; greenPages: number; yellowPages: number; redPages: number } | null;
+    }[];
 
   // Sources with a fresh cached score (include all dimension fields)
   const cached: SourceWithDimensions[] = progresses
@@ -321,7 +392,12 @@ async function _computeAggregateReadiness(userId: string): Promise<AggregateRead
     .filter(
       (p) =>
         p.readinessScore == null &&
-        ((p.masteredFlashcardIds?.length ?? 0) > 0 || (p.quizAttempts?.length ?? 0) > 0)
+        ((p.masteredFlashcardIds?.length ?? 0) > 0 ||
+          (p.quizAttempts?.length ?? 0) > 0 ||
+          // Document-only sources (PDF notes + confidence ratings, no flashcards
+          // or quizzes yet) also deserve a score — otherwise a user grinding
+          // through a PDF sees the dashboard stall at "no activity".
+          (p.documentReadiness?.pageCount ?? 0) > 0)
     )
     .slice(0, 10);
 

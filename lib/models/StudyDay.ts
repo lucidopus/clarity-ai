@@ -11,6 +11,7 @@ export interface IStudyDay extends Document {
   quizzesCompleted: number;
   sourcesProcessed: number;
   flashcardsCreated: number;
+  documentStudySessions: number;
   qualifies: boolean;    // true when thresholds are met and streak is already updated
   shieldUsed: boolean;   // true when a shield was consumed for this day (missed but recovered)
 }
@@ -23,6 +24,7 @@ const StudyDaySchema: Schema = new Schema(
     quizzesCompleted: { type: Number, default: 0 },
     sourcesProcessed: { type: Number, default: 0 },
     flashcardsCreated: { type: Number, default: 0 },
+    documentStudySessions: { type: Number, default: 0 },
     qualifies: { type: Boolean, default: false },
     shieldUsed: { type: Boolean, default: false },
   },
