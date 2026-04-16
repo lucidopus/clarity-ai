@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Trigger.dev build artifacts:
     ".trigger/**",
+    // Third-party minified workers copied into public/
+    "public/pdf.worker.min.mjs",
   ]),
   {
     rules: {

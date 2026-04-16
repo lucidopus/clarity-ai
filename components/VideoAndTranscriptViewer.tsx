@@ -171,6 +171,21 @@ export default function VideoAndTranscriptViewer({
       if (e.key === ' ' && !inField && !paletteOpen && popupSegmentIndex == null) {
         e.preventDefault();
         player.togglePlay();
+        return;
+      }
+      // ← / → → seek ±5s (outside inputs, palette, and popups)
+      if (
+        !mod &&
+        !e.altKey &&
+        !e.shiftKey &&
+        (e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+        !inField &&
+        !paletteOpen &&
+        popupSegmentIndex == null
+      ) {
+        e.preventDefault();
+        const delta = e.key === 'ArrowLeft' ? -5 : 5;
+        player.seek(player.currentTime + delta);
       }
     };
 

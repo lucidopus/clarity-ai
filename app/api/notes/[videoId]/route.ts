@@ -9,7 +9,8 @@ const noteUpdateSchema = z.object({
   generalNote: z.string().optional(),
   segmentNotes: z.array(z.object({
     segmentId: z.string(),
-    content: z.string(),
+    content: z.string().optional().default(''),
+    confidence: z.enum(['red', 'yellow', 'green']).optional(),
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),
   })).optional(),

@@ -68,6 +68,14 @@ function SourceContentViewer({
   }
 }
 
+interface MultiSourceViewerProps extends ContentViewerProps {
+  /** Optional controlled active source. When provided, the viewer defers
+   *  to the parent so downstream consumers (e.g. Clara chatbot) can query
+   *  whichever source the user is actively looking at. */
+  activeSourceId?: string;
+  onActiveSourceChange?: (sourceId: string) => void;
+}
+
 /**
  * Multi-Source Viewer
  *
@@ -79,7 +87,9 @@ export default function MultiSourceViewer({
   notes,
   onSaveNotes,
   autoplayVideos,
-}: ContentViewerProps) {
+  activeSourceId: controlledActiveSourceId,
+  onActiveSourceChange,
+}: MultiSourceViewerProps) {
   const sources: SourceInfo[] = useMemo(
     () => [...(materials.sources || [])].sort(
       (a, b) => (sourceOrder[a.sourceType] ?? 99) - (sourceOrder[b.sourceType] ?? 99)
@@ -98,7 +108,16 @@ export default function MultiSourceViewer({
     return Array.from(map.entries()).map(([type, items]) => ({ type, items }));
   }, [sources]);
 
-  const [activeSourceId, setActiveSourceId] = useState(sources[0]?.sourceId || '');
+  const [internalActiveSourceId, setInternalActiveSourceId] = useState(
+    sources[0]?.sourceId || ''
+  );
+  // Prefer the controlled prop when provided; fall back to internal state so
+  // this component still works on its own for any legacy callers.
+  const activeSourceId = controlledActiveSourceId ?? internalActiveSourceId;
+  const setActiveSourceId = (next: string) => {
+    if (onActiveSourceChange) onActiveSourceChange(next);
+    else setInternalActiveSourceId(next);
+  };
 
   const activeSource = useMemo(
     () => sources.find(s => s.sourceId === activeSourceId) || sources[0],

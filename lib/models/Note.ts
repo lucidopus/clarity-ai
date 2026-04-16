@@ -3,7 +3,10 @@ import { INote } from '@/lib/types/notes';
 
 const SegmentNoteSchema: Schema = new Schema({
   segmentId: { type: String, required: true },
-  content: { type: String, required: true },
+  // Content is optional so a segment record can exist for confidence-only
+  // ratings (active-recall signal) without forcing the user to also write a note.
+  content: { type: String, default: '' },
+  confidence: { type: String, enum: ['red', 'yellow', 'green'], default: undefined },
 }, { timestamps: true });
 
 const NoteSchema: Schema = new Schema({

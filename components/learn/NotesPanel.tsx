@@ -98,6 +98,14 @@ export default function NotesPanel({
     lastSavedRef.current = initial;
   }, [editor, notes.generalNote]);
 
+  // Focus the editor whenever the panel transitions from collapsed → open,
+  // so users can start typing immediately after opening notes.
+  useEffect(() => {
+    if (collapsed || !editor) return;
+    const t = setTimeout(() => editor.commands.focus('end'), 50);
+    return () => clearTimeout(t);
+  }, [collapsed, editor]);
+
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);

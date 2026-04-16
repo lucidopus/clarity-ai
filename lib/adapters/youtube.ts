@@ -85,6 +85,7 @@ export function adaptYouTubeMaterials(params: AdapterInput): YouTubeAdaptedMater
       timeSeconds: chapter.timeSeconds ?? 0,
       topic: chapter.topic,
       description: chapter.description,
+      pageNumber: chapter.page,
     })) || [],
 
     prerequisites: learningMaterial?.prerequisites?.map(prereq => ({

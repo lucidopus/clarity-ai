@@ -23,6 +23,12 @@ export interface UseChatBotOptions {
   enableHistory?: boolean; // Whether to load/save history (default: true)
   channel?: 'chatbot' | 'guide'; // Conversation channel (default: 'chatbot')
   problemId?: string; // Problem ID (required if channel='guide')
+  /**
+   * Which sub-source the user is actively viewing. When set, the server uses
+   * this to look up per-source content (e.g. the PDF text on a document tab)
+   * while keeping flashcards / quizzes anchored to the generation's videoId.
+   */
+  activeSourceId?: string;
   transformRequestBody?: (payload: {
     videoId: string;
     message: string;
@@ -70,6 +76,7 @@ export function useChatBot(
     enableHistory = true,
     channel,
     problemId,
+    activeSourceId,
     transformRequestBody,
   } = options;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -177,6 +184,7 @@ export function useChatBot(
         clientTimestamp: clientNow.toISOString(),
         timezoneOffsetMinutes,
         timeZone,
+        ...(activeSourceId && activeSourceId !== videoId ? { activeSourceId } : {}),
         ...(forceVisualize ? { forceVisualize: true } : {}),
       };
 
@@ -363,7 +371,7 @@ export function useChatBot(
       setIsStreaming(false);
       setActiveTools([]);
     }
-  }, [messages, isLoading, isStreaming, videoId, endpoint, transformRequestBody]);
+  }, [messages, isLoading, isStreaming, videoId, activeSourceId, endpoint, transformRequestBody]);
 
   const clearMessages = useCallback(async () => {
     setMessages([]);

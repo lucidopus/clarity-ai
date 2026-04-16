@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "node -e \"require('fs').copyFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs','public/pdf.worker.min.mjs')\""
   },
   "dependencies": {
     "@dagrejs/dagre": "^1.1.8",
@@ -54,6 +55,7 @@
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.1",
     "react-markdown": "^10.1.0",
+    "react-pdf": "^10.4.1",
     "react-syntax-highlighter": "^16.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",

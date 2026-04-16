@@ -6,6 +6,8 @@ import {
   Pause,
   SkipBack,
   SkipForward,
+  RotateCcw,
+  RotateCw,
   Volume2,
   VolumeX,
   Maximize,
@@ -327,6 +329,15 @@ export default function VideoStage({
             height: 4,
           }}
         >
+          {/* Invisible hit-area extension — gives the cursor ±8px of slop
+              around the 4px track so the user doesn't need pixel-perfect
+              alignment to scrub or land on a chapter dot. Doesn't affect
+              layout (absolute) so the buttons below stay where they are. */}
+          <div
+            aria-hidden
+            className="absolute left-0 right-0"
+            style={{ top: -8, bottom: -8 }}
+          />
           {/* Track */}
           <div
             className="absolute inset-0 rounded-full pointer-events-none"
@@ -522,8 +533,38 @@ export default function VideoStage({
             >
               <SkipBack size={16} />
             </button>
+            <button
+              type="button"
+              onClick={() => seek(currentTime - 5)}
+              className="relative grid place-items-center w-5 h-5 hover:text-white cursor-pointer"
+              title="Back 5s (←)"
+              aria-label="Back 5 seconds"
+            >
+              <RotateCcw size={18} strokeWidth={1.75} />
+              <span
+                className="absolute inset-0 grid place-items-center font-mono font-semibold pointer-events-none"
+                style={{ fontSize: 8, paddingTop: 1 }}
+              >
+                5
+              </span>
+            </button>
             <button type="button" onClick={togglePlay} className="hover:text-white cursor-pointer" title="Play / Pause (Space)">
               {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            </button>
+            <button
+              type="button"
+              onClick={() => seek(currentTime + 5)}
+              className="relative grid place-items-center w-5 h-5 hover:text-white cursor-pointer"
+              title="Forward 5s (→)"
+              aria-label="Forward 5 seconds"
+            >
+              <RotateCw size={18} strokeWidth={1.75} />
+              <span
+                className="absolute inset-0 grid place-items-center font-mono font-semibold pointer-events-none"
+                style={{ fontSize: 8, paddingTop: 1 }}
+              >
+                5
+              </span>
             </button>
             <button
               type="button"

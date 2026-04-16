@@ -9,13 +9,18 @@ import Dialog from './Dialog';
 
 interface ChatBotProps {
   videoId: string;
+  /** Sub-source currently displayed in the Learn tab; used so Clara reads
+   *  from the right source content (e.g. PDF text) even though flashcards /
+   *  quizzes stay anchored to the generation's videoId. */
+  activeSourceId?: string;
 }
 
-export function ChatBot({ videoId }: ChatBotProps) {
+export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const { messages, isStreaming, sendMessage, clearMessages } = useChatBot(videoId, {
     channel: 'chatbot', // Specify channel to ensure clear only deletes chatbot messages
+    activeSourceId,
   });
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousMessageCountRef = useRef(0);

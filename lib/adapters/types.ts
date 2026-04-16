@@ -202,7 +202,7 @@ export interface AdapterInput {
     explanation?: string;
   }>;
   learningMaterial: {
-    chapters?: Array<{ id: string; timeSeconds: number; topic: string; description: string }>;
+    chapters?: Array<{ id: string; timeSeconds: number; topic: string; description: string; page?: number }>;
     prerequisites?: Array<{ id: string; topic: string; difficulty: string }>;
     realWorldProblems?: Array<{ id: string; title: string; scenario: string; hints: string[] }>;
     summary?: string;

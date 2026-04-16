@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
     // 2. Parse request (capped at 512KB to prevent DoS via large payloads)
     const bodyOrError = await parseJsonBody<{
       videoId?: string;
+      activeSourceId?: string;
       message?: string;
       conversationHistory?: IChatMessage[];
       clientTimestamp?: string;
@@ -80,6 +81,7 @@ export async function POST(request: NextRequest) {
     if (isErrorResponse(bodyOrError)) return bodyOrError;
     const {
       videoId,
+      activeSourceId,
       message,
       conversationHistory,
       clientTimestamp,
@@ -145,7 +147,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 8. Bind tools to model — Clara's lookup tool + optional animation tool
-    const claraTools = createClaraTools(decoded.userId, videoId);
+    const claraTools = createClaraTools(decoded.userId, videoId, activeSourceId);
     const allTools = useAnimationTool
       ? [...claraTools, renderAnimationTool]
       : claraTools;

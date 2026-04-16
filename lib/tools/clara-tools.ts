@@ -152,21 +152,42 @@ async function fetchProgress(userId: string, sourceId: string): Promise<string> 
 
 type SourceKey = 'source' | 'flashcards' | 'quizzes' | 'progress';
 
-function buildFetchers(userId: string, sourceId: string): Record<SourceKey, () => Promise<string>> {
+function buildFetchers(
+  userId: string,
+  generationSourceId: string,
+  activeSourceId: string,
+): Record<SourceKey, () => Promise<string>> {
   return {
-    source: () => fetchSource(userId, sourceId),
-    flashcards: () => fetchFlashcards(userId, sourceId),
-    quizzes: () => fetchQuizzes(userId, sourceId),
-    progress: () => fetchProgress(userId, sourceId),
+    // Source content is per-sub-source (PDF text differs from YouTube transcript),
+    // so `source` follows the tab the user is actively viewing.
+    source: () => fetchSource(userId, activeSourceId),
+    // Flashcards / quizzes / progress are stored against the generation's
+    // primary sourceId, so they stay pinned to that even when the user is on
+    // a secondary tab.
+    flashcards: () => fetchFlashcards(userId, generationSourceId),
+    quizzes: () => fetchQuizzes(userId, generationSourceId),
+    progress: () => fetchProgress(userId, generationSourceId),
   };
 }
 
 /**
- * Create Clara's tool set, scoped to a specific user and source.
- * Returns an array containing the single `request_information` tool.
+ * Create Clara's tool set, scoped to a specific user and generation.
+ *
+ * `generationSourceId` is the parent generation's sourceId (= URL videoId) —
+ * flashcards/quizzes/progress are keyed here. `activeSourceId` is the source
+ * tab the user is currently viewing; when omitted, falls back to
+ * `generationSourceId` for single-source generations.
  */
-export function createClaraTools(userId: string, sourceId: string) {
-  const fetchers = buildFetchers(userId, sourceId);
+export function createClaraTools(
+  userId: string,
+  generationSourceId: string,
+  activeSourceId?: string,
+) {
+  const fetchers = buildFetchers(
+    userId,
+    generationSourceId,
+    activeSourceId || generationSourceId,
+  );
 
   const requestInformation = tool(
     async (input: { sources: SourceKey[] }) => {

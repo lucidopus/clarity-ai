@@ -1,8 +1,11 @@
 import mongoose from 'mongoose';
 
+export type PageConfidence = 'red' | 'yellow' | 'green';
+
 export interface ISegmentNote {
   segmentId: string;
   content: string;
+  confidence?: PageConfidence;
   createdAt: Date;
   updatedAt: Date;
 }

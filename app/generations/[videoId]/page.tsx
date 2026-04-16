@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -209,6 +209,9 @@ export default function VideoMaterialsPage() {
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [processingThumbnail, setProcessingThumbnail] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('transcript');
+  // Which source the user is currently looking at in the transcript tab — lifted
+  // from MultiSourceViewer so Clara can answer questions about the active source.
+  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
   const [notes, setNotes] = useState<{ generalNote: string; segmentNotes: Array<{ segmentId: string; content: string; createdAt: Date; updatedAt: Date }> }>({ generalNote: '', segmentNotes: [] });
   const [showWarning, setShowWarning] = useState(!!warningType);
   const [incompleteMaterials, setIncompleteMaterials] = useState<string[]>([]);
@@ -266,6 +269,16 @@ export default function VideoMaterialsPage() {
     }, 8000);
     return () => clearInterval(interval);
   }, [processingStatus]);
+
+  // Resolve which source Clara should query. Falls back to the first source on
+  // the generation, and finally to videoId for single-source legacy generations.
+  const activeSourceId = useMemo(() => {
+    const sources = materials?.sources;
+    if (selectedSourceId && sources?.some((s) => s.sourceId === selectedSourceId)) {
+      return selectedSourceId;
+    }
+    return sources?.[0]?.sourceId ?? videoId;
+  }, [selectedSourceId, materials, videoId]);
 
   // Flashcard creator/editor state
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
@@ -738,6 +751,8 @@ export default function VideoMaterialsPage() {
                           notes={notes}
                           onSaveNotes={saveNotes}
                           autoplayVideos={autoplayVideos}
+                          activeSourceId={activeSourceId}
+                          onActiveSourceChange={setSelectedSourceId}
                         />
                       );
                     }
@@ -864,7 +879,12 @@ export default function VideoMaterialsPage() {
         <Dialog isOpen={showWarning} onClose={() => setShowWarning(false)} type="alert" variant={getErrorConfig(warningType).variant} title={getErrorConfig(warningType).title} message={getErrorConfig(warningType).message} confirmText="I Understand" />
       )}
       
-      {!materials.isReadOnly && <ChatBot videoId={videoId} />}
+      {!materials.isReadOnly && (
+        <ChatBot
+          videoId={videoId}
+          activeSourceId={activeSourceId !== videoId ? activeSourceId : undefined}
+        />
+      )}
     </div>
   );
 }
