@@ -1,0 +1,23 @@
+# `components/learn/`
+
+Building blocks for the YouTube Learn tab. Composed by `components/VideoAndTranscriptViewer.tsx`. Self-contained — no other surface depends on these files directly.
+
+| File | Description |
+|------|-------------|
+| `types.ts` | Shared TypeScript types: `TranscriptSegment`, `Chapter`, `SegmentNote`, `NotesShape`, `SaveNotes`, `YTPlayer` interface, `Window.YT` global, `YT_STATE` constants. |
+| `utils.ts` | Pure helpers: `formatTimestamp`, `getYouTubeVideoId`, `findActiveSegmentIndex` (binary search over transcript by current time), `clamp`. |
+| `useYouTubePlayer.ts` | React hook wrapping the YouTube IFrame Player API. Loads the API once globally, builds the embed URL with all native chrome suppressed (`controls=0 cc_load_policy=0 disablekb=1 fs=0 …`), tracks `currentTime` via `requestAnimationFrame` (only ticks while playing & tab visible), and exposes `play/pause/seek/setVolume/toggleMute/setRate`. |
+| `VideoStage.tsx` | Iframe mount (with `pointer-events: none` to suppress YT hover overlays) + paused-state dark overlay + custom bottom controls (horizontal scrubber with chapter markers + hover labels, time, play/pause, ±10s, speed, captions, mute/volume, fullscreen) + karaoke caption overlay (binary-search lookup) + click-shield to play/pause + center play button when paused + keyboard hint chips. |
+| `NotesPanel.tsx` | Collapsible right panel. Inline Tiptap for the general note with debounced auto-save. Saved segment notes live in a bottom drawer (`ChevronUp` toggle, animated 280px height) that stacks them as full-width tinted bands; drawer is disabled with a hint when empty. Has expanded header (search/collapse) and a vertical re-open strip when collapsed. |
+| `CommandPalette.tsx` | ⌘P actions palette. Renders via `createPortal` to `document.body` at `z-9999` so the backdrop blur covers the sidebar/header/chat-bubble. Sectioned, searchable list of moments (segment notes), actions (toggle notes/mode/captions, add segment note), chapters, and transcript matches (only when query is non-empty). Arrow-key navigation, Enter to run. |
+| `SegmentNotePopup.tsx` | ⌘/ popup, portaled to `document.body` at `z-9999`. Pauses the video; captured caption snippet sits above a Tiptap editor (StarterKit + Markdown extension) so bold/italic/lists/inline-code render WYSIWYG and persist as markdown — same renderer the bottom-drawer notes use. Inline formatting bar (B / I / list / `<>`) plus `⌘B`/`⌘I`/`⌘E`/`⌘⇧8` shortcuts. `⌘↵` saves / `Esc` discards. Resumes playback on close. Supports edit-existing and delete. |
+| `UpNextCard.tsx` | Bottom-right stack of cards for any upcoming chapter or segment note inside its 10s lead-in window (`marker − 10s ≤ t < marker`). Coincident markers stack vertically (closest at the bottom) using `flex-col-reverse` + `motion layout`. Each card slides in from the right and exits right when its window passes, it's dismissed, or scrubbed past. Tied to playback time, not wall clock — pausing won't auto-hide. No countdown text. Click to seek. Per-marker dismissal. |
+| `TopBar.tsx` | Top-left Theater/Study mode pills. Theater collapses the notes panel; Study opens it. Toggled via the pill buttons (no keyboard shortcut). |
+
+## Key behaviors / invariants
+
+- **YouTube chrome is suppressed** so all interactions go through our own UI. The user clicks the stage to toggle play. Native captions are off; we render our own karaoke caption overlay.
+- **Time tracking uses `requestAnimationFrame`**, not `setInterval`. The loop only runs while `isPlaying && !document.hidden`.
+- **Active segment lookup is `O(log n)`** via binary search in `utils.findActiveSegmentIndex`.
+- **Notes data shape is preserved**: `{ generalNote: string, segmentNotes: [{segmentId: "segment-{n}", content, createdAt, updatedAt}] }`. ⌘N uses the active segment index to compute the segment id, keeping back-compat with notes saved by the previous viewer.
+- **Global shortcuts** are registered in the orchestrator (`VideoAndTranscriptViewer`), not in individual components. They no-op when typing in inputs, the palette is open, or the segment-note popup is open. Current bindings: `⌘P` (actions palette), `⌘/` (segment note at playhead), `N` (toggle notes / Theater↔Study), `Space` (play/pause).

@@ -25,7 +25,7 @@ All React UI components for the Clarity AI platform. Mostly flat structure with 
 | `QuizInterface.tsx` | Interactive quiz engine: MCQ/true-false/fill-in-blank with animated feedback and scoring. |
 | `QuizReview.tsx` | Post-quiz review screen showing all questions with correct/incorrect answers. |
 | `TranscriptViewer.tsx` | Searchable transcript with timestamp navigation and animated highlights. |
-| `VideoAndTranscriptViewer.tsx` | Split-panel: YouTube embed + highlighted transcript viewer. |
+| `VideoAndTranscriptViewer.tsx` | Orchestrator for the YouTube Learn tab. Composes the custom video stage (chapter markers on the horizontal scrubber, karaoke captions), collapsible notes panel with a bottom segment-notes drawer, ⌘P actions palette, ⌘/ segment-note popup, and the Up Next stack. Wires global shortcuts (⌘P / ⌘/ / N / Space) and Theater↔Study mode. Source files live in `learn/`. |
 | `PrerequisiteChecker.tsx` | Prerequisite assessment: readiness quiz then shows gaps with Clara integration. |
 | `PrerequisitesView.tsx` | Read-only display of prerequisite topics. |
 | `MindMapViewer.tsx` | Interactive mind map using ReactFlow with custom nodes/edges, zoom, layout. |
