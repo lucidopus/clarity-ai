@@ -270,14 +270,16 @@ export default function VideoMaterialsPage() {
     return () => clearInterval(interval);
   }, [processingStatus]);
 
-  // Resolve which source Clara should query. Falls back to the first source on
-  // the generation, and finally to videoId for single-source legacy generations.
+  // Resolve which source Clara should query. Prefers YouTube on initial load
+  // so learners land on the video tab first, then falls back to the first
+  // source, and finally to videoId for single-source legacy generations.
   const activeSourceId = useMemo(() => {
     const sources = materials?.sources;
     if (selectedSourceId && sources?.some((s) => s.sourceId === selectedSourceId)) {
       return selectedSourceId;
     }
-    return sources?.[0]?.sourceId ?? videoId;
+    const youtubeSource = sources?.find((s) => s.sourceType === 'youtube');
+    return youtubeSource?.sourceId ?? sources?.[0]?.sourceId ?? videoId;
   }, [selectedSourceId, materials, videoId]);
 
   // Flashcard creator/editor state
