@@ -9,7 +9,6 @@ interface VideoListItemProps {
   title: string;
   channelName: string;
   thumbnailUrl?: string;
-  duration: string;
   transcriptMinutes: number;
   createdAt: Date | string;
   progress?: number;
@@ -27,7 +26,6 @@ export default function VideoListItem({
   title,
   channelName,
   thumbnailUrl,
-  duration,
   transcriptMinutes,
   createdAt,
   progress = 0,
@@ -99,10 +97,6 @@ export default function VideoListItem({
                 No thumbnail
               </div>
             )}
-            {/* Duration Badge */}
-            <div className="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-xs px-2 py-1 rounded">
-              {duration}
-            </div>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useYouTubePlayer } from './learn/useYouTubePlayer';
 import VideoStage from './learn/VideoStage';
 import NotesPanel from './learn/NotesPanel';
@@ -38,10 +38,12 @@ export default function VideoAndTranscriptViewer({
   const ytId = useMemo(() => getYouTubeVideoId(youtubeUrl) || '', [youtubeUrl]);
 
   const player = useYouTubePlayer({ videoId: ytId, autoplay: autoplayVideos });
+  const scrubberRef = useRef<HTMLDivElement | null>(null);
 
-  // Default to theater mode → notes collapsed; study mode → notes open
-  const [mode, setMode] = useState<'theater' | 'study'>('theater');
-  const [notesCollapsed, setNotesCollapsed] = useState(true);
+  // Default to study mode → notes open. Users land here from a material click;
+  // they came here to study, not just to watch.
+  const [mode, setMode] = useState<'theater' | 'study'>('study');
+  const [notesCollapsed, setNotesCollapsed] = useState(false);
   const [showCaptions, setShowCaptions] = useState(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [popupSegmentIndex, setPopupSegmentIndex] = useState<number | null>(null);
@@ -245,6 +247,7 @@ export default function VideoAndTranscriptViewer({
       >
         <VideoStage
           containerRef={player.containerRef}
+          scrubberRef={scrubberRef}
           isReady={player.isReady}
           isPlaying={player.isPlaying}
           currentTime={player.currentTime}
@@ -259,6 +262,7 @@ export default function VideoAndTranscriptViewer({
           setRate={player.setRate}
           transcript={transcript}
           chapters={chapters}
+          segmentNotes={notes.segmentNotes}
           showCaptions={showCaptions}
           toggleCaptions={toggleCaptions}
           notesCollapsed={notesCollapsed}
@@ -308,6 +312,9 @@ export default function VideoAndTranscriptViewer({
         onClose={closeSegmentNotePopup}
         onSave={saveSegmentNote}
         onDelete={existingNoteContent ? deleteSegmentNote : undefined}
+        scrubberRef={scrubberRef}
+        duration={player.duration}
+        chapters={chapters}
       />
     </div>
   );

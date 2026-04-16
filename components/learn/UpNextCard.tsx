@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Play } from 'lucide-react';
+import { StickyNote, X, Play } from 'lucide-react';
 import type { Chapter, SegmentNote, TranscriptSegment } from './types';
 import { formatTimestamp } from './utils';
 
@@ -100,7 +100,7 @@ export default function UpNextCard({
                 type="button"
                 onClick={() => onSeek(item.time)}
                 className="w-[3px] rounded-full shrink-0 cursor-pointer"
-                style={{ background: 'var(--accent)' }}
+                style={{ background: item.kind === 'moment' ? '#facc15' : 'var(--accent)' }}
                 title="Jump to this moment"
                 aria-label="Jump to upcoming moment"
               />
@@ -111,39 +111,30 @@ export default function UpNextCard({
               >
                 <div
                   className="font-mono uppercase tracking-widest text-[9px] font-bold flex items-center gap-1"
-                  style={{ color: 'var(--accent)' }}
+                  style={{ color: item.kind === 'moment' ? '#facc15' : 'var(--accent)' }}
                 >
-                  <Play size={9} fill="currentColor" />
-                  Up next
+                  {item.kind === 'moment' ? (
+                    <StickyNote size={9} fill="currentColor" />
+                  ) : (
+                    <Play size={9} fill="currentColor" />
+                  )}
+                  {item.kind === 'moment' ? 'Your note' : 'Up next'}
                 </div>
                 <div
                   className="font-semibold text-[14px] mt-0.5 leading-tight"
                   style={{ color: 'var(--foreground)' }}
                 >
                   {item.label}
-                  {item.kind === 'moment' && (
-                    <span
-                      className="inline-flex items-center gap-1 ml-2 font-mono uppercase tracking-wider px-1.5 py-0.5 rounded font-semibold"
-                      style={{
-                        background: 'var(--background)',
-                        color: 'var(--secondary)',
-                        fontSize: 9,
-                      }}
-                    >
-                      <Sparkles size={9} />
-                      Yours
-                    </span>
-                  )}
                 </div>
                 <div className="mt-1.5 font-mono text-[11px]" style={{ color: 'var(--secondary)' }}>
                   {formatTimestamp(item.time)} ·{' '}
-                  {item.kind === 'moment' ? 'moment you added' : 'chapter'}
+                  {item.kind === 'moment' ? 'returning to your note' : 'chapter'}
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => dismiss(key)}
-                className="self-center w-7 h-7 grid place-items-center rounded-lg hover:bg-background transition-colors"
+                className="self-center w-7 h-7 grid place-items-center rounded-lg hover:bg-background transition-colors cursor-pointer"
                 style={{ color: 'var(--secondary)' }}
                 title="Dismiss"
                 aria-label="Dismiss up next card"

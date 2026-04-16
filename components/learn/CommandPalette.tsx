@@ -241,29 +241,48 @@ export default function CommandPalette({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-2 px-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <SearchIcon size={16} style={{ color: 'var(--secondary)' }} />
+            <div
+              className="flex items-center gap-3 px-5 border-b"
+              style={{ borderColor: 'var(--border)', minHeight: 56 }}
+            >
+              <SearchIcon size={16} style={{ color: 'var(--secondary)', flexShrink: 0 }} />
               <input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Run an action or jump to a moment, chapter, or note…"
-                className="flex-1 bg-transparent border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 appearance-none py-4 text-[15px]"
-                style={{ color: 'var(--foreground)', boxShadow: 'none', WebkitTapHighlightColor: 'transparent' }}
+                className="command-palette-input flex-1 min-w-0 bg-transparent appearance-none text-[15px]"
+                style={{
+                  color: 'var(--foreground)',
+                  border: 'none',
+                  outline: 'none',
+                  boxShadow: 'none',
+                  WebkitTapHighlightColor: 'transparent',
+                  padding: '14px 0',
+                  lineHeight: 1.4,
+                }}
               />
-              <span
-                className="font-mono text-[10px] px-1.5 py-0.5 rounded"
+              <button
+                type="button"
+                onClick={onClose}
+                className="font-mono inline-flex items-center justify-center rounded transition-colors hover:opacity-80 cursor-pointer shrink-0"
                 style={{
                   background: 'var(--background)',
                   border: '1px solid var(--border)',
                   color: 'var(--secondary)',
+                  fontSize: 10,
+                  height: 22,
+                  padding: '0 8px',
+                  letterSpacing: '0.04em',
                 }}
+                title="Close (Esc)"
+                aria-label="Close palette"
               >
-                Esc
-              </span>
+                ESC
+              </button>
             </div>
 
-            <div className="p-2 max-h-[360px] overflow-y-auto">
+            <div className="p-2 max-h-[360px] overflow-y-auto scrollbar-themed">
               {flatList.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--secondary)' }}>
                   No matches for &ldquo;{query}&rdquo;
@@ -336,7 +355,28 @@ export default function CommandPalette({
     </AnimatePresence>
   );
 
-  return createPortal(overlay, document.body);
+  return createPortal(
+    <>
+      {overlay}
+      <style jsx global>{`
+        .command-palette-input,
+        .command-palette-input:focus,
+        .command-palette-input:focus-visible,
+        .command-palette-input:active {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+          -webkit-appearance: none !important;
+          appearance: none !important;
+        }
+        .command-palette-input::placeholder {
+          color: var(--secondary);
+          opacity: 0.7;
+        }
+      `}</style>
+    </>,
+    document.body,
+  );
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {

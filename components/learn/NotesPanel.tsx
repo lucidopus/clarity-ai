@@ -180,7 +180,7 @@ export default function NotesPanel({
         <div className="flex-1 flex flex-col min-h-0">
           {/* Header */}
           <div
-            className="px-5 py-3 border-b flex items-center justify-between"
+            className="px-5 py-3 border-b flex items-center justify-between gap-3"
             style={{ borderColor: 'var(--border)' }}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -189,11 +189,28 @@ export default function NotesPanel({
                 {videoTitle || 'Notes'}
               </span>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                className="hidden sm:inline-flex items-center gap-1.5 text-[11px]"
+                style={{ color: 'var(--secondary)' }}
+                title={isSaving ? 'Saving your notes…' : lastSavedText}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 size={11} className="animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Check size={11} strokeWidth={2.5} style={{ color: 'var(--accent)' }} />
+                    {lastSavedText}
+                  </>
+                )}
+              </span>
               <button
                 type="button"
                 onClick={onOpenCommandPalette}
-                className="w-7 h-7 grid place-items-center rounded-md hover:bg-background transition-colors"
+                className="w-7 h-7 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
                 title="Actions (⌘P)"
                 style={{ color: 'var(--secondary)' }}
               >
@@ -202,7 +219,7 @@ export default function NotesPanel({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="w-7 h-7 grid place-items-center rounded-md hover:bg-background transition-colors"
+                className="w-7 h-7 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
                 title="Collapse notes (N)"
                 style={{ color: 'var(--secondary)' }}
               >
@@ -244,25 +261,12 @@ export default function NotesPanel({
 
           {/* Footer */}
           <div
-            className="px-5 py-3 border-t flex items-center justify-between text-[11px]"
+            className="px-5 py-3 border-t text-[11px]"
             style={{ borderColor: 'var(--border)', color: 'var(--secondary)' }}
           >
             <span>
               {segmentNoteEntries.length} timestamp{segmentNoteEntries.length === 1 ? '' : 's'} · {wordCount}{' '}
               word{wordCount === 1 ? '' : 's'}
-            </span>
-            <span className="flex items-center gap-1.5">
-              {isSaving ? (
-                <>
-                  <Loader2 size={12} className="animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                <>
-                  <Check size={12} strokeWidth={2.5} style={{ color: 'var(--accent)' }} />
-                  {lastSavedText}
-                </>
-              )}
             </span>
           </div>
         </div>
@@ -382,7 +386,7 @@ function SegmentDrawer({ open, onToggle, entries, onSeek, onEdit, onDelete }: Se
         type="button"
         onClick={onToggle}
         disabled={isEmpty}
-        className="w-full flex items-center justify-between px-5 py-2.5 text-[12px] transition-colors hover:bg-background disabled:cursor-not-allowed disabled:hover:bg-transparent"
+        className="w-full flex items-center justify-between px-5 py-2.5 text-[12px] transition-colors hover:bg-background cursor-pointer disabled:cursor-not-allowed disabled:hover:bg-transparent"
         style={{ color: 'var(--secondary)' }}
         title={isEmpty ? 'No segment notes yet' : effectivelyOpen ? 'Hide moments' : 'Show moments'}
       >
@@ -481,7 +485,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
           <button
             type="button"
             onClick={onEdit}
-            className="w-6 h-6 grid place-items-center rounded-md hover:bg-card-bg"
+            className="w-6 h-6 grid place-items-center rounded-md hover:bg-card-bg cursor-pointer"
             title="Edit note"
             style={{ color: 'var(--secondary)' }}
           >
@@ -492,7 +496,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
               <button
                 type="button"
                 onClick={onDelete}
-                className="text-[10px] px-2 h-6 rounded-md font-medium"
+                className="text-[10px] px-2 h-6 rounded-md font-medium cursor-pointer"
                 style={{ background: '#ef4444', color: '#fff' }}
               >
                 Delete
@@ -500,7 +504,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="text-[10px] px-2 h-6 rounded-md font-medium"
+                className="text-[10px] px-2 h-6 rounded-md font-medium cursor-pointer"
                 style={{ color: 'var(--secondary)' }}
               >
                 Cancel
@@ -510,7 +514,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="w-6 h-6 grid place-items-center rounded-md hover:bg-card-bg"
+              className="w-6 h-6 grid place-items-center rounded-md hover:bg-card-bg cursor-pointer"
               title="Delete note"
               style={{ color: 'var(--secondary)' }}
             >

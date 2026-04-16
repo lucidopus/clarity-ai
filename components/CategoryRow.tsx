@@ -90,7 +90,6 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
                         title={video.title}
                         channelName={video.channelName || 'Unknown Channel'}
                         thumbnailUrl={video.thumbnail || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60'}
-                        duration={video.duration ? `${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}` : '10:00'}
                         createdAt={video.createdAt}
                         flashcardCount={video.flashcardCount || 0}
                         quizCount={video.quizCount || 0}

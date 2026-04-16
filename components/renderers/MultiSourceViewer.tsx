@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Youtube, FileText, Headphones, StickyNote } from 'lucide-react';
+import { Youtube, FileText, Headphones, StickyNote, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { ContentViewerProps } from './types';
 import type { SourceType } from '@/lib/models/Source';
 import YouTubeContentViewer from './YouTubeContentViewer';
@@ -86,6 +86,18 @@ export default function MultiSourceViewer({
     ),
     [materials.sources]
   );
+
+  // Group sources by type so duplicate "Document" tabs collapse into one chip with a count
+  const sourceGroups = useMemo(() => {
+    const map = new Map<SourceType, SourceInfo[]>();
+    sources.forEach((s) => {
+      const arr = map.get(s.sourceType) || [];
+      arr.push(s);
+      map.set(s.sourceType, arr);
+    });
+    return Array.from(map.entries()).map(([type, items]) => ({ type, items }));
+  }, [sources]);
+
   const [activeSourceId, setActiveSourceId] = useState(sources[0]?.sourceId || '');
 
   const activeSource = useMemo(
@@ -120,36 +132,126 @@ export default function MultiSourceViewer({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Source Switcher Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: -5 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 rounded-xl border border-border bg-card-bg p-1 flex gap-1"
-      >
-        {sources.map((source) => {
-          const Icon = sourceIcons[source.sourceType] || FileText;
-          const isActive = source.sourceId === activeSourceId;
-          const activeColor = sourceActiveColors[source.sourceType] || 'text-foreground';
-          const label = sourceLabels[source.sourceType] || source.sourceType;
+      {/* Source Switcher — segmented pill with inline stepper that only appears on the active group */}
+      <div className="flex justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-0.5 rounded-full border border-border bg-background p-1 shadow-sm"
+        >
+          {sourceGroups.map((group) => {
+            const Icon = sourceIcons[group.type] || FileText;
+            const activeColor = sourceActiveColors[group.type] || 'text-foreground';
+            const label = sourceLabels[group.type] || group.type;
+            const count = group.items.length;
+            const isActive = group.items.some((s) => s.sourceId === activeSourceId);
+            const isMulti = count > 1;
+            const activeIndex = group.items.findIndex((s) => s.sourceId === activeSourceId);
+            const currentItem = isActive && activeIndex >= 0 ? group.items[activeIndex] : group.items[0];
+            const currentLabel =
+              currentItem?.fileName || currentItem?.title || `${label} ${(activeIndex >= 0 ? activeIndex : 0) + 1}`;
 
-          return (
-            <button
-              key={source.sourceId}
-              onClick={() => setActiveSourceId(source.sourceId)}
-              className={`relative flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-all cursor-pointer flex-1 min-w-0 justify-center ${
-                isActive
-                  ? `${activeColor} bg-background shadow-sm`
-                  : 'text-muted-foreground hover:text-foreground/70'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              <span className="truncate">
-                {label}
-              </span>
-            </button>
-          );
-        })}
-      </motion.div>
+            const cycle = (dir: 1 | -1) => {
+              if (!isActive) return;
+              const cur = activeIndex >= 0 ? activeIndex : 0;
+              const next = (cur + dir + count) % count;
+              setActiveSourceId(group.items[next].sourceId);
+            };
+
+            return (
+              <button
+                key={group.type}
+                type="button"
+                onClick={() => {
+                  if (!isActive) setActiveSourceId(group.items[0].sourceId);
+                }}
+                title={isActive ? currentLabel : `Switch to ${label}`}
+                className={`relative inline-flex items-center px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors cursor-pointer ${
+                  isActive ? activeColor : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="source-tab-pill"
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      background:
+                        'color-mix(in srgb, var(--foreground) 5%, var(--background))',
+                      boxShadow:
+                        '0 1px 2px rgba(0,0,0,0.06), inset 0 0 0 1px color-mix(in srgb, var(--foreground) 8%, transparent)',
+                    }}
+                    transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10 inline-flex items-center gap-1.5">
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  {label}
+                  {isMulti && !isActive && (
+                    <span
+                      className="font-mono text-[10px] font-semibold px-1.5 py-px rounded-full"
+                      style={{
+                        background: 'color-mix(in srgb, currentColor 14%, transparent)',
+                      }}
+                    >
+                      {count}
+                    </span>
+                  )}
+                  {isMulti && isActive && (
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full font-mono text-[10px] font-semibold tabular-nums"
+                      style={{
+                        background: 'color-mix(in srgb, currentColor 14%, transparent)',
+                      }}
+                    >
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Previous ${label}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cycle(-1);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            cycle(-1);
+                          }
+                        }}
+                        className="inline-flex items-center justify-center w-3.5 h-3.5 opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <ChevronLeft size={11} strokeWidth={2.5} />
+                      </span>
+                      <span className="px-0.5 select-none">
+                        {(activeIndex >= 0 ? activeIndex + 1 : 1)}/{count}
+                      </span>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Next ${label}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          cycle(1);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            cycle(1);
+                          }
+                        }}
+                        className="inline-flex items-center justify-center w-3.5 h-3.5 opacity-70 hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        <ChevronRight size={11} strokeWidth={2.5} />
+                      </span>
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
+        </motion.div>
+      </div>
 
       {/* Active Source Viewer */}
       <div key={activeSourceId}>

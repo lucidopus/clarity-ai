@@ -499,7 +499,6 @@ export default function GalleryPage() {
                   title={video.title}
                   channelName={video.channelName}
                   thumbnailUrl={video.thumbnailUrl}
-                  duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
                   transcriptMinutes={video.transcriptMinutes}
                   createdAt={video.createdAt}
                   progress={video.progress}
@@ -522,7 +521,6 @@ export default function GalleryPage() {
                   title={video.title}
                   channelName={video.channelName}
                   thumbnailUrl={video.thumbnailUrl}
-                  duration={`${Math.floor(video.duration / 60)}:${Math.floor(video.duration % 60).toString().padStart(2, '0')}`}
                   transcriptMinutes={video.transcriptMinutes}
                   createdAt={video.createdAt}
                   progress={video.progress}

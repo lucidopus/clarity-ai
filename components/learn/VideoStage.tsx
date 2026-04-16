@@ -12,11 +12,12 @@ import {
   Keyboard,
   PanelRightClose,
 } from 'lucide-react';
-import type { Chapter, TranscriptSegment } from './types';
+import type { Chapter, SegmentNote, TranscriptSegment } from './types';
 import { findActiveSegmentIndex, formatTimestamp, clamp } from './utils';
 
 interface VideoStageProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
+  scrubberRef?: React.RefObject<HTMLDivElement | null>;
   isReady: boolean;
   isPlaying: boolean;
   currentTime: number;
@@ -31,6 +32,7 @@ interface VideoStageProps {
   setRate: (r: number) => void;
   transcript: TranscriptSegment[];
   chapters?: Chapter[];
+  segmentNotes?: SegmentNote[];
   showCaptions: boolean;
   toggleCaptions: () => void;
   notesCollapsed: boolean;
@@ -39,8 +41,20 @@ interface VideoStageProps {
 
 const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
+// Anchor scrubber tooltips so they don't get clipped by the player's
+// `overflow-hidden` edges. Buttons are 14px wide and centered on `pct%`
+// (their inner box spans `pct% ± 7px`), so anchoring `left: 0` extends
+// the tooltip rightward from the button's left edge, and `right: 0`
+// extends it leftward from the button's right edge.
+function tooltipAnchorFor(pct: number): React.CSSProperties {
+  if (pct < 18) return { left: 0 };
+  if (pct > 82) return { right: 0 };
+  return { left: '50%', transform: 'translateX(-50%)' };
+}
+
 export default function VideoStage({
   containerRef,
+  scrubberRef: externalScrubberRef,
   isReady,
   isPlaying,
   currentTime,
@@ -55,6 +69,7 @@ export default function VideoStage({
   setRate,
   transcript,
   chapters = [],
+  segmentNotes = [],
   showCaptions,
   toggleCaptions,
   notesCollapsed,
@@ -63,12 +78,61 @@ export default function VideoStage({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const scrubberRef = useRef<HTMLDivElement | null>(null);
   const [scrubDragging, setScrubDragging] = useState(false);
-  const [hoverControls, setHoverControls] = useState(false);
+  // Controls visibility: shown on mouse activity inside the stage, hidden after
+  // 1s of stillness. Always shown when paused (so the user can act on a frame).
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showControlsTransiently = useCallback(() => {
+    setControlsVisible(true);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      setControlsVisible(false);
+      idleTimerRef.current = null;
+    }, 1000);
+  }, []);
+
+  const handleMouseLeaveStage = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+    setControlsVisible(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, []);
 
   const activeIdx = useMemo(
     () => findActiveSegmentIndex(transcript, currentTime),
     [transcript, currentTime]
   );
+
+  const noteMarkers = useMemo(() => {
+    const MAX_PREVIEW = 42;
+    return segmentNotes
+      .map((n) => {
+        const m = n.segmentId.match(/segment-(\d+)/);
+        if (!m) return null;
+        const idx = parseInt(m[1], 10);
+        const seg = transcript[idx];
+        if (!seg) return null;
+        const cleaned = (n.content || '')
+          .replace(/\\([\s\S])/g, '$1') // unescape markdown escapes (e.g. It\'s → It's)
+          .replace(/[#*_>`-]/g, '')
+          .trim()
+          .split('\n')[0]
+          .trim();
+        const preview = cleaned.length > MAX_PREVIEW
+          ? `${cleaned.slice(0, MAX_PREVIEW).trimEnd()}…`
+          : cleaned || 'Note';
+        return { time: seg.start, preview };
+      })
+      .filter((m): m is { time: number; preview: string } => m !== null);
+  }, [segmentNotes, transcript]);
 
   const captionText = activeIdx >= 0 ? transcript[activeIdx]?.text : '';
 
@@ -83,7 +147,7 @@ export default function VideoStage({
       const pct = clamp(((clientX - rect.left) / rect.width) * 100, 0, 100);
       seek((pct / 100) * safeDuration);
     },
-    [seek, safeDuration]
+    [seek, safeDuration, scrubberRef]
   );
 
   const handleScrubMouseDown = useCallback(
@@ -126,8 +190,8 @@ export default function VideoStage({
   return (
     <div
       ref={stageRef}
-      onMouseEnter={() => setHoverControls(true)}
-      onMouseLeave={() => setHoverControls(false)}
+      onMouseMove={showControlsTransiently}
+      onMouseLeave={handleMouseLeaveStage}
       className="relative rounded-2xl overflow-hidden flex-1 min-h-0 group/stage"
       style={{
         background:
@@ -239,10 +303,11 @@ export default function VideoStage({
         </>
       )}
 
-      {/* Bottom controls */}
+      {/* Bottom controls — visible on mouse activity (idle 1s → hide), and
+          always visible when paused so users can interact with what they see. */}
       <div
         className={`absolute left-0 right-0 bottom-0 z-30 px-6 py-5 transition-opacity duration-200 ${
-          isPlaying && !hoverControls ? 'opacity-0' : 'opacity-100'
+          isPlaying && !controlsVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
         style={{
           background: 'linear-gradient(180deg, transparent 0%, transparent 50%, rgba(0,0,0,0.6) 100%)',
@@ -250,7 +315,12 @@ export default function VideoStage({
       >
         {/* Scrubber */}
         <div
-          ref={scrubberRef}
+          ref={(node) => {
+            scrubberRef.current = node;
+            if (externalScrubberRef) {
+              externalScrubberRef.current = node;
+            }
+          }}
           onMouseDown={handleScrubMouseDown}
           className="relative mb-3 cursor-pointer"
           style={{
@@ -267,11 +337,13 @@ export default function VideoStage({
             className="absolute left-0 top-0 bottom-0 rounded-full pointer-events-none"
             style={{ width: `${progressPct}%`, background: 'var(--accent)' }}
           />
-          {/* Chapter markers */}
+          {/* Chapter markers — rendered last so they sit visually on top of note dots
+              when timestamps overlap */}
           {duration > 0 &&
             chapters.map((c, i) => {
               const pct = clamp((c.timeSeconds / safeDuration) * 100, 0, 100);
               const done = c.timeSeconds < currentTime;
+              const tooltipAnchor = tooltipAnchorFor(pct);
               return (
                 <button
                   key={`ch-${i}-${c.timeSeconds}`}
@@ -281,7 +353,7 @@ export default function VideoStage({
                     seek(c.timeSeconds);
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
-                  className="group/marker absolute top-1/2 -translate-y-1/2 -translate-x-1/2 grid place-items-center"
+                  className="group/marker absolute top-1/2 -translate-y-1/2 -translate-x-1/2 grid place-items-center z-10 cursor-pointer"
                   style={{
                     left: `${pct}%`,
                     width: 14,
@@ -303,6 +375,7 @@ export default function VideoStage({
                     className="pointer-events-none absolute opacity-0 group-hover/marker:opacity-100 transition-opacity duration-150 whitespace-nowrap rounded-md"
                     style={{
                       bottom: 18,
+                      ...tooltipAnchor,
                       background: 'rgba(17,21,28,0.95)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       color: '#f3f4f6',
@@ -330,6 +403,113 @@ export default function VideoStage({
                 </button>
               );
             })}
+          {/* Active track tint — paints the 10s lead-in window inside the
+              seekbar track itself, so the playhead visually passes through
+              the zone where the Up Next card surfaces. Brightens when the
+              playhead is in-window, fades out once the anchor is crossed. */}
+          {duration > 0 &&
+            noteMarkers.map((n, i) => {
+              const anchorPct = clamp((n.time / safeDuration) * 100, 0, 100);
+              const triggerTime = Math.max(0, n.time - 10);
+              const triggerPct = clamp((triggerTime / safeDuration) * 100, 0, 100);
+              const inWindow = currentTime >= triggerTime && currentTime < n.time;
+              const passed = currentTime >= n.time;
+              return (
+                <div
+                  key={`note-tint-${i}-${n.time}`}
+                  className="pointer-events-none absolute rounded-full transition-opacity duration-200"
+                  style={{
+                    left: `${triggerPct}%`,
+                    width: `${Math.max(anchorPct - triggerPct, 0.4)}%`,
+                    top: 0,
+                    bottom: 0,
+                    opacity: passed ? 0 : inWindow ? 1 : 0.55,
+                    background:
+                      'linear-gradient(to right, rgba(250,204,21,0.10) 0%, rgba(250,204,21,0.70) 100%)',
+                  }}
+                />
+              );
+            })}
+          {/* User segment-note markers (yellow dots) */}
+          {duration > 0 &&
+            noteMarkers.map((n, i) => {
+              const pct = clamp((n.time / safeDuration) * 100, 0, 100);
+              const triggerTime = Math.max(0, n.time - 10);
+              const inWindow = currentTime >= triggerTime && currentTime < n.time;
+              const passed = n.time <= currentTime;
+              const tooltipAnchor = tooltipAnchorFor(pct);
+              const dotBg = passed
+                ? '#facc15'
+                : inWindow
+                ? '#facc15'
+                : 'rgba(250,204,21,0.45)';
+              return (
+                <button
+                  key={`note-${i}-${n.time}`}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    seek(n.time);
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="group/note absolute top-1/2 -translate-y-1/2 -translate-x-1/2 grid place-items-center cursor-pointer"
+                  style={{
+                    left: `${pct}%`,
+                    width: 14,
+                    height: 14,
+                  }}
+                  aria-label={`Jump to your note at ${formatTimestamp(n.time)}`}
+                >
+                  <span
+                    className="block rounded-full transition-transform duration-150 group-hover/note:scale-125"
+                    style={{
+                      width: 8,
+                      height: 8,
+                      background: dotBg,
+                      border: '2px solid rgba(0,0,0,0.45)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.6)',
+                    }}
+                  />
+                  <div
+                    className="pointer-events-none absolute opacity-0 group-hover/note:opacity-100 transition-opacity duration-150 rounded-md"
+                    style={{
+                      bottom: 18,
+                      ...tooltipAnchor,
+                      background: 'rgba(17,21,28,0.95)',
+                      border: '1px solid rgba(250,204,21,0.35)',
+                      color: '#f3f4f6',
+                      padding: '5px 9px',
+                      fontSize: 11,
+                      fontWeight: 500,
+                      letterSpacing: '-0.01em',
+                      maxWidth: 320,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span
+                      className="font-mono mr-1.5 px-1 py-px rounded uppercase tracking-wider"
+                      style={{
+                        fontSize: 9,
+                        background: 'rgba(250,204,21,0.18)',
+                        color: '#facc15',
+                      }}
+                    >
+                      Your note
+                    </span>
+                    <span>{n.preview}</span>
+                    <span className="ml-1.5 font-mono opacity-60">
+                      {formatTimestamp(n.time)}
+                    </span>
+                    <span
+                      className="block font-mono opacity-50 mt-0.5"
+                      style={{ fontSize: 9 }}
+                    >
+                      Card surfaces from {formatTimestamp(Math.max(0, n.time - 10))}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
         </div>
 
         <div className="flex items-center justify-between text-[12px] text-white/85">
@@ -337,18 +517,18 @@ export default function VideoStage({
             <button
               type="button"
               onClick={() => seek(currentTime - 10)}
-              className="hover:text-white"
+              className="hover:text-white cursor-pointer"
               title="Back 10s"
             >
               <SkipBack size={16} />
             </button>
-            <button type="button" onClick={togglePlay} className="hover:text-white" title="Play / Pause (Space)">
+            <button type="button" onClick={togglePlay} className="hover:text-white cursor-pointer" title="Play / Pause (Space)">
               {isPlaying ? <Pause size={16} /> : <Play size={16} />}
             </button>
             <button
               type="button"
               onClick={() => seek(currentTime + 10)}
-              className="hover:text-white"
+              className="hover:text-white cursor-pointer"
               title="Forward 10s"
             >
               <SkipForward size={16} />
@@ -361,7 +541,7 @@ export default function VideoStage({
             <button
               type="button"
               onClick={cycleRate}
-              className="font-mono text-white/60 hover:text-white"
+              className="font-mono text-white/60 hover:text-white cursor-pointer"
               title="Playback speed"
             >
               {playbackRate}×
@@ -369,13 +549,13 @@ export default function VideoStage({
             <button
               type="button"
               onClick={toggleCaptions}
-              className={`hover:text-white ${showCaptions ? 'text-white' : 'text-white/60'}`}
+              className={`hover:text-white cursor-pointer ${showCaptions ? 'text-white' : 'text-white/60'}`}
               title="Toggle captions"
             >
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded border border-white/30">CC</span>
             </button>
             <div className="flex items-center gap-2 group/vol">
-              <button type="button" onClick={toggleMute} className="hover:text-white" title="Mute">
+              <button type="button" onClick={toggleMute} className="hover:text-white cursor-pointer" title="Mute">
                 {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
               <input
@@ -384,10 +564,10 @@ export default function VideoStage({
                 max={100}
                 value={isMuted ? 0 : volume}
                 onChange={(e) => setVolume(parseInt(e.target.value, 10))}
-                className="w-0 group-hover/vol:w-20 transition-all duration-200 accent-white opacity-0 group-hover/vol:opacity-100"
+                className="w-0 group-hover/vol:w-20 transition-all duration-200 accent-white opacity-0 group-hover/vol:opacity-100 cursor-pointer"
               />
             </div>
-            <button type="button" onClick={requestFullscreen} className="hover:text-white" title="Fullscreen">
+            <button type="button" onClick={requestFullscreen} className="hover:text-white cursor-pointer" title="Fullscreen">
               <Maximize size={16} />
             </button>
           </div>

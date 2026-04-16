@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Brain, CheckCircle2, Video, LogOut, Plus, Network, Briefcase,
-  Lightbulb, Target, ArrowLeft, ChevronLeft, Menu,
+  Lightbulb, Target, ArrowLeft,
 } from 'lucide-react';
 import FlashcardViewer from '@/components/FlashcardViewer';
 import FlashcardCreator from '@/components/FlashcardCreator';
@@ -200,7 +200,7 @@ export default function VideoMaterialsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const videoId = params.videoId as string;
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const warningType = searchParams.get('warning');
 
   const [materials, setMaterials] = useState<VideoMaterials | null>(null);
@@ -217,8 +217,35 @@ export default function VideoMaterialsPage() {
   const [loadingMessage, setLoadingMessage] = useState('Loading specific materials...');
   const [processingTip, setProcessingTip] = useState(0);
 
-  // Layout UI State
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Layout UI State — sidebar starts collapsed in study view; hover reveals it.
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const sidebarCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSidebarMouseEnter = () => {
+    if (sidebarCollapseTimerRef.current) {
+      clearTimeout(sidebarCollapseTimerRef.current);
+      sidebarCollapseTimerRef.current = null;
+    }
+    setIsSidebarCollapsed(false);
+  };
+
+  const handleSidebarMouseLeave = () => {
+    if (sidebarCollapseTimerRef.current) {
+      clearTimeout(sidebarCollapseTimerRef.current);
+    }
+    sidebarCollapseTimerRef.current = setTimeout(() => {
+      setIsSidebarCollapsed(true);
+      sidebarCollapseTimerRef.current = null;
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (sidebarCollapseTimerRef.current) {
+        clearTimeout(sidebarCollapseTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const messages = [
@@ -573,140 +600,109 @@ export default function VideoMaterialsPage() {
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
       
-      {/* Sidebar Navigation */}
-      <motion.aside
-        initial={false}
-        animate={{ width: isSidebarCollapsed ? 80 : 256 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="bg-card-bg border-r border-border shrink-0 z-40 flex flex-col h-full relative"
+      {/* Sidebar — icon rail that expands to reveal labels on hover. Layout
+          reserves only the 80px rail; the panel grows over the main content
+          when expanded so nothing reflows. Each row uses a fixed 80px icon
+          column + a label that gets revealed as the width animates, so icons
+          stay rooted in place during the transition. */}
+      <div
+        className="relative shrink-0 w-20 h-full z-40"
+        onMouseEnter={handleSidebarMouseEnter}
+        onMouseLeave={handleSidebarMouseLeave}
       >
-        {/* Sidebar Header: Logo & Toggle */}
-        <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
-           <div className={`flex items-center gap-3 overflow-hidden ${isSidebarCollapsed ? 'justify-center w-full' : ''}`}>
-              <button
-                onClick={() => router.push('/dashboard')}
-                className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
-              >
-                <span className="text-white font-bold text-lg">C</span>
-              </button>
-              {!isSidebarCollapsed && (
-                 <span className="font-bold text-lg text-foreground truncate">Clarity</span>
-              )}
-           </div>
-           
-           {!isSidebarCollapsed && (
-             <button 
-                onClick={() => setIsSidebarCollapsed(true)}
-                className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-background transition-colors cursor-pointer"
-                title="Collapse Sidebar"
-             >
-                <ChevronLeft className="w-4 h-4" />
-             </button>
-           )}
-        </div>
+        <motion.aside
+          initial={false}
+          animate={{ width: isSidebarCollapsed ? 80 : 256 }}
+          transition={{ type: 'tween', duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+          className="absolute top-0 left-0 h-full bg-card-bg border-r border-border flex flex-col overflow-hidden shadow-xl"
+          style={{ willChange: 'width' }}
+        >
+          {/* Header */}
+          <div className="h-16 flex items-center border-b border-border shrink-0">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-20 h-full flex items-center justify-center shrink-0 cursor-pointer"
+              title="Back to Dashboard"
+            >
+              <span className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold text-lg hover:opacity-80 transition-opacity">
+                C
+              </span>
+            </button>
+            <span className="font-bold text-lg text-foreground whitespace-nowrap">
+              Clarity
+            </span>
+          </div>
 
-        {/* Navigation Items (Scrollable) */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-themed p-3 gap-2 flex flex-col">
-            {/* If collapsed, show centered expand button at top of list as alternative interaction */}
-            {isSidebarCollapsed && (
-               <button 
-                onClick={() => setIsSidebarCollapsed(false)}
-                className="w-full flex items-center justify-center py-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg mb-2 cursor-pointer"
-                title="Expand Sidebar"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-            )}
-
+          {/* Navigation */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-themed py-2">
             {baseTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
-              
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  title={isSidebarCollapsed ? tab.label : ''}
-                  className={`
-                    relative group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 cursor-pointer
-                    ${isActive 
-                      ? 'bg-accent/10 text-accent font-medium' 
+                  className={`relative flex items-center w-full h-12 transition-colors cursor-pointer ${
+                    isActive
+                      ? 'bg-accent/10 text-accent font-medium'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
-                    }
-                    ${isSidebarCollapsed ? 'justify-center' : ''}
-                  `}
+                  }`}
                 >
-                  <Icon className={`shrin-0 ${isActive ? 'w-5 h-5' : 'w-5 h-5 opacity-70'}`} />
-                  
-                  {!isSidebarCollapsed && (
-                     <span className="truncate text-sm">{tab.label}</span>
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full" />
                   )}
-
-                  {/* Active Indicator Line for Collapsed Mode (optional visual cue) */}
-                  {isActive && isSidebarCollapsed && (
-                    <motion.div 
-                      layoutId="activeTabIndicator"
-                      className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-l-full"
-                    />
-                  )}
+                  <div className="w-20 flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-sm whitespace-nowrap">{tab.label}</span>
                 </button>
               );
             })}
-        </div>
-        
-        {/* Sidebar Footer: User Controls */}
-        <div className="p-3 border-t border-border shrink-0 space-y-2">
-            {!isSidebarCollapsed && (
-              <div className="mb-2 px-1">
-                 <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</h3>
-              </div>
-            )}
-            
-            <div className={`flex flex-col gap-2 ${isSidebarCollapsed ? 'items-center' : ''}`}>
-                 {!isSidebarCollapsed && user && (
-                     <div className="px-1 py-2 text-xs text-muted-foreground truncate w-full bg-muted/30 rounded-lg mb-1">
-                         {user.email}
-                     </div>
-                 )}
+          </div>
 
-                 <button
-                    onClick={logout}
-                    className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors text-red-500/80 hover:text-red-500 hover:bg-red-500/10 cursor-pointer ${isSidebarCollapsed ? 'justify-center' : ''}`}
-                    title="Logout"
-                 >
-                    <LogOut className="w-4 h-4 shrink-0" />
-                    {!isSidebarCollapsed && <span>Logout</span>}
-                 </button>
-            </div>
-        </div>
-      </motion.aside>
+          {/* Footer */}
+          <div className="border-t border-border shrink-0 py-2">
+            <button
+              onClick={logout}
+              className="flex items-center w-full h-12 transition-colors cursor-pointer text-red-500/80 hover:text-red-500 hover:bg-red-500/10"
+              title="Logout"
+            >
+              <div className="w-20 flex items-center justify-center shrink-0">
+                <LogOut className="w-4 h-4" />
+              </div>
+              <span className="text-sm whitespace-nowrap">Logout</span>
+            </button>
+          </div>
+        </motion.aside>
+      </div>
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-full relative">
         {/* Minimal Header (Title) - Sticky */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm z-30 shrink-0 gap-4">
              <div className="flex items-center gap-3 min-w-0">
-               <h1 className="text-lg font-semibold text-foreground truncate">
-                   {materials.video.title}
-               </h1>
-               {materials.isReadOnly && materials.authorUsername && (
-                 <span className="shrink-0 text-xs bg-accent/10 text-accent px-2.5 py-1 rounded-full font-medium">
-                   by @{materials.authorUsername}
-                 </span>
-               )}
-             </div>
-
-             <div className="flex items-center gap-3 shrink-0">
                 <Button
                   onClick={() => router.push('/dashboard/gallery')}
                   variant="ghost"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 shrink-0"
+                  title="Back to Gallery"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span className="hidden sm:inline">Back to Gallery</span>
                 </Button>
-                <div className="w-px h-6 bg-border mx-1"></div>
+                <div className="w-px h-6 bg-border shrink-0"></div>
+                <h1 className="text-lg font-semibold text-foreground truncate">
+                    {materials.video.title}
+                </h1>
+                {materials.isReadOnly && materials.authorUsername && (
+                  <span className="shrink-0 text-xs bg-accent/10 text-accent px-2.5 py-1 rounded-full font-medium">
+                    by @{materials.authorUsername}
+                  </span>
+                )}
+             </div>
+
+             <div className="flex items-center gap-3 shrink-0">
                 <ThemeToggle />
              </div>
         </div>

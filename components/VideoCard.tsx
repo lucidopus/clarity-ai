@@ -11,7 +11,6 @@ interface VideoCardProps {
   title: string;
   channelName: string;
   thumbnailUrl?: string;
-  duration?: string;
   flashcardCount?: number;
   quizCount?: number;
   transcriptMinutes?: number;
@@ -32,7 +31,6 @@ export default function VideoCard({
   title,
   channelName,
   thumbnailUrl,
-  duration,
   flashcardCount,
   quizCount,
   createdAt,
@@ -112,12 +110,6 @@ export default function VideoCard({
               <span className={`absolute text-[10px] font-bold ${progress === 100 ? 'text-green-400' : 'text-white'}`}>{progress}%</span>
             </div>
           </div>
-          {/* Duration */}
-          {duration && (
-            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-white">
-              {duration}
-            </div>
-          )}
         </div>
       ) : thumbnailUrl ? (
         <div className="aspect-video w-full bg-muted relative overflow-hidden">
@@ -140,11 +132,6 @@ export default function VideoCard({
              </div>
           </div>
           <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-60" />
-          {duration && (
-            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-white">
-              {duration}
-            </div>
-          )}
         </div>
       ) : isLiveLecture ? (
         <div className="aspect-video w-full bg-gradient-to-br from-teal-500/10 via-accent/5 to-purple-500/10 relative overflow-hidden flex items-center justify-center">
@@ -164,11 +151,6 @@ export default function VideoCard({
               <span className={`absolute text-[10px] font-bold ${progress === 100 ? 'text-green-400' : 'text-foreground/60'}`}>{progress}%</span>
             </div>
           </div>
-          {duration && (
-            <div className="absolute bottom-2 right-2 bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded text-xs font-medium text-foreground/80">
-              {duration}
-            </div>
-          )}
         </div>
       ) : null}
 
