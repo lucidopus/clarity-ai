@@ -302,15 +302,14 @@ export default function StreakWidget() {
               </div>
               {todayQualifies && !isRecoveryActive && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  {/* Tier badge — single-hue orange tonal ramp mirrors the
-                      heatmap so "same color means same tier" across the
-                      dashboard. Ties the tier system directly to the flame
-                      motif while keeping brand Cyan free for CTAs. The
-                      Sparkles icon carries the "this is the peak" signal when
-                      hue alone can't (since all three badges share the hue). */}
+                  {/* Tier badge — cyan tonal with gold peak mirrors the
+                      heatmap (cyan-light → cyan-dark → amber) so same color
+                      means same tier across the dashboard. Gold stays a
+                      distinct warm hue so peak days read as "different class"
+                      at a glance, not just "darker cyan". */}
                   {todayTier === 'gold' ? (
                     <div
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-orange-200 dark:bg-orange-400/20 text-orange-900 dark:text-orange-100 border border-orange-500/60 dark:border-orange-400/50"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-400/70 dark:border-amber-500/40"
                       aria-label="Gold day — flashcards cleared, challenges done, and inside your study window"
                     >
                       <Sparkles className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
@@ -318,7 +317,7 @@ export default function StreakWidget() {
                     </div>
                   ) : todayTier === 'orange' ? (
                     <div
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-800 dark:text-orange-200 border border-orange-300/70 dark:border-orange-500/40"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-500/20 text-cyan-800 dark:text-cyan-200 border border-cyan-400/60 dark:border-cyan-500/40"
                       aria-label="Flashcards cleared today"
                     >
                       <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
@@ -326,7 +325,7 @@ export default function StreakWidget() {
                     </div>
                   ) : (
                     <div
-                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-200/70 dark:border-orange-500/20"
+                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-500/20"
                       aria-label="Studied today"
                     >
                       <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />

@@ -164,22 +164,21 @@ export default function StudyActivityHeatmap() {
     });
   }, [weekColumns, view]);
 
-  // Tier palette is a single-hue (orange) tonal ramp: orange-200 → orange-400
-  // → orange-600. Feeds the flame motif, keeps brand Cyan free for CTAs, and
-  // survives deuteranopia/protanopia because the tiers separate on lightness
-  // alone (~17 L* between each step). The Gold tier also carries an inset
-  // ring so it's distinguishable by shape, not hue — and in dark mode the
-  // peak flips to orange-300 so it stays the *brightest* cell against the
-  // dark card background.
+  // Tier palette is cyan tonal with an actual-gold peak: cyan-200 → cyan-600
+  // → amber-300. Wide lightness gap between T1 and T2 (~37 L*) makes the
+  // tier jump unmistakable, and Gold swaps to the complementary hue so it
+  // pops out of the cool-tone grid as a warm "medal" day. The inset ring on
+  // Gold (amber-800-ish) gives colorblind viewers a shape-based fallback
+  // when hue alone can't carry the peak signal.
   const cellClass = (level: 0 | 1 | 2 | 3, tier: DayTier = 'empty') => {
     if (tier === 'gold') {
-      return 'bg-orange-600 dark:bg-orange-300 shadow-[inset_0_0_0_1.5px_rgba(124,45,18,0.6)] dark:shadow-[inset_0_0_0_1.5px_rgba(67,20,7,0.65)]';
+      return 'bg-yellow-400 shadow-[inset_0_0_0_2px_rgba(146,64,14,0.75)] dark:shadow-[inset_0_0_0_2px_rgba(120,53,15,0.85)]';
     }
     if (tier === 'orange') {
-      return 'bg-orange-400 dark:bg-orange-500/85';
+      return 'bg-cyan-600 dark:bg-cyan-400/85';
     }
     if (tier === 'gray') {
-      return 'bg-orange-200 dark:bg-orange-400/70';
+      return 'bg-cyan-200 dark:bg-cyan-500/25';
     }
     // No qualifying activity — fall back to the intensity ramp so partial-activity
     // days still show a trace of effort on the grid.
@@ -325,15 +324,15 @@ export default function StudyActivityHeatmap() {
               No study
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-orange-200 dark:bg-orange-400/70" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-500/25" />
               Studied (10+ min)
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-orange-400 dark:bg-orange-500/85" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-600 dark:bg-cyan-400/85" />
               Flashcards cleared
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-orange-600 dark:bg-orange-300 shadow-[inset_0_0_0_1.5px_rgba(124,45,18,0.6)] dark:shadow-[inset_0_0_0_1.5px_rgba(67,20,7,0.65)]" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-yellow-400 shadow-[inset_0_0_0_2px_rgba(146,64,14,0.75)] dark:shadow-[inset_0_0_0_2px_rgba(120,53,15,0.85)]" />
               Gold day — in your window
             </span>
           </div>
