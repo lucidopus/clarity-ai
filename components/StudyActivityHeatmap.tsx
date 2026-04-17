@@ -164,21 +164,22 @@ export default function StudyActivityHeatmap() {
     });
   }, [weekColumns, view]);
 
-  // Tier palette reads as a "growth → harvest" narrative: emerald lightens to
-  // deepen with effort, then gold signals the peak day. Keeping both mid tiers
-  // in the emerald family (different lightness) preserves brand Cyan for CTAs
-  // and active states while staying colorblind-safe — the lightness step from
-  // emerald-400 → emerald-600 survives deuteranopia/protanopia, and Gold
-  // carries an inset ring so it's distinguishable by shape, not hue alone.
+  // Tier palette is a single-hue (orange) tonal ramp: orange-200 → orange-400
+  // → orange-600. Feeds the flame motif, keeps brand Cyan free for CTAs, and
+  // survives deuteranopia/protanopia because the tiers separate on lightness
+  // alone (~17 L* between each step). The Gold tier also carries an inset
+  // ring so it's distinguishable by shape, not hue — and in dark mode the
+  // peak flips to orange-300 so it stays the *brightest* cell against the
+  // dark card background.
   const cellClass = (level: 0 | 1 | 2 | 3, tier: DayTier = 'empty') => {
     if (tier === 'gold') {
-      return 'bg-amber-400 shadow-[inset_0_0_0_1.5px_rgba(180,83,9,0.55)] dark:shadow-[inset_0_0_0_1.5px_rgba(252,211,77,0.55)]';
+      return 'bg-orange-600 dark:bg-orange-300 shadow-[inset_0_0_0_1.5px_rgba(124,45,18,0.6)] dark:shadow-[inset_0_0_0_1.5px_rgba(67,20,7,0.65)]';
     }
     if (tier === 'orange') {
-      return 'bg-emerald-600 dark:bg-emerald-700/85';
+      return 'bg-orange-400 dark:bg-orange-500/85';
     }
     if (tier === 'gray') {
-      return 'bg-emerald-400 dark:bg-emerald-500/80';
+      return 'bg-orange-200 dark:bg-orange-400/70';
     }
     // No qualifying activity — fall back to the intensity ramp so partial-activity
     // days still show a trace of effort on the grid.
@@ -324,15 +325,15 @@ export default function StudyActivityHeatmap() {
               No study
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-emerald-400 dark:bg-emerald-500/80" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-orange-200 dark:bg-orange-400/70" />
               Studied (10+ min)
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-emerald-600 dark:bg-emerald-700/85" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-orange-400 dark:bg-orange-500/85" />
               Flashcards cleared
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-amber-400 shadow-[inset_0_0_0_1.5px_rgba(180,83,9,0.55)] dark:shadow-[inset_0_0_0_1.5px_rgba(252,211,77,0.55)]" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-orange-600 dark:bg-orange-300 shadow-[inset_0_0_0_1.5px_rgba(124,45,18,0.6)] dark:shadow-[inset_0_0_0_1.5px_rgba(67,20,7,0.65)]" />
               Gold day — in your window
             </span>
           </div>
