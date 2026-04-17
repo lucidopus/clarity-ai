@@ -176,22 +176,23 @@ export default function StudyActivityHeatmap() {
       return 'bg-yellow-400 shadow-[inset_0_0_0_2px_rgba(146,64,14,0.75)] dark:shadow-[inset_0_0_0_2px_rgba(120,53,15,0.85)]';
     }
     if (tier === 'orange') {
-      return 'bg-cyan-600 dark:bg-cyan-400/85';
+      return 'bg-cyan-600 dark:bg-cyan-400';
     }
     if (tier === 'gray') {
-      return 'bg-cyan-200 dark:bg-cyan-500/35';
+      return 'bg-cyan-200 dark:bg-cyan-700';
     }
     // No qualifying tier reached. Split into two visible states so a day
     // that logged activity but didn't cross the threshold doesn't render as
     // "empty" — we honor the touch with a visible whisper of the tier hue
-    // (trace). Reads as: empty (neutral slate + outline) → trace (cyan-100)
-    //        → T1 (cyan-200) → T2 → T3. Light-mode trace needs to be ≥
-    //        cyan-100 to avoid reading as "near white" against a white card.
+    // (trace). Reads as: empty (neutral slate + outline) → trace (cyan-100
+    // light / cyan-900 dark) → T1 (cyan-200 / cyan-700) → T2 → T3.
+    // Dark-mode fills are solid (not alpha) so cells never read as
+    // "disabled/ghosted" — transparency in dark UI implies a muted state.
     switch (level) {
       case 0: return 'bg-slate-200 dark:bg-slate-900/60 outline outline-slate-300/40 dark:outline-slate-700/80';
       case 1:
       case 2:
-      case 3: return 'bg-cyan-100 dark:bg-cyan-500/20';
+      case 3: return 'bg-cyan-100 dark:bg-cyan-900';
     }
   };
 
@@ -329,15 +330,15 @@ export default function StudyActivityHeatmap() {
               No study
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-100 dark:bg-cyan-500/20" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-100 dark:bg-cyan-900" />
               Some activity
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-500/35" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-700" />
               Studied (10+ min)
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-600 dark:bg-cyan-400/85" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-600 dark:bg-cyan-400" />
               Flashcards cleared
             </span>
             <span className="inline-flex items-center gap-1.5">
