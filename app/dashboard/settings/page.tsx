@@ -10,8 +10,9 @@ import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
-import { Edit2, Save, X, Info, Clock, CheckCircle2 } from 'lucide-react';
+import { Edit2, Save, X, Info, Clock, CheckCircle2, Volume2 } from 'lucide-react';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
+import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
 
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
@@ -161,14 +162,17 @@ export default function SettingsPage() {
   // Study window (cognitive contract) state
   const [contractLoaded, setContractLoaded] = useState(false);
   const [hasSavedContract, setHasSavedContract] = useState(false);
-  const [windowStart, setWindowStart] = useState('20:00');
-  const [windowEnd, setWindowEnd] = useState('20:30');
+  const [windowStart, setWindowStart] = useState('');
+  const [windowEnd, setWindowEnd] = useState('');
   const [savedWindowStart, setSavedWindowStart] = useState<string | null>(null);
   const [savedWindowEnd, setSavedWindowEnd] = useState<string | null>(null);
   const [savedTimezone, setSavedTimezone] = useState<string | null>(null);
   const [isSavingContract, setIsSavingContract] = useState(false);
   const [isClearingContract, setIsClearingContract] = useState(false);
   const [contractError, setContractError] = useState<string | null>(null);
+
+  // Focus-mode ambient sound preference — client-side only, no server sync.
+  const [ambientEnabled, setAmbientEnabled] = useAmbientEnabled();
 
   // Learning profile update limit state
   const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
@@ -633,6 +637,10 @@ export default function SettingsPage() {
   };
 
   const handleSaveStudyWindow = async () => {
+    if (!windowStart || !windowEnd) {
+      setContractError('Pick a start and end time first.');
+      return;
+    }
     const durationMinutes = timeToMinutes(windowEnd) - timeToMinutes(windowStart);
     if (durationMinutes < 15 || durationMinutes > 8 * 60) {
       setContractError('Pick a window between 15 minutes and 8 hours.');
@@ -656,6 +664,7 @@ export default function SettingsPage() {
       setSavedWindowEnd(windowEnd);
       setSavedTimezone(timezone);
       setHasSavedContract(true);
+      window.dispatchEvent(new Event('focus-mode:refresh'));
       addToast('Study window saved', 'success');
     } catch (error) {
       console.error('Save study window error:', error);
@@ -679,8 +688,9 @@ export default function SettingsPage() {
       setSavedWindowEnd(null);
       setSavedTimezone(null);
       setHasSavedContract(false);
-      setWindowStart('20:00');
-      setWindowEnd('20:30');
+      setWindowStart('');
+      setWindowEnd('');
+      window.dispatchEvent(new Event('focus-mode:refresh'));
       addToast('Study window cleared', 'success');
     } catch (error) {
       console.error('Clear study window error:', error);
@@ -1129,9 +1139,12 @@ export default function SettingsPage() {
         </div>
 
         {(() => {
-          const durationMinutes = timeToMinutes(windowEnd) - timeToMinutes(windowStart);
-          const endBeforeStart = durationMinutes <= 0;
-          const durationOk = durationMinutes >= 15 && durationMinutes <= 8 * 60;
+          const isUnset = !windowStart || !windowEnd;
+          const durationMinutes = isUnset
+            ? 0
+            : timeToMinutes(windowEnd) - timeToMinutes(windowStart);
+          const endBeforeStart = !isUnset && durationMinutes <= 0;
+          const durationOk = !isUnset && durationMinutes >= 15 && durationMinutes <= 8 * 60;
           const dirty =
             hasSavedContract &&
             (windowStart !== savedWindowStart || windowEnd !== savedWindowEnd);
@@ -1143,6 +1156,8 @@ export default function SettingsPage() {
           const activeTimezone = savedTimezone || resolveTimezone();
           const statusCopy = durationOk
             ? `${durationMinutes}-minute window · ${activeTimezone.replace('_', ' ')}`
+            : isUnset
+            ? 'Pick a stretch between 15 minutes and 8 hours when you can reliably show up.'
             : endBeforeStart
             ? 'End time must be after start time.'
             : 'Window must be 15 minutes to 8 hours.';
@@ -1152,8 +1167,41 @@ export default function SettingsPage() {
             ? 'Save changes'
             : 'Save window';
 
+          const presets: { label: string; start: string; end: string }[] = [
+            { label: 'Morning · 7:00–8:00 AM', start: '07:00', end: '08:00' },
+            { label: 'Midday · 12:00–12:45 PM', start: '12:00', end: '12:45' },
+            { label: 'Evening · 8:00–9:00 PM', start: '20:00', end: '21:00' },
+          ];
+
+          const applyPreset = (start: string, end: string) => {
+            setWindowStart(start);
+            setWindowEnd(end);
+            setContractError(null);
+          };
+
           return (
             <div className="p-4 bg-background rounded-xl border border-border">
+              {isUnset && !hasSavedContract && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
+                    Quick picks
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {presets.map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => applyPreset(p.start, p.end)}
+                        disabled={!contractLoaded || isSavingContract || isClearingContract}
+                        className="inline-flex items-center px-3 py-1.5 rounded-full border border-border bg-card-bg text-sm text-foreground hover:border-accent hover:text-accent transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <label className="block">
                   <span className="block text-sm font-medium text-foreground mb-2">Start</span>
@@ -1186,10 +1234,11 @@ export default function SettingsPage() {
               </div>
 
               <div className="rounded-lg border border-border bg-card-bg px-3 py-2 mb-3 text-xs text-muted-foreground flex items-center gap-2">
-                <CheckCircle2
-                  className={`w-4 h-4 shrink-0 ${durationOk ? 'text-green-500' : 'text-muted-foreground/40'}`}
-                  aria-hidden="true"
-                />
+                {durationOk ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" aria-hidden="true" />
+                ) : (
+                  <Clock className="w-4 h-4 shrink-0 text-muted-foreground/50" aria-hidden="true" />
+                )}
                 <span>{statusCopy}</span>
               </div>
 
@@ -1218,6 +1267,28 @@ export default function SettingsPage() {
                     {isClearingContract ? 'Clearing…' : 'Clear window'}
                   </Button>
                 )}
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-border flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <Volume2 className="w-4 h-4 text-accent mt-0.5 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground">Ambient sound</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Show a play/pause control during your focus window.
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={ambientEnabled}
+                    onChange={(e) => setAmbientEnabled(e.target.checked)}
+                    aria-label="Toggle ambient sound control in focus window"
+                  />
+                  <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
+                </label>
               </div>
             </div>
           );

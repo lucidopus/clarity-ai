@@ -8,6 +8,8 @@ import { useState } from 'react';
 import GlobalSearch from '@/components/GlobalSearch';
 import { LiveLectureProvider } from '@/lib/live-lecture/LiveLectureContext';
 import LiveLectureBubble from '@/components/live-lecture/LiveLectureBubble';
+import { FocusModeProvider } from '@/lib/focus-mode/FocusModeContext';
+import FocusModeShell from '@/components/focus-mode/FocusModeShell';
 
 export default function DashboardLayout({
   children,
@@ -172,21 +174,24 @@ export default function DashboardLayout({
   }
 
   return (
-    <LiveLectureProvider>
-      <div className="flex h-screen bg-background overflow-hidden">
-        {/* Sidebar */}
-        <Sidebar />
+    <FocusModeProvider>
+      <LiveLectureProvider>
+        <div className="flex h-screen bg-background overflow-hidden">
+          {/* Sidebar */}
+          <Sidebar />
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-8 py-6">
-            {children}
-          </div>
-        </main>
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-y-auto">
+            <div className="max-w-7xl mx-auto px-8 py-6">
+              {children}
+            </div>
+          </main>
 
-        <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-        <LiveLectureBubble />
-      </div>
-    </LiveLectureProvider>
+          <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+          <LiveLectureBubble />
+          <FocusModeShell />
+        </div>
+      </LiveLectureProvider>
+    </FocusModeProvider>
   );
 }

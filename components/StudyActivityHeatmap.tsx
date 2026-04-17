@@ -179,20 +179,20 @@ export default function StudyActivityHeatmap() {
       return 'bg-cyan-600 dark:bg-cyan-400';
     }
     if (tier === 'gray') {
-      return 'bg-cyan-200 dark:bg-cyan-700';
+      return 'bg-cyan-400 dark:bg-cyan-700';
     }
     // No qualifying tier reached. Split into two visible states so a day
     // that logged activity but didn't cross the threshold doesn't render as
     // "empty" — we honor the touch with a visible whisper of the tier hue
-    // (trace). Reads as: empty (neutral slate + outline) → trace (cyan-100
-    // light / cyan-900 dark) → T1 (cyan-200 / cyan-700) → T2 → T3.
-    // Dark-mode fills are solid (not alpha) so cells never read as
-    // "disabled/ghosted" — transparency in dark UI implies a muted state.
+    // (trace). Light-mode palette widens the steps (cyan-200 → 400 → 600)
+    // so each tier is readable against the slate-200 empty state instead of
+    // dissolving into it. Dark-mode fills stay solid (not alpha) so cells
+    // never read as "disabled/ghosted".
     switch (level) {
       case 0: return 'bg-slate-200 dark:bg-slate-900/60 outline outline-slate-300/40 dark:outline-slate-700/80';
       case 1:
       case 2:
-      case 3: return 'bg-cyan-100 dark:bg-cyan-900';
+      case 3: return 'bg-cyan-200 dark:bg-cyan-900';
     }
   };
 
@@ -330,11 +330,11 @@ export default function StudyActivityHeatmap() {
               No study
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-100 dark:bg-cyan-900" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-900" />
               Some activity
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-700" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-400 dark:bg-cyan-700" />
               Studied (10+ min)
             </span>
             <span className="inline-flex items-center gap-1.5">

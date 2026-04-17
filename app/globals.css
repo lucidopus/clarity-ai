@@ -195,6 +195,97 @@ body {
   .streak-shimmer::after { animation: none; display: none; }
 }
 
+/* Focus mode — ambient radial glow at top edge of viewport. Peripheral
+   awareness signal when the user is inside their self-chosen study window. */
+.focus-mode-ambient {
+  background: radial-gradient(
+    ellipse 90% 45% at 50% 0%,
+    rgba(6, 182, 212, 0.10) 0%,
+    rgba(6, 182, 212, 0.05) 30%,
+    transparent 65%
+  );
+}
+.dark .focus-mode-ambient {
+  background: radial-gradient(
+    ellipse 90% 45% at 50% 0%,
+    rgba(34, 211, 238, 0.16) 0%,
+    rgba(34, 211, 238, 0.07) 30%,
+    transparent 65%
+  );
+}
+
+/* Live dot breathing — paired with a solid core dot so the signal never
+   disappears between breaths; ease makes it feel calm, not anxious. */
+@keyframes focus-dot-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.8); opacity: 0; }
+}
+.focus-mode-dot-breathe {
+  animation: focus-dot-breathe 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-mode-dot-breathe { animation: none; opacity: 0.55; transform: scale(1.3); }
+}
+
+/* Breathing halo behind the focus badge ring (slow, peripheral-safe) */
+@keyframes focus-halo-breathe {
+  0%, 100% { transform: scale(0.85); opacity: 0.55; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+.focus-mode-halo-breathe {
+  animation: focus-halo-breathe 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-mode-halo-breathe { animation: none; opacity: 0.75; transform: scale(1); }
+}
+
+/* Horizon Dissolve — end-of-window exit for the focus orb. Holds at the
+   completed state for 2s (keyframe 0%→40%), then desaturates, settles down
+   with a small scale-in, and fades to 0 over the remaining 3s. Translate is
+   kept to a whisper (~15% of orb height) so the orb reads as "settling,"
+   not "falling." One-shot, forwards-filling. */
+@keyframes focus-horizon-dissolve {
+  0%, 40% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: saturate(1);
+  }
+  100% {
+    transform: translateY(7px) scale(0.96);
+    opacity: 0;
+    filter: saturate(0.2);
+  }
+}
+.focus-mode-horizon-dissolve {
+  animation: focus-horizon-dissolve 5s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-mode-horizon-dissolve {
+    animation: none;
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ambient sound ripple — expanding concentric rings that imply sound waves
+   radiating outward from the orb. Two rings offset in phase so the surface
+   never looks empty. Only active while audio is playing. */
+@keyframes focus-ambient-ripple {
+  0%   { transform: scale(0.75); opacity: 0.55; }
+  100% { transform: scale(1.9);  opacity: 0;    }
+}
+.focus-mode-ambient-ripple {
+  animation: focus-ambient-ripple 2.6s ease-out infinite;
+}
+.focus-mode-ambient-ripple-delayed {
+  animation-delay: 1.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-mode-ambient-ripple,
+  .focus-mode-ambient-ripple-delayed { animation: none; opacity: 0; }
+}
+
+
 /* Themed thin scrollbar for heatmap */
 .heatmap-scroll {
   scrollbar-width: thin;
