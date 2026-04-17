@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 import { validateEnv } from '@/lib/env';
 
-// Validate all required env vars on first import (fail-fast)
-const validatedEnv = validateEnv();
-const MONGODB_URI = validatedEnv.MONGODB_URI;
-
 type MongooseCache = {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -22,6 +18,10 @@ async function dbConnect() {
   if (cached.conn) {
     return cached.conn;
   }
+
+  // Validate env on first connection (not on import) so the Trigger.dev indexer
+  // can load task files without requiring runtime secrets at build time.
+  const { MONGODB_URI } = validateEnv();
 
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {

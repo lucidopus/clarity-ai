@@ -417,11 +417,13 @@ A password-protected admin portal is available at `/admin` for platform monitori
 - Prioritize 4 core features (flashcards, quizzes, timestamps, prerequisites) before advanced capabilities
 - User data is sacred - never lose learning materials
 - Quality over quantity - better 4 excellent features than 10 mediocre ones
-- **Right-Size Your Engineering**: Before writing code, assess the task's complexity and scope. Match the solution's complexity to the problem — no more, no less.
+- **Think Just Right — Do NOT Overengineer**: This is the north star. Match the solution's complexity to the problem — no more, no less. Before writing code, assess the task's scope and stop adding "just in case" layers.
   - **Simple tasks** (bug fixes, small tweaks, single-component changes): Write the most direct solution. No abstractions, no extra layers, no "future-proofing." Just solve the problem.
   - **Medium tasks** (new features, multi-file changes): Use reasonable structure and patterns, but don't build frameworks. If you need a helper, make one — but don't build a generic utility system for one use case.
   - **Complex tasks** (architectural changes, new systems, pipelines): Plan thoughtfully, use proper abstractions, and design for maintainability. This is where patterns, error handling layers, and extensibility are justified.
   - **The litmus test**: "If this task's requirements never change, would I still build it this way?" If yes, you're right-sized. If you're building for hypothetical futures, you're over-engineering. If you'd be embarrassed showing it in a code review, you're under-engineering.
+- **Pre-commit UX Gate (MANDATORY for frontend changes)**: Before running `git commit` on any change that touches `.tsx`, `.jsx`, `.css`, `components/`, or `app/`, spawn the `ux-reviewer-pro` agent and **only proceed when it returns all-green**. If it flags issues, fix them and re-run the agent — do not commit through yellow/red. Skip this gate only for pure backend changes (no frontend files in the diff) or when the user explicitly says "skip UX review."
+- **Ideation: Always Contribute Your Own Ideas**: When the user asks for design suggestions, approaches, or ideas — even informally ("what do you think?", "how should we do X?", "give me some options") — always include **your own proposals** alongside anything you research, read from the codebase, or pull from Gemini. Never just relay external options. Add yours to the pool so the user has a richer set to choose from. Be opinionated: rank them, flag the one you'd pick, and say why in one line. If you only have one idea, say so explicitly rather than padding.
 - **Always run `yarn lint` and fix all lint errors/warnings after completing a feature update before considering it done**
 - **Completion Summary**: Whenever you're done coding, always give a quick 3-4 liner summary of what you did along with a one-liner summary of what changed in each file, including file paths.
 - **Folder-Level READMEs**: Maintain a README at important folder levels describing what exists in those files. Use the naming convention `folder-name-README.md` (e.g., `lib-README.md`, `components-README.md`). Only for key folders (e.g., `lib/`, `components/`, `app/api/`) — do NOT add READMEs to every single folder; keep the repo clean.
@@ -502,36 +504,38 @@ A password-protected admin portal is available at `/admin` for platform monitori
 - **Framer Motion**: https://www.framer.com/motion/
 
 
-## Your Senior Engineering Manager (SEM)
+## Your Senior Engineering Manager (SEM) — Gemini
 
-You have access to a Senior Engineering Manager (SEM) for guidance on complex technical decisions, architectural choices, and challenging problems. The SEM is a strategic resource—use intelligently, not for every question.
+You have access to Gemini as a Senior Engineering Manager (SEM) — a **different brain** for code review, ideation, factual correctness, and sanity-checking your reasoning. Use it when it actually helps, not reflexively.
 
-### How to Consult the SEM
+### How to Consult Gemini
 
 Initiate a consultation using:
 ```bash
 gemini -p "<Your question or concern>"
 ```
 
-**Key guidelines for effective SEM consultations**:
+**This is a ONE-SHOT execution.** Gemini cannot see your conversation, your prior prompts, or follow up with you. Everything it needs to answer well must be in that single prompt. A weak prompt gets a shallow answer — don't blame Gemini, blame the brief.
 
-1. **Provide Context Efficiently**
-   - Reference relevant files using `@filename` syntax so the SEM can review them
-   - Explicitly state: "SEM, please provide thoughts/suggestions only—no code modifications needed"
-   - Include all related questions in a single prompt to avoid context loss (you cannot follow up in one session)
-   - Be specific about what you need: architectural advice, trade-offs analysis, validation, etc.
+**What Gemini is especially good at**:
+- **Code review** — second-opinion reads on diffs, design, correctness
+- **Ideation** — brainstorming approaches when you're stuck in one frame
+- **Factual correctness** — checking claims about libraries, APIs, behavior
+- **Trade-off analysis** — laying out pros/cons of competing approaches
 
-2. **Think Critically About SEM Suggestions**
-   - The SEM provides recommendations and perspectives, not final decisions
-   - Evaluate suggestions against your project context, constraints, and goals
-   - Question suggestions that don't align with your understanding or the CLAUDE.md principles
-   - You are the decision-maker—SEM input is advisory only
+**How to brief Gemini well (so one-shot actually works)**:
+1. **Load full context upfront** — reference relevant files with `@filename` syntax (e.g., `@lib/pipeline-helpers.ts @trigger/process-video-pipeline.ts`). It will read them.
+2. **State the background** — what the project is, what you're trying to do, what you've already tried or ruled out. Don't assume shared context.
+3. **Be specific about the ask** — "review this diff for correctness," "list trade-offs between A and B," "fact-check my claim that X." Vague asks produce vague answers.
+4. **Set the output shape** — "no code changes, just recommendations," or "give me a punch list," or "answer in under 200 words."
+5. **Single prompt, all questions** — if you have 3 related questions, ask them in one go. You cannot come back.
 
-3. **Report Back to the User**
-   - **Before implementing anything the SEM suggests, summarize their key points to the user**
-   - Explain your own analysis: What makes sense? What concerns do you have?
-   - Share what you've decided and why (even if disagreeing with SEM)
-   - Transparency helps build trust in your decision-making
+**Gemini is advisory. You decide.**
+- Its output is **input** to your judgment, not a verdict. Treat it like a smart colleague you disagree with half the time.
+- Evaluate its suggestions against this repo's context, CLAUDE.md principles, and what the user actually asked for. Push back when it's wrong.
+- **Always summarize Gemini's key points to the user before implementing anything from them.** State your own analysis — what you agree with, what you reject, and why. Then decide.
+
+### When to Consult Gemini (Not Every Question!)
 
 ### When to Consult the SEM (Not Every Question!)
 

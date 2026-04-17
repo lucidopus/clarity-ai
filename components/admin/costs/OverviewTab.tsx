@@ -80,10 +80,8 @@ export default function OverviewTab({ days, refreshToken, onDataLoaded }: Overvi
         <TopCostDrivers services={summary.byService} totalCost={summary.totalCost} />
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <SpendingHeatmap days={days} key={`heatmap-${days}-${refreshToken}`} />
-        <TokenTrendChart days={days} key={`trend-${days}-${refreshToken}`} />
-      </div>
+      <SpendingHeatmap days={days} key={`heatmap-${days}-${refreshToken}`} />
+      <TokenTrendChart days={days} key={`trend-${days}-${refreshToken}`} />
     </div>
   );
 }

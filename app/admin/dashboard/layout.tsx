@@ -75,7 +75,7 @@ export default function AdminDashboardLayout({
 
         {/* Main Content Skeleton */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-8 py-8">
+          <div className="w-full px-8 py-8">
             <div className="h-8 bg-secondary/20 rounded mb-8 animate-pulse w-48"></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
@@ -155,7 +155,7 @@ export default function AdminDashboardLayout({
 
        {/* Main Content Area */}
        <main className="flex-1 overflow-y-auto">
-         <div className="max-w-7xl mx-auto px-8 py-8">
+         <div className="w-full px-8 py-8">
            {/* Admin Header */}
            <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">
              <div className="flex items-center space-x-3">

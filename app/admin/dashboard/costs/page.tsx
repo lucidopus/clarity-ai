@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { LayoutDashboard, BarChart3, Users as UsersIcon } from 'lucide-react';
 
 import OverviewTab from '@/components/admin/costs/OverviewTab';
@@ -26,23 +26,24 @@ export default function CostsPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
     setRefreshToken((t) => t + 1);
-  };
+  }, []);
 
-  const handleDaysChange = (next: TimeRangeDays) => {
+  const handleDaysChange = useCallback((next: TimeRangeDays) => {
     setRefreshing(true);
     setDays(next);
-  };
+  }, []);
 
-  // Fires when the active tab's primary data source finishes loading. We
-  // only flip `refreshing` off on the first success per refresh cycle so
-  // later chart completions don't bounce the spinner.
-  const handleDataLoaded = () => {
+  // Memoized so child components that list `onDataLoaded` in their fetch
+  // useCallback deps don't recreate their fetcher on every parent render —
+  // that caused an infinite fetch loop (onDataLoaded setState → re-render →
+  // new callback identity → new fetcher → useEffect re-fires → fetch again).
+  const handleDataLoaded = useCallback(() => {
     setLastUpdated(new Date());
     setRefreshing(false);
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

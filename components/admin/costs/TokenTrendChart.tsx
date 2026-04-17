@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend,
@@ -19,7 +20,17 @@ import { formatCost, formatCount } from '@/lib/cost/format';
 import CostSkeleton from './shared/CostSkeleton';
 
 try {
-  ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler,
+  );
 } catch {
   // Already registered
 }
@@ -36,6 +47,14 @@ interface TrendData {
 
 interface TokenTrendChartProps {
   days: number;
+}
+
+// Compact K/M formatter for the token axis — keeps ticks legible regardless of
+// whether the window is a slow day (~1K) or a heavy batch (~5M).
+function formatTokensShort(value: number): string {
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value >= 10_000_000 ? 0 : 1)}M`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(value >= 10_000 ? 0 : 1)}K`;
+  return value.toString();
 }
 
 export default function TokenTrendChart({ days }: TokenTrendChartProps) {
@@ -89,6 +108,10 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
     );
   }
 
+  // Mixed chart: stacked bars for input/output tokens (left axis, real token
+  // counts) + a line for 7-day moving avg cost (right axis, real USD). No
+  // scaling hacks — each series renders in its native units so tick labels are
+  // always meaningful, including sub-cent days (uses tiered formatCost).
   const chartData = {
     labels: trends.map((t) => {
       const date = new Date(t.date);
@@ -96,29 +119,45 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
     }),
     datasets: [
       {
+        type: 'bar' as const,
         label: 'Input Tokens',
         data: trends.map((t) => t.inputTokens),
-        borderColor: 'rgba(156, 163, 175, 0.6)',
-        backgroundColor: 'rgba(156, 163, 175, 0.1)',
-        fill: true,
-        tension: 0.3,
+        backgroundColor: 'rgba(148, 163, 184, 0.55)',
+        borderColor: 'rgba(148, 163, 184, 0.9)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        stack: 'tokens',
+        order: 2,
       },
       {
+        type: 'bar' as const,
         label: 'Output Tokens',
         data: trends.map((t) => t.outputTokens),
-        borderColor: 'rgba(6, 182, 212, 0.9)',
-        backgroundColor: 'rgba(6, 182, 212, 0.1)',
-        fill: true,
-        tension: 0.3,
+        backgroundColor: 'rgba(6, 182, 212, 0.7)',
+        borderColor: 'rgba(6, 182, 212, 1)',
+        borderWidth: 1,
+        yAxisID: 'y',
+        stack: 'tokens',
+        order: 2,
       },
       {
+        type: 'line' as const,
         label: '7-Day Avg Cost',
-        data: trends.map((t) => t.movingAverage7d * 1000),
-        borderColor: 'rgba(239, 68, 68, 0.6)',
-        backgroundColor: 'transparent',
-        borderDash: [5, 5],
-        tension: 0.3,
+        data: trends.map((t) => t.movingAverage7d),
+        borderColor: 'rgba(244, 114, 182, 0.95)',
+        backgroundColor: 'rgba(244, 114, 182, 0.15)',
+        borderWidth: 2,
+        tension: 0.35,
+        pointRadius: trends.map((t) => (t.isAnomaly ? 5 : 2)),
+        pointHoverRadius: trends.map((t) => (t.isAnomaly ? 7 : 4)),
+        pointBackgroundColor: trends.map((t) =>
+          t.isAnomaly ? 'rgba(239, 68, 68, 1)' : 'rgba(244, 114, 182, 1)',
+        ),
+        pointBorderColor: trends.map((t) =>
+          t.isAnomaly ? 'rgba(239, 68, 68, 1)' : 'rgba(244, 114, 182, 1)',
+        ),
         yAxisID: 'y1',
+        order: 1,
       },
     ],
   };
@@ -131,10 +170,10 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
       legend: {
         display: true,
         position: 'top' as const,
-        labels: { color: 'rgba(107, 114, 128, 0.8)', usePointStyle: true, padding: 15 },
+        labels: { color: 'rgba(107, 114, 128, 0.9)', usePointStyle: true, padding: 16 },
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
         padding: 12,
         titleColor: '#fff',
         bodyColor: '#fff',
@@ -145,14 +184,14 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
             const trend = trends[context.dataIndex];
             if (context.datasetIndex === 0) return `Input: ${formatCount(trend.inputTokens)} tokens`;
             if (context.datasetIndex === 1) return `Output: ${formatCount(trend.outputTokens)} tokens`;
-            return `7-Day Avg: ${formatCost(trend.movingAverage7d)}`;
+            return `7-Day Avg Cost: ${formatCost(trend.movingAverage7d)}`;
           },
           afterBody: (context: Array<{ dataIndex: number }>) => {
             const trend = trends[context[0].dataIndex];
             return [
               `Total: ${formatCount(trend.totalTokens)} tokens`,
-              `Cost: ${formatCost(trend.cost)}`,
-              trend.isAnomaly ? 'Anomaly detected (>3σ above mean)' : '',
+              `Daily Cost: ${formatCost(trend.cost)}`,
+              trend.isAnomaly ? '⚠ Anomaly (>3σ above 7-day mean)' : '',
             ].filter(Boolean);
           },
         },
@@ -163,14 +202,15 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
         type: 'linear' as const,
         display: true,
         position: 'left' as const,
+        stacked: true,
         beginAtZero: true,
-        grid: { color: 'rgba(156, 163, 175, 0.1)' },
+        grid: { color: 'rgba(156, 163, 175, 0.12)' },
         ticks: {
-          color: 'rgba(107, 114, 128, 0.8)',
+          color: 'rgba(107, 114, 128, 0.9)',
           callback: (value: number | string) =>
-            typeof value === 'number' ? `${(value / 1000).toFixed(0)}K` : value,
+            typeof value === 'number' ? formatTokensShort(value) : value,
         },
-        title: { display: true, text: 'Tokens', color: 'rgba(107, 114, 128, 0.8)' },
+        title: { display: true, text: 'Tokens', color: 'rgba(107, 114, 128, 0.9)' },
       },
       y1: {
         type: 'linear' as const,
@@ -179,15 +219,16 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
         beginAtZero: true,
         grid: { drawOnChartArea: false },
         ticks: {
-          color: 'rgba(239, 68, 68, 0.6)',
+          color: 'rgba(244, 114, 182, 0.95)',
           callback: (value: number | string) =>
-            typeof value === 'number' ? `$${(value / 1000).toFixed(2)}` : value,
+            typeof value === 'number' ? formatCost(value) : value,
         },
-        title: { display: true, text: 'Cost (scaled)', color: 'rgba(239, 68, 68, 0.6)' },
+        title: { display: true, text: 'Cost (USD)', color: 'rgba(244, 114, 182, 0.95)' },
       },
       x: {
+        stacked: true,
         grid: { display: false },
-        ticks: { color: 'rgba(107, 114, 128, 0.8)', maxRotation: 45, minRotation: 0 },
+        ticks: { color: 'rgba(107, 114, 128, 0.9)', maxRotation: 45, minRotation: 0 },
       },
     },
   };
@@ -202,7 +243,7 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
 
       <div className="bg-card-bg border border-border rounded-xl p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <Stat label="Total Tokens" value={`${(totalTokens / 1_000_000).toFixed(2)}M`} />
+          <Stat label="Total Tokens" value={formatTokensShort(totalTokens)} />
           <Stat label="Avg Daily Cost" value={formatCost(avgDailyCost)} />
           <Stat
             label="Anomalies"
@@ -211,8 +252,8 @@ export default function TokenTrendChart({ days }: TokenTrendChartProps) {
           />
         </div>
 
-        <div className="h-[350px]">
-          <Line data={chartData} options={chartOptions} />
+        <div className="h-[360px]">
+          <Chart type="bar" data={chartData} options={chartOptions} />
         </div>
       </div>
     </div>
