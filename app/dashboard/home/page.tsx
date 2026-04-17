@@ -419,7 +419,7 @@ export default function DashboardHomePage() {
           {/* Row 1: Clarity Score + Activity Heatmap (GitHub-style) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ClarityScoreWidget />
-            <StudyActivityHeatmap currentStreak={stats.currentStreak} longestStreak={stats.longestStreak} />
+            <StudyActivityHeatmap />
           </div>
 
           {/* Row 1.5: Today's Mix */}

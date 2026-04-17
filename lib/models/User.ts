@@ -77,9 +77,10 @@ export interface IUser extends Document {
   studyStreak: number;
   longestStudyStreak: number;
   lastStudyDate?: string; // YYYY-MM-DD (UTC)
-  streakShields: number;  // 0–3 shield charges
+  streakShields: number;  // 0–3 shield charges (new users start at 1)
   milestones: number[];   // achieved milestone days [7, 30, 100, 365]
   streakRecoveryDeadline?: Date | null; // cutoff for 48h recovery window after a break
+  lastShieldEvent?: { type: 'earned' | 'consumed'; at: Date } | null;
 }
 
 const UserSchema: Schema = new Schema({
@@ -134,9 +135,10 @@ const UserSchema: Schema = new Schema({
   studyStreak: { type: Number, default: 0 },
   longestStudyStreak: { type: Number, default: 0 },
   lastStudyDate: { type: String, default: null }, // YYYY-MM-DD (UTC)
-  streakShields: { type: Number, default: 0, min: 0, max: 3 },
+  streakShields: { type: Number, default: 1, min: 0, max: 3 },
   milestones: [{ type: Number }],
   streakRecoveryDeadline: { type: Date, default: null },
+  lastShieldEvent: { type: Schema.Types.Mixed, default: null },
   // Email verification status
   emailVerified: { type: Boolean, default: false },
 }, {

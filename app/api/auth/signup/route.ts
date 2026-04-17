@@ -68,6 +68,7 @@ export async function POST(request: Request) {
       userType,
       customUserType: userType === 'Other' ? customUserType : undefined,
       emailVerified: false, // Explicitly set to false
+      streakShields: 1, // Onboarding gift: endowed progress + feature discoverability
     });
 
     console.log('New user created (unverified):', newUser._id);

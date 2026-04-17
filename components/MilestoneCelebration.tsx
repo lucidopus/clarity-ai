@@ -7,6 +7,7 @@ import Button from './Button';
 
 interface MilestoneCelebrationProps {
   milestone: number;
+  shieldEarnedAtMilestone?: boolean;
   onClose: () => void;
 }
 
@@ -29,7 +30,7 @@ const MILESTONE_MESSAGES: Record<number, { title: string; description: string }>
   },
 };
 
-export default function MilestoneCelebration({ milestone, onClose }: MilestoneCelebrationProps) {
+export default function MilestoneCelebration({ milestone, shieldEarnedAtMilestone = false, onClose }: MilestoneCelebrationProps) {
   const shouldReduceMotion = useReducedMotion();
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<Element | null>(null);
@@ -97,11 +98,12 @@ export default function MilestoneCelebration({ milestone, onClose }: MilestoneCe
         </h2>
         <p className="text-muted-foreground mb-6 leading-relaxed">{message.description}</p>
 
-        {/* Shield earned notice */}
-        <div className="flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl bg-accent/10 border border-accent/20 mb-6">
-          <Shield className="w-4 h-4 text-accent" aria-hidden="true" />
-          <span className="text-sm font-medium text-accent">+1 streak shield earned</span>
-        </div>
+        {shieldEarnedAtMilestone && (
+          <div className="flex items-center gap-2 justify-center px-4 py-2.5 rounded-xl bg-accent/10 border border-accent/20 mb-6">
+            <Shield className="w-4 h-4 text-accent" aria-hidden="true" />
+            <span className="text-sm font-medium text-accent">+1 streak shield earned</span>
+          </div>
+        )}
 
         <Button variant="primary" onClick={onClose} className="w-full">
           Keep it going!

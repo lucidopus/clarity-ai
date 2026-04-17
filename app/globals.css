@@ -157,6 +157,44 @@ body {
   background-color: rgba(6, 182, 212, 0.2);
 }
 
+/* Streak widget: gentle flame flicker */
+@keyframes flame-flicker {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(-1deg); }
+  25% { opacity: 0.92; transform: scale(1.04) rotate(1deg); }
+  50% { opacity: 0.98; transform: scale(0.98) rotate(-0.5deg); }
+  75% { opacity: 0.94; transform: scale(1.02) rotate(0.5deg); }
+}
+
+.animate-flame-flicker {
+  animation: flame-flicker 2.8s ease-in-out infinite;
+  transform-origin: 50% 80%;
+}
+
+/* Streak widget: soft momentum shimmer on the filled progress track */
+@keyframes streak-shimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(220%); }
+}
+
+.streak-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.streak-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+  animation: streak-shimmer 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flame-flicker { animation: none; }
+  .streak-shimmer::after { animation: none; display: none; }
+}
+
 /* Themed thin scrollbar for heatmap */
 .heatmap-scroll {
   scrollbar-width: thin;

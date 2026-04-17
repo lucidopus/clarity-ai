@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
 
     const [user, todayDoc] = await Promise.all([
       User.findById(decoded.userId)
-        .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate streakRecoveryDeadline')
-        .lean() as Promise<{ studyStreak?: number; longestStudyStreak?: number; streakShields?: number; milestones?: number[]; lastStudyDate?: string; streakRecoveryDeadline?: Date | null } | null>,
+        .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate streakRecoveryDeadline lastShieldEvent')
+        .lean() as Promise<{ studyStreak?: number; longestStudyStreak?: number; streakShields?: number; milestones?: number[]; lastStudyDate?: string; streakRecoveryDeadline?: Date | null; lastShieldEvent?: { type: 'earned' | 'consumed'; at: Date } | null } | null>,
       StudyDay.findOne({ userId: decoded.userId, date: getUTCDateString() })
         .lean() as Promise<{ qualifies?: boolean } | null>,
     ]);
@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       todayQualifies: todayDoc?.qualifies ?? false,
       isRecoveryActive,
       recoveryDeadline: isRecoveryActive ? deadline : null,
+      lastShieldEvent: user.lastShieldEvent ?? null,
     });
   } catch (error) {
     console.error('Error fetching streak data:', error);

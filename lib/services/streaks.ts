@@ -17,6 +17,8 @@ export interface StreakResult {
   milestoneReached?: number; // defined only when a new milestone is achieved this call
   recoveryActive?: boolean;
   recoveryDeadline?: Date | null;
+  shieldEarned?: boolean; // true only when shields count actually increased
+  shieldConsumed?: boolean; // true when a shield was used to save the streak
 }
 
 const MILESTONES = [7, 30, 100, 365];
@@ -210,24 +212,31 @@ export async function recordStudyActivity(
   const currentMilestones: number[] = user.milestones ?? [];
   const newMilestone = MILESTONES.find((m) => newStreak >= m && !currentMilestones.includes(m));
 
-  let newShields = user.streakShields ?? 0;
+  const prevShields = user.streakShields ?? 0;
+  let newShields = prevShields;
   if (shieldConsumed) newShields = Math.max(0, newShields - 1);
   // Earn a shield every 7 consecutive days, capped at 3.
-  if (newStreak > 0 && newStreak % 7 === 0) {
+  const eligibleForEarn = newStreak > 0 && newStreak % 7 === 0;
+  if (eligibleForEarn) {
     newShields = Math.min(3, newShields + 1);
   }
+  const shieldEarned = newShields > prevShields;
 
   // Persist updated streak state and always clear the recovery deadline after a
   // definitive streak action (increment / shield / recover / reset).
-  const update: Record<string, unknown> = {
-    $set: {
-      studyStreak: newStreak,
-      longestStudyStreak: newLongest,
-      lastStudyDate: today,
-      streakShields: newShields,
-      streakRecoveryDeadline: null,
-    },
+  const shieldSet: Record<string, unknown> = {
+    studyStreak: newStreak,
+    longestStudyStreak: newLongest,
+    lastStudyDate: today,
+    streakShields: newShields,
+    streakRecoveryDeadline: null,
   };
+  if (shieldEarned) {
+    shieldSet.lastShieldEvent = { type: 'earned', at: new Date() };
+  } else if (shieldConsumed) {
+    shieldSet.lastShieldEvent = { type: 'consumed', at: new Date() };
+  }
+  const update: Record<string, unknown> = { $set: shieldSet };
   if (newMilestone) {
     update.$addToSet = { milestones: newMilestone };
   }
@@ -251,5 +260,7 @@ export async function recordStudyActivity(
     milestoneReached: newMilestone,
     recoveryActive: false,
     recoveryDeadline: null,
+    shieldEarned,
+    shieldConsumed,
   };
 }

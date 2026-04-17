@@ -389,8 +389,12 @@ export async function recordChallengeActivity(
   if (!claimed) return; // already awarded by a concurrent request
 
   // Grant 1 shield if user has < 3, capping at 3. Badge-only otherwise.
+  // Stamp lastShieldEvent atomically with the grant so the client can toast it.
   await User.updateOne(
     { _id: userId, streakShields: { $lt: 3 } },
-    { $inc: { streakShields: 1 } },
+    {
+      $inc: { streakShields: 1 },
+      $set: { lastShieldEvent: { type: 'earned', at: new Date() } },
+    },
   );
 }

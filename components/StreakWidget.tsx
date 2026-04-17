@@ -1,9 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
-import { Flame, Shield, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+import { Flame, Shield, AlertCircle, Info, TrendingUp, Check } from 'lucide-react';
 import MilestoneCelebration from './MilestoneCelebration';
+import Toast, { ToastType } from './Toast';
+
+interface ShieldEvent {
+  type: 'earned' | 'consumed';
+  at: string;
+}
 
 interface StreakData {
   studyStreak: number;
@@ -14,7 +20,16 @@ interface StreakData {
   todayQualifies: boolean;
   isRecoveryActive?: boolean;
   recoveryDeadline?: string | null;
+  lastShieldEvent?: ShieldEvent | null;
 }
+
+interface ToastItem {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
+const SHIELD_EVENT_KEY = 'clarity_last_shield_event_seen';
 
 function formatTimeLeft(deadline: string): string {
   const ms = new Date(deadline).getTime() - Date.now();
@@ -25,12 +40,17 @@ function formatTimeLeft(deadline: string): string {
   return `${minutes}m left`;
 }
 
-const NEXT_MILESTONE = (streak: number): number | null => {
-  const milestones = [7, 30, 100, 365];
-  return milestones.find((m) => m > streak) ?? null;
+const MILESTONES = [7, 30, 100, 365] as const;
+
+const MILESTONE_LABEL: Record<number, string> = {
+  7: '1 week',
+  30: '1 month',
+  100: '100 days',
+  365: '1 year',
 };
 
-const PREV_MILESTONES = [0, 7, 30, 100, 365];
+const NEXT_MILESTONE = (streak: number): number | null =>
+  MILESTONES.find((m) => m > streak) ?? null;
 
 const CELEBRATED_KEY = 'clarity_celebrated_milestones';
 
@@ -52,14 +72,14 @@ function markCelebrated(milestone: number) {
 function Skeleton() {
   return (
     <div className="bg-card-bg border border-border rounded-2xl p-5 animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-secondary/20" />
           <div className="h-4 w-24 rounded bg-secondary/20" />
         </div>
-        <div className="h-5 w-20 rounded-full bg-secondary/20" />
+        <div className="h-6 w-16 rounded-full bg-secondary/20" />
       </div>
-      <div className="h-12 rounded-xl bg-secondary/20 mb-4" />
+      <div className="h-16 rounded-xl bg-secondary/20 mb-5" />
       <div className="h-2 rounded-full bg-secondary/20" />
     </div>
   );
@@ -70,13 +90,81 @@ export default function StreakWidget() {
   const [data, setData] = useState<StreakData | null>(null);
   const [error, setError] = useState(false);
   const [celebrationMilestone, setCelebrationMilestone] = useState<number | null>(null);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  // Only toast on events that happen *after* the component mounts, not stale ones from page refresh.
+  const initialLoadRef = useRef(true);
+  // Tap-to-open for the shield info tooltip (touch devices have no hover).
+  const [shieldTooltipOpen, setShieldTooltipOpen] = useState(false);
+  const shieldClusterRef = useRef<HTMLDivElement>(null);
 
-  const processData = (d: StreakData) => {
+  useEffect(() => {
+    if (!shieldTooltipOpen) return;
+    const handlePointer = (e: MouseEvent | TouchEvent) => {
+      if (shieldClusterRef.current && !shieldClusterRef.current.contains(e.target as Node)) {
+        setShieldTooltipOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShieldTooltipOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointer);
+    document.addEventListener('touchstart', handlePointer);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handlePointer);
+      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [shieldTooltipOpen]);
+
+  const pushToast = useCallback((message: string, type: ToastType) => {
+    const id = `shield-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setToasts((t) => [...t, { id, message, type }]);
+  }, []);
+
+  const closeToast = useCallback((id: string) => {
+    setToasts((t) => t.filter((toast) => toast.id !== id));
+  }, []);
+
+  const processData = useCallback((d: StreakData) => {
     setData(d);
     const celebrated = getStoredCelebrated();
     const newMilestone = d.milestones.find((m) => !celebrated.includes(m));
     if (newMilestone) setCelebrationMilestone(newMilestone);
-  };
+
+    const isInitial = initialLoadRef.current;
+    initialLoadRef.current = false;
+
+    // Shield-event toasts: compare the server's lastShieldEvent.at against what we've seen.
+    if (d.lastShieldEvent?.at) {
+      const seenAt = localStorage.getItem(SHIELD_EVENT_KEY);
+      const eventAt = d.lastShieldEvent.at;
+      const isNewEvent = !seenAt || eventAt > seenAt;
+
+      // On first load, silently seed the key so we don't toast stale events on refresh.
+      if (isInitial || isNewEvent) {
+        localStorage.setItem(SHIELD_EVENT_KEY, eventAt);
+      }
+
+      if (isNewEvent && !isInitial) {
+        if (d.lastShieldEvent.type === 'earned') {
+          pushToast(
+            d.streakShields >= 3
+              ? 'Shield earned — max protection (3/3).'
+              : `Shield earned — ${d.streakShields}/3. We'll save your streak if you miss a day.`,
+            'success',
+          );
+        } else {
+          // 'info' (blue), not 'warning' (amber): the system successfully protected
+          // the user — they didn't do anything wrong. Amber would wrongly prime anxiety.
+          pushToast(
+            `Shield used — streak saved! ${d.streakShields} shield${d.streakShields === 1 ? '' : 's'} remaining.`,
+            'info',
+          );
+        }
+      }
+    }
+  }, [pushToast]);
 
   const load = useCallback(() => {
     setError(false);
@@ -84,7 +172,7 @@ export default function StreakWidget() {
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(processData)
       .catch(() => setError(true));
-  }, []);
+  }, [processData]);
 
   useEffect(() => {
     let mounted = true;
@@ -93,7 +181,7 @@ export default function StreakWidget() {
       .then((d: StreakData) => { if (mounted) processData(d); })
       .catch(() => { if (mounted) setError(true); });
     return () => { mounted = false; };
-  }, []);
+  }, [processData]);
 
   // Refresh when any study activity fires
   useEffect(() => {
@@ -123,10 +211,19 @@ export default function StreakWidget() {
 
   const { studyStreak, longestStudyStreak, streakShields, todayQualifies, isRecoveryActive, recoveryDeadline } = data!;
   const nextMilestone = NEXT_MILESTONE(studyStreak);
-  const prevMilestone = [...PREV_MILESTONES].reverse().find((m) => studyStreak >= m) ?? 0;
-  const milestoneProgress = nextMilestone
-    ? ((studyStreak - prevMilestone) / (nextMilestone - prevMilestone)) * 100
-    : 100;
+  const daysToNext = nextMilestone ? nextMilestone - studyStreak : 0;
+
+  // Segmented journey bar: 0→7, 7→30, 30→100, 100→365. Each segment fills independently
+  // as the streak grows. Replaces the old "progress bar + milestone rail" duo.
+  const JOURNEY_BOUNDS = [0, ...MILESTONES] as const;
+  const journeySegments = JOURNEY_BOUNDS.slice(0, -1).map((start, i) => {
+    const end = JOURNEY_BOUNDS[i + 1];
+    const fillPct =
+      studyStreak >= end ? 100 : studyStreak > start ? ((studyStreak - start) / (end - start)) * 100 : 0;
+    const achieved = studyStreak >= end;
+    const current = !achieved && studyStreak >= start;
+    return { start, end, fillPct, achieved, current, label: MILESTONE_LABEL[end] };
+  });
 
   return (
     <>
@@ -137,16 +234,21 @@ export default function StreakWidget() {
         className="bg-card-bg border border-border rounded-2xl p-5"
       >
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <Flame className="w-4 h-4 text-orange-500" aria-hidden="true" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-500/20 dark:to-amber-500/20 ring-1 ring-orange-200/60 dark:ring-orange-500/20 flex items-center justify-center">
+              <Flame
+                className="w-4 h-4 text-orange-500 animate-flame-flicker"
+                fill="currentColor"
+                aria-hidden="true"
+              />
             </div>
             <span className="font-semibold text-foreground">Study Streak</span>
           </div>
           {longestStudyStreak > 0 && (
-            <span className="text-xs text-muted-foreground bg-muted/20 px-2 py-0.5 rounded-full">
-              Best: {longestStudyStreak}d
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-background border border-border px-2 py-1 rounded-full">
+              <TrendingUp className="w-3 h-3" aria-hidden="true" />
+              Best {longestStudyStreak}d
             </span>
           )}
         </div>
@@ -169,76 +271,169 @@ export default function StreakWidget() {
           </motion.div>
         )}
 
-        {/* Streak count + shields */}
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <div
-              className="text-4xl font-bold text-foreground tabular-nums"
-              aria-label={`${studyStreak} day study streak`}
-            >
-              {studyStreak}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {studyStreak === 1 ? 'day streak' : 'days streak'}
-              {todayQualifies && !isRecoveryActive && (
+        {/* Hero: streak count + shields */}
+        <div className="relative mb-5">
+          {/* Soft warm glow */}
+          <div
+            className="absolute inset-0 pointer-events-none rounded-xl"
+            style={{
+              background:
+                'radial-gradient(ellipse 55% 55% at 25% 55%, rgba(251,146,60,0.18), rgba(251,146,60,0) 70%)',
+            }}
+            aria-hidden="true"
+          />
+          <div className="relative flex items-end justify-between gap-4">
+            <div>
+              <div className="flex items-baseline gap-2">
                 <span
-                  className="ml-1.5 text-xs text-green-600 dark:text-green-400 font-medium"
+                  className="text-[56px] leading-none font-bold text-foreground tabular-nums tracking-tight"
+                  aria-label={`${studyStreak} day study streak`}
+                >
+                  {studyStreak}
+                </span>
+                <span className="text-sm text-muted-foreground pb-1.5">
+                  {studyStreak === 1 ? 'day streak' : 'days streak'}
+                </span>
+              </div>
+              {todayQualifies && !isRecoveryActive && (
+                <div
+                  className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200/70 dark:border-green-500/20"
                   aria-label="Counted today"
                 >
-                  <span aria-hidden="true">✓</span> counted today
-                </span>
+                  <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
+                  Counted today
+                </div>
               )}
             </div>
-          </div>
 
-          {/* Shields */}
-          <div
-            className="flex flex-col items-end gap-1"
-            aria-label={`${streakShields} of 3 shields available`}
-          >
-            <div className="flex items-center gap-1" aria-hidden="true">
-              {[0, 1, 2].map((i) => (
-                <Shield
-                  key={i}
-                  className={`w-5 h-5 ${
-                    i < streakShields
-                      ? 'text-accent fill-accent/20'
-                      : 'text-muted-foreground/30'
-                  }`}
-                />
-              ))}
+            {/* Shield cluster — hover/focus/tap reveals a floating info tooltip */}
+            <div
+              ref={shieldClusterRef}
+              className="shrink-0 flex flex-col items-end gap-1.5 group relative"
+              aria-label={`${streakShields} of 3 shields available`}
+            >
+              <div className="flex items-center gap-1" aria-hidden="true">
+                {[0, 1, 2].map((i) => {
+                  const earned = i < streakShields;
+                  return (
+                    <Shield
+                      key={i}
+                      className={
+                        earned
+                          ? 'w-5 h-5 text-accent fill-accent/15'
+                          : 'w-5 h-5 text-muted-foreground/25'
+                      }
+                      style={earned ? { filter: 'drop-shadow(0 0 3px rgba(6,182,212,0.35))' } : undefined}
+                    />
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                aria-describedby="shield-info-tooltip"
+                aria-expanded={shieldTooltipOpen}
+                onClick={() => setShieldTooltipOpen((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer min-h-[32px] -my-1 py-1"
+              >
+                <span className="tabular-nums">
+                  {streakShields} / 3 shield{streakShields === 1 ? '' : 's'}
+                </span>
+                <Info className="w-3 h-3 opacity-60" aria-hidden="true" />
+              </button>
+              {/* Floating tooltip — does not affect layout. Visible on hover (desktop),
+                  focus-within (keyboard), or tap-toggled state (touch). */}
+              <div
+                id="shield-info-tooltip"
+                role="tooltip"
+                className={`absolute top-full right-0 mt-2 w-72 z-20 rounded-xl border border-border bg-background shadow-lg p-3 text-xs leading-relaxed text-muted-foreground transition-all duration-200 ${
+                  shieldTooltipOpen
+                    ? 'opacity-100 translate-y-0 pointer-events-auto'
+                    : 'opacity-0 translate-y-1 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:pointer-events-auto'
+                }`}
+              >
+                <div className="flex items-start gap-2 pb-2 mb-2 border-b border-border">
+                  <Shield className="w-4 h-4 text-accent fill-accent/15 shrink-0 mt-0.5" aria-hidden="true" />
+                  <div>
+                    <div className="font-semibold text-foreground">Shields protect your streak</div>
+                    <div className="mt-0.5">If you miss a day, one shield is spent automatically to keep your streak alive.</div>
+                  </div>
+                </div>
+                <div className="font-semibold text-foreground mb-1">How to earn them</div>
+                <ul className="space-y-1">
+                  <li className="flex gap-1.5"><span className="text-orange-500 shrink-0">•</span> Every 7-day streak — 1 shield</li>
+                  <li className="flex gap-1.5"><span className="text-orange-500 shrink-0">•</span> Finish today&apos;s challenges — 1 bonus shield</li>
+                  <li className="flex gap-1.5"><span className="text-orange-500 shrink-0">•</span> Stack up to 3</li>
+                </ul>
+              </div>
             </div>
-            <span className="text-xs text-muted-foreground">
-              {streakShields} {streakShields === 1 ? 'shield' : 'shields'}
-            </span>
           </div>
         </div>
 
         {/* Milestone progress */}
         {nextMilestone ? (
           <div>
-            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-              <span>Next milestone: {nextMilestone} days</span>
-              <span>{studyStreak}/{nextMilestone}</span>
+            <div className="flex items-end justify-between text-xs mb-2">
+              <div>
+                <div className="text-muted-foreground">Next milestone</div>
+                <div className="font-semibold text-foreground mt-0.5">
+                  {daysToNext} {daysToNext === 1 ? 'day' : 'days'} to {MILESTONE_LABEL[nextMilestone]}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-muted-foreground">Progress</div>
+                <div className="font-semibold text-foreground tabular-nums mt-0.5">
+                  {studyStreak} / {nextMilestone}
+                </div>
+              </div>
             </div>
+            {/* Unified multi-segment bar: each segment = one milestone phase.
+                Replaces the old single bar + milestone rail combo. */}
             <div
-              className="h-1.5 rounded-full bg-muted/30 overflow-hidden"
+              className="flex gap-1 h-2"
               role="progressbar"
               aria-valuenow={studyStreak}
-              aria-valuemin={prevMilestone}
+              aria-valuemin={0}
               aria-valuemax={nextMilestone}
-              aria-label={`${studyStreak} of ${nextMilestone} days to next milestone`}
+              aria-label={`${studyStreak} of ${nextMilestone} days to ${MILESTONE_LABEL[nextMilestone]}`}
             >
-              <motion.div
-                className="h-full w-full rounded-full bg-orange-400 origin-left"
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: milestoneProgress / 100 }}
-                transition={{ duration: shouldReduceMotion ? 0 : 0.5, ease: 'easeOut' }}
-              />
+              {journeySegments.map((seg) => (
+                <div
+                  key={seg.end}
+                  className="flex-1 rounded-full bg-muted/25 overflow-hidden"
+                >
+                  <motion.div
+                    className={`h-full rounded-full bg-gradient-to-r from-orange-400 to-amber-500 origin-left ${seg.current ? 'streak-shimmer' : ''}`}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: seg.fillPct / 100 }}
+                    transition={{ duration: shouldReduceMotion ? 0 : 0.6, ease: 'easeOut' }}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              ))}
+            </div>
+            {/* Segment labels aligned to each segment's right edge */}
+            <div className="flex mt-2 text-[10px]" aria-hidden="true">
+              {journeySegments.map((seg) => (
+                <div
+                  key={seg.end}
+                  className={`flex-1 text-right ${
+                    seg.achieved
+                      ? 'text-orange-600 dark:text-orange-400 font-medium'
+                      : seg.current
+                      ? 'font-semibold text-foreground'
+                      : 'text-muted-foreground opacity-70'
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    {seg.label}
+                    {seg.achieved && <Check className="w-2.5 h-2.5" strokeWidth={3} aria-hidden="true" />}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
-          <div className="text-xs text-muted-foreground">
+          <div className="rounded-xl border border-orange-200/60 dark:border-orange-500/20 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-500/10 dark:to-amber-500/10 px-3 py-2.5 text-xs font-medium text-orange-700 dark:text-orange-300">
             All milestones achieved — legendary!
           </div>
         )}
@@ -247,12 +442,33 @@ export default function StreakWidget() {
       {celebrationMilestone && (
         <MilestoneCelebration
           milestone={celebrationMilestone}
+          shieldEarnedAtMilestone={celebrationMilestone % 7 === 0}
           onClose={() => {
             markCelebrated(celebrationMilestone);
             setCelebrationMilestone(null);
           }}
         />
       )}
+
+      {/* Shield event toasts */}
+      <div
+        className="fixed top-4 right-4 z-100 flex flex-col gap-3 pointer-events-auto"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <AnimatePresence mode="popLayout">
+          {toasts.map((t) => (
+            <Toast
+              key={t.id}
+              id={t.id}
+              message={t.message}
+              type={t.type}
+              onClose={closeToast}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
     </>
   );
 }
