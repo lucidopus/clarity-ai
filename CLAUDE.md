@@ -4,88 +4,116 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Clarity AI is an AI-powered educational platform that transforms passive YouTube video watching into active learning experiences. It automatically generates personalized study materials (flashcards, quizzes, interactive transcripts, prerequisite checks, and Clara chatbot) from educational videos for undergraduate and graduate students.
+Clarity AI is an AI-powered educational platform that turns passive content consumption into active, personalized learning. Users submit content from **6 source types** (YouTube, document, audio, text, live lecture, media) and the platform generates a full suite of study materials (flashcards, quizzes, mind maps, notes, chapters, prerequisites, case studies, summary) plus an in-context AI tutor (Clara). Multiple sources can be combined into a single generation request.
 
-**Core Mission**: Remove friction between watching educational videos and mastering their content through evidence-based active learning techniques.
-
-## Tech Stack
-
-- **Framework**: Next.js 16 with App Router and TypeScript
-- **Styling**: Tailwind CSS v4 with PostCSS
-- **Database**: MongoDB (already configured, clarity-ai database)
-- **LLM Provider**: Groq (gpt-4o-120b model with structured outputs/function calling)
-- **Transcript API**: `youtube-transcript-plus` v1.1.1 (open source, no API key needed)
-- **React**: v19.2.0
-- **Authentication**: JWT-based with HTTP-only cookies (simple, no refresh tokens)
-- **Animations**: Framer Motion (for smooth micro-interactions)
+The full feature surface is documented in `README.md`. CLAUDE.md is for repo-internal context.
 
 ## Development Commands
 
 ```bash
-# Development
-yarn dev          # Start Next.js dev server (http://localhost:3000)
+yarn dev          # Next.js dev server (http://localhost:3000)
+yarn build        # Production build
+yarn start        # Production server
+yarn lint         # ESLint (eslint-config-next, flat config in eslint.config.mjs)
+yarn test         # Jest (ts-jest preset, node env, @/ path mapping configured)
 
-# Production
-yarn build        # Build for production
-yarn start           # Start production server
+# Run a single test file
+yarn test lib/transcript.test.ts
 
-# Code Quality
-yarn lint        # Run ESLint (uses eslint-config-next)
+# Run tests matching a name pattern
+yarn test -t "fsrs scheduling"
 ```
 
-## Project Architecture
+Tests live next to the code they cover (`*.test.ts`) — primarily under `lib/` and `hooks/`. There is no end-to-end test suite; UI work is verified manually in the browser per the constraints below.
 
-### Application Structure
+## Architecture
 
-This is a Next.js App Router application with the following high-level structure:
+This is a Next.js 16 App Router application backed by MongoDB (Mongoose), Redis (caching), Supabase Storage (file uploads), and Trigger.dev (background jobs).
 
-**Dashboard Architecture** (Planned - See docs/PROJECT_PLAN.md):
-- **Home Tab**: Analytics dashboard showing learning progress, videos processed, study streaks
-- **Generate Tab**: Main pipeline - URL input → transcript extraction → LLM processing → material generation
-- **Gallery Tab**: Visual library of all processed videos with search/filter capabilities
+### Multi-source generation pipeline
 
-**Video Processing Pipeline** (Core feature to implement):
-1. User submits YouTube URL
-2. Extract transcript via public API
-3. Feed transcript to LLM with structured prompts
-4. Generate 4-5 learning components in one pass (flashcards, quizzes, timestamps, prerequisites, chatbot context)
-5. Display materials in organized layout
-6. Save to MongoDB for persistence
-7. Add to user's gallery automatically
+The whole product is built around one pipeline shape:
 
-### Data Flow
+```
+Source(s) → Extractor (factory) → Content Validation → Trigger.dev task
+         → LLM Generation (Groq + Gemini, structured outputs)
+         → Mongoose persistence + Gemini embeddings → Vector search
+```
 
-**User Journey**:
-1. Authentication → Personal Dashboard
-2. Submit YouTube URL → Processing Pipeline
-3. Generated Materials Display → MongoDB Storage
-4. Gallery Access → Quick Material Retrieval
-5. Interactive Learning → Progress Tracking
+- **Extractor factory** — `lib/extractors/index.ts` exports `getExtractor(sourceType)` returning one of `youtube | document | audio | media | text | live_lecture`. All extractors implement `ExtractorFunction` from `lib/extractors/types.ts`. Add a new source by writing an extractor file and registering it in the factory map.
+- **Source storage** — Uploaded files (PDF/PPTX/audio) go to **Supabase Storage**; the public URL is saved on the Mongoose `Source` doc (see `lib/models/Source.ts`). Plain text doesn't go to Storage.
+- **Background pipeline** — `trigger/process-video-pipeline.ts` is the main generation task; `trigger/process-single-video.ts` is the per-video retry worker (queue `video-retry-queue`, concurrency 3, max 10min). `trigger/retry-failed-videos.ts` runs every 6h to sweep `completed_with_warning` rows. `trigger/recommendations.ts` runs every 6h to refresh per-user vector-search recommendations into Redis (24h TTL).
+- **LLM orchestration** — `lib/llm.ts` calls models via LangChain wrappers initialized in `lib/sdk.ts` (`geminiLlm`, `chatbotLlm`, `groqLlm` are lazy `Proxy` objects so import-time has no side effects). Models are env-driven: `CONTENT_GENERATION_MODEL` (Gemini, generation), `CHATBOT_MODEL` (Groq, fallback), `CLARA_MODEL` (Gemini Flash, Clara tool-calling).
+- **Structured outputs** — All LLM response schemas are defined as Zod + JSON-Schema in `lib/structuredOutput.ts`; chunked/sequential variants in `lib/structuredOutputPartial.ts` for token-limit cases. Always reuse these schemas instead of redefining.
+- **Helpers** — `lib/pipeline-helpers.ts` and `lib/video-retry-processing.ts` hold pipeline glue (validation, error classification, chunked-generation routing). Read these before adding logic to a `trigger/` task.
 
-**Learning Materials Generated** (Priority order for MVP):
-1. Flash Cards (AI-generated + user-created with "generation effect")
-2. Quizzes (multiple-choice, true/false, fill-in-blank with explanations)
-3. Timestamps (interactive transcript with video navigation)
-4. Pre-requisite Check (background knowledge assessment with chatbot integration)
-5. Clara (RAG-based, context-aware tutor - Stage 3/4 feature)
+### Live lecture (real-time capture)
 
-### TypeScript Configuration
+Distinct architecture from the async pipeline; finalized as a 3-layer storage chain:
 
-- Path alias: `@/*` maps to root directory
-- Strict mode enabled
-- JSX mode: `react-jsx` (Next.js 19+ style)
-- Module resolution: `bundler`
+`React state → IndexedDB (`lib/live-lecture/indexeddb.ts`) → MongoDB every 10s (no Redis for the transcript stream)`.
 
-### Styling Approach
+- Transcription: ElevenLabs Scribe V2 streaming via `lib/live-lecture/use-live-transcription.ts`.
+- UX: Granola-style — **no visible transcript during the lecture**, only a floating Clara bubble + focus notes + importance markers. The transcript is shown after the session ends.
+- Crash recovery: `lib/live-lecture/use-crash-recovery.ts` rehydrates from IndexedDB if the tab is closed mid-lecture.
+- Schema: `lib/models/LiveSession.ts`. Post-lecture, the transcript runs through the same generation pipeline as any other source.
 
-- Tailwind CSS v4 (latest)
-- Dark mode support via `dark:` classes
-- Custom fonts: Geist Sans and Geist Mono (loaded via `next/font/google`)
-- Minimal, clean design philosophy
+### Clara (AI tutor)
+
+- LangChain agent with tool calling. Tools are defined under `lib/tools/` and bound in the chatbot endpoint. The current notable tool is `render-animation.ts` (the `AnimationSpec` discriminated union is in `lib/types/animation.ts`; client renders pick a fallback chain via `lib/utils/webgl-detect.ts`).
+- Conversation persistence: `lib/chat-db.ts`. System-prompt context (user profile + per-source materials) is assembled by `lib/chatbot-context.ts`.
+- Endpoint: `app/api/chatbot/ask`. Greeting/Feynman flows are in `lib/services/claraGreeting.ts`.
+
+### Discovery & recommendations
+
+- Embeddings: Google Gemini `text-embedding-004` (1536-dim) via `lib/embedding.ts`.
+- Vector search: MongoDB Atlas vector index on `Video` and on user preference embeddings.
+- Category routing: `lib/services/category-selector.ts` chooses sections (For You / Quick Wins / Deep Dives / etc.).
+- Cache: `lib/cache.ts` wraps Redis with **transparent DB fallback** — every cached read silently falls back to the source on any Redis error. Use `getCached(key, fallback, ttl)` and the `CacheKeys` factory; invalidation helpers are exported (`invalidateReadiness`, `invalidateUserInsights`, etc.).
+
+### FSRS spaced repetition
+
+Flashcard scheduling uses [`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs) — see `lib/services/fsrs.ts` and `lib/services/fsrs-migrate.ts`. Reviews persist to `FlashcardReview` (history) and update `Flashcard` (next-due state). When touching scheduling, do not invent a custom algorithm — go through these services.
+
+### Cost tracking
+
+Every LLM/embedding/transcription call should be logged via `lib/cost/logger.ts`. Pricing config is in `lib/cost/config.ts` (model keys here must match `CONTENT_GENERATION_MODEL` / `CHATBOT_MODEL` env values). Calculations: `lib/cost/calculator.ts`. Surfaced in the admin portal under Cost Tracking. See `docs/cost-tracking.md`.
+
+### Auth
+
+Custom JWT in HTTP-only cookies (no NextAuth), with email OTP verification via SendGrid (`lib/email.ts`, `lib/otp.ts`). Endpoints under `app/api/auth/` cover signin / signup / verify-email / resend-verification / forgot-password / reset-password / change-password / callback. Server utilities in `lib/auth.ts`; client context in `lib/auth-context.tsx`. Admin portal uses a separate password (`ADMIN_PASSWORD`) and JWT (`lib/adminAuth.ts`); login is rate-limited (5 / 15min).
+
+### Rate limiting & limits
+
+- All tunable limits live in **one** file: `lib/limits.ts` (includes `UNLIMITED_MODE` switch). Don't scatter magic numbers — add or adjust them here.
+- The limiter itself is MongoDB-backed (atomic, TTL-based) in `lib/rate-limit.ts`. There's also `rate-limit-auth.ts` for the auth flow.
+
+### Mongoose models
+
+All collections are defined in `lib/models/` and re-exported from `lib/models/index.ts`. Notable ones beyond the obvious: `Source` + `SourceContent` (multi-source upload separation), `Cost` (per-call API cost log), `Alert` / `SystemLog` (admin observability), `LiveSession`, `MindMap`, `Note`, `Solution` (case-study attempts), `DailyChallenge`, `TodaysMix`, `StudyDay`, `FlashcardReview`, `VerificationToken`, `ActivityLog`. Always extend the Mongoose model rather than defining a parallel TypeScript-only shape.
+
+### Webshare proxy (production transcripts)
+
+YouTube transcript extraction goes through Webshare residential proxies in production (cloud IPs are blocked by YouTube). Configured via `WEBSHARE_PROXY_*` env vars (see README). Locally on a residential IP, set `WEBSHARE_PROXY_ENABLED=false`. If extraction fails with `ECONNREFUSED` or 429, check the proxy plan / credentials before assuming a code bug.
+
+## Path alias
+
+`@/*` maps to the repo root (see `tsconfig.json`). Jest is configured the same way (`jest.config.js` `moduleNameMapper`). Always import via `@/lib/...`, `@/components/...`, etc.
+
+## Folder-level READMEs
+
+Several folders carry a `<folder>-README.md` (e.g., `lib/lib-README.md`, `components/components-README.md`, `app/api/api-README.md`, `trigger/trigger-README.md`, `hooks/hooks-README.md`). Read these before exploring a directory — they're hand-maintained indices of what's in each file. Keep them current when you add or rename files in those folders. Do **not** add READMEs to every folder — only the key ones.
+
+## Standing dev rules
+
+Two repo-specific rule docs that take precedence over generic guidance:
+
+- `docs/dev_rules/trigger_rules.md` — Trigger.dev v4 only (no `@trigger.dev/sdk/v3`), every task must be exported, use the `logger`, schema validation via `schemaTask`, etc. Read before writing or editing anything in `trigger/`.
+- `docs/dev_rules/ui_rules.md` — UI conventions; pair with the design principles below.
 
 ## Design Principles - CRITICAL
 
-**All work must strictly adhere to `/docs/context/design-principles.md`**
+**All work must strictly adhere to `docs/context/design-principles.md`.**
 
 This is NOT optional. Every component, page, and interaction must follow these principles:
 
@@ -93,470 +121,148 @@ This is NOT optional. Every component, page, and interaction must follow these p
 
 **Modern Minimalist Aesthetic**
 - Clean, clutter-free layouts inspired by Linear, Stripe, Apple
-- Ample whitespace (breathing room between elements)
-- Clear visual hierarchy (size, color, placement guide the eye)
-- Every element must serve a purpose - no decorative clutter
-- Use generous negative space for premium, elegant feel
+- Ample whitespace; clear visual hierarchy; every element serves a purpose
+- Generous negative space for a premium, elegant feel
 
 **Vibrant & Cohesive Color Palette**
-- Neutral base: whites, light grays (light mode), deep charcoals (dark mode)
-- Single vibrant accent color (bright cyan, purple, or teal) for energy
-- Consistent palette throughout - no chaotic colors
-- High contrast text: WCAG 4.5:1 or better (light AND dark modes)
-- Vibrant color used sparingly - only for CTAs, active states, highlights
+- Neutral base (whites/light grays in light mode; deep charcoals in dark mode), single vibrant accent (cyan/purple/teal) used sparingly for CTAs, active states, highlights
+- Consistent palette throughout — no chaotic colors
+- High contrast text: WCAG 4.5:1 or better in **both** themes
 
 **Clean Typography & Iconography**
-- Modern sans-serif font (Geist Sans already chosen)
-- Clear type scale: large title → section header → body → caption
-- Consistent font sizes/weights across similar elements
-- Simple, geometric icons (line-based, rounded corners)
-- Icons use neutral colors, accent color only for active states
+- Geist Sans (already configured via `next/font/google`)
+- Clear type scale; consistent sizes/weights across similar elements
+- Simple, geometric line icons (lucide-react); accent color only for active states
 
 **Smooth & Purposeful Animations**
-- Subtle micro-interactions ONLY (200-300ms duration)
-- Every animation must serve a UX purpose (feedback, guidance, delight)
-- NO heavy or long animations that frustrate users
-- Easing curves: ease-out for natural feel
-- Flashcard flip: smooth 3D rotation (300ms)
-- Button hover: gentle color change or slight lift
-- Tab transitions: fade or slide content gracefully
-- Examples: Stripe, Apple, Figma designs
+- Subtle micro-interactions only (200–300ms, ease-out)
+- Every animation must serve a UX purpose; no laggy or interrupting motion
+- Examples: flashcard 3D flip (300ms), button hover lift, fade/slide tab transitions
+
+**Plain, Human UI Copy**
+- Every label, tooltip, empty state, error message, score description, and onboarding line must be written in language a real user can read once and understand
+- Do not surface internal terminology, model names, schema field names, raw error codes, file paths, debug strings, or implementation details to the user — translate them into the meaning the user actually cares about
+- Don't over-correct into baby-talk either; the bar is "an educated person outside this codebase reads it and immediately knows what it means and what to do next"
+- Be concrete and specific over clever or abstract; prefer the verb the user would use ("Generate", "Review", "Skip") over framework or product-internal verbs
+- When in doubt, read the copy out loud — if it sounds like a developer wrote it for another developer, rewrite it
 
 **Light & Dark Mode (Dual Theme)**
-- BOTH themes must look equally polished
-- Not just color inversion - thoughtful dark mode design
-- Use deep grays/soft blacks (not pure #000)
-- Light gray/off-white text on dark (reduce eye strain)
-- Shadows in dark mode: use subtle highlights/semi-transparent white
-- All colors must work in both modes - test extensively
+- Both themes must look equally polished — not a color inversion
+- Use deep grays/soft blacks (not pure #000); light gray/off-white text on dark
+- Test extensively — switch theme on every screen
 
 **Consistency & Accessibility**
-- Unified component design system (same style buttons, cards, modals everywhere)
-- Buttons: Same corner radius, font, spacing across all variants
-- Responsive design: Works perfectly on mobile, tablet, desktop
-- Keyboard navigation: Tab order logical, focus states visible
-- Color not alone: Icons/labels in addition to color for states
-- Text scaling: Allow users to increase font size without breaking layout
+- Unified component design system (same radius, font, spacing across variants)
+- Responsive (mobile, tablet, desktop); keyboard navigable; visible focus states
+- Never rely on color alone to convey state — pair with icon/label
+- Allow font scaling without breaking layout
+- Every interactive element (buttons, links, tabs, toggles, custom clickable cards/rows) must use `cursor-pointer` so the affordance is obvious on hover
 
-### Accessibility Requirements (WCAG 2.1 AA Minimum)
+### Accessibility (WCAG 2.1 AA Minimum)
 
-- Contrast ratio 4.5:1 or better for body text
-- Focus states visible on all interactive elements
-- Semantic HTML (proper heading hierarchy, labels)
-- Keyboard navigable (no mouse-only interactions)
-- Screen reader compatible (alt text, ARIA labels)
-- Touch targets 44px+ minimum size
-- Never rely on color alone to convey information
-
-### How to Apply These Principles
-
-1. **Every new component**: Create with dark mode in mind from the start
-2. **Every page**: Reference design-principles.md before coding
-3. **Every interaction**: Is this animation purposeful? Does it delight without distracting?
-4. **Every color choice**: Does this work in light AND dark mode? Is it accessible?
-5. **Test constantly**: Switch theme, test on mobile, use keyboard navigation
+Contrast ≥ 4.5:1 for body text · visible focus on all interactive elements · semantic HTML · keyboard reachable · screen-reader labels · 44px+ touch targets · color is never the only signal.
 
 ### Red Flags (Don't Do This)
 
-❌ Bright colors used excessively (looks chaotic, not premium)
-❌ Long animations that feel laggy or interrupt users
-❌ Different button styles on different pages (inconsistent)
-❌ Color-only error indicators (not accessible)
-❌ Dark mode that's an afterthought (looks worse than light mode)
-❌ Cluttered layouts with too many elements (overwhelming)
-❌ Tiny text that's hard to read (accessibility issue)
-❌ Hover states that only work on desktop (no mobile consideration)
+❌ Excessive bright color (chaotic, not premium) · long/laggy animations · inconsistent button styles across pages · color-only error states · dark mode treated as an afterthought · cluttered layouts · tiny unreadable text · hover-only interactions with no mobile equivalent.
 
-### Reference Material
+## Important Constraints
 
-- Full design guide: `/docs/context/design-principles.md`
-- Inspiration: Stripe, OpenAI, Linear, Apple, Figma
-- Key: These aren't arbitrary aesthetic choices - they're about creating a product that feels premium, trustworthy, and easy to use
-
-## Implementation Phases
-
-The project is broken down into **6 sequential phases**, each with detailed specifications and checklists. Follow the phase documents in order - each phase builds on the previous one.
-
-### Phase Breakdown
-
-**Phase 0: Database Schema Design**
-- Finalize MongoDB schema and make key database decisions
-- Define all collections, fields, and relationships
-- Create indexes and data validation rules
-- Duration: Discussion-based (1-2 days to finalize)
-- Status: First - Complete before starting Phase 1
-
-**Phase 1: Public Home Page** _(1-2 days)_
-- Build "ready to sell" landing page
-- Establish design tokens and color palette (must follow design-principles.md)
-- Create reusable component library (Button, Card, Section components)
-- Implement light/dark mode support
-- Make navbar responsive and theme-aware
-- Status: Must be visually stunning - represents brand to visitors
-
-**Phase 2: Authentication System** _(2-3 days)_
-- Implement JWT-based sign up and sign in
-- Create /api/auth/signup, /api/auth/signin, /api/auth/logout, /api/auth/me endpoints
-- Add "Remember Me" checkbox (30-day sessions)
-- Build auth forms with validation (following Phase 1 design system)
-- Integrate navbar with auth state awareness
-- Status: Secure, smooth, follows design consistency
-
-**Phase 3: Dashboard Skeleton** _(1-2 days)_
-- Build main dashboard layout with 3 tabs: Home, Generate, Gallery
-- Implement route protection (redirect non-authenticated users)
-- Create tab navigation and content areas
-- Add welcome message showing user's first name
-- Build home tab with stats cards and recent activity
-- Status: Layout only - no backend processing yet
-
-**Phase 4: Dashboard Features & Interactive Components** _(3-4 days)_
-- Build FlashcardViewer with flip animation
-- Build FlashcardCreator for user-generated cards
-- Build QuizInterface with feedback and scoring
-- Build TranscriptViewer with search
-- Build PrerequisiteChecker with readiness quiz
-- Populate Gallery with VideoCard components
-- Test all components with mock data
-- Status: Beautiful, smooth interactions ready for real data
-
-**Phase 5: Video Processing Pipeline** _(3-4 days)_
-- Create unified SDK file at /lib/sdk.ts for LLM/API clients
-- Implement transcript extraction from YouTube
-- Integrate Groq LLM with structured output (function calling)
-- Create POST /api/videos/process endpoint (main pipeline)
-- Create supporting endpoints (GET /api/videos/list, DELETE, etc.)
-- Connect Generate tab to real processing
-- Show processing progress and results
-- Status: End-to-end working pipeline - this is where the magic happens
-
-**Phase 6: Clara - Interactive AI Tutor (RAG Implementation)** _(3-4 days)_
-- Set up vector database (Pinecone/Weaviate/Milvus)
-- Implement RAG (Retrieval-Augmented Generation) for context-aware Q&A
-- Create transcript chunking and embedding generation
-- Build ChatBot component with conversation UI (Framer Motion animations)
-- Create POST /api/chatbot/ask endpoint (context retrieval + LLM response)
-- Integrate with prerequisite checker (users can "Learn with AI" for gaps)
-- Add Chatbot tab to materials view alongside flashcards/quizzes
-- Store conversation history and enable conversation export
-- Status: Post-MVP enhancement - personal AI tutor available 24/7
-- Key Feature: Answers grounded in video content, no hallucinations (RAG prevents it)
-
-**Total Estimated Time**:
-- **MVP (Phases 0-5)**: 11-17 days
-- **Full Product (Phases 0-6)**: 14-21 days
-
-See `/docs/phases/` directory for detailed specifications for each phase.
-See `/docs/PHASE_TRACKER.md` for tracking progress through all phases.
-
-## Database Schema (MongoDB)
-
-Key collections to implement:
-- **Users**: Authentication, profiles, preferences
-- **Sessions**: User session management
-- **Videos**: Processed video metadata (URL, title, thumbnail, timestamp)
-- **LearningMaterials**: Generated flashcards, quizzes, transcripts, prerequisites
-- **Progress**: Quiz scores, flashcard mastery, study streaks
-- **UserFlashcards**: User-created custom flashcards
-
-## Environment Variables Required
-
-```bash
-# Database
-MONGODB_URI=               # MongoDB connection string (already configured)
-
-# LLM Integration
-GROQ_API_KEY=             # Groq API key for gpt-4o-120b model
-GROQ_MODEL=gpt-4o-120b    # Groq model identifier
-
-# Authentication
-JWT_SECRET=               # Strong random string for JWT signing (32+ chars)
-JWT_EXPIRE_DAYS=1         # Short-lived token expiry (1 day)
-JWT_REMEMBER_DAYS=30      # Remember-me token expiry (30 days)
-
-# Webshare Proxy (YouTube Transcript Extraction)
-WEBSHARE_PROXY_ENABLED=true    # Enable/disable proxy (set to 'false' for local dev on residential IP)
-WEBSHARE_PROXY_USERNAME=       # Webshare username from dashboard
-WEBSHARE_PROXY_PASSWORD=       # Webshare password from dashboard
-WEBSHARE_PROXY_URL=            # Full proxy URL: http://username:password@p.webshare.io:80
-
-# Admin Portal
-ADMIN_PASSWORD=           # Password for admin portal access (use a strong password)
-
-# Application
-NODE_ENV=development      # development, production
-```
-
-### Webshare Proxy Setup (Critical for Production)
-
-**Purpose:** Routes transcript extraction requests through residential proxies to bypass YouTube's cloud provider IP blocking.
-
-**Setup:**
-1. Create Webshare account: https://www.webshare.io
-2. Purchase "Residential Proxy" package (NOT "Proxy Server" or "Static Residential")
-3. Retrieve credentials from Webshare dashboard → Proxy Settings
-4. Add to environment variables as shown above
-
-**Troubleshooting:**
-- If transcript extraction fails with "ECONNREFUSED": Check proxy credentials
-- If YouTube returns 429 (rate limit): Webshare may be rate-limited, wait and retry
-- If extraction still fails in production: Verify residential proxy plan is active
-- Test proxy connectivity: `curl https://your-app.vercel.app/api/test/proxy`
-
-**Cost:** Webshare residential proxies start at ~$2.99/month for 1GB bandwidth. Free tier available with limited usage.
-
-**Note**: Transcript API (youtube-transcript) requires NO API key - it's open source, but proxy is needed for production deployment
-
-## Key Technical Decisions (FINALIZED)
-
-1. **LLM Provider**: ✅ Groq (gpt-4o-120b model)
-   - Faster than Gemini
-   - Better structured output support (function calling)
-   - Cost-effective at scale
-   - Reference: https://console.groq.com/docs/quickstart and https://console.groq.com/docs/structured-outputs
-
-2. **Transcript API**: ✅ youtube-transcript library
-   - Open source, no API key needed
-   - Reliable for public YouTube videos
-   - Handles captions and auto-generated transcripts
-   - Error handling: Falls back gracefully if no transcript available
-
-3. **Authentication**: ✅ Simple JWT (not NextAuth)
-   - JWT tokens in HTTP-only secure cookies
-   - Remember-me functionality (30-day sessions)
-   - No refresh tokens (keep it simple for MVP)
-   - Password hashing with bcryptjs
-
-4. **SDK Architecture**: ✅ Unified `/lib/sdk.ts`
-   - All LLM and API clients initialized in one place
-   - Easy to switch providers later
-   - Clean imports: `import { groq } from '@/lib/sdk'`
-   - Extensible for future additions
-
-5. **Structured Output**: ✅ JSON schemas for LLM responses
-   - Define exact schema in `/lib/structuredOutput.ts`
-   - Groq function calling ensures schema compliance
-   - Response types: Flashcards, Quizzes, Timestamps, Prerequisites, ChatbotContext
-   - Consistent, parseable output guaranteed
-
-6. **Transcript Extraction**: ✅ youtube-transcript-plus v1.1.1
-   - **Library**: `youtube-transcript-plus` (npm package already installed)
-   - **No API key required** - Uses YouTube's public caption API
-   - **Return format**: Array of segments with text, offset (start time), duration, language
-   - **Implementation location**: Phase 5 (Video Processing Pipeline)
-   - **Usage**: `fetchTranscript('https://youtu.be/VIDEO_ID')`
-   - **Error handling**: Handles unavailable videos, disabled transcripts, missing captions
-   - **Reference files**:
-     - Full transcript output: `/docs/transcript-output.json`
-     - Formatted timestamps: `/docs/transcript-timestamps.json`
-
-7. **Clara**: ⏸️ Post-MVP (Phase 5+)
-   - Requires RAG with vector database
-   - Integrate after core features stable
-   - Pre-implement chatbot context in learning materials generation
+- **Never reset Supabase DB without user approval** (global user preference).
+- **User data is sacred** — never lose learning materials.
+- **Engineer the backend deliberately**: Before writing new backend code, look for what already exists and reuse it. Hardcoded strings, magic numbers, and constants that appear in more than one place must live in a single shared module and be imported — never duplicated. Class instantiations, external clients, SDK setup, and connection objects must be centralized in one well-known initializer file rather than scattered across call sites — this keeps debugging, swapping providers, and reasoning about lifecycle straightforward. When you're about to add a new util, model, schema, prompt, or helper, first scan for an existing one to extend; only create a new artifact when nothing reasonable fits. Match new file structure to the conventions already established in neighboring code. The bar is: a future reader (or future you) should be able to grep one place to change a value, swap a dependency, or trace a behavior end-to-end.
+- **Think Just Right — Do NOT Overengineer**: Match the solution's complexity to the problem.
+  - **Simple tasks** (bug fixes, small tweaks): write the most direct solution. No abstractions, no "future-proofing."
+  - **Medium tasks** (new features, multi-file changes): reasonable structure, but don't build frameworks for one use case.
+  - **Complex tasks** (architectural changes, new systems): plan thoughtfully, use proper abstractions, design for maintainability.
+  - **Litmus test**: "If this task's requirements never change, would I still build it this way?" If you're building for hypothetical futures, you're over-engineering.
+- **Pre-commit UX Gate (MANDATORY for frontend changes)**: Before `git commit` on any change touching `.tsx`, `.jsx`, `.css`, `components/`, or `app/`, spawn the `ux-reviewer` agent **in background** so other work (lint, build, reading) can proceed in parallel. Wait for the background completion notification, then **only proceed with the commit when it returns all-green**. If it flags issues, fix them and re-spawn the agent in background — do not commit through yellow/red. Skip this gate only for pure backend changes (no frontend files in the diff) or when the user explicitly says "skip UX review."
+- **Ideation: Always Contribute Your Own Ideas**: When the user asks for design suggestions or approaches — even informally ("what do you think?", "give me some options") — always include **your own proposals** alongside anything from the codebase or Gemini. Be opinionated: rank them, flag the one you'd pick, and say why in one line. If you only have one idea, say so explicitly rather than padding.
+- **Debug logging discipline**: Don't sprinkle log statements while coding. When you're about to **test** a flow, add temporary debug logs at the meaningful boundaries (entry/exit of a function, pipeline stage transitions, decision branches, external-call success/failure) so the first failed run already tells you where it broke — this avoids round-tripping through the user. Strip these debug logs before committing. A few intentional, low-frequency logs at high-value points (pipeline starts, error paths, cost/usage summaries) are fine to keep in production; what's not fine is per-click or per-render chatter that drowns the logs once the feature is live. Default stance: log when testing, remove before commit, keep only the handful that genuinely earn their place.
+- **Always run `yarn lint`** and fix all errors/warnings after a feature update before considering it done. For non-trivial diffs, also run `yarn build` once before committing — but not after every small change.
+- **Completion Summary**: Whenever you finish coding, give a quick 3–4 line summary of what you did with a one-line summary of what changed in each file (including file paths).
+- **No Co-Authored-By line in commits** for Claude.
+- **UI/UX design proposals as `.html` mockup files**, not ASCII/text diagrams.
 
 ## Educational Science Foundation
 
 The platform is built on proven learning principles:
-- **Active Recall**: Flashcards strengthen memory through retrieval practice
-- **Testing Effect**: Quizzes improve long-term knowledge retention
-- **Generation Effect**: User-created flashcards enhance learning
-- **Spaced Repetition**: Optimal review timing for memory consolidation
-- **Interactive Engagement**: Boosts motivation and material retention
+- **Active Recall** (flashcards) · **Testing Effect** (quizzes) · **Generation Effect** (user-created cards) · **Spaced Repetition** (FSRS) · **Interactive Engagement** (Clara, mind maps, case studies)
+
+When designing any new study feature, default to one of these — invent only when none fit.
 
 ## Admin Portal
 
-A password-protected admin portal is available at `/admin` for platform monitoring and management.
+Password-protected at `/admin` (`ADMIN_PASSWORD` env var, separate from user auth):
 
-**Features**:
-- **Analytics Dashboard**: View platform-wide metrics including:
-  - Total users, active users, new registrations
-  - Content statistics (videos, flashcards, quizzes)
-  - Registration timeline charts (week/month/year views)
-  - Activity heatmaps showing engagement patterns
-  - Activity breakdown by type
+- **Analytics**: total/active users, registrations, content stats, registration timeline, activity heatmap, engagement breakdown.
+- **Cost Tracking**: per-model, per-service, per-user API spend; token-usage trends; spending heatmap.
+- **User Management**: search/filter users; per-user activity; cascade-delete users and their data.
+- **Security**: rate-limited login (5 / 15min); JWT sessions (24h); audit logging; HTTP-only cookies.
 
-- **User Management**:
-  - Search and filter users by name, username, or email
-  - View detailed user profiles with full activity history
-  - See generation counts per user (videos, flashcards, quizzes, etc.)
-  - Cascade delete users (removes all associated data)
-  - Delete individual generation items
-
-**Security**:
-- Password-only authentication using `ADMIN_PASSWORD` environment variable
-- JWT-based session management (24-hour tokens)
-- Rate limiting: Max 5 failed login attempts per IP in 15 minutes
-- Audit logging of all login attempts
-- HTTP-only secure cookies
-
-**Access**:
-- Login URL: `/admin`
-- Dashboard: `/admin/dashboard` (analytics)
-- User Management: `/admin/dashboard/users`
-
-**Setup**:
-1. Set `ADMIN_PASSWORD` environment variable to a strong password
-2. Navigate to `/admin` and enter the password
-3. Access admin dashboard and user management features
-
-## Design Philosophy
-
-- **Clean & Minimal**: No clutter, focus on learning
-- **Fast & Responsive**: <60s material generation, <2s page loads
-- **Encouraging**: Celebrate progress and mastery
-- **Organized**: Never lose learning materials
-- **Accessible**: Works across all devices
-- **Self-Contained**: Keep users in-app (chatbot for prerequisites/clarifications)
-- **User Empowerment**: Enable custom flashcard creation
-
-## Important Constraints
-
-- Never reset Supabase DB without user approval (global user preference)
-- Focus on undergraduate and graduate level educational content
-- Prioritize 4 core features (flashcards, quizzes, timestamps, prerequisites) before advanced capabilities
-- User data is sacred - never lose learning materials
-- Quality over quantity - better 4 excellent features than 10 mediocre ones
-- **Think Just Right — Do NOT Overengineer**: This is the north star. Match the solution's complexity to the problem — no more, no less. Before writing code, assess the task's scope and stop adding "just in case" layers.
-  - **Simple tasks** (bug fixes, small tweaks, single-component changes): Write the most direct solution. No abstractions, no extra layers, no "future-proofing." Just solve the problem.
-  - **Medium tasks** (new features, multi-file changes): Use reasonable structure and patterns, but don't build frameworks. If you need a helper, make one — but don't build a generic utility system for one use case.
-  - **Complex tasks** (architectural changes, new systems, pipelines): Plan thoughtfully, use proper abstractions, and design for maintainability. This is where patterns, error handling layers, and extensibility are justified.
-  - **The litmus test**: "If this task's requirements never change, would I still build it this way?" If yes, you're right-sized. If you're building for hypothetical futures, you're over-engineering. If you'd be embarrassed showing it in a code review, you're under-engineering.
-- **Pre-commit UX Gate (MANDATORY for frontend changes)**: Before running `git commit` on any change that touches `.tsx`, `.jsx`, `.css`, `components/`, or `app/`, spawn the `ux-reviewer` agent **in background** so other work (lint, build, reading code) can proceed in parallel while the review runs. Wait for the background completion notification, then **only proceed with the commit when it returns all-green**. If it flags issues, fix them and re-spawn the agent in background — do not commit through yellow/red. Skip this gate only for pure backend changes (no frontend files in the diff) or when the user explicitly says "skip UX review."
-- **Ideation: Always Contribute Your Own Ideas**: When the user asks for design suggestions, approaches, or ideas — even informally ("what do you think?", "how should we do X?", "give me some options") — always include **your own proposals** alongside anything you research, read from the codebase, or pull from Gemini. Never just relay external options. Add yours to the pool so the user has a richer set to choose from. Be opinionated: rank them, flag the one you'd pick, and say why in one line. If you only have one idea, say so explicitly rather than padding.
-- **Always run `yarn lint` and fix all lint errors/warnings after completing a feature update before considering it done**
-- **Completion Summary**: Whenever you're done coding, always give a quick 3-4 liner summary of what you did along with a one-liner summary of what changed in each file, including file paths.
-- **Folder-Level READMEs**: Maintain a README at important folder levels describing what exists in those files. Use the naming convention `folder-name-README.md` (e.g., `lib-README.md`, `components-README.md`). Only for key folders (e.g., `lib/`, `components/`, `app/api/`) — do NOT add READMEs to every single folder; keep the repo clean.
-
-## How to Execute This Project
-
-### Start Here
-
-1. **Read Phase 0**: `/docs/phases/PHASE_0_DATABASE_SCHEMA.md`
-   - Answer the 11 database schema questions
-   - Lock in your MongoDB decisions
-   - This unblocks all other phases
-
-2. **Follow Phases Sequentially**: Each phase builds on the previous
-   - Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5
-   - Don't skip phases or change order
-   - Each phase is 1-4 days of focused work
-
-3. **Track Progress**: `/docs/PHASE_TRACKER.md`
-   - Update status as you complete phases
-   - Check off deliverables
-   - Log any blockers or decisions
-
-4. **Always Reference Design Principles**
-   - Before starting Phase 1: Read `/docs/context/design-principles.md`
-   - Before every new component: Check design principles
-   - Before styling anything: Verify dark mode works
-
-### Quick Phase Reference
-
-| Phase | File | Duration | Key Output |
-|-------|------|----------|-----------|
-| 0 | `/docs/phases/PHASE_0_DATABASE_SCHEMA.md` | Discussion | Schema decisions |
-| 1 | `/docs/phases/PHASE_1_HOME_PAGE.md` | 1-2 days | Design tokens + home page |
-| 2 | `/docs/phases/PHASE_2_AUTHENTICATION.md` | 2-3 days | Auth system (sign up/in) |
-| 3 | `/docs/phases/PHASE_3_DASHBOARD_SKELETON.md` | 1-2 days | Dashboard layout |
-| 4 | `/docs/phases/PHASE_4_DASHBOARD_FEATURES.md` | 3-4 days | Interactive components |
-| 5 | `/docs/phases/PHASE_5_VIDEO_PIPELINE.md` | 3-4 days | Full video processing |
-| **6** | **`/docs/phases/PHASE_6_QA_CHATBOT.md`** | **3-4 days** | **Clara (RAG)** |
-| — | — | — | — |
-| **0-5** | **All MVP phases** | **11-17 days** | **Production-ready MVP** |
-| **0-6** | **All phases** | **14-21 days** | **Full product with chatbot** |
-
-### Common Tasks During Implementation
-
-**For every new component**:
-1. Check Phase X requirements
-2. Review design-principles.md
-3. Ensure dark mode works
-4. Test responsive design
-5. Verify accessibility
-6. Check animations are <400ms
-
-**For every API endpoint**:
-1. Add authentication check
-2. Implement error handling
-3. Test with valid/invalid input
-4. Document in phase doc
-5. Verify MongoDB operations
-
-**For every page**:
-1. Route protection (auth required)
-2. Follow design tokens from Phase 1
-3. Light AND dark mode equal quality
-4. Mobile responsive
-5. Keyboard navigation works
+Routes: `/admin` (login) · `/admin/dashboard` (analytics) · `/admin/dashboard/users` (user management).
 
 ## Reference Documentation
 
-- **Phase Guide**: `/docs/phases/` (all detailed specifications)
-- **Progress Tracker**: `/docs/PHASE_TRACKER.md` (track your work)
-- **Design Principles**: `/docs/context/design-principles.md` (CRITICAL - follow strictly)
-- **Project Plan**: `/docs/PROJECT_PLAN.md` (full vision and context)
-- **Changelog**: `CHANGELOG.md` (a log of all notable changes to the project)
-- **Groq Docs**: https://console.groq.com/docs/quickstart and https://console.groq.com/docs/structured-outputs
-- **Next.js Docs**: https://nextjs.org/docs
-- **Tailwind CSS v4**: https://tailwindcss.com/docs
-- **Framer Motion**: https://www.framer.com/motion/
-
+- `README.md` — Public-facing feature & setup overview (the source of truth for the env-var list).
+- `CHANGELOG.md` — Notable changes log.
+- `docs/context/design-principles.md` — Full design guide (CRITICAL — follow strictly).
+- `docs/cost-tracking.md`, `docs/cost-tracking-quick-reference.md` — Cost system internals.
+- `docs/dev_rules/trigger_rules.md` — Trigger.dev v4 conventions (mandatory for `trigger/`).
+- `docs/dev_rules/ui_rules.md` — UI conventions.
+- `docs/PROJECT_PLAN.md`, `docs/PHASE_TRACKER.md`, `docs/phases/` — Historical planning docs (the project is well past these; useful only for archaeology).
+- External: [Next.js](https://nextjs.org/docs) · [Tailwind v4](https://tailwindcss.com/docs) · [Framer Motion](https://www.framer.com/motion/) · [Trigger.dev v4](https://trigger.dev/docs) · [Groq](https://console.groq.com/docs/quickstart) · [Gemini](https://ai.google.dev/) · [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs).
 
 ## Your Senior Engineering Manager (SEM) — Gemini
 
-You have access to Gemini as a Senior Engineering Manager (SEM) — a **different brain** for code review, ideation, factual correctness, and sanity-checking your reasoning. Use it when it actually helps, not reflexively.
+Think of Gemini as a **senior software engineer on loan from Google** — strong peer, not the decision-maker. Use it as a **different brain** for code review, ideation, sanity-checking a chunk of logic, fact-checking a library/API claim, or unblocking yourself when you're stuck after a couple of real attempts.
+
+**Important boundary: Gemini is not for the big calls.** If a decision is genuinely high-stakes or architecturally load-bearing (new systems, auth/security flows, data model changes, pipeline restructuring, irreversible migrations, anything that would cost real rework if wrong) — **bring it to me (the user), not to Gemini**. Gemini is for the peer-review-sized stuff in between "I can obviously do this" and "I need the user's call."
+
+**Auto-consult Gemini when**:
+- You've written a non-trivial diff and want a second-opinion code review before presenting it.
+- You're stuck — you've tried at least a couple of approaches and none cleanly solve it, or you keep circling the same frame.
+- You're about to state something as fact about an external library/API/model behavior and you're not ~95% sure (Trigger.dev v4 semantics, Mongoose edge cases, Atlas vector search, FSRS math, LLM quirks).
+- You want to widen the frame on ideation — user asked for options, or you only see one approach and suspect there are more.
+- You need a focused expert perspective: security review on an auth/token/secret path, performance review on a hot query, accessibility review on a tricky component, etc.
+
+**Do not consult Gemini for**: trivial edits, renames, obvious bug fixes, copy tweaks, simple component work, anything answerable by reading one file, or anything you already have high confidence on. The cost is latency and context-switching — only pay it when a peer review would change the outcome.
+
+**Role-play Gemini into the right expert for the job.** Open the prompt by casting it into a specific role so the lens is sharp:
+
+- Code review → *"Act as a staff engineer doing a code review."*
+- Security check → *"Act as a cybersecurity expert reviewing for auth, secret-handling, and injection risks."*
+- Performance → *"Act as a performance engineer reviewing this hot path for unnecessary work and scaling issues."*
+- API / library correctness → *"Act as someone who ships production code against the Trigger.dev v4 SDK every day."*
+- Ideation → *"Act as a product-minded senior engineer brainstorming approaches."*
+- Accessibility → *"Act as an accessibility specialist reviewing against WCAG 2.1 AA."*
+
+Match the role to the actual risk you're de-risking. A generic "review this" gets a generic answer.
 
 ### How to Consult Gemini
 
-Initiate a consultation using:
 ```bash
-gemini -p "<Your question or concern>"
+gemini -p "<Your prompt>"
 ```
 
-**This is a ONE-SHOT execution.** Gemini cannot see your conversation, your prior prompts, or follow up with you. Everything it needs to answer well must be in that single prompt. A weak prompt gets a shallow answer — don't blame Gemini, blame the brief.
+**This is a ONE-SHOT execution.** Gemini cannot see your conversation or follow up with you. It **already knows this codebase** — don't waste tokens re-explaining what Clarity AI is, what the pipeline does, or what Trigger.dev is. Get straight to the point.
 
-**What Gemini is especially good at**:
-- **Code review** — second-opinion reads on diffs, design, correctness
-- **Ideation** — brainstorming approaches when you're stuck in one frame
-- **Factual correctness** — checking claims about libraries, APIs, behavior
-- **Trade-off analysis** — laying out pros/cons of competing approaches
+**A good Gemini prompt has four parts, in order**:
+1. **Role** — one line casting it into the specific expert for this task (see role list above).
+2. **What you're doing** — one or two lines on the specific change/decision (not the whole app). Reference files with `@path/to/file.ts` so it reads them directly.
+3. **The ask** — a single sharp question or a short numbered list. "Review X for Y," "list trade-offs between A and B," "fact-check my claim that Z," "what am I missing?"
+4. **Output shape** — "punch list," "under 200 words," "just recommendations, no code," "rank the options and pick one."
 
-**How to brief Gemini well (so one-shot actually works)**:
-1. **Load full context upfront** — reference relevant files with `@filename` syntax (e.g., `@lib/pipeline-helpers.ts @trigger/process-video-pipeline.ts`). It will read them.
-2. **State the background** — what the project is, what you're trying to do, what you've already tried or ruled out. Don't assume shared context.
-3. **Be specific about the ask** — "review this diff for correctness," "list trade-offs between A and B," "fact-check my claim that X." Vague asks produce vague answers.
-4. **Set the output shape** — "no code changes, just recommendations," or "give me a punch list," or "answer in under 200 words."
-5. **Single prompt, all questions** — if you have 3 related questions, ask them in one go. You cannot come back.
+Bundle related questions into one prompt — you can't follow up. If you need three things reviewed, ask all three in the same call.
 
 **Gemini is advisory. You decide.**
-- Its output is **input** to your judgment, not a verdict. Treat it like a smart colleague you disagree with half the time.
-- Evaluate its suggestions against this repo's context, CLAUDE.md principles, and what the user actually asked for. Push back when it's wrong.
-- **Always summarize Gemini's key points to the user before implementing anything from them.** State your own analysis — what you agree with, what you reject, and why. Then decide.
+- Treat its output as input to your judgment, not a verdict. Push back when it's wrong for this repo's context.
+- **Always summarize Gemini's key points back to me before acting on them** — what you agree with, what you reject, and why. Then decide.
 
-### When to Consult Gemini (Not Every Question!)
-
-### When to Consult the SEM (Not Every Question!)
-
-**Definitely consult**:
-- Stuck in a loop trying to solve a problem (after exhausting obvious approaches)
-- Major architectural decisions with trade-offs (e.g., database design, auth strategy)
-- Complex feature design with multiple valid approaches
-- Performance or scaling concerns
-- Integration strategy for new technologies
-
-**Do NOT consult**:
-- Straightforward coding tasks or bug fixes
-- Questions answerable by reading documentation
-- Simple component implementation
-- Basic debugging (only escalate if truly stuck)
-
-**Examples**:
-- ✅ "Should we use RAG or fine-tuning for the chatbot? I'm seeing trade-offs in X, Y, Z dimensions. What are your thoughts? @PHASE_6_QA_CHATBOT.md @design-principles.md"
-- ❌ "How do I import a React component?" (Read docs instead)
-- ✅ "I've tried 3 approaches to optimize this query and none work well. Can you review my thinking? @code.ts"
-- ❌ "What's the syntax for useState?" (Straightforward—use docs)
+**Examples of a well-shaped prompt**:
+- ✅ `gemini -p "Act as a staff engineer code reviewer. I'm refactoring the retry path in @trigger/process-single-video.ts to use exponential backoff. Review the diff below for correctness, edge cases, and Trigger.dev v4 idiom. Output: punch list, under 200 words. <paste diff>"`
+- ✅ `gemini -p "Act as a cybersecurity expert. Review @app/api/auth/signup/route.ts and @lib/otp.ts for token-handling, rate-limit bypass, and enumeration risks. Output: ranked list of real risks only — skip nits."`
+- ❌ `gemini -p "Can you look at my code?"` (no role, no ask, no output shape)
 
 
 <!-- TRIGGER.DEV scheduled-tasks START -->
