@@ -78,9 +78,18 @@ export interface IUser extends Document {
   longestStudyStreak: number;
   lastStudyDate?: string; // YYYY-MM-DD (UTC)
   streakShields: number;  // 0–3 shield charges (new users start at 1)
-  milestones: number[];   // achieved milestone days [7, 30, 100, 365]
+  milestones: number[];   // achieved milestone days [7, 21, 66, 180, 365]
   streakRecoveryDeadline?: Date | null; // cutoff for 48h recovery window after a break
   lastShieldEvent?: { type: 'earned' | 'consumed'; at: Date } | null;
+  recoveryRedemptions?: Date[]; // timestamps of 48h-recovery redemptions (capped to last ~10)
+  // Cognitive Contract — self-chosen study window (Gollwitzer implementation intentions)
+  studyContract?: {
+    windowStart: string;  // "HH:MM" 24h in the user's timezone
+    windowEnd: string;    // "HH:MM" 24h (must be after windowStart on same day)
+    timezone: string;     // IANA, e.g. "America/New_York"
+    contractedAt: Date;
+  } | null;
+  studyContractLastRemindedAt?: Date | null; // last time a pre-window reminder was sent
 }
 
 const UserSchema: Schema = new Schema({
@@ -139,6 +148,17 @@ const UserSchema: Schema = new Schema({
   milestones: [{ type: Number }],
   streakRecoveryDeadline: { type: Date, default: null },
   lastShieldEvent: { type: Schema.Types.Mixed, default: null },
+  recoveryRedemptions: { type: [Date], default: [] },
+  studyContract: {
+    type: new Schema({
+      windowStart: { type: String, required: true },
+      windowEnd: { type: String, required: true },
+      timezone: { type: String, required: true },
+      contractedAt: { type: Date, required: true, default: Date.now },
+    }, { _id: false }),
+    default: null,
+  },
+  studyContractLastRemindedAt: { type: Date, default: null },
   // Email verification status
   emailVerified: { type: Boolean, default: false },
 }, {

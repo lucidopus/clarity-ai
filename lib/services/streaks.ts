@@ -1,7 +1,10 @@
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import StudyDay from '@/lib/models/StudyDay';
+import Flashcard from '@/lib/models/Flashcard';
+import DailyChallenge from '@/lib/models/DailyChallenge';
 import { recordChallengeActivity } from './dailyChallenges';
+import { isNowInContractWindow } from './studyContract';
 
 export type ActivityType =
   | 'flashcard_review'
@@ -9,6 +12,8 @@ export type ActivityType =
   | 'source_processed'
   | 'flashcard_created'
   | 'document_study_session';
+
+export type DayTier = 'empty' | 'gray' | 'orange' | 'gold';
 
 export interface StreakResult {
   studyStreak: number;
@@ -19,13 +24,22 @@ export interface StreakResult {
   recoveryDeadline?: Date | null;
   shieldEarned?: boolean; // true only when shields count actually increased
   shieldConsumed?: boolean; // true when a shield was used to save the streak
+  todayTier?: DayTier;
 }
 
-const MILESTONES = [7, 30, 100, 365];
+// Milestone spacing follows the Lally-2010 habit-automaticity curve
+// (median time-to-automaticity is ~66 days). 7/21/66/180/365 is the
+// scientifically-motivated version of the old 7/30/100/365.
+const MILESTONES = [7, 21, 66, 180, 365];
 
 // Thresholds for qualifying a "study day"
 const HARD_RECOVERY_REVIEWS = 10;
 const HARD_RECOVERY_QUIZZES = 2;
+
+// Anti-laziness cap: at most one 48h recovery redemption per rolling 30-day window.
+// Research: prevents the "over-safety paradox" where shields + recovery compound.
+const RECOVERY_CAP_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const RECOVERY_CAP_COUNT = 1;
 
 const ACTIVITY_FIELD: Record<ActivityType, string> = {
   flashcard_review: 'flashcardReviews',
@@ -80,6 +94,58 @@ function computeRecoveryCutoff(lastStudy: string): Date {
   return d;
 }
 
+// Compose a day's visual tier from the flags on the StudyDay doc.
+export function dayTier(day: {
+  qualifies?: boolean;
+  fsrsQueueCleared?: boolean;
+  challengesCompleted?: boolean;
+  inContractWindow?: boolean;
+} | null | undefined): DayTier {
+  if (!day?.qualifies) return 'empty';
+  if (day.fsrsQueueCleared && day.challengesCompleted && day.inContractWindow) return 'gold';
+  if (day.fsrsQueueCleared) return 'orange';
+  return 'gray';
+}
+
+/**
+ * Compute tier flags for a user's current day based on live state. Returns the
+ * fields to set on the StudyDay doc; each is sticky-true — we never roll back a
+ * flag that's already set today, even if a later re-check would return false.
+ *
+ * `contract` is the user's current studyContract (nullable) used to decide the
+ * in-window flag. We pass it in so the caller can do a single User read.
+ */
+async function computeTierFlags(
+  userId: string,
+  existing: {
+    fsrsQueueCleared?: boolean;
+    challengesCompleted?: boolean;
+    inContractWindow?: boolean;
+  },
+  contract: {
+    windowStart: string;
+    windowEnd: string;
+    timezone: string;
+  } | null,
+  date: string,
+): Promise<{ fsrsQueueCleared: boolean; challengesCompleted: boolean; inContractWindow: boolean }> {
+  const [dueNow, challengeDoc] = await Promise.all([
+    existing.fsrsQueueCleared
+      ? Promise.resolve(-1)
+      : Flashcard.countDocuments({ userId, 'fsrs.due': { $lte: new Date() } }),
+    existing.challengesCompleted
+      ? Promise.resolve(null)
+      : DailyChallenge.findOne({ userId, date }).select('allCompleted').lean() as Promise<{ allCompleted?: boolean } | null>,
+  ]);
+
+  const fsrsQueueCleared = existing.fsrsQueueCleared || dueNow === 0;
+  const challengesCompleted = existing.challengesCompleted || !!challengeDoc?.allCompleted;
+  const inContractWindow =
+    existing.inContractWindow || isNowInContractWindow(contract);
+
+  return { fsrsQueueCleared, challengesCompleted, inContractWindow };
+}
+
 /**
  * Records a study activity for streak tracking.
  * - Increments the day's activity counter.
@@ -106,6 +172,36 @@ export async function recordStudyActivity(
   // Update daily challenges (fire-and-forget — don't block the response)
   recordChallengeActivity(userId, today, activityType).catch(() => {});
 
+  // Helper that recomputes tier flags, persists any that flipped to true, and
+  // returns the resulting tier. Kept inline so both the "nothing to update"
+  // early returns and the post-streak-update path use identical logic.
+  const refreshTierAndReturn = async (base: StreakResult | null): Promise<StreakResult | null> => {
+    if (!base) return base;
+    const fresh = await StudyDay.findOne({ userId, date: today })
+      .select('qualifies fsrsQueueCleared challengesCompleted inContractWindow')
+      .lean() as {
+        qualifies?: boolean;
+        fsrsQueueCleared?: boolean;
+        challengesCompleted?: boolean;
+        inContractWindow?: boolean;
+      } | null;
+    if (!fresh?.qualifies) {
+      return { ...base, todayTier: 'empty' };
+    }
+    const u = await User.findById(userId).select('studyContract').lean() as {
+      studyContract?: { windowStart: string; windowEnd: string; timezone: string } | null;
+    } | null;
+    const flags = await computeTierFlags(userId, fresh, u?.studyContract ?? null, today);
+    const changedFields: Record<string, boolean> = {};
+    if (flags.fsrsQueueCleared !== !!fresh.fsrsQueueCleared) changedFields.fsrsQueueCleared = flags.fsrsQueueCleared;
+    if (flags.challengesCompleted !== !!fresh.challengesCompleted) changedFields.challengesCompleted = flags.challengesCompleted;
+    if (flags.inContractWindow !== !!fresh.inContractWindow) changedFields.inContractWindow = flags.inContractWindow;
+    if (Object.keys(changedFields).length > 0) {
+      await StudyDay.updateOne({ userId, date: today }, { $set: changedFields });
+    }
+    return { ...base, todayTier: dayTier({ qualifies: true, ...flags }) };
+  };
+
   // Helper to return the user's current streak without modifying it
   const currentStats = async (): Promise<StreakResult | null> => {
     const u = await User.findById(userId)
@@ -128,10 +224,10 @@ export async function recordStudyActivity(
   };
 
   // If thresholds not met yet, nothing to do for the streak
-  if (!meetsThreshold(studyDay)) return currentStats();
+  if (!meetsThreshold(studyDay)) return refreshTierAndReturn(await currentStats());
 
   // If today already qualifies, the streak was already updated earlier today
-  if (studyDay.qualifies) return currentStats();
+  if (studyDay.qualifies) return refreshTierAndReturn(await currentStats());
 
   // Load user for streak computation
   const user = await User.findById(userId);
@@ -149,7 +245,7 @@ export async function recordStudyActivity(
     const diff = daysDiff(today, lastStudy);
     if (diff <= 0) {
       // Same UTC day or stale data — already counted
-      return currentStats();
+      return refreshTierAndReturn(await currentStats());
     } else if (diff === 1) {
       action = 'increment';
     } else if (diff === 2 && (user.streakShields ?? 0) > 0) {
@@ -158,7 +254,15 @@ export async function recordStudyActivity(
       // Streak broke. Check recovery window.
       const cutoff = computeRecoveryCutoff(lastStudy);
       if (now < cutoff) {
-        action = meetsHardThreshold(studyDay) ? 'recover' : 'recoveryPending';
+        const recentRedemptions = (user.recoveryRedemptions ?? []).filter(
+          (d: Date) => now.getTime() - new Date(d).getTime() < RECOVERY_CAP_WINDOW_MS,
+        );
+        if (recentRedemptions.length >= RECOVERY_CAP_COUNT) {
+          // Cap hit — user has already used their monthly recovery. Reset.
+          action = 'reset';
+        } else {
+          action = meetsHardThreshold(studyDay) ? 'recover' : 'recoveryPending';
+        }
       } else {
         action = 'reset';
       }
@@ -177,7 +281,7 @@ export async function recordStudyActivity(
         { $set: { streakRecoveryDeadline: cutoff } }
       );
     }
-    return currentStats();
+    return refreshTierAndReturn(await currentStats());
   }
 
   // Atomically claim the qualifying transition (prevents duplicate streak updates
@@ -187,7 +291,7 @@ export async function recordStudyActivity(
     { $set: { qualifies: true } },
     { new: false }
   );
-  if (!claimed) return currentStats(); // another request got there first
+  if (!claimed) return refreshTierAndReturn(await currentStats()); // another request got there first
 
   let newStreak = 1;
   let shieldConsumed = false;
@@ -240,6 +344,11 @@ export async function recordStudyActivity(
   if (newMilestone) {
     update.$addToSet = { milestones: newMilestone };
   }
+  if (action === 'recover') {
+    // Stamp the redemption so the 30-day cap can observe it next time.
+    // $push with $slice keeps the array bounded without a separate cleanup job.
+    update.$push = { recoveryRedemptions: { $each: [new Date()], $slice: -10 } };
+  }
   await User.updateOne({ _id: userId }, update);
 
   // If a shield was consumed, mark the missed day's StudyDay record
@@ -253,7 +362,7 @@ export async function recordStudyActivity(
     );
   }
 
-  return {
+  const base: StreakResult = {
     studyStreak: newStreak,
     longestStudyStreak: newLongest,
     shields: newShields,
@@ -263,4 +372,5 @@ export async function recordStudyActivity(
     shieldEarned,
     shieldConsumed,
   };
+  return refreshTierAndReturn(base);
 }

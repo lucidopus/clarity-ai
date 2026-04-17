@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HeatmapTooltip, { type HeatmapTooltipState } from './HeatmapTooltip';
 
-type HeatmapDay = { date: string; count: number; level: 0 | 1 | 2 | 3 };
+type DayTier = 'empty' | 'gray' | 'orange' | 'gold';
+type HeatmapDay = { date: string; count: number; level: 0 | 1 | 2 | 3; tier?: DayTier };
 
 type View = 'month' | 'year';
 
@@ -23,11 +24,16 @@ function formatFriendlyDate(isoLike: string) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function formatActivities(count: number, dateISO: string) {
+function formatActivities(count: number, dateISO: string, tier?: DayTier) {
   const dateLabel = formatFriendlyDate(dateISO);
+  const tierLabel =
+    tier === 'gold' ? ' · Gold day — all goals, in your window'
+    : tier === 'orange' ? ' · Flashcards cleared'
+    : tier === 'gray' ? ' · Studied (10+ min)'
+    : '';
   if (!count) return `No activity on ${dateLabel}`;
-  if (count === 1) return `1 activity on ${dateLabel}`;
-  return `${count} activities on ${dateLabel}`;
+  if (count === 1) return `1 activity on ${dateLabel}${tierLabel}`;
+  return `${count} activities on ${dateLabel}${tierLabel}`;
 }
 
 declare global {
@@ -158,12 +164,26 @@ export default function StudyActivityHeatmap() {
     });
   }, [weekColumns, view]);
 
-  const cellClass = (level: 0 | 1 | 2 | 3) => {
+  // Tier palette is colorblind-safe: cyan → emerald → amber gives wide hue
+  // separation that survives deuteranopia/protanopia. Gold also carries an
+  // inset ring so it's distinguishable from emerald purely by shape, not hue.
+  const cellClass = (level: 0 | 1 | 2 | 3, tier: DayTier = 'empty') => {
+    if (tier === 'gold') {
+      return 'bg-amber-500 dark:bg-amber-400 shadow-[inset_0_0_0_1.5px_rgba(180,83,9,0.55)] dark:shadow-[inset_0_0_0_1.5px_rgba(252,211,77,0.55)]';
+    }
+    if (tier === 'orange') {
+      return 'bg-emerald-400 dark:bg-emerald-500/85';
+    }
+    if (tier === 'gray') {
+      return 'bg-cyan-200 dark:bg-cyan-700/70';
+    }
+    // No qualifying activity — fall back to the intensity ramp so partial-activity
+    // days still show a trace of effort on the grid.
     switch (level) {
       case 0: return 'bg-slate-200 dark:bg-slate-900/60 outline outline-slate-300/40 dark:outline-slate-700/80';
-      case 1: return 'bg-cyan-200 dark:bg-cyan-700/70';
-      case 2: return 'bg-cyan-300 dark:bg-cyan-500/90';
-      case 3: return 'bg-cyan-400 dark:bg-cyan-400';
+      case 1:
+      case 2:
+      case 3: return 'bg-slate-300/80 dark:bg-slate-700';
     }
   };
 
@@ -255,19 +275,31 @@ export default function StudyActivityHeatmap() {
                       return (
                         <div key={idx} style={{ gridRow: row }} className="group relative">
                           {entry ? (
-                            <div
-                              className={`${cellClass(entry.level)} rounded-[3px] transition-colors group-hover:outline-2 group-hover:outline-cyan-400/40 cursor-pointer`}
+                            <button
+                              type="button"
+                              aria-label={formatActivities(entry.count, entry.date, entry.tier)}
+                              className={`${cellClass(entry.level, entry.tier)} rounded-[3px] transition-colors group-hover:outline-2 group-hover:outline-cyan-400/40 focus:outline-2 focus:outline-cyan-500 focus:outline-offset-1 cursor-pointer p-0 border-0`}
                               style={{ width: 'var(--cell-size)', height: 'var(--cell-size)' }}
                               onMouseEnter={(e) => {
-                                const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                                 setTooltip({
                                   visible: true,
-                                  text: formatActivities(entry.count, entry.date),
+                                  text: formatActivities(entry.count, entry.date, entry.tier),
                                   x: rect.left + rect.width / 2,
                                   y: rect.top - 6,
                                 });
                               }}
                               onMouseLeave={() => setTooltip((t) => ({ ...t, visible: false }))}
+                              onFocus={(e) => {
+                                const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                                setTooltip({
+                                  visible: true,
+                                  text: formatActivities(entry.count, entry.date, entry.tier),
+                                  x: rect.left + rect.width / 2,
+                                  y: rect.top - 6,
+                                });
+                              }}
+                              onBlur={() => setTooltip((t) => ({ ...t, visible: false }))}
                             />
                           ) : (
                             <div style={{ width: 'var(--cell-size)', height: 'var(--cell-size)' }} className="rounded-[3px] bg-transparent" />
@@ -281,14 +313,25 @@ export default function StudyActivityHeatmap() {
             </div>
           </div>
 
-          {/* Legend (static, outside the scroll area) */}
-          <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Less</span>
-            <div className="w-4 h-4 rounded-[3px] bg-slate-200 dark:bg-slate-900/60 outline outline-slate-300/40 dark:outline-slate-700/80" />
-            <div className="w-4 h-4 rounded-[3px] bg-cyan-200 dark:bg-cyan-700/70" />
-            <div className="w-4 h-4 rounded-[3px] bg-cyan-300 dark:bg-cyan-500/90" />
-            <div className="w-4 h-4 rounded-[3px] bg-cyan-400 dark:bg-cyan-400" />
-            <span>More</span>
+          {/* Legend: quality tiers, not raw activity counts. */}
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Quality:</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-slate-200 dark:bg-slate-900/60 outline outline-slate-300/40 dark:outline-slate-700/80" />
+              No study
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-700/70" />
+              Studied (10+ min)
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-emerald-400 dark:bg-emerald-500/85" />
+              Flashcards cleared
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-amber-500 dark:bg-amber-400 shadow-[inset_0_0_0_1.5px_rgba(180,83,9,0.55)] dark:shadow-[inset_0_0_0_1.5px_rgba(252,211,77,0.55)]" />
+              Gold day — in your window
+            </span>
           </div>
 
           <HeatmapTooltip state={tooltip} />

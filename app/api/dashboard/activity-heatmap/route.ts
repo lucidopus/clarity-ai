@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { ActivityLog } from '@/lib/models';
+import StudyDay from '@/lib/models/StudyDay';
+import { dayTier, type DayTier } from '@/lib/services/streaks';
 import mongoose from 'mongoose';
 import { apiErrorResponse } from '@/lib/errors/apiResponse';
 
@@ -52,29 +54,52 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    const agg = await ActivityLog.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          date: { $gte: startDate, $lte: endDate },
+    const startYmd = formatYmd(startDate);
+    const endYmd = formatYmd(endDate);
+    const [agg, studyDays] = await Promise.all([
+      ActivityLog.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(userId),
+            date: { $gte: startDate, $lte: endDate },
+          },
         },
-      },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: 'UTC' } }, count: { $sum: 1 } } },
-      { $project: { _id: 0, date: '$_id', count: 1 } },
-      { $sort: { date: 1 } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$date', timezone: 'UTC' } }, count: { $sum: 1 } } },
+        { $project: { _id: 0, date: '$_id', count: 1 } },
+        { $sort: { date: 1 } },
+      ]),
+      StudyDay.find({
+        userId,
+        date: { $gte: startYmd, $lte: endYmd },
+      })
+        .select('date qualifies fsrsQueueCleared challengesCompleted inContractWindow')
+        .lean() as unknown as Promise<Array<{
+          date: string;
+          qualifies?: boolean;
+          fsrsQueueCleared?: boolean;
+          challengesCompleted?: boolean;
+          inContractWindow?: boolean;
+        }>>,
     ]);
 
     const map = new Map<string, number>();
     for (const r of agg) map.set(r.date, r.count);
+    const tierMap = new Map<string, DayTier>();
+    for (const d of studyDays) tierMap.set(d.date, dayTier(d));
     const maxCount = map.size ? Math.max(...map.values()) : 0;
     const thresholds = buildIntensityThresholds(maxCount);
 
-    const activities: Array<{ date: string; count: number; level: 0 | 1 | 2 | 3 }> = [];
+    const activities: Array<{ date: string; count: number; level: 0 | 1 | 2 | 3; tier: DayTier }> = [];
     const cursor = new Date(startDate);
     while (cursor <= endDate) {
       const key = formatYmd(cursor);
       const count = map.get(key) || 0;
-      activities.push({ date: key, count, level: calcLevel(count, thresholds) });
+      activities.push({
+        date: key,
+        count,
+        level: calcLevel(count, thresholds),
+        tier: tierMap.get(key) ?? 'empty',
+      });
       cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 

@@ -14,6 +14,12 @@ export interface IStudyDay extends Document {
   documentStudySessions: number;
   qualifies: boolean;    // true when thresholds are met and streak is already updated
   shieldUsed: boolean;   // true when a shield was consumed for this day (missed but recovered)
+  // Day-quality tiers (sticky once set, never reverted within the same day).
+  // Render rules: empty day → nothing; qualifies → gray; + fsrsQueueCleared → orange;
+  // + challengesCompleted && inContractWindow → gold.
+  fsrsQueueCleared: boolean;
+  challengesCompleted: boolean;
+  inContractWindow: boolean;
 }
 
 const StudyDaySchema: Schema = new Schema(
@@ -27,6 +33,9 @@ const StudyDaySchema: Schema = new Schema(
     documentStudySessions: { type: Number, default: 0 },
     qualifies: { type: Boolean, default: false },
     shieldUsed: { type: Boolean, default: false },
+    fsrsQueueCleared: { type: Boolean, default: false },
+    challengesCompleted: { type: Boolean, default: false },
+    inContractWindow: { type: Boolean, default: false },
   },
   { timestamps: false, collection: 'study_days' }
 );

@@ -33,6 +33,16 @@ Coordinator scheduled task for retrying failed videos.
   - Marks permanent failures as `failed`
   - Batch triggers `processSingleVideoTask` for retries
 
+### `remind-study-contract.ts`
+**Task ID:** `remind-study-contract`
+
+Sends pre-window study reminders to users with a Cognitive Contract set.
+- **Schedule:** Every 15 minutes (UTC cron)
+- **Logic:**
+  - Scans users with `studyContract` set and study reminders enabled
+  - Sends a supportive nudge ~15 minutes before the local window opens
+  - Deduplicates per local-calendar-day via `studyContractLastRemindedAt`
+
 ## Development Rules
 
 See [docs/dev_rules/trigger_rules.md](docs/dev_rules/trigger_rules.md) for:

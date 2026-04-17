@@ -17,6 +17,15 @@ interface SendPasswordResetEmailParams {
   resetUrl: string;
 }
 
+interface SendStudyContractReminderParams {
+  to: string;
+  name: string;
+  windowStart: string;
+  windowEnd: string;
+  timezone: string;
+  minutesUntilStart: number;
+}
+
 /** Escape user-provided strings before interpolating into HTML email templates. */
 function escapeHtml(str: string): string {
   return str
@@ -126,6 +135,66 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: SendPasswor
     }
     if (process.env.NODE_ENV !== 'production') {
       console.log(`[EMAIL FAIL FALLBACK] Password reset link for ${to}: ${resetUrl}`);
+    }
+    return false;
+  }
+}
+
+/**
+ * Supportive pre-window nudge — never fear-based.
+ * Sent ~15 minutes before the user's self-chosen study window opens.
+ */
+export async function sendStudyContractReminder({
+  to,
+  name,
+  windowStart,
+  windowEnd,
+  timezone,
+  minutesUntilStart,
+}: SendStudyContractReminderParams): Promise<boolean> {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('SENDGRID_API_KEY is not defined. Reminder email skipped.');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV MODE] Study window reminder for ${to}: ${windowStart}–${windowEnd} ${timezone}`);
+    }
+    return false;
+  }
+  if (!process.env.EMAIL_FROM) {
+    console.warn('EMAIL_FROM is not defined. Reminder email skipped.');
+    return false;
+  }
+
+  const leadIn = minutesUntilStart <= 1
+    ? 'is starting now'
+    : `starts in ${minutesUntilStart} minutes`;
+
+  const msg = {
+    to,
+    from: { email: process.env.EMAIL_FROM, name: 'Clarity AI' },
+    subject: `Your study window ${leadIn}`,
+    text: `Hi ${name},\n\nYour ${windowStart}–${windowEnd} study window ${leadIn}. Whenever you're ready — a single session counts.\n\nYou set this window yourself. If it's no longer working, you can change it any time from the dashboard.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #222;">
+        <h2 style="margin: 0 0 12px;">Your study window ${leadIn}.</h2>
+        <p style="margin: 0 0 14px;">Hi ${escapeHtml(name)},</p>
+        <p style="margin: 0 0 14px;">
+          You chose <strong>${escapeHtml(windowStart)}–${escapeHtml(windowEnd)}</strong>
+          as your study window. Whenever you're ready — a single session counts.
+        </p>
+        <p style="color: #555; font-size: 13px; margin: 20px 0 0;">
+          You set this window yourself. If it's no longer working, you can change it any time from the dashboard.
+        </p>
+      </div>
+    `,
+  };
+
+  try {
+    await sgMail.send(msg);
+    return true;
+  } catch (error) {
+    console.error('Error sending study contract reminder:', error);
+    if ((error as { response?: { body: unknown } })?.response) {
+      console.error((error as { response: { body: unknown } }).response.body);
     }
     return false;
   }

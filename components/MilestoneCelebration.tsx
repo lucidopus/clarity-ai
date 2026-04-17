@@ -11,18 +11,24 @@ interface MilestoneCelebrationProps {
   onClose: () => void;
 }
 
+// Milestones are spaced along the Lally-2010 habit-automaticity curve, so the
+// copy acknowledges the actual stage of habit formation rather than flat flattery.
 const MILESTONE_MESSAGES: Record<number, { title: string; description: string }> = {
   7: {
     title: '1 Week Strong!',
-    description: "You've built a solid habit. Keep the momentum going!",
+    description: "You've cleared the drop-off zone — most learners quit before day 7. Keep going.",
   },
-  30: {
-    title: '30-Day Legend!',
-    description: "A whole month of consistent studying. You're unstoppable.",
+  21: {
+    title: '3 Weeks In',
+    description: "The habit is taking root. Studying is starting to feel automatic.",
   },
-  100: {
-    title: '100-Day Milestone!',
-    description: 'Triple digits. This is mastery-level dedication.',
+  66: {
+    title: 'Habit Formed',
+    description: 'Research puts habit automaticity at a median of 66 days — you just hit it.',
+  },
+  180: {
+    title: 'Half a Year of Learning',
+    description: 'Six months of steady effort. This kind of consistency compounds.',
   },
   365: {
     title: 'One Full Year!',

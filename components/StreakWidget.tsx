@@ -2,13 +2,22 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
-import { Flame, Shield, AlertCircle, Info, TrendingUp, Check } from 'lucide-react';
+import { Flame, Shield, AlertCircle, Info, TrendingUp, Check, Sparkles, Clock } from 'lucide-react';
 import MilestoneCelebration from './MilestoneCelebration';
 import Toast, { ToastType } from './Toast';
+
+type DayTier = 'empty' | 'gray' | 'orange' | 'gold';
 
 interface ShieldEvent {
   type: 'earned' | 'consumed';
   at: string;
+}
+
+interface StudyContract {
+  windowStart: string;
+  windowEnd: string;
+  timezone: string;
+  contractedAt: string;
 }
 
 interface StreakData {
@@ -18,9 +27,11 @@ interface StreakData {
   milestones: number[];
   lastStudyDate: string | null;
   todayQualifies: boolean;
+  todayTier?: DayTier;
   isRecoveryActive?: boolean;
   recoveryDeadline?: string | null;
   lastShieldEvent?: ShieldEvent | null;
+  studyContract?: StudyContract | null;
 }
 
 interface ToastItem {
@@ -40,12 +51,15 @@ function formatTimeLeft(deadline: string): string {
   return `${minutes}m left`;
 }
 
-const MILESTONES = [7, 30, 100, 365] as const;
+// Milestones follow the Lally-2010 habit-automaticity curve (66d = median habit
+// time-to-automaticity). 7/21/66/180/365 replaces the old 7/30/100/365.
+const MILESTONES = [7, 21, 66, 180, 365] as const;
 
 const MILESTONE_LABEL: Record<number, string> = {
   7: '1 week',
-  30: '1 month',
-  100: '100 days',
+  21: '3 weeks',
+  66: '66 days',
+  180: '6 months',
   365: '1 year',
 };
 
@@ -209,7 +223,7 @@ export default function StreakWidget() {
     );
   }
 
-  const { studyStreak, longestStudyStreak, streakShields, todayQualifies, isRecoveryActive, recoveryDeadline } = data!;
+  const { studyStreak, longestStudyStreak, streakShields, todayQualifies, todayTier, isRecoveryActive, recoveryDeadline, studyContract } = data!;
   const nextMilestone = NEXT_MILESTONE(studyStreak);
   const daysToNext = nextMilestone ? nextMilestone - studyStreak : 0;
 
@@ -287,12 +301,44 @@ export default function StreakWidget() {
                 </span>
               </div>
               {todayQualifies && !isRecoveryActive && (
-                <div
-                  className="mt-2.5 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200/70 dark:border-green-500/20"
-                  aria-label="Counted today"
-                >
-                  <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
-                  Counted today
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  {/* Tier badge — palette mirrors the heatmap (cyan → emerald → amber)
+                      so "same color means same tier" across the dashboard. */}
+                  {todayTier === 'gold' ? (
+                    <div
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-500/30"
+                      aria-label="Gold day — flashcards cleared, challenges done, and inside your study window"
+                    >
+                      <Sparkles className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
+                      Gold day
+                    </div>
+                  ) : todayTier === 'orange' ? (
+                    <div
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-500/30"
+                      aria-label="Flashcards cleared today"
+                    >
+                      <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
+                      Flashcards cleared
+                    </div>
+                  ) : (
+                    <div
+                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-200/70 dark:border-cyan-500/20"
+                      aria-label="Studied today"
+                    >
+                      <Check className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
+                      Studied today
+                    </div>
+                  )}
+                  {studyContract && (
+                    <div
+                      className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-background text-muted-foreground border border-border"
+                      aria-label={`Study window ${studyContract.windowStart}–${studyContract.windowEnd}`}
+                      title="Your study window. Activity inside it earns the Gold tier."
+                    >
+                      <Clock className="w-3 h-3" aria-hidden="true" />
+                      {studyContract.windowStart}–{studyContract.windowEnd}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

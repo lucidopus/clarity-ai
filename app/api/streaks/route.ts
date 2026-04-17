@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import StudyDay from '@/lib/models/StudyDay';
+import { dayTier } from '@/lib/services/streaks';
 import { internalServerError } from '@/lib/errors/apiResponse';
 
 function getUTCDateString(): string {
@@ -16,10 +17,26 @@ export async function GET(request: NextRequest) {
 
     const [user, todayDoc] = await Promise.all([
       User.findById(decoded.userId)
-        .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate streakRecoveryDeadline lastShieldEvent')
-        .lean() as Promise<{ studyStreak?: number; longestStudyStreak?: number; streakShields?: number; milestones?: number[]; lastStudyDate?: string; streakRecoveryDeadline?: Date | null; lastShieldEvent?: { type: 'earned' | 'consumed'; at: Date } | null } | null>,
+        .select('studyStreak longestStudyStreak streakShields milestones lastStudyDate streakRecoveryDeadline lastShieldEvent studyContract createdAt')
+        .lean() as Promise<{
+          studyStreak?: number;
+          longestStudyStreak?: number;
+          streakShields?: number;
+          milestones?: number[];
+          lastStudyDate?: string;
+          streakRecoveryDeadline?: Date | null;
+          lastShieldEvent?: { type: 'earned' | 'consumed'; at: Date } | null;
+          studyContract?: { windowStart: string; windowEnd: string; timezone: string; contractedAt: Date } | null;
+          createdAt?: Date;
+        } | null>,
       StudyDay.findOne({ userId: decoded.userId, date: getUTCDateString() })
-        .lean() as Promise<{ qualifies?: boolean } | null>,
+        .select('qualifies fsrsQueueCleared challengesCompleted inContractWindow')
+        .lean() as Promise<{
+          qualifies?: boolean;
+          fsrsQueueCleared?: boolean;
+          challengesCompleted?: boolean;
+          inContractWindow?: boolean;
+        } | null>,
     ]);
 
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -34,9 +51,12 @@ export async function GET(request: NextRequest) {
       milestones: user.milestones ?? [],
       lastStudyDate: user.lastStudyDate ?? null,
       todayQualifies: todayDoc?.qualifies ?? false,
+      todayTier: dayTier(todayDoc),
       isRecoveryActive,
       recoveryDeadline: isRecoveryActive ? deadline : null,
       lastShieldEvent: user.lastShieldEvent ?? null,
+      studyContract: user.studyContract ?? null,
+      createdAt: user.createdAt ?? null,
     });
   } catch (error) {
     console.error('Error fetching streak data:', error);

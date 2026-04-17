@@ -15,6 +15,8 @@ import SourceContent from '@/lib/models/SourceContent';
 import Flashcard from '@/lib/models/Flashcard';
 import Quiz from '@/lib/models/Quiz';
 import Progress from '@/lib/models/Progress';
+import User from '@/lib/models/User';
+import { validateStudyContract } from '@/lib/services/studyContract';
 import { INPUT_LIMITS } from '@/lib/limits';
 
 /** Human-readable labels shown in the UI per source key. */
@@ -23,6 +25,7 @@ export const TOOL_LABELS: Record<string, string> = {
   flashcards: 'Looking at your flashcards',
   quizzes: 'Checking your quiz questions',
   progress: 'Reviewing your study progress',
+  set_study_contract: 'Saving your study window',
 };
 
 // ── Individual fetchers (module-level, accept userId + sourceId) ─────
@@ -222,5 +225,45 @@ export function createClaraTools(
     },
   );
 
-  return [requestInformation];
+  const setStudyContract = tool(
+    async (input: { windowStart: string; windowEnd: string; timezone: string }) => {
+      const invalid = validateStudyContract(input.windowStart, input.windowEnd, input.timezone);
+      if (invalid) return `Could not save the study window: ${invalid}`;
+      await dbConnect();
+      await User.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            studyContract: {
+              windowStart: input.windowStart,
+              windowEnd: input.windowEnd,
+              timezone: input.timezone,
+              contractedAt: new Date(),
+            },
+          },
+        },
+      );
+      return `Study window saved: ${input.windowStart}–${input.windowEnd} (${input.timezone}). Activity inside this window earns the Gold day tier. A single pre-window reminder will be sent 15 minutes before it starts.`;
+    },
+    {
+      name: 'set_study_contract',
+      description:
+        "Save the student's daily study window (their Cognitive Contract). Use only when the student has explicitly picked a specific start and end time for studying. Implementation-intention research shows pegging a goal to a concrete time is far more effective than willpower.",
+      schema: z.object({
+        windowStart: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
+          .describe('Window start, 24-hour "HH:MM" format, in the student\'s local time.'),
+        windowEnd: z
+          .string()
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
+          .describe('Window end, 24-hour "HH:MM" format, must be strictly after windowStart.'),
+        timezone: z
+          .string()
+          .describe('IANA timezone identifier, e.g. "America/New_York". Use the student\'s current timezone.'),
+      }),
+    },
+  );
+
+  return [requestInformation, setStudyContract];
 }

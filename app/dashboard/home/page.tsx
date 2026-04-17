@@ -17,6 +17,8 @@ import ActivityFunnelCard from '@/components/ActivityFunnelCard';
 import VideoEngagementList from '@/components/VideoEngagementList';
 import CardsDueWidget from '@/components/CardsDueWidget';
 import StreakWidget from '@/components/StreakWidget';
+import FreshmanBufferModal from '@/components/FreshmanBufferModal';
+import StudyContractPrompt from '@/components/StudyContractPrompt';
 
 // Lazy-load chart.js-based components so they don't inflate the initial bundle
 const FocusHoursChart = dynamic(() => import('@/components/FocusHoursChart'), { ssr: false });
@@ -75,6 +77,8 @@ export default function DashboardHomePage() {
     errorType: string;
     videoId?: string;
   } | null>(null);
+  const [showFreshmanBuffer, setShowFreshmanBuffer] = useState(false);
+  const [showContractPrompt, setShowContractPrompt] = useState(false);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -100,6 +104,44 @@ export default function DashboardHomePage() {
       }
     };
   }, []);
+
+  // Streak onboarding: signup-shield explainer + day-3 Cognitive Contract prompt.
+  // Both gates are localStorage-keyed per-user so they never re-fire once dismissed.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const FRESHMAN_KEY = `clarity_freshman_buffer_seen_${user.id}`;
+    const CONTRACT_KEY = `clarity_study_contract_prompt_seen_${user.id}`;
+
+    (async () => {
+      try {
+        const res = await fetch('/api/streaks');
+        if (!res.ok) return;
+        const data = await res.json() as {
+          studyStreak?: number;
+          studyContract?: { windowStart: string } | null;
+          createdAt?: string | null;
+        };
+        if (cancelled) return;
+
+        if (!localStorage.getItem(FRESHMAN_KEY)) {
+          setShowFreshmanBuffer(true);
+          return; // Don't stack modals — show contract prompt after freshman is dismissed.
+        }
+
+        const alreadySet = !!data.studyContract;
+        const promptSeen = !!localStorage.getItem(CONTRACT_KEY);
+        const streakReady = (data.studyStreak ?? 0) >= 3;
+        if (!alreadySet && !promptSeen && streakReady) {
+          setShowContractPrompt(true);
+        }
+      } catch {
+        // Silent — onboarding prompts are best-effort and should never block the dashboard.
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Refresh when tab becomes visible (covers tab switching + returning to browser)
   useEffect(() => {
@@ -493,6 +535,44 @@ export default function DashboardHomePage() {
             description="Your stats, progress, and recent activity will appear here once you start generating materials."
           />
         </div>
+      )}
+
+      {/* Signup shield explainer — endowed-progress is named, not silent. */}
+      {showFreshmanBuffer && user && (
+        <FreshmanBufferModal
+          onClose={async () => {
+            localStorage.setItem(`clarity_freshman_buffer_seen_${user.id}`, '1');
+            setShowFreshmanBuffer(false);
+            // Re-check whether the contract prompt should fire now that the
+            // freshman gate is cleared (same-session deferral).
+            try {
+              const res = await fetch('/api/streaks');
+              if (!res.ok) return;
+              const data = await res.json() as {
+                studyStreak?: number;
+                studyContract?: { windowStart: string } | null;
+              };
+              const promptSeen = !!localStorage.getItem(`clarity_study_contract_prompt_seen_${user.id}`);
+              if (!data.studyContract && !promptSeen && (data.studyStreak ?? 0) >= 3) {
+                setShowContractPrompt(true);
+              }
+            } catch {}
+          }}
+        />
+      )}
+
+      {/* Day-3 Cognitive Contract prompt — Gollwitzer implementation-intentions. */}
+      {user && (
+        <StudyContractPrompt
+          open={showContractPrompt}
+          onClose={() => {
+            localStorage.setItem(`clarity_study_contract_prompt_seen_${user.id}`, '1');
+            setShowContractPrompt(false);
+          }}
+          onSaved={() => {
+            window.dispatchEvent(new Event('activity:logged'));
+          }}
+        />
       )}
 
       {/* Generate Modal */}
