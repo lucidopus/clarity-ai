@@ -6,7 +6,9 @@ export enum ServiceType {
   APIFY_TRANSCRIPT = 'apify_transcript',
   CONTENT_VALIDATION = 'content_validation',
   GROQ_WHISPER = 'groq_whisper',
+  GROQ_TTS = 'groq_tts',
   GEMINI_VISION = 'gemini_vision',
+  GEMINI_EMBEDDING = 'gemini_embedding',
   ELEVENLABS_SCRIBE = 'elevenlabs_scribe',
   ANIMATION_TOOL = 'animation_tool',
 }

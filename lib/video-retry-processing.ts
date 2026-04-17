@@ -1,5 +1,5 @@
 import { generateLearningMaterialsChunked } from './llm';
-import { generateEmbeddings } from './embedding';
+import { generateEmbeddingsWithUsage } from './embedding';
 import { GEMINI_MODEL_NAME } from './sdk';
 import { calculateLLMCost } from './cost/calculator';
 import { logGenerationCost, calculateTotalCost, formatCost } from './cost/logger';
@@ -109,7 +109,8 @@ async function updateDualStatus(
 async function generateVideoEmbedding(
   video: VideoDocument,
   materials: LearningMaterials,
-  transcript: string
+  transcript: string,
+  services?: IServiceUsage[]
 ): Promise<number[]> {
   if (video.embedding && video.embedding.length > 0) {
     console.log(`⏭️  [RETRY] Skipping embedding - already exists (${video.embedding.length}d)`);
@@ -126,15 +127,43 @@ async function generateVideoEmbedding(
       Transcript Start: ${transcript.slice(0, 1000)}
     `.trim();
 
-    const embeddingResult = await generateEmbeddings(embeddingContext);
-    const embedding = Array.isArray(embeddingResult) && Array.isArray(embeddingResult[0])
-      ? (embeddingResult as number[][])[0]
-      : (embeddingResult as number[]);
+    const embeddingResult = await generateEmbeddingsWithUsage(embeddingContext);
+    const embedding = Array.isArray(embeddingResult.vectors) && Array.isArray(embeddingResult.vectors[0])
+      ? (embeddingResult.vectors as number[][])[0]
+      : (embeddingResult.vectors as number[]);
 
-    console.log(`✅ [RETRY] Generated embedding for ${video.videoId}`);
+    services?.push({
+      service: ServiceType.GEMINI_EMBEDDING,
+      usage: {
+        cost: embeddingResult.cost,
+        unitDetails: {
+          inputTokens: embeddingResult.usage.inputTokens,
+          totalTokens: embeddingResult.usage.inputTokens,
+          metadata: {
+            model: embeddingResult.model,
+            invoker: 'video_retry',
+            estimated: embeddingResult.usage.estimated,
+          },
+        },
+      },
+      status: 'success',
+    });
+    console.log(`✅ [RETRY] Generated embedding for ${video.videoId} (${formatCost(embeddingResult.cost)})`);
     return embedding;
   } catch (embError) {
     console.warn(`⚠️ [RETRY] Embedding generation failed (non-critical):`, embError as Record<string, unknown>);
+    services?.push({
+      service: ServiceType.GEMINI_EMBEDDING,
+      usage: {
+        cost: 0,
+        unitDetails: {
+          inputTokens: 0,
+          metadata: { invoker: 'video_retry' },
+        },
+      },
+      status: 'failed',
+      errorMessage: embError instanceof Error ? embError.message : 'Embedding failed',
+    });
     return [];
   }
 }
@@ -267,8 +296,8 @@ export async function processVideoChunked(video: VideoDocument) {
   // Determine incomplete materials
   const incompleteMaterialsList: string[] = [...chunkedResult.incompleteMaterials];
 
-  // Generate embedding
-  const embedding = await generateVideoEmbedding(video, chunkedResult.materials, transcript);
+  // Generate embedding (also pushes GEMINI_EMBEDDING cost into services)
+  const embedding = await generateVideoEmbedding(video, chunkedResult.materials, transcript, services);
 
   if (incompleteMaterialsList.length === 0) {
     // Complete success — update both Video + Source
@@ -366,8 +395,8 @@ export async function processVideoStandard(video: VideoDocument) {
     // Save materials
     await saveVideoMaterials(video, materials, true);
 
-    // Generate embedding
-    const embedding = await generateVideoEmbedding(video, materials, transcript);
+    // Generate embedding (also pushes GEMINI_EMBEDDING cost into services)
+    const embedding = await generateVideoEmbedding(video, materials, transcript, services);
 
     // Mark as complete — update both Video + Source
     await updateDualStatus(video, {

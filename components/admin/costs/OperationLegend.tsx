@@ -1,42 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Info, ChevronDown, ChevronUp } from 'lucide-react';
-
-interface SourceDefinition {
-  source: string;
-  displayName: string;
-  description: string;
-  icon: string;
-  exampleServices: string[];
-}
-
-const OPERATION_DEFINITIONS: Record<string, SourceDefinition> = {
-  learning_material_generation: {
-    source: 'learning_material_generation',
-    displayName: 'Learning Material Generation',
-    description:
-      'Full pipeline operation: extracts video transcript and generates comprehensive learning materials including flashcards, quizzes, timestamps, prerequisites, and mind maps in a single operation.',
-    icon: '📚',
-    exampleServices: ['Transcript Extraction', 'LLM Processing'],
-  },
-  learning_chatbot: {
-    source: 'learning_chatbot',
-    displayName: 'Learning Chatbot',
-    description:
-      'User query about video content. Processes questions about the material and provides intelligent answers based on the video transcript.',
-    icon: '💬',
-    exampleServices: ['LLM Processing'],
-  },
-  challenge_chatbot: {
-    source: 'challenge_chatbot',
-    displayName: 'Challenge Chatbot',
-    description:
-      'User query for help with real-world coding problems. Provides hints, explanations, and guidance related to the challenge without giving away the solution.',
-    icon: '🎯',
-    exampleServices: ['LLM Processing'],
-  },
-};
+import { getCostSourceMeta } from '@/lib/cost/source-labels';
+import { formatCost, formatCount, formatPercent } from '@/lib/cost/format';
 
 interface SourceData {
   source: string;
@@ -45,25 +12,25 @@ interface SourceData {
   percentage: number;
 }
 
-export default function OperationLegend() {
+interface OperationLegendProps {
+  days: number;
+  defaultOpen?: boolean;
+}
+
+export default function OperationLegend({ days, defaultOpen = false }: OperationLegendProps) {
   const [sources, setSources] = useState<SourceData[]>([]);
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sectionOpen, setSectionOpen] = useState(defaultOpen);
 
-  useEffect(() => {
-    fetchSources();
-  }, []);
-
-  const fetchSources = async () => {
+  const fetchSources = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/analytics/costs/by-source');
-
+      const response = await fetch(`/api/admin/analytics/costs/by-source?days=${days}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
           setSources(data.sources);
-          // Auto-expand first source initially
           if (data.sources.length > 0) {
             setExpandedSource(data.sources[0].source);
           }
@@ -74,33 +41,53 @@ export default function OperationLegend() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [days]);
+
+  useEffect(() => {
+    fetchSources();
+  }, [fetchSources]);
 
   if (loading) {
     return null;
   }
 
-  // Get all operation types that exist in the database
-  const activeSources = sources.map((s) => s.source);
-  const relevantDefinitions = activeSources
-    .map((source) => OPERATION_DEFINITIONS[source])
-    .filter(Boolean);
+  // Derive definitions from live source list — any CostSource with data in MongoDB
+  // gets rendered, including future sources that ship without a UI update.
+  const relevantDefinitions = sources.map((s) => ({
+    source: s.source,
+    ...getCostSourceMeta(s.source),
+  }));
 
   if (relevantDefinitions.length === 0) {
     return null;
   }
 
   return (
-    <div className="bg-card-bg border border-border rounded-xl p-6">
-      <div className="flex items-start space-x-3 mb-4">
-        <Info className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">About Operations</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Understanding what each operation type represents and its associated costs
-          </p>
+    <div className="bg-card-bg border border-border rounded-xl">
+      <button
+        type="button"
+        onClick={() => setSectionOpen((o) => !o)}
+        aria-expanded={sectionOpen}
+        className="w-full flex items-center justify-between p-6 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl"
+      >
+        <div className="flex items-start space-x-3">
+          <Info className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="text-left">
+            <h3 className="text-lg font-semibold text-foreground">About Operations</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              What each operation type represents and how costs are attributed
+            </p>
+          </div>
         </div>
-      </div>
+        {sectionOpen ? (
+          <ChevronUp className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+        )}
+      </button>
+
+      {sectionOpen && (
+      <div className="px-6 pb-6">
 
       <div className="space-y-2">
         {relevantDefinitions.map((definition) => {
@@ -126,8 +113,7 @@ export default function OperationLegend() {
                     </p>
                     {sourceData && (
                       <p className="text-xs text-muted-foreground">
-                        {sourceData.operations} operation{sourceData.operations !== 1 ? 's' : ''} • $
-                        {sourceData.cost.toFixed(4)}
+                        {formatCount(sourceData.operations)} operation{sourceData.operations !== 1 ? 's' : ''} · {formatCost(sourceData.cost)}
                       </p>
                     )}
                   </div>
@@ -135,7 +121,7 @@ export default function OperationLegend() {
                 <div className="flex items-center space-x-2">
                   {sourceData && (
                     <span className="text-xs font-medium text-accent bg-accent/10 px-2 py-1 rounded">
-                      {sourceData.percentage.toFixed(1)}%
+                      {formatPercent(sourceData.percentage)}
                     </span>
                   )}
                   {isExpanded ? (
@@ -173,19 +159,19 @@ export default function OperationLegend() {
                       <div>
                         <p className="text-xs text-muted-foreground">Operations</p>
                         <p className="font-semibold text-foreground">
-                          {sourceData.operations}
+                          {formatCount(sourceData.operations)}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Total Cost</p>
                         <p className="font-semibold text-foreground">
-                          ${sourceData.cost.toFixed(4)}
+                          {formatCost(sourceData.cost)}
                         </p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Of Total</p>
                         <p className="font-semibold text-accent">
-                          {sourceData.percentage.toFixed(1)}%
+                          {formatPercent(sourceData.percentage)}
                         </p>
                       </div>
                     </div>
@@ -198,8 +184,10 @@ export default function OperationLegend() {
       </div>
 
       <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
-        💡 <strong>Tip:</strong> New operation types will automatically appear here as they are added to the system.
+        New operation types appear here automatically as they are added to the system.
       </p>
+      </div>
+      )}
     </div>
   );
 }

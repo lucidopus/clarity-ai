@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User, { ILearningPreferences } from '@/lib/models/User';
-import { generateEmbeddings } from '@/lib/embedding';
+import { generateEmbeddingsWithUsage } from '@/lib/embedding';
 import { constructUserProfileString } from '@/lib/service-utils';
 import { generateUserRecommendations } from '@/trigger/recommendations';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 import { invalidateAllUserCaches } from '@/lib/cache';
+import { logGenerationCost } from '@/lib/cost/logger';
+import { CostSource, ServiceType } from '@/lib/models/Cost';
 
 type LearningPreferencesPayload = Partial<ILearningPreferences>;
 
@@ -175,9 +177,37 @@ export async function POST(request: NextRequest) {
       // Note: This adds a small latency to the onboarding/save step, 
       // but saves us from complex background job coordination for single users.
       if (userProfileString) {
-        const embedding = await generateEmbeddings(userProfileString);
+        const embeddingResult = await generateEmbeddingsWithUsage(userProfileString);
+        const embedding = embeddingResult.vectors as number[];
         (updateOperation.$set as Record<string, unknown>)['preferences.embedding'] = embedding;
         console.log(`Generated embedding for User ${decoded.userId}. Vector length: ${embedding.length}`);
+
+        // Log embedding cost (best-effort — never block preferences save)
+        try {
+          await logGenerationCost({
+            userId: decoded.userId,
+            source: CostSource.LEARNING_MATERIAL_GENERATION,
+            services: [{
+              service: ServiceType.GEMINI_EMBEDDING,
+              usage: {
+                cost: embeddingResult.cost,
+                unitDetails: {
+                  inputTokens: embeddingResult.usage.inputTokens,
+                  totalTokens: embeddingResult.usage.inputTokens,
+                  metadata: {
+                    model: embeddingResult.model,
+                    invoker: 'user_preferences',
+                    estimated: embeddingResult.usage.estimated,
+                  },
+                },
+              },
+              status: 'success',
+            }],
+            totalCost: embeddingResult.cost,
+          });
+        } catch (costError) {
+          console.error('⚠️ [PREFERENCES] Failed to log embedding cost (non-critical):', costError);
+        }
       } else {
         console.log('Skipping embedding: Profile string is empty.');
       }

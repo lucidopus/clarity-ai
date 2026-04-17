@@ -339,8 +339,8 @@ export const processVideoPipelineTask = task({
       await saveLearningMaterials(userId, sourceId, materials);
     }
 
-    // 9. Update final status (Video + Source)
-    await updateFinalStatus(userId, videoDocId, sourceId, primaryExtraction.text, materials, llmError, llmErrorCode);
+    // 9. Update final status (Video + Source) — also records embedding cost into services
+    await updateFinalStatus(userId, videoDocId, sourceId, primaryExtraction.text, materials, llmError, llmErrorCode, services);
 
     // 10. Log activity (if materials generated)
     if (materials) {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Search, Trash2, ChevronLeft, ChevronRight, X, Filter, Calendar, ArrowUpDown, ChevronDown, Video, CreditCard, FileQuestion, Activity, TrendingUp, Flame } from 'lucide-react';
 import Button from '@/components/Button';
@@ -118,6 +119,18 @@ export default function AdminUsersPage() {
     fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, searchQuery, sortBy, sortOrder, joinDateAfter, joinDateBefore]);
+
+  const searchParams = useSearchParams();
+  const focusUserId = searchParams.get('userId');
+
+  // Deep-link from the top-spenders table: `?userId=<id>` auto-opens the
+  // detail drawer once on mount so the admin lands directly on the user
+  // they clicked. Runs once per id to avoid hijacking navigation.
+  useEffect(() => {
+    if (focusUserId) {
+      fetchUserDetails(focusUserId);
+    }
+  }, [focusUserId]);
 
   const fetchUserDetails = async (userId: string) => {
     setDetailsLoading(true);

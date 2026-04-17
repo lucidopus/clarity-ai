@@ -1,37 +1,77 @@
 'use client';
 
 import { useState } from 'react';
-import { DollarSign, TrendingUp, Activity, Server, Users as UsersIcon } from 'lucide-react';
+import { LayoutDashboard, BarChart3, Users as UsersIcon } from 'lucide-react';
 
-// Import components
-import CostSummaryCards from '@/components/admin/costs/CostSummaryCards';
-import ModelComparisonChart from '@/components/admin/costs/ModelComparisonChart';
-import TopUsersByCostreTable from '@/components/admin/costs/TopUsersByCostreTable';
-import FeatureBreakdownChart from '@/components/admin/costs/FeatureBreakdownChart';
-import DailyCostChart from '@/components/admin/costs/DailyCostChart';
-import ServiceEfficiencyChart from '@/components/admin/costs/ServiceEfficiencyChart';
+import OverviewTab from '@/components/admin/costs/OverviewTab';
+import BreakdownTab from '@/components/admin/costs/BreakdownTab';
+import TopUsersByCostTable from '@/components/admin/costs/TopUsersByCostTable';
+import TimeRangeSelector, {
+  TimeRangeDays,
+} from '@/components/admin/costs/shared/TimeRangeSelector';
+import RefreshControl from '@/components/admin/costs/shared/RefreshControl';
+
+type TabId = 'overview' | 'breakdown' | 'spenders';
+
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" aria-hidden="true" /> },
+  { id: 'breakdown', label: 'Breakdown', icon: <BarChart3 className="w-4 h-4" aria-hidden="true" /> },
+  { id: 'spenders', label: 'Top Spenders', icon: <UsersIcon className="w-4 h-4" aria-hidden="true" /> },
+];
 
 export default function CostsPage() {
-  const [activeTab, setActiveTab] = useState<string>('summary');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [days, setDays] = useState<TimeRangeDays>(30);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [refreshing, setRefreshing] = useState(false);
 
-  const tabs = [
-    { id: 'summary', label: 'Summary', icon: <DollarSign className="w-4 h-4" /> },
-    { id: 'models', label: 'Models', icon: <Activity className="w-4 h-4" /> },
-    { id: 'users', label: 'Top Spenders', icon: <UsersIcon className="w-4 h-4" /> },
-    { id: 'services', label: 'Services', icon: <Server className="w-4 h-4" /> },
-    { id: 'trends', label: 'Trends', icon: <TrendingUp className="w-4 h-4" /> },
-  ];
+  const handleRefresh = () => {
+    setRefreshing(true);
+    setRefreshToken((t) => t + 1);
+  };
+
+  const handleDaysChange = (next: TimeRangeDays) => {
+    setRefreshing(true);
+    setDays(next);
+  };
+
+  // Fires when the active tab's primary data source finishes loading. We
+  // only flip `refreshing` off on the first success per refresh cycle so
+  // later chart completions don't bounce the spinner.
+  const handleDataLoaded = () => {
+    setLastUpdated(new Date());
+    setRefreshing(false);
+  };
 
   return (
-    <div className="">
-      {/* Tab Navigation */}
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Costs</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Spend, efficiency, and wasted-COGS signals for the last {days} days.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <TimeRangeSelector days={days} onChange={handleDaysChange} />
+          <RefreshControl onRefresh={handleRefresh} lastUpdated={lastUpdated} loading={refreshing} />
+        </div>
+      </div>
+
       <div className="border-b border-border">
-        <div className="flex space-x-1">
-          {tabs.map((tab) => (
+        <div role="tablist" aria-label="Cost views" className="flex space-x-1">
+          {TABS.map((tab) => (
             <button
               key={tab.id}
+              role="tab"
+              id={`costs-tab-${tab.id}`}
+              type="button"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`costs-tabpanel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors duration-200 cursor-pointer ${
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors duration-200 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 activeTab === tab.id
                   ? 'border-accent text-accent font-medium'
                   : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -44,37 +84,36 @@ export default function CostsPage() {
         </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="space-y-6">
-        {activeTab === 'summary' && (
-          <>
-            <CostSummaryCards />
-            <FeatureBreakdownChart />
-          </>
+      <div
+        role="tabpanel"
+        id="costs-tabpanel-overview"
+        aria-labelledby="costs-tab-overview"
+        hidden={activeTab !== 'overview'}
+      >
+        {activeTab === 'overview' && (
+          <OverviewTab days={days} refreshToken={refreshToken} onDataLoaded={handleDataLoaded} />
         )}
+      </div>
 
-        {activeTab === 'models' && (
-          <>
-            <ModelComparisonChart />
-          </>
+      <div
+        role="tabpanel"
+        id="costs-tabpanel-breakdown"
+        aria-labelledby="costs-tab-breakdown"
+        hidden={activeTab !== 'breakdown'}
+      >
+        {activeTab === 'breakdown' && (
+          <BreakdownTab days={days} refreshToken={refreshToken} onDataLoaded={handleDataLoaded} />
         )}
+      </div>
 
-        {activeTab === 'users' && (
-          <>
-            <TopUsersByCostreTable />
-          </>
-        )}
-
-        {activeTab === 'services' && (
-          <>
-            <ServiceEfficiencyChart />
-          </>
-        )}
-
-        {activeTab === 'trends' && (
-          <>
-            <DailyCostChart />
-          </>
+      <div
+        role="tabpanel"
+        id="costs-tabpanel-spenders"
+        aria-labelledby="costs-tab-spenders"
+        hidden={activeTab !== 'spenders'}
+      >
+        {activeTab === 'spenders' && (
+          <TopUsersByCostTable days={days} refreshToken={refreshToken} onDataLoaded={handleDataLoaded} />
         )}
       </div>
     </div>

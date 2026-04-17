@@ -2,15 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Source from '@/lib/models/Source';
-import { generateEmbeddings } from '@/lib/embedding';
+import { generateEmbeddingsWithUsage } from '@/lib/embedding';
 import { RECOMMENDATION_CONSTANTS } from '@/lib/config';
 import { escapeRegex } from '@/lib/utils/escape-regex';
+import { logGenerationCost } from '@/lib/cost/logger';
+import { CostSource, ServiceType } from '@/lib/models/Cost';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    getAuthUser(request);
+    const decoded = getAuthUser(request);
 
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q');
@@ -28,7 +30,35 @@ export async function GET(request: NextRequest) {
       // 1. Semantic Search (Vector) on Source collection
       // Best for understanding intent (e.g., "how to build a website" -> matches "Intro to HTML")
 
-      const vector = await generateEmbeddings(query) as number[];
+      const embeddingResult = await generateEmbeddingsWithUsage(query);
+      const vector = embeddingResult.vectors as number[];
+
+      // Log embedding cost (best-effort — never block search response)
+      try {
+        await logGenerationCost({
+          userId: decoded.userId,
+          source: CostSource.LEARNING_MATERIAL_GENERATION,
+          services: [{
+            service: ServiceType.GEMINI_EMBEDDING,
+            usage: {
+              cost: embeddingResult.cost,
+              unitDetails: {
+                inputTokens: embeddingResult.usage.inputTokens,
+                totalTokens: embeddingResult.usage.inputTokens,
+                metadata: {
+                  model: embeddingResult.model,
+                  invoker: 'semantic_search',
+                  estimated: embeddingResult.usage.estimated,
+                },
+              },
+            },
+            status: 'success',
+          }],
+          totalCost: embeddingResult.cost,
+        });
+      } catch (costError) {
+        console.error('⚠️ [SEARCH] Failed to log embedding cost (non-critical):', costError);
+      }
 
       const results = await Source.aggregate([
         {

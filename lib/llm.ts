@@ -151,10 +151,26 @@ export async function generateLearningMaterials(
 }
 
 /**
+ * Token callback shape shared by chunked generation helpers. Accepts a LangChain
+ * LLM end handler and forwards usage deltas into the caller's accumulator.
+ */
+type TokenAccumulatorCallback = {
+  handleLLMEnd: (output: {
+    llmOutput?: {
+      tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+      estimatedTokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+    };
+  }) => void;
+};
+
+/**
  * Generate a comprehensive detailed summary from transcript
  * Used for chunked generation to condense long transcripts while preserving key information
  */
-export async function generateDetailedSummary(transcript: string): Promise<string> {
+export async function generateDetailedSummary(
+  transcript: string,
+  tokenCallback?: TokenAccumulatorCallback,
+): Promise<string> {
   console.log('📝 [SUMMARY] Generating detailed summary from transcript...');
   console.log(`📝 [SUMMARY] Transcript length: ${transcript.length} characters`);
 
@@ -180,8 +196,9 @@ Generate a 1500-2000 word summary that captures ALL critical information with mi
 
 Be thorough and comprehensive - this summary will be used to generate all learning materials.`;
 
-    const result = await summaryLLM.invoke([new HumanMessage(summaryPrompt)], { 
-      timeout: 120000 // 120s timeout for initial summarization
+    const result = await summaryLLM.invoke([new HumanMessage(summaryPrompt)], {
+      timeout: 120000, // 120s timeout for initial summarization
+      ...(tokenCallback ? { callbacks: [tokenCallback] } : {}),
     });
 
     const wordCount = result.detailedSummary.split(/\s+/).length;
@@ -223,11 +240,27 @@ export async function generateLearningMaterialsChunked(
     totalTokens: 0,
   };
 
+  // Shared LangChain callback — attach to every structuredLLM.invoke() below so
+  // token usage from all 7 chunk calls accumulates into totalUsage. Without
+  // this, the function returns zero tokens and the cost logger records $0 for
+  // the entire generation.
+  const tokenCallback = {
+    handleLLMEnd: (output: { llmOutput?: { tokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number }; estimatedTokenUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number } } }) => {
+      const tokenUsage = output.llmOutput?.tokenUsage ?? output.llmOutput?.estimatedTokenUsage;
+      if (tokenUsage) {
+        totalUsage.promptTokens += tokenUsage.promptTokens || 0;
+        totalUsage.completionTokens += tokenUsage.completionTokens || 0;
+        totalUsage.totalTokens += tokenUsage.totalTokens
+          || ((tokenUsage.promptTokens || 0) + (tokenUsage.completionTokens || 0));
+      }
+    },
+  };
+
   try {
     // STEP 0: Generate detailed summary from full transcript
     // This condensed version (1500-2000 words) will be used for all material generation
     console.log('🔧 [STEP 0/6] Generating condensed detailed summary...');
-    const detailedSummary = await generateDetailedSummary(transcript);
+    const detailedSummary = await generateDetailedSummary(transcript, tokenCallback);
     console.log('✅ [STEP 0/6] Condensed summary ready for material generation');
 
     // CHUNK 1: Video Metadata (title, category, tags, summary, chapters)
@@ -252,7 +285,7 @@ export async function generateLearningMaterialsChunked(
         
         const metadataPrompt = `Analyze this detailed video summary and provide metadata.\n\nDetailed Summary:\n${detailedSummary}\n\nGenerate:\n- Title: Concise, descriptive title\n- Category: Choose the best fit category\n- Tags: 5-8 specific keywords (lowercase)\n- Summary: 200-300 word summary for display\n- Chapters: 3-5 key moments with timestamps`;
         
-        metadata = await metadataLLM.invoke([new HumanMessage(metadataPrompt)], { timeout: 60000 });
+        metadata = await metadataLLM.invoke([new HumanMessage(metadataPrompt)], { timeout: 60000, callbacks: [tokenCallback] });
         console.log('✅ [CHUNK 1/6] Metadata generated');
       } catch (error) {
         console.error('❌ [CHUNK 1/6] Metadata generation failed:', error);
@@ -284,7 +317,7 @@ export async function generateLearningMaterialsChunked(
         
         const flashcardsPrompt = `Based on this detailed video summary, create comprehensive flashcards.\n\nDetailed Summary:\n${detailedSummary}\n\nGenerate 5-15 flashcards covering key concepts from throughout the entire video. Include easy, medium, and hard difficulty levels. Cover important details, definitions, and concepts.`;
         
-        flashcardsData = await flashcardsLLM.invoke([new HumanMessage(flashcardsPrompt)], { timeout: 60000 });
+        flashcardsData = await flashcardsLLM.invoke([new HumanMessage(flashcardsPrompt)], { timeout: 60000, callbacks: [tokenCallback] });
         console.log(`✅ [CHUNK 2/6] Generated ${flashcardsData.flashcards.length} flashcards`);
       } catch (error) {
         console.error('❌ [CHUNK 2/6] Flashcards generation failed:', error);
@@ -309,7 +342,7 @@ export async function generateLearningMaterialsChunked(
         
         const quizzesPrompt = `Based on this detailed video summary, create comprehensive quiz questions.\n\nDetailed Summary:\n${detailedSummary}\n\nGenerate 10-15 multiple-choice questions with detailed explanations. Cover key concepts, important details, and practical applications from throughout the entire video.`;
         
-        quizzesData = await quizzesLLM.invoke([new HumanMessage(quizzesPrompt)], { timeout: 60000 });
+        quizzesData = await quizzesLLM.invoke([new HumanMessage(quizzesPrompt)], { timeout: 60000, callbacks: [tokenCallback] });
         console.log(`✅ [CHUNK 3/6] Generated ${quizzesData.quizzes.length} quizzes`);
       } catch (error) {
         console.error('❌ [CHUNK 3/6] Quizzes generation failed:', error);
@@ -334,7 +367,7 @@ export async function generateLearningMaterialsChunked(
         
         const prerequisitesPrompt = `Based on this detailed video summary, identify all prerequisite knowledge.\n\nDetailed Summary:\n${detailedSummary}\n\nGenerate 2-3 prerequisite topics needed to understand this content. Consider all concepts, terminology, and background knowledge required throughout the entire video.`;
         
-        prerequisitesData = await prerequisitesLLM.invoke([new HumanMessage(prerequisitesPrompt)], { timeout: 60000 });
+        prerequisitesData = await prerequisitesLLM.invoke([new HumanMessage(prerequisitesPrompt)], { timeout: 60000, callbacks: [tokenCallback] });
         console.log(`✅ [CHUNK 4/6] Generated ${prerequisitesData.prerequisites.length} prerequisites`);
       } catch (error) {
         console.error('❌ [CHUNK 4/6] Prerequisites generation failed:', error);
@@ -359,7 +392,7 @@ export async function generateLearningMaterialsChunked(
         
         const realWorldProblemsPrompt = `Based on this detailed video summary, create comprehensive real-world case studies.\n\nDetailed Summary:\n${detailedSummary}\n\nGenerate 1-3 real-world problems that apply the concepts taught throughout the entire video. Include practical scenarios that demonstrate the material in action.`;
         
-        realWorldProblemsData = await realWorldProblemsLLM.invoke([new HumanMessage(realWorldProblemsPrompt)], { timeout: 60000 });
+        realWorldProblemsData = await realWorldProblemsLLM.invoke([new HumanMessage(realWorldProblemsPrompt)], { timeout: 60000, callbacks: [tokenCallback] });
         console.log(`✅ [CHUNK 5/6] Generated ${realWorldProblemsData.realWorldProblems.length} case studies`);
       } catch (error) {
         console.error('❌ [CHUNK 5/6] Real-world problems generation failed:', error);
@@ -384,7 +417,7 @@ export async function generateLearningMaterialsChunked(
         
         const mindMapPrompt = `Based on this detailed video summary, create a comprehensive hierarchical mind map.\n\nDetailed Summary:\n${detailedSummary}\n\nGenerate nodes and edges showing all major concepts and their relationships throughout the entire video. Create a detailed map that captures the full knowledge structure.`;
         
-        mindMapData = await mindMapLLM.invoke([new HumanMessage(mindMapPrompt)], { timeout: 180000 }); // Increased to 180s for complex graphs
+        mindMapData = await mindMapLLM.invoke([new HumanMessage(mindMapPrompt)], { timeout: 180000, callbacks: [tokenCallback] }); // Increased to 180s for complex graphs
         console.log(`✅ [CHUNK 6/6] Generated mind map with ${mindMapData.mindMap.nodes.length} nodes`);
       } catch (error) {
         console.error('❌ [CHUNK 6/6] Mind map generation failed:', error);
@@ -409,6 +442,7 @@ export async function generateLearningMaterialsChunked(
 
     console.log('✅ [LLM CHUNKED] All chunks processed!');
     console.log(`📊 Failed chunks: ${failedChunks.length > 0 ? failedChunks.join(', ') : 'None'}`);
+    console.log(`🤖 [LLM CHUNKED] Total token usage: ${totalUsage.promptTokens} input + ${totalUsage.completionTokens} output = ${totalUsage.totalTokens} total`);
     
     // Summary of what was generated
     console.log('\n📋 [SUMMARY] Chunked Generation Results:');

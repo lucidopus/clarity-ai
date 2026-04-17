@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,12 +14,13 @@ import {
 } from 'chart.js';
 import { AlertCircle } from 'lucide-react';
 import { getUserFriendlyMessage } from '@/lib/utils/user-error';
+import { formatCost, formatCount } from '@/lib/cost/format';
+import CostSkeleton from './shared/CostSkeleton';
 
-// Register Chart.js plugins and components once - safe to call multiple times
 try {
   ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 } catch {
-  // Already registered, ignore
+  // Already registered
 }
 
 interface ModelData {
@@ -31,25 +32,20 @@ interface ModelData {
   costPerToken: number;
 }
 
-export default function ModelComparisonChart() {
+interface ModelComparisonChartProps {
+  days: number;
+}
+
+export default function ModelComparisonChart({ days }: ModelComparisonChartProps) {
   const [models, setModels] = useState<ModelData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const chartRef = useRef(null);
 
-  useEffect(() => {
-    fetchModels();
-  }, []);
-
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/analytics/costs/models');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch model data');
-      }
-
+      const response = await fetch(`/api/admin/analytics/costs/models?days=${days}`);
+      if (!response.ok) throw new Error('Failed to fetch model data');
       const data = await response.json();
       if (data.success) {
         setModels(data.models);
@@ -57,29 +53,23 @@ export default function ModelComparisonChart() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(getUserFriendlyMessage(err, 'We couldn\'t load the model comparison.'));
+      setError(getUserFriendlyMessage(err, "We couldn't load the model comparison."));
     } finally {
       setLoading(false);
     }
-  };
+  }, [days]);
 
-  const formatCost = (cost: number) => `$${cost.toFixed(4)}`;
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
 
-  if (loading) {
-    return (
-      <div className="bg-card-bg border border-border rounded-xl p-6">
-        <div className="h-64 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <CostSkeleton variant="chart" />;
 
   if (error) {
     return (
-      <div className="bg-card-bg border border-border rounded-xl p-6">
+      <div className="bg-card-bg border border-border rounded-xl p-6" role="alert">
         <div className="flex items-center space-x-2 text-red-500">
-          <AlertCircle className="w-5 h-5" />
+          <AlertCircle className="w-5 h-5" aria-hidden="true" />
           <span>Error loading model data: {error}</span>
         </div>
       </div>
@@ -90,26 +80,25 @@ export default function ModelComparisonChart() {
     return (
       <div className="bg-card-bg border border-border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Model Usage & Efficiency</h3>
-        <p className="text-muted-foreground">No model data available</p>
+        <p className="text-muted-foreground">No model activity in the selected window.</p>
       </div>
     );
   }
 
-  // Chart data - Input and Output Tokens side-by-side
   const tokensChartData = {
     labels: models.map((m) => m.model.split('/').pop() || m.model),
     datasets: [
       {
         label: 'Input Tokens',
         data: models.map((m) => m.inputTokens),
-        backgroundColor: 'rgba(251, 191, 36, 0.9)', // Vibrant yellow
+        backgroundColor: 'rgba(251, 191, 36, 0.9)',
         borderColor: 'rgba(251, 191, 36, 1)',
         borderWidth: 1,
       },
       {
         label: 'Output Tokens',
         data: models.map((m) => m.outputTokens),
-        backgroundColor: 'rgba(34, 197, 94, 0.9)', // Vibrant green
+        backgroundColor: 'rgba(34, 197, 94, 0.9)',
         borderColor: 'rgba(34, 197, 94, 1)',
         borderWidth: 1,
       },
@@ -123,18 +112,10 @@ export default function ModelComparisonChart() {
       legend: {
         display: true,
         position: 'top' as const,
-        labels: {
-          color: 'rgba(107, 114, 128, 0.8)',
-          padding: 15,
-          usePointStyle: true,
-        },
+        labels: { color: 'rgba(107, 114, 128, 0.8)', padding: 15, usePointStyle: true },
       },
-      datalabels: {
-        display: false,
-      },
-      title: {
-        display: false,
-      },
+      datalabels: { display: false },
+      title: { display: false },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         padding: 12,
@@ -145,7 +126,7 @@ export default function ModelComparisonChart() {
         callbacks: {
           label: (context: TooltipItem<'bar'>) => {
             const value = context.parsed.y || 0;
-            return `${context.dataset.label || 'Unknown'}: ${value.toLocaleString()}`;
+            return `${context.dataset.label || 'Unknown'}: ${formatCount(value)}`;
           },
           afterLabel: (context: TooltipItem<'bar'>) => {
             const model = models[context.dataIndex];
@@ -157,29 +138,17 @@ export default function ModelComparisonChart() {
     scales: {
       y: {
         beginAtZero: true,
-        grid: {
-          color: 'rgba(156, 163, 175, 0.1)',
-        },
+        grid: { color: 'rgba(156, 163, 175, 0.1)' },
         ticks: {
           color: 'rgba(107, 114, 128, 0.8)',
-          callback: (value: number | string) => typeof value === 'number' ? `${(value / 1000).toFixed(0)}k` : value,
+          callback: (value: number | string) =>
+            typeof value === 'number' ? `${(value / 1000).toFixed(0)}k` : value,
         },
-        title: {
-          display: true,
-          text: 'Tokens',
-          color: 'rgba(107, 114, 128, 0.8)',
-          font: {
-            size: 12,
-          },
-        },
+        title: { display: true, text: 'Tokens', color: 'rgba(107, 114, 128, 0.8)', font: { size: 12 } },
       },
       x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: 'rgba(107, 114, 128, 0.8)',
-        },
+        grid: { display: false },
+        ticks: { color: 'rgba(107, 114, 128, 0.8)' },
       },
     },
     barPercentage: 1.0,
@@ -187,41 +156,58 @@ export default function ModelComparisonChart() {
   };
 
   return (
-    <div className="space-y-4 my-10">
+    <div className="space-y-4">
       <div className="bg-card-bg border border-border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Token Usage by Model</h3>
-        <div className="h-[350px] mb-6" ref={chartRef}>
-          <Bar key={`chart-${models.length}`} data={tokensChartData} options={chartOptions} />
+        <div className="h-[350px] mb-6">
+          <Bar key={`chart-${models.length}-${days}`} data={tokensChartData} options={chartOptions} />
         </div>
 
-        {/* Table View */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-sm font-medium text-muted-foreground pb-3">Model</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Total Cost</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Input Tokens</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Output Tokens</th>
+              <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="font-medium pb-3">Model</th>
+                <th className="font-medium pb-3 text-right">Total Cost</th>
+                <th className="font-medium pb-3 text-right">Input</th>
+                <th className="font-medium pb-3 text-right">Output</th>
+                <th className="font-medium pb-3 text-right">Cost / 1K tokens</th>
               </tr>
             </thead>
             <tbody>
               {models.map((model, idx) => (
                 <tr key={idx} className="border-b border-border last:border-0">
-                  <td className="py-3 text-sm text-foreground">{model.model}</td>
-                  <td className="py-3 text-sm text-right font-medium text-foreground">
+                  <td className="py-3 text-foreground">{model.model}</td>
+                  <td className="py-3 text-right font-medium text-foreground">
                     {formatCost(model.totalCost)}
                   </td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    {model.inputTokens.toLocaleString()}
+                  <td className="py-3 text-right text-muted-foreground">
+                    {formatCount(model.inputTokens)}
                   </td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    {model.outputTokens.toLocaleString()}
+                  <td className="py-3 text-right text-muted-foreground">
+                    {formatCount(model.outputTokens)}
+                  </td>
+                  <td className="py-3 text-right text-muted-foreground">
+                    {model.totalTokens > 0 ? formatCost(model.costPerToken * 1000) : '—'}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="md:hidden space-y-3">
+          {models.map((model, idx) => (
+            <div key={idx} className="p-3 rounded-lg bg-background/50 border border-border">
+              <p className="text-sm font-medium text-foreground break-all">{model.model}</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div>Cost: <span className="text-foreground font-medium">{formatCost(model.totalCost)}</span></div>
+                <div>Cost/1K: <span className="text-foreground">{model.totalTokens > 0 ? formatCost(model.costPerToken * 1000) : '—'}</span></div>
+                <div>In: <span className="text-foreground">{formatCount(model.inputTokens)}</span></div>
+                <div>Out: <span className="text-foreground">{formatCount(model.outputTokens)}</span></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, TaskType, GenerativeModel } from "@google/generative-ai";
+import { GEMINI_EMBEDDING_COST_PER_MILLION } from "@/lib/cost/config";
 
 let model: GenerativeModel | null = null;
 
@@ -12,6 +13,19 @@ function getModel(): GenerativeModel {
 }
 
 const EMBEDDING_DIMENSIONS = 1536;
+const EMBEDDING_MODEL_NAME = 'gemini-embedding-001';
+
+export interface EmbeddingUsage {
+  inputTokens: number;
+  estimated: boolean; // true when tokenCount was missing from the API response
+}
+
+export interface EmbeddingsWithUsage {
+  vectors: number[] | number[][];
+  usage: EmbeddingUsage;
+  cost: number; // USD, rounded to 6 decimals
+  model: string;
+}
 
 /**
  * Normalizes a vector to unit length (L2 Norm).
@@ -22,40 +36,71 @@ const normalize = (vec: number[]) => {
   return vec.map((val) => val / norm);
 };
 
-/**
- * Generates embeddings for a single string or a batch of strings.
- * Uses 'gemini-embedding-001' with 1536 dimensions.
- * Handles auto-routing to 'embedContent' or 'batchEmbedContents'.
- */
+/** ~4 chars per token is the industry-standard fallback when a provider
+ *  omits tokenCount from an embedding response. */
+const estimateTokens = (text: string) => Math.ceil(text.length / 4);
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export async function generateEmbeddings(input: string | string[]): Promise<number[] | number[][]> {
+
+/**
+ * Embeddings API — returns vectors, token usage, and computed cost.
+ * All call sites must use this so embedding spend surfaces in the cost dashboard.
+ */
+export async function generateEmbeddingsWithUsage(
+  input: string | string[],
+): Promise<EmbeddingsWithUsage> {
   try {
+    let vectors: number[] | number[][];
+    let inputTokens = 0;
+    let estimated = false;
+
     if (Array.isArray(input)) {
-      // BATCH MODE
       const result = await getModel().batchEmbedContents({
         requests: input.map((text) => ({
           content: { role: "user", parts: [{ text }] },
-          taskType: TaskType.RETRIEVAL_DOCUMENT, // Optimize for retrieval
+          taskType: TaskType.RETRIEVAL_DOCUMENT,
           outputDimensionality: EMBEDDING_DIMENSIONS,
         })),
       });
-      
-      // Normalize all vectors
-      return result.embeddings.map((e: any) => normalize(e.values));
+
+      vectors = result.embeddings.map((e: any) => normalize(e.values));
+
+      // batchEmbedContents response has no per-request token count.
+      // Estimate from inputs.
+      inputTokens = input.reduce((sum, t) => sum + estimateTokens(t), 0);
+      estimated = true;
     } else {
-      // SINGLE MODE
-      const result = await getModel().embedContent({
+      const result: any = await getModel().embedContent({
         content: { role: "user", parts: [{ text: input as string }] },
         taskType: TaskType.RETRIEVAL_DOCUMENT,
         outputDimensionality: EMBEDDING_DIMENSIONS,
       } as any);
 
-      // Normalize single vector
-      return normalize(result.embedding.values);
+      vectors = normalize(result.embedding.values);
+
+      // Gemini sometimes returns usageMetadata.totalTokenCount on embedContent.
+      const reported = result?.usageMetadata?.totalTokenCount
+        ?? result?.embedding?.metadata?.totalTokenCount;
+      if (typeof reported === 'number' && reported > 0) {
+        inputTokens = reported;
+      } else {
+        inputTokens = estimateTokens(input as string);
+        estimated = true;
+      }
     }
+
+    const cost = Math.round((inputTokens / 1_000_000) * GEMINI_EMBEDDING_COST_PER_MILLION * 1_000_000) / 1_000_000;
+
+    return {
+      vectors,
+      usage: { inputTokens, estimated },
+      cost,
+      model: EMBEDDING_MODEL_NAME,
+    };
   } catch (error) {
     console.error("Embedding Generation Error:", error);
     throw error;
   }
 }
+
 /* eslint-enable @typescript-eslint/no-explicit-any */

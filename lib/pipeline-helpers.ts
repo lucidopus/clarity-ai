@@ -19,13 +19,14 @@ import type { ExtractorInput } from '@/lib/extractors';
 import { generateLearningMaterials } from '@/lib/llm';
 import type { LearnerContext } from '@/lib/prompts';
 import type { SourceType } from '@/lib/models/Source';
-import { generateEmbeddings } from '@/lib/embedding';
+import { generateEmbeddingsWithUsage } from '@/lib/embedding';
 import { GEMINI_MODEL_NAME } from '@/lib/sdk';
 import { resolveClientDay } from '@/lib/date.utils';
 import { calculateLLMCost, calculateApifyCost, getCurrentModelInfo } from '@/lib/cost/calculator';
 import { logGenerationCost, calculateTotalCost, formatCost } from '@/lib/cost/logger';
 import type { IServiceUsage } from '@/lib/models/Cost';
 import { CostSource } from '@/lib/models/Cost';
+import { WHISPER_COSTS_PER_SECOND } from '@/lib/cost/config';
 import { ApiError } from '@/lib/errors/ApiError';
 import type { ExtractedSegment } from '@/lib/extractors/types';
 
@@ -60,6 +61,32 @@ export async function extractContent(input: ExtractorInput, services: IServiceUs
       status: 'success',
     });
     console.log(`💰 [COST] Extraction: ${formatCost(apifyCost)} (${extractDuration}ms)`);
+  } else if (input.sourceType === 'audio') {
+    // Audio is transcribed by Groq Whisper inside the extractor — bill per
+    // second of audio returned in extraction.metadata.duration.
+    const audioDuration = extraction.metadata.duration || 0;
+    const perSecond = WHISPER_COSTS_PER_SECOND['whisper-large-v3'] || 0;
+    const whisperCost = audioDuration > 0
+      ? Math.round(audioDuration * perSecond * 1_000_000) / 1_000_000
+      : 0;
+    services.push({
+      service: ServiceType.GROQ_WHISPER,
+      usage: {
+        cost: whisperCost,
+        unitDetails: {
+          duration: audioDuration,
+          metadata: {
+            model: 'whisper-large-v3',
+            invoker: 'audio_extractor',
+            extractLatencyMs: extractDuration,
+            segmentCount: extraction.segments?.length || 0,
+            wordCount: extraction.metadata.wordCount,
+          },
+        },
+      },
+      status: 'success',
+    });
+    console.log(`💰 [COST] Whisper (audio): ${formatCost(whisperCost)} (${audioDuration}s audio, ${extractDuration}ms wall)`);
   } else {
     // Text, document, etc. — no extraction cost, just log metadata
     console.log(`📝 [EXTRACT] ${input.sourceType} content extracted (${extraction.metadata.wordCount} words, ${extractDuration}ms)`);
@@ -381,7 +408,8 @@ export async function updateFinalStatus(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   materials: any | null,
   llmError: unknown | null,
-  llmErrorCode: string | null
+  llmErrorCode: string | null,
+  services?: IServiceUsage[]
 ) {
   if (llmError || !materials) {
     // Partial success — transcript available but LLM failed
@@ -411,13 +439,44 @@ export async function updateFinalStatus(
       Transcript Start: ${transcriptText.slice(0, 1000)}
     `.trim();
 
-    const embeddingResult = await generateEmbeddings(embeddingContext);
-    embedding = Array.isArray(embeddingResult) && Array.isArray(embeddingResult[0])
-      ? (embeddingResult as number[][])[0]
-      : (embeddingResult as number[]);
-    console.log('✅ [VIDEO PROCESS] Embedding generated');
+    const embeddingResult = await generateEmbeddingsWithUsage(embeddingContext);
+    embedding = Array.isArray(embeddingResult.vectors) && Array.isArray(embeddingResult.vectors[0])
+      ? (embeddingResult.vectors as number[][])[0]
+      : (embeddingResult.vectors as number[]);
+    console.log(
+      `✅ [VIDEO PROCESS] Embedding generated (${embeddingResult.usage.inputTokens} tokens` +
+        `${embeddingResult.usage.estimated ? ', estimated' : ''}, cost ${formatCost(embeddingResult.cost)})`
+    );
+    services?.push({
+      service: ServiceType.GEMINI_EMBEDDING,
+      usage: {
+        cost: embeddingResult.cost,
+        unitDetails: {
+          inputTokens: embeddingResult.usage.inputTokens,
+          totalTokens: embeddingResult.usage.inputTokens,
+          metadata: {
+            model: embeddingResult.model,
+            invoker: 'video_pipeline',
+            estimated: embeddingResult.usage.estimated,
+          },
+        },
+      },
+      status: 'success',
+    });
   } catch (embError) {
     console.error('⚠️ [VIDEO PROCESS] Embedding generation failed (non-critical):', embError);
+    services?.push({
+      service: ServiceType.GEMINI_EMBEDDING,
+      usage: {
+        cost: 0,
+        unitDetails: {
+          inputTokens: 0,
+          metadata: { invoker: 'video_pipeline' },
+        },
+      },
+      status: 'failed',
+      errorMessage: embError instanceof Error ? embError.message : 'Embedding failed',
+    });
   }
 
   const successPayload = {

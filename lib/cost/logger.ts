@@ -162,15 +162,20 @@ export async function logGenerationCost(data: IGenerationCostData): Promise<void
 }
 
 /**
- * Calculate total cost from services array
- * Utility function to sum up costs from multiple services
+ * Calculate total cost from services array.
  *
- * @param services - Array of service usage records
- * @returns Total cost (sum of all service costs)
+ * Sums every service entry regardless of status. This is intentional: if a
+ * provider returned tokens (status='success'|'failed') we were billed, and that
+ * spend should land on the record's `totalCost`. Services with
+ * `status='rejected'` should be passed in with `cost: 0` by the caller when no
+ * provider billing occurred (e.g. content validation rejections with no
+ * downstream spend).
+ *
+ * The admin "Cost of Goods Sold vs Wasted Credit" split is applied later at
+ * aggregation time by bucketing on `services.status`, not here.
  */
 export function calculateTotalCost(services: IServiceUsage[]): number {
   const total = services.reduce((sum, service) => sum + service.usage.cost, 0);
-  // Round to 6 decimal places
   return Math.round(total * 1_000_000) / 1_000_000;
 }
 

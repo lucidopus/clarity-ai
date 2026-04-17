@@ -10,6 +10,9 @@ import ActivityLog from '@/lib/models/ActivityLog';
 import { clearSessionHeartbeat } from '@/lib/live-lecture/redis';
 import { processVideoPipelineTask } from '@/trigger/process-video-pipeline';
 import { internalServerError } from '@/lib/errors/apiResponse';
+import { SCRIBE_COST_PER_MINUTE } from '@/lib/cost/config';
+import { logGenerationCost, formatCost } from '@/lib/cost/logger';
+import { CostSource, ServiceType } from '@/lib/models/Cost';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // POST /api/live-lecture/end — End lecture, create Source, trigger pipeline
@@ -85,6 +88,42 @@ export async function POST(request: NextRequest) {
     );
     const fullText = segments.map((s: { text: string }) => s.text).join(' ');
     const wordCount = fullText.split(/\s+/).filter(Boolean).length;
+
+    // Log Scribe transcription cost — runs regardless of downstream pipeline
+    // outcome because Scribe billed for the full lecture duration.
+    // TODO: Replace with ElevenLabs usage webhook for authoritative billing;
+    // this /end path loses cost data when a user closes the tab mid-lecture.
+    const scribeCost = Math.round((durationSeconds / 60) * SCRIBE_COST_PER_MINUTE * 1_000_000) / 1_000_000;
+    const scribeStatus: 'success' | 'failed' = wordCount < 10 ? 'failed' : 'success';
+    try {
+      await logGenerationCost({
+        userId: decoded.userId,
+        source: CostSource.LIVE_LECTURE_TRANSCRIPTION,
+        services: [{
+          service: ServiceType.ELEVENLABS_SCRIBE,
+          usage: {
+            cost: scribeCost,
+            unitDetails: {
+              duration: durationSeconds,
+              metadata: {
+                sessionId,
+                wordCount,
+                segmentCount: segments.length,
+                audioSource: updatedSession.audioSource,
+              },
+            },
+          },
+          status: scribeStatus,
+          ...(scribeStatus === 'failed'
+            ? { errorMessage: 'Transcript too short — billed audio produced no usable output' }
+            : {}),
+        }],
+        totalCost: scribeCost,
+      });
+      console.log(`💰 [COST] Scribe: ${formatCost(scribeCost)} (${durationSeconds}s @ $${SCRIBE_COST_PER_MINUTE}/min, status: ${scribeStatus})`);
+    } catch (costError) {
+      console.error('⚠️ [LIVE-LECTURE] Failed to log Scribe cost (non-critical):', costError);
+    }
 
     if (wordCount < 10) {
       // Too little content — mark as ended but skip pipeline

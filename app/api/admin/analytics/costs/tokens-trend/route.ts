@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Cost from '@/lib/models/Cost';
-import { startOfDay, subDays } from 'date-fns';
+import { parseDateRange } from '@/lib/cost/date-range';
 
 /**
  * GET /api/admin/analytics/costs/tokens-trend?days=30
@@ -15,45 +15,53 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Parse query params
-    const searchParams = request.nextUrl.searchParams;
-    const days = parseInt(searchParams.get('days') || '30', 10);
+    const { startDate, endDate, days } = parseDateRange(request.nextUrl.searchParams);
 
-    // Calculate date range
-    const endDate = new Date(); // Include today's data up to now
-    const startDate = startOfDay(subDays(new Date(), days));
-
-    // Aggregate data from costs collection by day
-    const aggregations = await Cost.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate, $lt: endDate }
-        }
-      },
+    // Aggregate data from costs collection by day.
+    // We $unwind services so token counts from every entry (Apify + validation + LLM)
+    // contribute, not just the first. Cost is summed separately per-record to avoid
+    // double-counting after the unwind.
+    const costPerDay = await Cost.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lt: endDate } } },
       {
         $group: {
-          _id: {
-            $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
-          },
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
           dailyTotalCost: { $sum: '$totalCost' },
+        },
+      },
+    ]);
+
+    const tokensPerDay = await Cost.aggregate([
+      { $match: { createdAt: { $gte: startDate, $lt: endDate } } },
+      { $unwind: '$services' },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
           dailyInputTokens: {
-            $sum: {
-              $sum: [
-                { $arrayElemAt: ['$services.usage.unitDetails.inputTokens', 0] }
-              ]
-            }
+            $sum: { $ifNull: ['$services.usage.unitDetails.inputTokens', 0] },
           },
           dailyOutputTokens: {
-            $sum: {
-              $sum: [
-                { $arrayElemAt: ['$services.usage.unitDetails.outputTokens', 0] }
-              ]
-            }
-          }
-        }
+            $sum: { $ifNull: ['$services.usage.unitDetails.outputTokens', 0] },
+          },
+        },
       },
-      { $sort: { '_id': 1 } }
     ]);
+
+    const tokensMap = new Map<string, { dailyInputTokens: number; dailyOutputTokens: number }>(
+      tokensPerDay.map((t: { _id: string; dailyInputTokens: number; dailyOutputTokens: number }) => [
+        t._id,
+        { dailyInputTokens: t.dailyInputTokens || 0, dailyOutputTokens: t.dailyOutputTokens || 0 },
+      ])
+    );
+
+    const aggregations = costPerDay
+      .map((c: { _id: string; dailyTotalCost: number }) => ({
+        _id: c._id,
+        dailyTotalCost: c.dailyTotalCost,
+        dailyInputTokens: tokensMap.get(c._id)?.dailyInputTokens ?? 0,
+        dailyOutputTokens: tokensMap.get(c._id)?.dailyOutputTokens ?? 0,
+      }))
+      .sort((a, b) => a._id.localeCompare(b._id));
 
     // Calculate 7-day moving average and format data
     const trends = aggregations.map((agg: { _id: string; dailyTotalCost: number; dailyInputTokens: number; dailyOutputTokens: number }, index: number) => {
@@ -82,6 +90,7 @@ export async function GET(request: NextRequest) {
       trends,
       periodStart: startDate.toISOString(),
       periodEnd: endDate.toISOString(),
+      days,
     });
 
   } catch (error) {

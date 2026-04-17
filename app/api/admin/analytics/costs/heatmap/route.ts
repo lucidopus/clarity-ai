@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Cost from '@/lib/models/Cost';
-import { startOfDay, subDays } from 'date-fns';
+import { parseDateRange } from '@/lib/cost/date-range';
 
 /**
  * GET /api/admin/analytics/costs/heatmap?days=30
@@ -15,13 +15,7 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Parse query params
-    const searchParams = request.nextUrl.searchParams;
-    const days = parseInt(searchParams.get('days') || '30', 10);
-
-    // Calculate date range
-    const endDate = new Date(); // Include today's data up to now
-    const startDate = startOfDay(subDays(new Date(), days));
+    const { startDate, endDate, days } = parseDateRange(request.nextUrl.searchParams);
 
     // Aggregate data from costs collection by day
     const aggregations = await Cost.aggregate([
@@ -91,6 +85,7 @@ export async function GET(request: NextRequest) {
       },
       periodStart: startDate.toISOString(),
       periodEnd: endDate.toISOString(),
+      days,
     });
 
   } catch (error) {

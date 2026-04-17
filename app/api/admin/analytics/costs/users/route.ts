@@ -3,11 +3,13 @@ import { requireAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Cost from '@/lib/models/Cost';
 import User from '@/lib/models/User';
+import { parseDateRange } from '@/lib/cost/date-range';
 
 /**
- * GET /api/admin/analytics/costs/users?limit=10
+ * GET /api/admin/analytics/costs/users?days=30&limit=10
  *
- * Returns top users sorted by cost
+ * Returns top users by cost for the window, including operations count,
+ * wasted spend, and the user's most recent cost-accruing activity.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -15,29 +17,56 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Parse query params
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const { startDate, endDate, days } = parseDateRange(searchParams);
+    const dateMatch = { createdAt: { $gte: startDate, $lt: endDate } };
 
-    // Aggregate costs by user
+    // Single aggregation: compute wasted spend per-record via $reduce over
+    // the services array so totalCost stays a root-level sum (no unwind
+    // double-count), and wastedCost rolls up in the same $group pass.
     const userCosts = await Cost.aggregate([
+      { $match: dateMatch },
+      {
+        $addFields: {
+          wastedPerRecord: {
+            $reduce: {
+              input: { $ifNull: ['$services', []] },
+              initialValue: 0,
+              in: {
+                $add: [
+                  '$$value',
+                  {
+                    $cond: [
+                      { $eq: ['$$this.status', 'failed'] },
+                      { $ifNull: ['$$this.usage.cost', 0] },
+                      0,
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
       {
         $group: {
           _id: '$userId',
           totalCost: { $sum: '$totalCost' },
-        }
+          wastedCost: { $sum: '$wastedPerRecord' },
+          operations: { $sum: 1 },
+          lastActive: { $max: '$createdAt' },
+        },
       },
       { $sort: { totalCost: -1 } },
-      { $limit: limit }
+      { $limit: limit },
     ]);
 
-    // Get user details
     const userIds = userCosts.map(uc => uc._id);
     const users = await User.find({ _id: { $in: userIds } })
       .select('_id firstName lastName email')
       .lean();
 
-    // Create user map for quick lookup
     interface UserData {
       _id: { toString: () => string };
       firstName: string;
@@ -49,7 +78,6 @@ export async function GET(request: NextRequest) {
       return [userData._id.toString(), userData];
     }));
 
-    // Combine cost data with user details
     const topUsers = userCosts.map(uc => {
       const user = userMap.get(uc._id.toString());
       return {
@@ -57,12 +85,18 @@ export async function GET(request: NextRequest) {
         userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
         email: user?.email || 'N/A',
         totalCost: parseFloat(uc.totalCost.toFixed(6)),
+        wastedCost: parseFloat((uc.wastedCost ?? 0).toFixed(6)),
+        operations: uc.operations,
+        lastActive: uc.lastActive instanceof Date ? uc.lastActive.toISOString() : uc.lastActive,
       };
     });
 
     return NextResponse.json({
       success: true,
       users: topUsers,
+      periodStart: startDate.toISOString(),
+      periodEnd: endDate.toISOString(),
+      days,
     });
 
   } catch (error) {

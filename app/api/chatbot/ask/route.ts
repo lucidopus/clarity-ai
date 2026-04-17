@@ -388,6 +388,22 @@ export async function POST(request: NextRequest) {
                 status: 'success',
               }];
 
+              if (animationEmitted) {
+                services.push({
+                  service: ServiceType.ANIMATION_TOOL,
+                  usage: {
+                    cost: 0,
+                    unitDetails: {
+                      metadata: {
+                        invoker: 'chatbot_ask',
+                        tool: 'render_animation',
+                      },
+                    },
+                  },
+                  status: 'success',
+                });
+              }
+
               await logGenerationCost({
                 userId: decoded.userId,
                 source: CostSource.LEARNING_CHATBOT,

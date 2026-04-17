@@ -66,6 +66,13 @@ export const costs_per_model: Record<string, ITokenCostConfig> = {
     outputTokensCost: 0.30,
   },
 
+  // Google Gemini 2.0 Flash (experimental) — aliased to 2.0 Flash pricing
+  // Used as default in CONTENT_VALIDATION_MODEL fallback
+  'gemini-2.0-flash-exp': {
+    inputTokensCost: 0.075,
+    outputTokensCost: 0.30,
+  },
+
   // Google Gemini 3.0 Pro Preview (Hypothetical/Experimental)
   // Input: $3.50 per million tokens (Estimated based on Pro tier)
   // Output: $10.50 per million tokens
@@ -104,6 +111,38 @@ export const costs_per_model: Record<string, ITokenCostConfig> = {
  * $0.005 per call
  */
 export const APIFY_FIXED_COST = 0.005;
+
+/**
+ * ElevenLabs Scribe (realtime speech-to-text)
+ * Source: https://elevenlabs.io/pricing
+ * Approx $0.40 per hour of audio → $0.00667 per minute
+ */
+export const SCRIBE_COST_PER_MINUTE = 0.00667;
+
+/**
+ * Groq Whisper Large v3 / v3-turbo (batched + realtime STT)
+ * Source: https://groq.com/pricing
+ * Whisper-large-v3:       $0.111 per hour → $0.0000308 per second
+ * Whisper-large-v3-turbo: $0.04  per hour → $0.0000111 per second
+ */
+export const WHISPER_COSTS_PER_SECOND: Record<string, number> = {
+  'whisper-large-v3': 0.111 / 3600,
+  'whisper-large-v3-turbo': 0.04 / 3600,
+};
+
+/**
+ * Gemini embedding-001 pricing (Google Generative AI)
+ * Source: https://ai.google.dev/pricing
+ * $0.15 per million input tokens (embedding API is input-only)
+ */
+export const GEMINI_EMBEDDING_COST_PER_MILLION = 0.15;
+
+/**
+ * Groq Orpheus TTS pricing
+ * Source: https://groq.com/pricing
+ * Approx $50 per 1M characters (text-to-speech is input-char based)
+ */
+export const GROQ_TTS_COST_PER_MILLION_CHARS = 50;
 
 /**
  * Get the current LLM model from environment variables

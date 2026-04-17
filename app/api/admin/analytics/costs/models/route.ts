@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import Cost from '@/lib/models/Cost';
+import { parseDateRange } from '@/lib/cost/date-range';
 
 /**
- * GET /api/admin/analytics/costs/models
+ * GET /api/admin/analytics/costs/models?days=30
  *
  * Returns model usage comparison with efficiency metrics
  */
@@ -14,8 +15,11 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Aggregate by model (extracted from metadata)
+    const { startDate, endDate, days } = parseDateRange(request.nextUrl.searchParams);
+    const dateMatch = { createdAt: { $gte: startDate, $lt: endDate } };
+
     const modelStats = await Cost.aggregate([
+      { $match: dateMatch },
       { $unwind: '$services' },
       {
         $match: {
@@ -34,7 +38,6 @@ export async function GET(request: NextRequest) {
       { $sort: { totalCost: -1 } }
     ]);
 
-    // Format model data
     const models = modelStats.map(model => ({
       model: model._id,
       totalCost: parseFloat(model.totalCost.toFixed(6)),
@@ -49,6 +52,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       models,
+      periodStart: startDate.toISOString(),
+      periodEnd: endDate.toISOString(),
+      days,
     });
 
   } catch (error) {

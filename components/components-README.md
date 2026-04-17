@@ -99,4 +99,4 @@ All React UI components for the Clarity AI platform. Mostly flat structure with 
 | Directory | Description |
 |-----------|-------------|
 | `onboarding/` | Multi-step learner profiling wizard: `OnboardingFlow.tsx`, `ProgressIndicator.tsx`, 5 step components, and reusable UI primitives (`CheckboxCard`, `EmojiSlider`, `RankedChipSelector`, `TimeBlockCard`). |
-| `admin/costs/` | Admin cost analytics charts: summary cards, daily cost, model comparison, feature breakdown, spending heatmap, token trends, top users table, cost drivers table, operation legend. |
+| `admin/costs/` | Admin cost analytics. `OverviewTab` (summary cards + anomaly banner + top cost drivers + heatmap + token trend), `BreakdownTab` (feature + service + model breakdowns + collapsible operation legend), `TopUsersByCostTable` (ranked spenders with CSV export + drill-down to `/admin/dashboard/users?userId=`), and `shared/` helpers (`TimeRangeSelector`, `RefreshControl`, `CostSkeleton`, `AnomalyBanner`, `TopCostDrivers`). All widgets take `days` from the page-level time range so the 7d/30d/90d selector stays in sync. |

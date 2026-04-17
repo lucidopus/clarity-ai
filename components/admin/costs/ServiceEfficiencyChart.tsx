@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,40 +14,43 @@ import {
 import { AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { getServiceLabel } from '@/lib/service-utils';
 import { getUserFriendlyMessage } from '@/lib/utils/user-error';
+import {
+  classifySuccessRate,
+  successTierLabel,
+  formatCost,
+  formatCount,
+  formatPercent,
+} from '@/lib/cost/format';
+import CostSkeleton from './shared/CostSkeleton';
 
-// Register Chart.js plugins and components once - safe to call multiple times
 try {
   ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 } catch {
-  // Already registered, ignore
+  // Already registered
 }
 
 interface ServiceData {
   service: string;
   totalCost: number;
+  wastedCost: number;
   successRate: number;
-  efficiencyScore: number;
+  operations: number;
 }
 
-export default function ServiceEfficiencyChart() {
+interface ServiceEfficiencyChartProps {
+  days: number;
+}
+
+export default function ServiceEfficiencyChart({ days }: ServiceEfficiencyChartProps) {
   const [services, setServices] = useState<ServiceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const chartRef = useRef(null);
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/analytics/costs/services');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch service data');
-      }
-
+      const response = await fetch(`/api/admin/analytics/costs/services?days=${days}`);
+      if (!response.ok) throw new Error('Failed to fetch service data');
       const data = await response.json();
       if (data.success) {
         setServices(data.services);
@@ -55,39 +58,23 @@ export default function ServiceEfficiencyChart() {
         throw new Error(data.message || 'Failed to load data');
       }
     } catch (err) {
-      setError(getUserFriendlyMessage(err, 'We couldn\'t load service efficiency data.'));
+      setError(getUserFriendlyMessage(err, "We couldn't load service efficiency data."));
     } finally {
       setLoading(false);
     }
-  };
+  }, [days]);
 
-  const getEfficiencyIcon = (score: number) => {
-    if (score >= 95) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (score >= 80) return <Minus className="w-4 h-4 text-yellow-500" />;
-    return <TrendingDown className="w-4 h-4 text-red-500" />;
-  };
+  useEffect(() => {
+    fetchServices();
+  }, [fetchServices]);
 
-  const getEfficiencyColor = (score: number) => {
-    if (score >= 95) return 'text-green-500';
-    if (score >= 80) return 'text-yellow-500';
-    return 'text-red-500';
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-card-bg border border-border rounded-xl p-6">
-        <div className="h-80 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <CostSkeleton variant="table" rows={5} />;
 
   if (error) {
     return (
-      <div className="bg-card-bg border border-border rounded-xl p-6">
+      <div className="bg-card-bg border border-border rounded-xl p-6" role="alert">
         <div className="flex items-center space-x-2 text-red-500">
-          <AlertCircle className="w-5 h-5" />
+          <AlertCircle className="w-5 h-5" aria-hidden="true" />
           <span>Error loading service data: {error}</span>
         </div>
       </div>
@@ -97,25 +84,37 @@ export default function ServiceEfficiencyChart() {
   if (services.length === 0) {
     return (
       <div className="bg-card-bg border border-border rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Service Efficiency</h3>
-        <p className="text-muted-foreground">No service data available</p>
+        <h3 className="text-lg font-semibold text-foreground mb-4">Service Health & Reliability</h3>
+        <p className="text-muted-foreground">No service activity in the selected window.</p>
       </div>
     );
   }
 
-  // Chart data - Show Efficiency Score (0-100)
-  // Using theme-aware colors: accent cyan for high, muted for medium, accent for emphasis
+  const tierIcon = (rate: number) => {
+    const tier = classifySuccessRate(rate);
+    if (tier === 'healthy') return <TrendingUp className="w-4 h-4 text-green-500" aria-hidden="true" />;
+    if (tier === 'degraded') return <Minus className="w-4 h-4 text-amber-500" aria-hidden="true" />;
+    return <TrendingDown className="w-4 h-4 text-red-500" aria-hidden="true" />;
+  };
+
+  const tierTextColor = (rate: number) => {
+    const tier = classifySuccessRate(rate);
+    if (tier === 'healthy') return 'text-green-600 dark:text-green-400';
+    if (tier === 'degraded') return 'text-amber-600 dark:text-amber-400';
+    return 'text-red-600 dark:text-red-400';
+  };
+
   const chartData = {
     labels: services.map((s) => getServiceLabel(s.service)),
     datasets: [
       {
-        label: 'Efficiency Score',
-        data: services.map((s) => s.efficiencyScore),
+        label: 'Success Rate',
+        data: services.map((s) => s.successRate),
         backgroundColor: services.map((s) => {
-          // Use accent cyan for excellent scores, teal for good, and muted for acceptable
-          if (s.efficiencyScore >= 95) return 'rgba(6, 182, 212, 0.9)'; // Accent cyan (excellent)
-          if (s.efficiencyScore >= 80) return 'rgba(20, 184, 166, 0.7)'; // Teal (good)
-          return 'rgba(107, 114, 128, 0.6)'; // Muted gray (acceptable)
+          const tier = classifySuccessRate(s.successRate);
+          if (tier === 'healthy') return 'rgba(34, 197, 94, 0.85)';
+          if (tier === 'degraded') return 'rgba(245, 158, 11, 0.85)';
+          return 'rgba(239, 68, 68, 0.85)';
         }),
         borderColor: 'rgba(0, 0, 0, 0.05)',
         borderWidth: 1,
@@ -127,9 +126,7 @@ export default function ServiceEfficiencyChart() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         padding: 12,
@@ -141,9 +138,11 @@ export default function ServiceEfficiencyChart() {
           label: (context: { dataIndex: number }) => {
             const service = services[context.dataIndex];
             return [
-              `Efficiency Score: ${service.efficiencyScore.toFixed(1)}/100`,
-              `Success Rate: ${service.successRate.toFixed(1)}%`,
-            ];
+              `${successTierLabel(classifySuccessRate(service.successRate))} · ${formatPercent(service.successRate)}`,
+              `Operations: ${formatCount(service.operations)}`,
+              `Total Cost: ${formatCost(service.totalCost)}`,
+              service.wastedCost > 0 ? `Wasted: ${formatCost(service.wastedCost)}` : '',
+            ].filter(Boolean);
           },
         },
       },
@@ -152,31 +151,22 @@ export default function ServiceEfficiencyChart() {
       y: {
         beginAtZero: true,
         max: 100,
-        grid: {
-          color: 'rgba(156, 163, 175, 0.08)',
-          drawBorder: false,
-        },
+        grid: { color: 'rgba(156, 163, 175, 0.08)' },
         ticks: {
           color: 'rgba(107, 114, 128, 0.7)',
-          callback: (value: number | string) => typeof value === 'number' ? `${value.toFixed(0)}` : value,
+          callback: (value: number | string) =>
+            typeof value === 'number' ? `${value.toFixed(0)}` : value,
         },
         title: {
           display: true,
-          text: 'Efficiency Score (0-100)',
+          text: 'Success Rate (%)',
           color: 'rgba(107, 114, 128, 0.8)',
-          font: {
-            size: 12,
-          },
+          font: { size: 12 },
         },
       },
       x: {
-        grid: {
-          display: false,
-          drawBorder: false,
-        },
-        ticks: {
-          color: 'rgba(107, 114, 128, 0.7)',
-        },
+        grid: { display: false },
+        ticks: { color: 'rgba(107, 114, 128, 0.7)' },
       },
     },
   };
@@ -185,41 +175,96 @@ export default function ServiceEfficiencyChart() {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-foreground">Service Health & Reliability</h3>
 
-      <div className="bg-card-bg border border-border rounded-xl p-6">
-        {/* Chart */}
-        <div className="h-[300px] mb-6" ref={chartRef}>
-          <Bar key={`chart-${services.length}`} data={chartData} options={chartOptions} />
+      <div className="bg-card-bg border border-border rounded-xl p-6 space-y-6">
+        <div className="h-[300px]">
+          <Bar key={`chart-${services.length}-${days}`} data={chartData} options={chartOptions} />
         </div>
 
-        {/* Table - Unique Metrics Only */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        {/* Desktop table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left text-sm font-medium text-muted-foreground pb-3">Service</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Success Rate</th>
-                <th className="text-right text-sm font-medium text-muted-foreground pb-3">Efficiency Score</th>
+              <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="font-medium pb-3">Service</th>
+                <th className="font-medium pb-3 text-right">Operations</th>
+                <th className="font-medium pb-3 text-right">Total Cost</th>
+                <th className="font-medium pb-3 text-right">Wasted</th>
+                <th className="font-medium pb-3 text-right">Avg / Op</th>
+                <th className="font-medium pb-3 text-right">Health</th>
               </tr>
             </thead>
             <tbody>
-              {services.map((service, idx) => (
-                <tr key={idx} className="border-b border-border last:border-0">
-                  <td className="py-3 text-sm text-foreground font-medium">{getServiceLabel(service.service)}</td>
-                  <td className="py-3 text-sm text-right text-muted-foreground">
-                    {service.successRate.toFixed(1)}%
-                  </td>
-                  <td className="py-3 text-sm text-right">
-                    <div className="flex items-center justify-end space-x-1">
-                      {getEfficiencyIcon(service.efficiencyScore)}
-                      <span className={`font-medium ${getEfficiencyColor(service.efficiencyScore)}`}>
-                        {service.efficiencyScore.toFixed(1)}/100
-                      </span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {services.map((service, idx) => {
+                const avgPerOp = service.operations > 0 ? service.totalCost / service.operations : 0;
+                const tier = classifySuccessRate(service.successRate);
+                return (
+                  <tr key={idx} className="border-b border-border last:border-0">
+                    <td className="py-3 text-foreground font-medium">
+                      {getServiceLabel(service.service)}
+                    </td>
+                    <td className="py-3 text-right text-muted-foreground">
+                      {formatCount(service.operations)}
+                    </td>
+                    <td className="py-3 text-right text-muted-foreground">
+                      {formatCost(service.totalCost)}
+                    </td>
+                    <td className="py-3 text-right">
+                      {service.wastedCost > 0 ? (
+                        <span className="text-red-500 font-medium">{formatCost(service.wastedCost)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 text-right text-muted-foreground">
+                      {service.operations > 0 ? formatCost(avgPerOp) : '—'}
+                    </td>
+                    <td className="py-3 text-right">
+                      <div className="flex items-center justify-end space-x-1">
+                        {tierIcon(service.successRate)}
+                        <span className={`font-medium ${tierTextColor(service.successRate)}`}>
+                          {successTierLabel(tier)} · {formatPercent(service.successRate)}
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile card list */}
+        <div className="md:hidden space-y-3">
+          {services.map((service, idx) => {
+            const avgPerOp = service.operations > 0 ? service.totalCost / service.operations : 0;
+            const tier = classifySuccessRate(service.successRate);
+            return (
+              <div key={idx} className="p-3 rounded-lg bg-background/50 border border-border">
+                <div className="flex justify-between items-start gap-3">
+                  <p className="text-sm font-medium text-foreground">{getServiceLabel(service.service)}</p>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {tierIcon(service.successRate)}
+                    <span className={`text-xs font-medium ${tierTextColor(service.successRate)}`}>
+                      {successTierLabel(tier)}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>Ops: <span className="text-foreground">{formatCount(service.operations)}</span></div>
+                  <div>Total: <span className="text-foreground">{formatCost(service.totalCost)}</span></div>
+                  <div>Avg/op: <span className="text-foreground">{service.operations > 0 ? formatCost(avgPerOp) : '—'}</span></div>
+                  <div>
+                    Wasted:{' '}
+                    {service.wastedCost > 0 ? (
+                      <span className="text-red-500 font-medium">{formatCost(service.wastedCost)}</span>
+                    ) : (
+                      <span className="text-foreground">—</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

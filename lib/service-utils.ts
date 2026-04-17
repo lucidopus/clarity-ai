@@ -30,6 +30,17 @@ const EXACT_MATCHES: Record<string, { label: string; icon: 'llm' | 'transcript' 
   learning_material_generation: { label: 'Video Processing', icon: 'video' },
   learning_chatbot: { label: 'Learning Chatbot', icon: 'chat' },
   challenge_chatbot: { label: 'Challenge Chatbot', icon: 'chat' },
+  // Per-provider service types (ServiceType enum in lib/models/Cost.ts)
+  groq_whisper: { label: 'Groq Whisper (STT)', icon: 'transcript' },
+  groq_tts: { label: 'Groq TTS', icon: 'chat' },
+  elevenlabs_scribe: { label: 'ElevenLabs Scribe', icon: 'transcript' },
+  apify_transcript: { label: 'Apify Transcript', icon: 'transcript' },
+  gemini_embedding: { label: 'Gemini Embedding', icon: 'llm' },
+  gemini_vision: { label: 'Gemini Vision', icon: 'llm' },
+  gemini_llm: { label: 'Gemini LLM', icon: 'llm' },
+  groq_llm: { label: 'Groq LLM', icon: 'llm' },
+  content_validation: { label: 'Content Validation', icon: 'llm' },
+  animation_tool: { label: 'Animation Tool', icon: 'chat' },
 };
 
 /**
