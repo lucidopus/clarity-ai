@@ -30,6 +30,7 @@ function formatActivities(count: number, dateISO: string, tier?: DayTier) {
     tier === 'gold' ? ' · Gold day — all goals, in your window'
     : tier === 'orange' ? ' · Flashcards cleared'
     : tier === 'gray' ? ' · Studied (10+ min)'
+    : count > 0 ? ' · Some activity'
     : '';
   if (!count) return `No activity on ${dateLabel}`;
   if (count === 1) return `1 activity on ${dateLabel}${tierLabel}`;
@@ -178,15 +179,19 @@ export default function StudyActivityHeatmap() {
       return 'bg-cyan-600 dark:bg-cyan-400/85';
     }
     if (tier === 'gray') {
-      return 'bg-cyan-200 dark:bg-cyan-500/25';
+      return 'bg-cyan-200 dark:bg-cyan-500/35';
     }
-    // No qualifying activity — fall back to the intensity ramp so partial-activity
-    // days still show a trace of effort on the grid.
+    // No qualifying tier reached. Split into two visible states so a day
+    // that logged activity but didn't cross the threshold doesn't render as
+    // "empty" — we honor the touch with a visible whisper of the tier hue
+    // (trace). Reads as: empty (neutral slate + outline) → trace (cyan-100)
+    //        → T1 (cyan-200) → T2 → T3. Light-mode trace needs to be ≥
+    //        cyan-100 to avoid reading as "near white" against a white card.
     switch (level) {
       case 0: return 'bg-slate-200 dark:bg-slate-900/60 outline outline-slate-300/40 dark:outline-slate-700/80';
       case 1:
       case 2:
-      case 3: return 'bg-slate-300/80 dark:bg-slate-700';
+      case 3: return 'bg-cyan-100 dark:bg-cyan-500/20';
     }
   };
 
@@ -324,7 +329,11 @@ export default function StudyActivityHeatmap() {
               No study
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-500/25" />
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-100 dark:bg-cyan-500/20" />
+              Some activity
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-[3px] bg-cyan-200 dark:bg-cyan-500/35" />
               Studied (10+ min)
             </span>
             <span className="inline-flex items-center gap-1.5">

@@ -10,8 +10,21 @@ import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
-import { Edit2, Save, X, Info } from 'lucide-react';
+import { Edit2, Save, X, Info, Clock, CheckCircle2 } from 'lucide-react';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
+
+function timeToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function resolveTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
 
 const PASSWORD_ATTEMPT_KEY = 'settings-email-password-attempts';
 const MAX_PASSWORD_ATTEMPTS = 4;
@@ -145,6 +158,18 @@ export default function SettingsPage() {
   const [autoplayVideos, setAutoplayVideos] = useState(false);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
+  // Study window (cognitive contract) state
+  const [contractLoaded, setContractLoaded] = useState(false);
+  const [hasSavedContract, setHasSavedContract] = useState(false);
+  const [windowStart, setWindowStart] = useState('20:00');
+  const [windowEnd, setWindowEnd] = useState('20:30');
+  const [savedWindowStart, setSavedWindowStart] = useState<string | null>(null);
+  const [savedWindowEnd, setSavedWindowEnd] = useState<string | null>(null);
+  const [savedTimezone, setSavedTimezone] = useState<string | null>(null);
+  const [isSavingContract, setIsSavingContract] = useState(false);
+  const [isClearingContract, setIsClearingContract] = useState(false);
+  const [contractError, setContractError] = useState<string | null>(null);
+
   // Learning profile update limit state
   const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
 
@@ -231,6 +256,37 @@ export default function SettingsPage() {
 
     if (user) {
       loadPreferences();
+    }
+  }, [user]);
+
+  // Load current study window (cognitive contract) from /api/streaks
+  useEffect(() => {
+    const loadContract = async () => {
+      try {
+        const response = await fetch('/api/streaks');
+        if (!response.ok) return;
+        const data = await response.json();
+        const contract = data?.studyContract as
+          | { windowStart: string; windowEnd: string; timezone: string }
+          | null
+          | undefined;
+        if (contract) {
+          setWindowStart(contract.windowStart);
+          setWindowEnd(contract.windowEnd);
+          setSavedWindowStart(contract.windowStart);
+          setSavedWindowEnd(contract.windowEnd);
+          setSavedTimezone(contract.timezone);
+          setHasSavedContract(true);
+        }
+      } catch (error) {
+        console.error('Failed to load study window:', error);
+      } finally {
+        setContractLoaded(true);
+      }
+    };
+
+    if (user) {
+      loadContract();
     }
   }, [user]);
 
@@ -573,6 +629,64 @@ export default function SettingsPage() {
       addToast('Failed to save preference', 'error');
     } finally {
       setIsSavingPreferences(false);
+    }
+  };
+
+  const handleSaveStudyWindow = async () => {
+    const durationMinutes = timeToMinutes(windowEnd) - timeToMinutes(windowStart);
+    if (durationMinutes < 15 || durationMinutes > 8 * 60) {
+      setContractError('Pick a window between 15 minutes and 8 hours.');
+      return;
+    }
+    const timezone = savedTimezone || resolveTimezone();
+    setIsSavingContract(true);
+    setContractError(null);
+    try {
+      const response = await fetch('/api/streak-contract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ windowStart, windowEnd, timezone }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setContractError(data?.message || 'Could not save your study window. Try again.');
+        return;
+      }
+      setSavedWindowStart(windowStart);
+      setSavedWindowEnd(windowEnd);
+      setSavedTimezone(timezone);
+      setHasSavedContract(true);
+      addToast('Study window saved', 'success');
+    } catch (error) {
+      console.error('Save study window error:', error);
+      setContractError('Could not save your study window. Try again.');
+    } finally {
+      setIsSavingContract(false);
+    }
+  };
+
+  const handleClearStudyWindow = async () => {
+    setIsClearingContract(true);
+    setContractError(null);
+    try {
+      const response = await fetch('/api/streak-contract', { method: 'DELETE' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setContractError(data?.message || 'Could not clear your study window. Try again.');
+        return;
+      }
+      setSavedWindowStart(null);
+      setSavedWindowEnd(null);
+      setSavedTimezone(null);
+      setHasSavedContract(false);
+      setWindowStart('20:00');
+      setWindowEnd('20:30');
+      addToast('Study window cleared', 'success');
+    } catch (error) {
+      console.error('Clear study window error:', error);
+      setContractError('Could not clear your study window. Try again.');
+    } finally {
+      setIsClearingContract(false);
     }
   };
 
@@ -997,6 +1111,117 @@ export default function SettingsPage() {
           </div>
           <ThemeToggle />
         </div>
+      </div>
+
+      {/* Study Window Section */}
+      <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-1 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-accent" aria-hidden="true" />
+              Study Window
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Studying inside this window earns the Gold day tier on your heatmap.
+              We&apos;ll send one supportive nudge 15 minutes before it opens.
+            </p>
+          </div>
+        </div>
+
+        {(() => {
+          const durationMinutes = timeToMinutes(windowEnd) - timeToMinutes(windowStart);
+          const endBeforeStart = durationMinutes <= 0;
+          const durationOk = durationMinutes >= 15 && durationMinutes <= 8 * 60;
+          const dirty =
+            hasSavedContract &&
+            (windowStart !== savedWindowStart || windowEnd !== savedWindowEnd);
+          const saveDisabled =
+            isSavingContract ||
+            isClearingContract ||
+            !durationOk ||
+            (hasSavedContract && !dirty);
+          const activeTimezone = savedTimezone || resolveTimezone();
+          const statusCopy = durationOk
+            ? `${durationMinutes}-minute window · ${activeTimezone.replace('_', ' ')}`
+            : endBeforeStart
+            ? 'End time must be after start time.'
+            : 'Window must be 15 minutes to 8 hours.';
+          const saveLabel = isSavingContract
+            ? 'Saving…'
+            : hasSavedContract
+            ? 'Save changes'
+            : 'Save window';
+
+          return (
+            <div className="p-4 bg-background rounded-xl border border-border">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <label className="block">
+                  <span className="block text-sm font-medium text-foreground mb-2">Start</span>
+                  <input
+                    type="time"
+                    value={windowStart}
+                    onChange={(e) => {
+                      setWindowStart(e.target.value);
+                      setContractError(null);
+                    }}
+                    disabled={!contractLoaded || isSavingContract || isClearingContract}
+                    className="w-full px-4 py-3 bg-card-bg border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors tabular-nums cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Study window start time"
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-sm font-medium text-foreground mb-2">End</span>
+                  <input
+                    type="time"
+                    value={windowEnd}
+                    onChange={(e) => {
+                      setWindowEnd(e.target.value);
+                      setContractError(null);
+                    }}
+                    disabled={!contractLoaded || isSavingContract || isClearingContract}
+                    className="w-full px-4 py-3 bg-card-bg border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors tabular-nums cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Study window end time"
+                  />
+                </label>
+              </div>
+
+              <div className="rounded-lg border border-border bg-card-bg px-3 py-2 mb-3 text-xs text-muted-foreground flex items-center gap-2">
+                <CheckCircle2
+                  className={`w-4 h-4 shrink-0 ${durationOk ? 'text-green-500' : 'text-muted-foreground/40'}`}
+                  aria-hidden="true"
+                />
+                <span>{statusCopy}</span>
+              </div>
+
+              {contractError && (
+                <div className="mb-3 text-sm text-red-600 dark:text-red-400 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
+                  {contractError}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="primary"
+                  onClick={handleSaveStudyWindow}
+                  disabled={saveDisabled}
+                  className="min-w-[120px]"
+                >
+                  {saveLabel}
+                </Button>
+                {hasSavedContract && (
+                  <Button
+                    variant="ghost"
+                    onClick={handleClearStudyWindow}
+                    disabled={isSavingContract || isClearingContract}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {isClearingContract ? 'Clearing…' : 'Clear window'}
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* General Preferences Section */}
