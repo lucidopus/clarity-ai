@@ -6,7 +6,7 @@
  * meaningful labels instead of raw enum strings.
  */
 
-import { CostSource } from '@/lib/models/Cost';
+import { CostSource } from '@/lib/cost/enums';
 
 export interface CostSourceMeta {
   displayName: string;
