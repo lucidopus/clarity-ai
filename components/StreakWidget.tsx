@@ -273,15 +273,6 @@ export default function StreakWidget() {
 
         {/* Hero: streak count + shields */}
         <div className="relative mb-5">
-          {/* Soft warm glow */}
-          <div
-            className="absolute inset-0 pointer-events-none rounded-xl"
-            style={{
-              background:
-                'radial-gradient(ellipse 55% 55% at 25% 55%, rgba(251,146,60,0.18), rgba(251,146,60,0) 70%)',
-            }}
-            aria-hidden="true"
-          />
           <div className="relative flex items-end justify-between gap-4">
             <div>
               <div className="flex items-baseline gap-2">

@@ -416,36 +416,44 @@ export default function DashboardHomePage() {
 
       {!loading && !error && stats && (
         <div className="space-y-5">
-          {/* Row 1: Clarity Score + Activity Heatmap (GitHub-style) */}
+          {/* Snapshot — at-a-glance score + activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ClarityScoreWidget />
             <StudyActivityHeatmap />
           </div>
 
-          {/* Row 1.5: Today's Mix */}
-          <TodaysMixCard />
-
-          {/* Row 2: Smart Review + Streak + Daily Challenges */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <CardsDueWidget />
-            <StreakWidget />
-            <DailyChallengesCard />
+          {/* Today's Focus — what to do right now */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Today&apos;s Focus</h3>
+            <div className="space-y-4">
+              <TodaysMixCard />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <StreakWidget />
+                <CardsDueWidget />
+                <DailyChallengesCard />
+              </div>
+            </div>
           </div>
 
-          {/* Knowledge Map */}
+          {/* Your Knowledge — per-topic progress map */}
           <ClarityInsightsPanel />
 
-          {/* Weekly Rhythm */}
-          <WeekdayConsistencyBars />
+          {/* Study Rhythm — when you study (patterns over time) */}
+          <div>
+            <h3 className="text-lg font-semibold text-foreground mb-3">Study Rhythm</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <WeekdayConsistencyBars />
+              <FocusHoursChart />
+            </div>
+          </div>
 
-          {/* Learning Insights — analytics */}
+          {/* Learning Insights — content & performance analytics */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Learning Insights</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <VideoEngagementList />
               <ActivityFunnelCard />
               <FlashcardDifficultyDonut />
-              <FocusHoursChart />
             </div>
           </div>
 
