@@ -61,8 +61,15 @@ export const processSingleVideoTask = task({
         };
       }
 
-      // CATEGORY 2: Token limit errors - use chunked generation
-      if (isTokenLimitError(errorType)) {
+      // CATEGORY 2: Token limit errors OR partial-artifact failures from the
+      // main pipeline → use chunked/selective generation so we only regenerate
+      // what's actually missing. PARTIAL_ARTIFACT_FAILURE comes from V2 when
+      // one or more per-artifact calls fail/timeout (e.g. the quiz call
+      // exceeds its window) — routing it to chunked preserves the artifacts
+      // that already succeeded along with their downstream state (FSRS on
+      // flashcards, MindMap nodes, etc).
+      const hasIncompleteList = Array.isArray(video.incompleteMaterials) && video.incompleteMaterials.length > 0;
+      if (isTokenLimitError(errorType) || errorType === 'PARTIAL_ARTIFACT_FAILURE' || hasIncompleteList) {
         const result = await processVideoChunked(video);
         logger.info(`✅ Chunked processing result for ${video.videoId}:`, result);
         // Refresh discover recommendations so new content appears immediately

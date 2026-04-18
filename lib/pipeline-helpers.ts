@@ -285,7 +285,7 @@ export async function generateMaterials(
   services: IServiceUsage[],
   options?: { sourceType?: SourceType; hasTimestamps?: boolean; sourceDescription?: string; learnerContext?: LearnerContext }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<{ materials: any; usage: any } | { error: unknown; errorCode: string }> {
+): Promise<{ materials: any; usage: any; incompleteMaterials: string[] } | { error: unknown; errorCode: string }> {
   const modelInfo = getCurrentModelInfo(GEMINI_MODEL_NAME);
   console.log(`🤖 [VIDEO PROCESS] Using model: ${modelInfo.model}`);
 
@@ -295,7 +295,7 @@ export async function generateMaterials(
       sourceDescription: options?.sourceDescription ?? 'educational content',
       learnerContext: options?.learnerContext,
     });
-    const { materials, usage } = llmResponse;
+    const { materials, usage, incompleteMaterials } = llmResponse;
 
     // Transform problem IDs to be globally unique (prevent cross-video contamination)
     if (materials.realWorldProblems?.length > 0) {
@@ -348,14 +348,18 @@ export async function generateMaterials(
             flashcardBloomBreakdown,
             quizBloomBreakdown,
             mindMapEdgeTypeBreakdown,
+            incompleteMaterials,
           },
         },
       },
       status: 'success',
     });
     console.log(`💰 [COST] LLM: ${formatCost(llmCost)}`);
+    if (incompleteMaterials.length > 0) {
+      console.warn(`⚠️ [VIDEO PROCESS] Partial success — incomplete: ${incompleteMaterials.join(', ')}`);
+    }
 
-    return { materials, usage };
+    return { materials, usage, incompleteMaterials };
   } catch (error) {
     console.error('❌ [VIDEO PROCESS] LLM generation failed:', error);
     const errorCode = error instanceof ApiError ? error.code : 'LLM_PARTIAL_FAILURE';
@@ -448,10 +452,18 @@ export async function updateFinalStatus(
   materials: any | null,
   llmError: unknown | null,
   llmErrorCode: string | null,
-  services?: IServiceUsage[]
+  services?: IServiceUsage[],
+  /**
+   * Per-artifact failures from V2 (e.g., `['quizzes']` when the quiz call
+   * timed out but everything else succeeded). When non-empty, the source is
+   * marked `completed_with_warning` so the retry sweep can fill the gaps.
+   * Empty array (or omitted) = full success.
+   */
+  incompleteMaterials: string[] = [],
 ) {
   if (llmError || !materials) {
-    // Partial success — transcript available but LLM failed
+    // Hard failure — LLM threw or returned nothing usable. Mark every artifact
+    // as incomplete so the retry sweep regenerates the full set.
     const failPayload = {
       title: `Content ${videoId}`,
       processingStatus: 'completed_with_warning' as const,
@@ -463,7 +475,7 @@ export async function updateFinalStatus(
     };
     await Video.findByIdAndUpdate(videoDocId, failPayload);
     await Source.findOneAndUpdate({ userId, sourceId: videoId }, failPayload);
-    console.log('⚠️ [VIDEO PROCESS] Marked as completed_with_warning');
+    console.log('⚠️ [VIDEO PROCESS] Marked as completed_with_warning (hard failure)');
     return;
   }
 
@@ -518,20 +530,36 @@ export async function updateFinalStatus(
     });
   }
 
-  const successPayload = {
+  // Partial success — at least one per-artifact call failed (e.g., quiz timeout)
+  // but the rest produced data. Persist what we have, but mark the source as
+  // `completed_with_warning` so `retry-failed-videos` picks it up and fills in
+  // the missing artifacts. Without this branch the source would silently look
+  // 100% complete and never be retried.
+  const isPartial = incompleteMaterials.length > 0;
+  const finalPayload = {
     title: materials.title,
     category: materials.category,
     tags: materials.tags,
     summary: materials.summary,
     embedding,
-    processingStatus: 'completed' as const,
-    materialsStatus: 'complete' as const,
-    incompleteMaterials: [] as string[],
+    processingStatus: (isPartial ? 'completed_with_warning' : 'completed') as 'completed' | 'completed_with_warning',
+    materialsStatus: (isPartial ? 'incomplete' : 'complete') as 'complete' | 'incomplete',
+    incompleteMaterials,
+    ...(isPartial
+      ? {
+          errorType: 'PARTIAL_ARTIFACT_FAILURE',
+          errorMessage: `Per-artifact failures: ${incompleteMaterials.join(', ')}`,
+        }
+      : {}),
     processedAt: new Date(),
   };
-  await Video.findByIdAndUpdate(videoDocId, successPayload);
-  await Source.findOneAndUpdate({ userId, sourceId: videoId }, successPayload);
-  console.log('✅ [VIDEO PROCESS] Marked as completed');
+  await Video.findByIdAndUpdate(videoDocId, finalPayload);
+  await Source.findOneAndUpdate({ userId, sourceId: videoId }, finalPayload);
+  if (isPartial) {
+    console.warn(`⚠️ [VIDEO PROCESS] Marked as completed_with_warning — incomplete: ${incompleteMaterials.join(', ')}`);
+  } else {
+    console.log('✅ [VIDEO PROCESS] Marked as completed');
+  }
 }
 
 // ─── Helper: Log activity ───────────────────────────────────────────────────

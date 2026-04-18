@@ -90,6 +90,14 @@ export interface LLMGenerationResponse {
     completionTokens: number;
     totalTokens: number;
   };
+  /**
+   * Per-artifact failures from V2's parallel generation. Empty when every
+   * artifact succeeded. The pipeline uses this to mark partial-success runs
+   * as `completed_with_warning` so the retry sweep picks them up — without
+   * this, a single timeout (e.g., quizzes) silently disappears under a green
+   * `completed` status.
+   */
+  incompleteMaterials: string[];
 }
 
 export interface ChunkedGenerationResponse {
@@ -151,7 +159,11 @@ export async function generateLearningMaterials(
     throw new LLMServiceError('Generation failed: metadata is required and could not be produced.');
   }
 
-  return { materials: result.materials, usage: result.usage };
+  return {
+    materials: result.materials,
+    usage: result.usage,
+    incompleteMaterials: result.incompleteMaterials,
+  };
 }
 
 /**
@@ -265,13 +277,17 @@ async function generateLearningMaterialsV2(
   }
 
   // 3. Quizzes. RAW input — fact-precision (distractors must reflect the source).
+  //    Timeout is generous: each MCQ now carries 4 richOptions × misconception text
+  //    + bloomLevel + sourceRef + a 2-part explanation, so output-token volume per
+  //    quiz is ~3× the legacy schema. 120s was tight enough that a real-world run
+  //    timed out on the quiz call alone — bumped to 240s to give the model room.
   if (needs('quizzes')) {
     tasks.push(
       runArtifact({
         label: 'quizzes',
         schema: QuizzesSchema,
         prompt: buildQuizzesPrompt({ content: rawContent, learnerContext, sourceDescription }),
-        timeoutMs: 120_000,
+        timeoutMs: 240_000,
         callback: tokenCallback,
       }).then((r) => { if (r) out.quizzes = r; else failedChunks.push('quizzes'); })
     );
@@ -438,11 +454,15 @@ async function generateFlashcardsWithCritic(args: {
   const { rawContent, learnerContext, sourceDescription, callback } = args;
 
   // ---- pass 1: generate ----
+  // Timeout is generous: the critic loop adds a second LLM round-trip on top
+  // of generation, and the deck schema (rich explanations + difficulty + tags)
+  // produces sizable output. 90s was tight enough that real-world videos
+  // timed out on the first pass alone — bumped to 240s to mirror the quiz fix.
   const firstPass = await runArtifact<{ flashcards: FlashcardForCritic[] }>({
     label: 'flashcards',
     schema: FlashcardsSchema,
     prompt: buildFlashcardsPrompt({ content: rawContent, learnerContext, sourceDescription }),
-    timeoutMs: 90_000,
+    timeoutMs: 240_000,
     callback,
   });
 
@@ -487,7 +507,7 @@ async function generateFlashcardsWithCritic(args: {
     label: 'flashcards-regen',
     schema: FlashcardsSchema,
     prompt: regenPrompt,
-    timeoutMs: 90_000,
+    timeoutMs: 240_000,
     callback,
   });
 
@@ -609,7 +629,10 @@ export async function generateLearningMaterialsLegacyMonolith(
       timeout: 180_000,
       callbacks: [callback],
     });
-    return { materials: response as LearningMaterials, usage };
+    // Legacy path is monolithic — there's no per-artifact failure granularity
+    // here, so `incompleteMaterials` is always empty on success. Either the
+    // single call returns or it throws.
+    return { materials: response as LearningMaterials, usage, incompleteMaterials: [] };
   } catch (error) {
     if (
       error instanceof LLMTokenLimitError ||

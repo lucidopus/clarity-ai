@@ -324,6 +324,7 @@ export const processVideoPipelineTask = task({
     let materials = null;
     let llmError: unknown = null;
     let llmErrorCode: string | null = null;
+    let incompleteMaterials: string[] = [];
 
     if ("error" in llmResult) {
       llmError = llmResult.error;
@@ -331,16 +332,33 @@ export const processVideoPipelineTask = task({
       logger.warn("LLM generation failed", { errorCode: llmErrorCode });
     } else {
       materials = llmResult.materials;
-      logger.info("Materials generated successfully");
+      incompleteMaterials = llmResult.incompleteMaterials;
+      if (incompleteMaterials.length > 0) {
+        logger.warn("Materials generated with partial failures", { incompleteMaterials });
+      } else {
+        logger.info("Materials generated successfully");
+      }
     }
 
-    // 8. Save learning materials (if LLM succeeded)
+    // 8. Save learning materials (if LLM succeeded — even partially)
     if (materials) {
       await saveLearningMaterials(userId, sourceId, materials);
     }
 
-    // 9. Update final status (Video + Source) — also records embedding cost into services
-    await updateFinalStatus(userId, videoDocId, sourceId, primaryExtraction.text, materials, llmError, llmErrorCode, services);
+    // 9. Update final status (Video + Source) — also records embedding cost into services.
+    //    Pass `incompleteMaterials` so partial-success runs are flagged
+    //    `completed_with_warning` and picked up by the retry sweep.
+    await updateFinalStatus(
+      userId,
+      videoDocId,
+      sourceId,
+      primaryExtraction.text,
+      materials,
+      llmError,
+      llmErrorCode,
+      services,
+      incompleteMaterials,
+    );
 
     // 10. Log activity (if materials generated)
     if (materials) {
@@ -356,8 +374,13 @@ export const processVideoPipelineTask = task({
     await logCosts(userId, videoDocId, services);
 
     if (llmError) {
-      logger.warn("Pipeline completed with warning", { sourceId, errorCode: llmErrorCode });
+      logger.warn("Pipeline completed with warning (hard LLM failure)", { sourceId, errorCode: llmErrorCode });
       return { success: true, sourceId, warning: llmErrorCode };
+    }
+
+    if (incompleteMaterials.length > 0) {
+      logger.warn("Pipeline completed with warning (partial artifact failure)", { sourceId, incompleteMaterials });
+      return { success: true, sourceId, warning: 'PARTIAL_ARTIFACT_FAILURE', incompleteMaterials };
     }
 
     logger.info("Pipeline completed successfully", { sourceId, sourceType, sourceCount: extractedTexts.length });

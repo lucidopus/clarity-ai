@@ -294,8 +294,14 @@ export async function processVideoChunked(video: VideoDocument) {
     );
   }
 
-  // Save materials to database
-  await saveVideoMaterials(video, chunkedResult.materials, !chunkedResult.incompleteMaterials.includes('metadata'));
+  // Save materials to database. `metadataWasGenerated` reflects whether this
+  // retry pass actually *requested* metadata regeneration — NOT whether the
+  // post-retry result happens to have empty incompleteMaterials. With selective
+  // retries (e.g., only flashcards), `chunkedResult.materials.title` is the
+  // safe-default "Untitled" placeholder; using post-retry incomplete state
+  // would clobber the existing real title from the original run.
+  const metadataWasGenerated = materialsToRetry.length === 0 || materialsToRetry.includes('metadata');
+  await saveVideoMaterials(video, chunkedResult.materials, metadataWasGenerated);
 
   // Determine incomplete materials
   const incompleteMaterialsList: string[] = [...chunkedResult.incompleteMaterials];
