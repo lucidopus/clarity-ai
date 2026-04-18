@@ -28,6 +28,88 @@ function formatDuration(totalMinutes: number): string {
   return `${h} ${hUnit} ${m} ${mUnit}`;
 }
 
+function formatHHMM12(hhmm: string | undefined): string {
+  if (!hhmm) return '';
+  const [hRaw, mRaw] = hhmm.split(':').map(Number);
+  if (Number.isNaN(hRaw) || Number.isNaN(mRaw)) return '';
+  const hr12 = hRaw === 0 ? 12 : hRaw > 12 ? hRaw - 12 : hRaw;
+  const suffix = hRaw >= 12 ? 'PM' : 'AM';
+  return `${hr12}:${mRaw.toString().padStart(2, '0')} ${suffix}`;
+}
+
+/**
+ * Shared toast layout used by both the pre-window nudge and the entry
+ * flash. Matches the notes "tag · title · meta" pattern so focus alerts
+ * read as the same family of in-app notifications.
+ */
+function FocusToast({
+  tagLabel,
+  title,
+  meta,
+  onDismiss,
+}: {
+  tagLabel: string;
+  title: string;
+  meta?: string;
+  onDismiss?: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 16 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-6 right-6 sm:right-44 z-50 w-[22rem] max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
+    >
+      <div className="relative flex items-stretch">
+        <div
+          className="w-1 shrink-0 bg-accent"
+          aria-hidden="true"
+        />
+        <div className="flex-1 min-w-0 py-3.5 pl-4 pr-10">
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-accent">
+            <Clock className="w-3 h-3" aria-hidden="true" />
+            <span>{tagLabel}</span>
+          </div>
+          <p className="mt-1 text-base font-bold text-foreground leading-tight">
+            {title}
+          </p>
+          {meta && (
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              {meta}
+            </p>
+          )}
+        </div>
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dismiss"
+            className="absolute top-2 right-2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 3l8 8M11 3l-8 8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 function FocusAmbient({ active, reduceMotion }: { active: boolean; reduceMotion: boolean }) {
   return (
     <AnimatePresence>
@@ -73,19 +155,24 @@ function FocusBadge({
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-40"
+      className="relative"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <button
         type="button"
         onClick={() => router.push('/dashboard/settings')}
-        onFocus={() => setFocused(true)}
+        onFocus={(e) => {
+          // Only show the tooltip for keyboard focus, not mouse clicks —
+          // otherwise clicking the orb leaves the tooltip stuck open until
+          // focus moves somewhere else.
+          if (e.currentTarget.matches(':focus-visible')) setFocused(true);
+        }}
         onBlur={() => setFocused(false)}
         aria-label={`Focus window active, ${formatRemaining(
           minutesLeft,
         )} remaining. Click to edit in settings.`}
-        className="relative inline-flex items-center justify-center rounded-full bg-card-bg/60 backdrop-blur-md hover:bg-card-bg/90 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background"
+        className="relative inline-flex items-center justify-center rounded-full bg-card-bg/60 backdrop-blur-md hover:bg-card-bg/90 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         style={{ width: SIZE, height: SIZE }}
       >
         <span
@@ -128,7 +215,11 @@ function FocusBadge({
             style={{
               transform: 'rotate(-90deg)',
               transformOrigin: '50% 50%',
-              transition: 'stroke-dashoffset 800ms ease-out',
+              // minutesLeft is an integer — its prop value only changes once
+              // per minute. Match the transition to that cadence so the arc
+              // sweeps continuously from one tick to the next instead of
+              // finishing early and freezing.
+              transition: 'stroke-dashoffset 60s linear',
             }}
           />
         </svg>
@@ -154,102 +245,96 @@ function FocusBadge({
   );
 }
 
-function FocusEntryFlash({ show }: { show: boolean }) {
+function FocusEntryFlash({
+  show,
+  windowDurationLabel,
+  windowEndLabel,
+}: {
+  show: boolean;
+  windowDurationLabel: string;
+  windowEndLabel: string;
+}) {
+  const meta = windowEndLabel
+    ? `${windowDurationLabel} ahead · until ${windowEndLabel}`
+    : `${windowDurationLabel} ahead`;
   return (
     <AnimatePresence>
       {show && (
-        <motion.div
+        <FocusToast
           key="focus-entry-flash"
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 24 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="fixed bottom-24 right-6 z-50 px-4 py-2.5 rounded-xl border border-accent/40 bg-card-bg/95 backdrop-blur-md shadow-lg text-sm font-medium text-foreground pointer-events-none"
-        >
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-flex h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
-            Focus window active
-          </span>
-        </motion.div>
+          tagLabel="Focus window"
+          title="You’re in. Let’s study."
+          meta={meta}
+        />
       )}
     </AnimatePresence>
-  );
-}
-
-function FocusPreWindowToast({
-  windowDurationLabel,
-  onDismiss,
-}: {
-  windowDurationLabel: string;
-  onDismiss: () => void;
-}) {
-  return (
-    <motion.div
-      key="focus-prewindow-toast"
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 16 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-6 right-6 z-50 max-w-sm rounded-2xl border border-accent/40 bg-card-bg/95 backdrop-blur-md shadow-xl p-4"
-    >
-      <div className="flex items-start gap-3">
-        <span className="relative inline-flex mt-1 h-2 w-2 shrink-0" aria-hidden="true">
-          <span className="absolute inset-0 rounded-full bg-accent/60 focus-mode-dot-breathe" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-accent" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-foreground leading-snug">
-            Your focus session starts in 15 minutes.
-          </p>
-          <p className="mt-1 text-sm font-medium text-accent leading-snug">
-            You set aside {windowDurationLabel}.
-          </p>
-          <p className="mt-1 text-xs text-secondary leading-relaxed">
-            Five minutes of showing up counts. One card, one note, or one question — any of those makes today a study day.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label="Dismiss"
-          className="shrink-0 -mr-1 -mt-1 p-1 rounded-md text-secondary hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-accent"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-    </motion.div>
   );
 }
 
 function FocusPreWindowFlash({
   show,
   windowDurationLabel,
+  windowStartLabel,
 }: {
   show: boolean;
   windowDurationLabel: string;
+  windowStartLabel: string;
 }) {
   // Local dismissed state lives INSIDE the inner toast — AnimatePresence
   // unmount on `show=false` discards it, so next fire starts fresh.
   return (
     <AnimatePresence>
-      {show && <PreWindowMountGuard windowDurationLabel={windowDurationLabel} />}
+      {show && (
+        <PreWindowMountGuard
+          windowDurationLabel={windowDurationLabel}
+          windowStartLabel={windowStartLabel}
+        />
+      )}
     </AnimatePresence>
   );
 }
 
-function PreWindowMountGuard({ windowDurationLabel }: { windowDurationLabel: string }) {
+function PreWindowMountGuard({
+  windowDurationLabel,
+  windowStartLabel,
+}: {
+  windowDurationLabel: string;
+  windowStartLabel: string;
+}) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
+  const meta = windowStartLabel
+    ? `${windowStartLabel} · ${windowDurationLabel} set aside`
+    : `${windowDurationLabel} set aside`;
   return (
-    <FocusPreWindowToast
-      windowDurationLabel={windowDurationLabel}
+    <FocusToast
+      tagLabel="Starting soon"
+      title="Focus window in 15 minutes"
+      meta={meta}
       onDismiss={() => setDismissed(true)}
     />
   );
+}
+
+/**
+ * Clara's chat bubble (ChatBot.tsx) is only mounted on some pages. When it's
+ * absent we don't want an empty 104px reservation on the right — the focus
+ * orbs should slide all the way to the bottom-right corner. We detect the
+ * bubble via a data-attribute sentinel + a MutationObserver so the layout
+ * updates live if Clara mounts/unmounts within the same route.
+ */
+function useHasChatBubble(): boolean {
+  const [present, setPresent] = useState(false);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const check = () =>
+      setPresent(!!document.querySelector('[data-chatbot-bubble]'));
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+  return present;
 }
 
 function useFocusTabTitle(active: boolean) {
@@ -295,7 +380,7 @@ function FocusBadgeDissolving() {
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-40 focus-mode-horizon-dissolve pointer-events-none"
+      className="relative focus-mode-horizon-dissolve pointer-events-none"
       aria-hidden="true"
     >
       <div
@@ -351,31 +436,51 @@ export default function FocusModeShell() {
   } = useFocusMode();
   const reduceMotion = useReducedMotion() ?? false;
   const [ambientEnabled] = useAmbientEnabled();
+  const hasChatBubble = useHasChatBubble();
   useFocusTabTitle(isInWindow);
 
   const windowTotalMinutes = contract
     ? Math.max(0, parseHHMM(contract.windowEnd) - parseHHMM(contract.windowStart))
     : 0;
   const windowDurationLabel = contract ? formatDuration(windowTotalMinutes) : '';
+  const windowStartLabel = contract ? formatHHMM12(contract.windowStart) : '';
+  const windowEndLabel = contract ? formatHHMM12(contract.windowEnd) : '';
 
   return (
     <>
       <FocusAmbient active={isInWindow} reduceMotion={reduceMotion} />
-      {isInWindow && minutesRemaining !== null && windowTotalMinutes > 0 && (
-        <FocusBadge
-          minutesLeft={minutesRemaining}
-          windowTotalMinutes={windowTotalMinutes}
-        />
+      {(isInWindow || justExited) && (
+        // Shared row so the timer orb, ambient orb, and Clara bubble can't
+        // collide. When Clara is mounted, we reserve ~104px of right-edge
+        // space for it (right-[6.5rem]); otherwise the orbs claim the
+        // corner at right-6. Flex gap-3 keeps the focus orbs 12px apart.
+        // Timer orb sits on the right so the primary focus signal is the
+        // corner-most element; ambient is to its left.
+        <div
+          className={`fixed bottom-6 ${
+            hasChatBubble ? 'right-[6.5rem]' : 'right-6'
+          } z-40 flex items-center gap-3 transition-[right] duration-300 ease-out`}
+        >
+          {ambientEnabled && <FocusAmbientPlayer forcePause={!isInWindow} />}
+          {isInWindow && minutesRemaining !== null && windowTotalMinutes > 0 && (
+            <FocusBadge
+              minutesLeft={minutesRemaining}
+              windowTotalMinutes={windowTotalMinutes}
+            />
+          )}
+          {!isInWindow && justExited && <FocusBadgeDissolving />}
+        </div>
       )}
-      {!isInWindow && justExited && <FocusBadgeDissolving />}
-      <FocusEntryFlash show={justEntered} />
+      <FocusEntryFlash
+        show={justEntered}
+        windowDurationLabel={windowDurationLabel}
+        windowEndLabel={windowEndLabel}
+      />
       <FocusPreWindowFlash
         show={justPreEntered && !!contract}
         windowDurationLabel={windowDurationLabel}
+        windowStartLabel={windowStartLabel}
       />
-      {(isInWindow || justExited) && ambientEnabled && (
-        <FocusAmbientPlayer forcePause={!isInWindow} />
-      )}
     </>
   );
 }

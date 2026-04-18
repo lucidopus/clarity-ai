@@ -261,21 +261,38 @@ export default function StudyActivityHeatmap() {
             </div>
 
             <div className="flex pt-3">
-              {/* Weekday labels */}
-              <div className="mr-2 font-semibold mt-4 flex flex-col justify-between text-xs text-muted-foreground select-none" style={{ width: railWidthPx }}>
+              {/* Weekday labels — 7-row grid aligned 1:1 with the data grid so
+                  Mon/Wed/Fri sit on the correct rows (Sun=1 … Sat=7). The
+                  previous flex+justify-between approach anchored the labels
+                  at rows 1/4/7 (Sun/Wed/Sat) and read as a 3-row heatmap
+                  that "skipped weekends." */}
+              <div
+                className="mr-2 text-xs font-semibold text-muted-foreground select-none"
+                style={{
+                  width: railWidthPx,
+                  display: 'grid',
+                  gridTemplateRows: 'repeat(7, var(--cell-size))',
+                  gap: 'var(--cell-gap)',
+                  lineHeight: 'var(--cell-size)',
+                }}
+              >
+                <span aria-hidden="true" />
                 <span>Mon</span>
+                <span aria-hidden="true" />
                 <span>Wed</span>
+                <span aria-hidden="true" />
                 <span>Fri</span>
+                <span aria-hidden="true" />
               </div>
 
               {/* Grid */}
               <div className="pr-8">
-                <div className="relative h-[140px]">
+                <div className="relative">
                   <div
                     className="grid"
                     style={{
                       gridAutoFlow: 'column',
-                      gridTemplateRows: 'repeat(7, minmax(0, 1fr))',
+                      gridTemplateRows: 'repeat(7, var(--cell-size))',
                       gap: 'var(--cell-gap)'
                     }}
                   >

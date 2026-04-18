@@ -3,6 +3,8 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { FocusModeProvider } from '@/lib/focus-mode/FocusModeContext';
+import FocusModeShell from '@/components/focus-mode/FocusModeShell';
 
 export default function GenerationsLayout({
   children,
@@ -104,9 +106,12 @@ export default function GenerationsLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Main Content - Navbar is integrated into the page itself */}
-      {children}
-    </div>
+    <FocusModeProvider>
+      <div className="min-h-screen bg-background">
+        {/* Main Content - Navbar is integrated into the page itself */}
+        {children}
+        <FocusModeShell />
+      </div>
+    </FocusModeProvider>
   );
 }

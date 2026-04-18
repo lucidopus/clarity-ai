@@ -95,7 +95,7 @@ export default function MilestoneCelebration({ milestone, shieldEarnedAtMileston
           className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-bold mb-3"
           aria-hidden="true"
         >
-          <Flame className="w-3.5 h-3.5" />
+          <Flame className="w-3.5 h-3.5 opacity-80" />
           {milestone} days
         </div>
 

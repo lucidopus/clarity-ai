@@ -267,25 +267,6 @@ body {
   }
 }
 
-/* Ambient sound ripple — expanding concentric rings that imply sound waves
-   radiating outward from the orb. Two rings offset in phase so the surface
-   never looks empty. Only active while audio is playing. */
-@keyframes focus-ambient-ripple {
-  0%   { transform: scale(0.75); opacity: 0.55; }
-  100% { transform: scale(1.9);  opacity: 0;    }
-}
-.focus-mode-ambient-ripple {
-  animation: focus-ambient-ripple 2.6s ease-out infinite;
-}
-.focus-mode-ambient-ripple-delayed {
-  animation-delay: 1.3s;
-}
-@media (prefers-reduced-motion: reduce) {
-  .focus-mode-ambient-ripple,
-  .focus-mode-ambient-ripple-delayed { animation: none; opacity: 0; }
-}
-
-
 /* Themed thin scrollbar for heatmap */
 .heatmap-scroll {
   scrollbar-width: thin;

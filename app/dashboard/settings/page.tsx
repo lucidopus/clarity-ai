@@ -173,6 +173,7 @@ export default function SettingsPage() {
 
   // Focus-mode ambient sound preference — client-side only, no server sync.
   const [ambientEnabled, setAmbientEnabled] = useAmbientEnabled();
+  const [ambientInfoOpen, setAmbientInfoOpen] = useState(false);
 
   // Learning profile update limit state
   const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
@@ -1273,7 +1274,28 @@ export default function SettingsPage() {
                 <div className="flex items-start gap-3 min-w-0">
                   <Volume2 className="w-4 h-4 text-accent mt-0.5 shrink-0" aria-hidden="true" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground">Ambient sound</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-foreground">Ambient sound</p>
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          aria-expanded={ambientInfoOpen}
+                          aria-label="Why white noise?"
+                          onClick={() => setAmbientInfoOpen((v) => !v)}
+                          onBlur={() => setAmbientInfoOpen(false)}
+                          className="inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        >
+                          <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <div
+                          role="tooltip"
+                          className={`absolute left-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${ambientInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                        >
+                          <p className="font-medium text-foreground mb-1">Why white noise?</p>
+                          <p>A steady, even sound — like a fan or distant rain — masks sudden noises that pull your attention away. Your brain stops reacting to each interruption, so you stay in deep work longer.</p>
+                        </div>
+                      </div>
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Show a play/pause control during your focus window.
                     </p>

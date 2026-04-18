@@ -123,10 +123,14 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
   const [justEntered, setJustEntered] = useState(false);
   const [justExited, setJustExited] = useState(false);
   const [justPreEntered, setJustPreEntered] = useState(false);
-  const wasInWindowRef = useRef(false);
+  // `prevIsInWindow` lets us detect the in→out (or out→in) flip synchronously
+  // during render, so `justExited` is set in the same render that flips
+  // `isInWindow` to false. If we deferred this to a useEffect we'd emit one
+  // frame of `(isInWindow=false && justExited=false)`, which unmounts the
+  // ambient player mid-fade and cuts the audio abruptly at window close.
+  const [prevIsInWindow, setPrevIsInWindow] = useState<boolean | null>(null);
   const wasPreWindowRef = useRef(false);
   const armedRef = useRef(false);
-  const exitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadContract = useCallback(async () => {
     try {
@@ -181,49 +185,44 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
     minutesUntilStart > 0 &&
     minutesUntilStart <= PRE_WINDOW_LEAD_MIN;
 
-  useEffect(() => {
-    if (!contractLoaded) return;
-    if (!armedRef.current) {
+  // Synchronous transition detection: set `justEntered` / `justExited` during
+  // the same render that flips `isInWindow`. See `prevIsInWindow` comment.
+  if (contractLoaded && prevIsInWindow !== isInWindow) {
+    setPrevIsInWindow(isInWindow);
+    if (prevIsInWindow === null) {
+      // First measurement after contract loads — arm without firing, so
+      // landing mid-window (or mid-pre-window) doesn't play the flash
+      // retroactively.
       armedRef.current = true;
-      wasInWindowRef.current = isInWindow;
       wasPreWindowRef.current = isPreWindow;
-      return;
-    }
-    if (isInWindow && !wasInWindowRef.current) {
-      wasInWindowRef.current = true;
-      // If the window re-opens during a dissolve (settings edit, wall-clock
-      // jump on wake), cancel the exit animation so we don't render both
-      // the live badge and the dissolving ghost at the same coordinates.
-      if (exitTimeoutRef.current) {
-        clearTimeout(exitTimeoutRef.current);
-        exitTimeoutRef.current = null;
-      }
-      setJustExited(false);
-      setJustEntered(true);
-      const t = setTimeout(() => setJustEntered(false), 5000);
-      return () => clearTimeout(t);
-    }
-    if (!isInWindow && wasInWindowRef.current) {
-      wasInWindowRef.current = false;
-      // 2s hold + 3s dissolve + small buffer = 5.5s. See Horizon Dissolve
-      // variant in docs/mockups/focus-window-close-variants.html.
-      // Hold the handle in a ref so a rapid second exit (e.g., user saves
-      // a new contract that's already past-end) restarts the dissolve cleanly
-      // instead of cutting the next one short.
-      if (exitTimeoutRef.current) clearTimeout(exitTimeoutRef.current);
-      setJustExited(true);
-      exitTimeoutRef.current = setTimeout(() => {
+    } else if (armedRef.current) {
+      if (isInWindow) {
+        // Window (re)opened — cancel any lingering dissolve, flash entry.
         setJustExited(false);
-        exitTimeoutRef.current = null;
-      }, 5500);
+        setJustEntered(true);
+      } else {
+        // Window closed — flag dissolve in the same render so the ambient
+        // player stays mounted and its wrapper fade + audio fade can run.
+        setJustExited(true);
+      }
     }
-  }, [isInWindow, contractLoaded, isPreWindow]);
+  }
 
+  // Clear `justEntered` after the entry flash finishes.
   useEffect(() => {
-    return () => {
-      if (exitTimeoutRef.current) clearTimeout(exitTimeoutRef.current);
-    };
-  }, []);
+    if (!justEntered) return;
+    const t = setTimeout(() => setJustEntered(false), 5000);
+    return () => clearTimeout(t);
+  }, [justEntered]);
+
+  // Clear `justExited` after the Horizon Dissolve envelope completes.
+  // 2s hold + 3s dissolve + small buffer = 5.5s. See Horizon Dissolve
+  // variant in docs/mockups/focus-window-close-variants.html.
+  useEffect(() => {
+    if (!justExited) return;
+    const t = setTimeout(() => setJustExited(false), 5500);
+    return () => clearTimeout(t);
+  }, [justExited]);
 
   // Pre-window nudge: fires once per local-calendar day when the user is
   // actively in Clarity AI and crosses into the 15-minute pre-window zone.

@@ -288,6 +288,7 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
       {/* Floating Action Button */}
       {!isOpen && (
       <motion.button
+        data-chatbot-bubble
         className="fixed cursor-pointer bottom-6 right-6 z-40 h-16 w-16 rounded-full bg-accent text-white shadow-lg hover:shadow-xl flex items-center justify-center"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
