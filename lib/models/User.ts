@@ -85,11 +85,14 @@ export interface IUser extends Document {
   // Cognitive Contract — self-chosen study window (Gollwitzer implementation intentions)
   studyContract?: {
     windowStart: string;  // "HH:MM" 24h in the user's timezone
-    windowEnd: string;    // "HH:MM" 24h (must be after windowStart on same day)
+    windowEnd: string;    // "HH:MM" 24h (may cross midnight for overnight windows)
     timezone: string;     // IANA, e.g. "America/New_York"
     contractedAt: Date;
   } | null;
-  studyContractLastRemindedAt?: Date | null; // last time a pre-window reminder was sent
+  studyContractLastRemindedAt?: Date | null;
+  // Next UTC instant we should fire a pre-window reminder email for this user.
+  // Bucketed-sweeper scheduling: a 1-min cron queries users whose nextReminderAt is due.
+  nextReminderAt?: Date | null;
 }
 
 const UserSchema: Schema = new Schema({
@@ -159,6 +162,7 @@ const UserSchema: Schema = new Schema({
     default: null,
   },
   studyContractLastRemindedAt: { type: Date, default: null },
+  nextReminderAt: { type: Date, default: null, index: true },
   // Email verification status
   emailVerified: { type: Boolean, default: false },
 }, {

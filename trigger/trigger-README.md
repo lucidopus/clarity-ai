@@ -33,15 +33,18 @@ Coordinator scheduled task for retrying failed videos.
   - Marks permanent failures as `failed`
   - Batch triggers `processSingleVideoTask` for retries
 
-### `remind-study-contract.ts`
-**Task ID:** `remind-study-contract`
+### `send-study-reminder.ts`
+**Task ID:** `sweep-study-reminders`
 
-Sends pre-window study reminders to users with a Cognitive Contract set.
-- **Schedule:** Every 15 minutes (UTC cron)
+Sends study window reminder emails exactly 15 minutes before each user's window opens.
+- **Schedule:** Every minute (UTC cron `* * * * *`)
 - **Logic:**
-  - Scans users with `studyContract` set and study reminders enabled
-  - Sends a supportive nudge ~15 minutes before the local window opens
-  - Deduplicates per local-calendar-day via `studyContractLastRemindedAt`
+  - Bucketed-sweeper pattern (the same shape Google Calendar / Duolingo use for reminders)
+  - Queries `{ nextReminderAt: { $lte: now + 60s } }` on an indexed field — O(due users), not O(all users)
+  - Atomically claims each due user via `findOneAndUpdate` (prevents double-send on concurrent runs)
+  - Sends the email, then advances `nextReminderAt` to the next local-day fire time (DST-safe because it's recomputed each cycle via `computeNextReminderAt`)
+  - `nextReminderAt` is set on contract save in `app/api/streak-contract/route.ts` and cleared on contract delete
+  - Respects `preferences.general.studyReminders` opt-out
 
 ## Development Rules
 

@@ -100,3 +100,91 @@ export function minutesUntilWindowStart(
   }
   return start - current;
 }
+
+/**
+ * Convert a wall-clock time (year/month/day/hour/minute) in a given IANA
+ * timezone to the corresponding UTC Date. Handles DST transitions by
+ * measuring the zone's offset at the candidate instant and correcting once.
+ */
+function zonedWallClockToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timezone: string,
+): Date {
+  const naive = Date.UTC(year, month - 1, day, hour, minute);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(new Date(naive));
+  const f: Record<string, number> = {};
+  for (const p of parts) {
+    if (p.type !== 'literal') f[p.type] = Number(p.value);
+  }
+  if (f.hour === 24) f.hour = 0;
+  const asIfUtc = Date.UTC(f.year, f.month - 1, f.day, f.hour, f.minute, f.second);
+  const offset = asIfUtc - naive;
+  return new Date(naive - offset);
+}
+
+/** "Today" in the given timezone, as a {year, month, day}. */
+function zonedYmd(at: Date, timezone: string): { year: number; month: number; day: number } {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(at);
+  let year = 0;
+  let month = 0;
+  let day = 0;
+  for (const p of parts) {
+    if (p.type === 'year') year = Number(p.value);
+    else if (p.type === 'month') month = Number(p.value);
+    else if (p.type === 'day') day = Number(p.value);
+  }
+  return { year, month, day };
+}
+
+/**
+ * Next UTC instant when we should fire the pre-window reminder for a user.
+ * Fires 15 minutes before `windowStart` in the user's local timezone, and
+ * rolls forward to tomorrow if today's slot has already passed. DST-safe
+ * because the computation is redone each time this is called.
+ */
+export function computeNextReminderAt(
+  windowStart: string,
+  timezone: string,
+  leadMinutes: number = 15,
+  now: Date = new Date(),
+): Date | null {
+  const start = parseHHMM(windowStart);
+  if (start === null) return null;
+  const targetTotalMin = ((start - leadMinutes) % 1440 + 1440) % 1440;
+  const targetHour = Math.floor(targetTotalMin / 60);
+  const targetMinute = targetTotalMin % 60;
+
+  const today = zonedYmd(now, timezone);
+  const todayCandidate = zonedWallClockToUtc(
+    today.year, today.month, today.day, targetHour, targetMinute, timezone,
+  );
+  if (todayCandidate.getTime() > now.getTime()) return todayCandidate;
+
+  // Today's reminder slot is past — use tomorrow's local date.
+  const tomorrowAnchor = new Date(
+    zonedWallClockToUtc(today.year, today.month, today.day, 12, 0, timezone).getTime()
+      + 24 * 60 * 60 * 1000,
+  );
+  const tomorrow = zonedYmd(tomorrowAnchor, timezone);
+  return zonedWallClockToUtc(
+    tomorrow.year, tomorrow.month, tomorrow.day, targetHour, targetMinute, timezone,
+  );
+}

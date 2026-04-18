@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getAuthUser } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import { validateStudyContract } from '@/lib/services/studyContract';
+import { validateStudyContract, computeNextReminderAt } from '@/lib/services/studyContract';
 import { internalServerError } from '@/lib/errors/apiResponse';
 
 const contractSchema = z.object({
@@ -37,9 +37,10 @@ export async function POST(request: NextRequest) {
       timezone,
       contractedAt: new Date(),
     };
+    const nextReminderAt = computeNextReminderAt(windowStart, timezone);
     await User.updateOne(
       { _id: decoded.userId },
-      { $set: { studyContract: contract } },
+      { $set: { studyContract: contract, nextReminderAt } },
     );
 
     return NextResponse.json({ success: true, studyContract: contract });
@@ -55,7 +56,7 @@ export async function DELETE(request: NextRequest) {
     await dbConnect();
     await User.updateOne(
       { _id: decoded.userId },
-      { $set: { studyContract: null } },
+      { $set: { studyContract: null, nextReminderAt: null } },
     );
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -464,13 +464,13 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
     <div
       className="relative rounded-xl pl-4 pr-3 py-3 group/band"
       style={{
-        background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--accent) 18%, transparent)',
+        background: 'var(--note-accent-soft)',
+        border: '1px solid var(--note-accent-border)',
       }}
     >
       <div
         className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
-        style={{ background: 'var(--accent)' }}
+        style={{ background: 'var(--note-accent)' }}
       />
 
       <div className="flex items-center justify-between gap-2 mb-2">
@@ -480,8 +480,8 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
           className="font-mono inline-flex items-center gap-1 rounded-md cursor-pointer"
           style={{
             fontSize: 11,
-            background: 'color-mix(in srgb, var(--accent) 14%, transparent)',
-            color: 'var(--accent)',
+            background: 'var(--note-accent-soft)',
+            color: 'var(--note-accent-text)',
             padding: '2px 8px',
           }}
           title="Jump to this moment"
@@ -551,13 +551,13 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
             code: ({ children }) => (
               <code
                 className="font-mono px-1 py-0.5 rounded text-[12px]"
-                style={{ background: 'color-mix(in srgb, var(--secondary) 14%, transparent)', color: 'var(--accent)' }}
+                style={{ background: 'color-mix(in srgb, var(--secondary) 14%, transparent)', color: 'var(--note-accent-text)' }}
               >
                 {children}
               </code>
             ),
             a: ({ children, href }) => (
-              <a href={href} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }} className="underline">
+              <a href={href} target="_blank" rel="noreferrer" style={{ color: 'var(--note-accent-text)' }} className="underline">
                 {children}
               </a>
             ),

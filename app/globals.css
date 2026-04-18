@@ -14,6 +14,12 @@
   --border: #E5E7EB;
   --card-bg: #F9FAFB;
   --shadow: rgba(0, 0, 0, 0.1);
+  /* Note-accent palette (used by SegmentNoteBand / SegmentNotePopup).
+     Light-mode uses darker yellows so text clears WCAG 2.1 AA on near-white. */
+  --note-accent: #ca8a04;
+  --note-accent-text: #a16207;
+  --note-accent-soft: rgba(250, 204, 21, 0.12);
+  --note-accent-border: rgba(202, 138, 4, 0.35);
 }
 
 /* Dark mode - both auto and manual */
@@ -27,6 +33,10 @@
     --border: #374151;
     --card-bg: #1E293B;
     --shadow: rgba(255, 255, 255, 0.1);
+    --note-accent: #facc15;
+    --note-accent-text: #facc15;
+    --note-accent-soft: rgba(250, 204, 21, 0.08);
+    --note-accent-border: rgba(250, 204, 21, 0.28);
   }
 }
 
@@ -40,6 +50,10 @@
   --border: #374151 !important;
   --card-bg: #1E293B !important;
   --shadow: rgba(255, 255, 255, 0.1) !important;
+  --note-accent: #facc15 !important;
+  --note-accent-text: #facc15 !important;
+  --note-accent-soft: rgba(250, 204, 21, 0.08) !important;
+  --note-accent-border: rgba(250, 204, 21, 0.28) !important;
 }
 
 /* Manual light mode class - override system preference */
@@ -52,6 +66,10 @@
   --border: #E5E7EB !important;
   --card-bg: #FAFAF9 !important;
   --shadow: rgba(0, 0, 0, 0.1) !important;
+  --note-accent: #ca8a04 !important;
+  --note-accent-text: #a16207 !important;
+  --note-accent-soft: rgba(250, 204, 21, 0.12) !important;
+  --note-accent-border: rgba(202, 138, 4, 0.35) !important;
 }
 
 @theme inline {
