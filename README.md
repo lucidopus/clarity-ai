@@ -28,7 +28,7 @@ Clarity AI's multi-source pipeline supports **6 different content types**:
 
 | Source | Input | Extraction Method |
 |--------|-------|-------------------|
-| **YouTube** | Video URL | Public transcript API with residential proxy fallback |
+| **YouTube** | Video URL | Apify actor (`pintostudio/youtube-transcript-scraper`) — bypasses IP blocking |
 | **Document** | PDF, PPTX upload | Page-by-page text extraction (unpdf) |
 | **Audio** | MP3, WAV, M4A, FLAC, OGG, WebM | Groq Whisper transcription |
 | **Text** | Paste or type | Direct input (lecture notes, study notes) |
@@ -77,7 +77,7 @@ Real-time educational session recording with a 3-layer storage architecture (Rea
 
 ### Personalized Learning Dashboard
 
-- **Activity Heatmap** — GitHub-style visualization of study habits.
+- **Activity Heatmap** — GitHub-style visualization of study habits with tonal tiers for day-quality.
 - **Progress Overview** — Quiz scores and flashcard mastery at a glance.
 - **Learning Insights**:
   - **Focus Hours** — Peak productivity times with timezone-aware hourly breakdown.
@@ -86,6 +86,38 @@ Real-time educational session recording with a 3-layer storage architecture (Rea
   - **Flashcard Mix** — Difficulty distribution of your flashcard deck.
   - **Weekly Rhythm** — Consistency patterns across days of the week.
 - **Video Gallery** — Central library for all processed content with search and filtering.
+
+### Streaks & Study Habits
+
+Behavioral-science-backed habit system designed to reinforce consistency without punishing life:
+
+- **Study Streaks** — Daily study qualification tracked via `StudyDay` records; longest streak persists even after a break.
+- **Streak Shields** — Automatic save when you miss a day (new users start with 1 as an endowed-progress onboarding gift).
+- **Recovery Window** — 48-hour grace period after a broken streak with a harder qualification threshold to restore it.
+- **Milestone Celebrations** — Animated shield-earn and streak-milestone moments at 3, 7, 14, 30, 60, 100, 365 days.
+- **Cognitive Contract** — Self-chosen daily study window (Gollwitzer implementation intentions); pre-window email reminder keeps the commitment salient.
+
+### Focus Mode
+
+Distraction-free study session with a durable timer that persists across reloads and tabs:
+
+- **Focus Window** — Start/stop an intentional study block with Doherty-threshold feedback.
+- **Ambient Sound Orb** — Optional white-noise player with cross-tab BroadcastChannel hand-off so only one tab owns playback.
+- **Horizon-Dissolve Closure** — Calm outro animation when a session ends.
+- **Clara-in-Focus** — The AI tutor bubble stays reachable but tucked out of the way.
+
+### Spaced Repetition (FSRS)
+
+Flashcards are scheduled using the [FSRS algorithm](https://github.com/open-spaced-repetition/ts-fsrs) — a modern, research-backed alternative to SM-2:
+
+- Per-card next-due state derived from every review (again / hard / good / easy).
+- Full review history persisted to `FlashcardReview` for analytics and migration.
+- Centralized in `lib/services/fsrs.ts` — no custom scheduling logic scattered across the app.
+
+### Today's Mix & Daily Challenges
+
+- **Today's Mix** — A small, curated set of due flashcards + unfinished materials surfaced each day so you always know what to open.
+- **Daily Challenges** — Rotating micro-goals (answer quizzes, review cards, watch a new video) that map onto the active-recall + testing-effect principles.
 
 ### AI-Powered Discovery & Personalization
 
@@ -132,13 +164,15 @@ Password-protected dashboard at `/admin` for platform monitoring:
 | **Styling** | [Tailwind CSS v4](https://tailwindcss.com/) with [Framer Motion](https://www.framer.com/motion/) |
 | **Database** | [MongoDB](https://www.mongodb.com/) (Atlas) with vector search |
 | **Cache** | [Redis](https://redis.io/) (ioredis) for recommendation caching |
-| **AI / LLM** | [Groq](https://groq.com/) (Llama 3.3, Qwen 2.5, GPT-OSS) + [Google Gemini 2.0](https://ai.google.dev/) |
-| **Embeddings** | Google Gemini (1536-dim vectors) for semantic search & recommendations |
-| **Background Jobs** | [Trigger.dev](https://trigger.dev/) for pipeline orchestration & scheduled tasks |
+| **AI / LLM** | [Groq](https://groq.com/) (Llama 3.3 70B, Qwen3 32B, GPT-OSS 120B) + [Google Gemini](https://ai.google.dev/) (2.0 / 2.5 Flash, 3 Flash/Pro Preview) |
+| **LLM Orchestration** | [LangChain](https://www.langchain.com/) with structured outputs via Zod schemas |
+| **Spaced Repetition** | [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs) — FSRS algorithm for flashcard scheduling |
+| **Embeddings** | Google Gemini `text-embedding-004` (1536-dim) with MongoDB Atlas vector search |
+| **Background Jobs** | [Trigger.dev](https://trigger.dev/) v4 for pipeline orchestration & scheduled tasks |
 | **File Storage** | [Supabase Storage](https://supabase.com/storage) for document & audio uploads |
-| **Audio Transcription** | [ElevenLabs](https://elevenlabs.io/) Scribe V2 (live) + Groq Whisper (async) |
-| **Email** | [SendGrid](https://sendgrid.com/) for transactional emails (OTP verification) |
-| **Transcript Extraction** | youtube-transcript with Webshare residential proxies |
+| **Audio Transcription** | [ElevenLabs](https://elevenlabs.io/) Scribe V2 (live) + Groq Whisper v3 (async) |
+| **YouTube Transcripts** | [Apify](https://apify.com/) (`pintostudio/youtube-transcript-scraper`) |
+| **Email** | [SendGrid](https://sendgrid.com/) for transactional emails (OTP + study reminders) |
 | **Authentication** | JWT-based with HTTP-only cookies + email OTP verification |
 | **Deployment** | [Vercel](https://vercel.com/) |
 
@@ -181,15 +215,17 @@ User Input (YouTube URL / PDF / Audio / Text / Live Lecture)
 
 ### Prerequisites
 
-- Node.js 18+
-- MongoDB instance (with vector search index configured)
-- Groq API Key
-- Google Gemini API Key (embeddings + content generation)
-- Redis instance (recommendation caching)
-- Trigger.dev account (background job orchestration)
-- Supabase project (file storage for document/audio uploads)
-- SendGrid API Key (email verification)
-- ElevenLabs API Key (live lecture transcription)
+- Node.js 18.18+ (Next.js 16 requirement)
+- Yarn (classic / v1)
+- MongoDB Atlas instance (vector search index required on `Video` collection and user preference embeddings)
+- Redis instance (recommendation cache + rate limiting)
+- Groq API key (Llama / Qwen / Whisper)
+- Google Gemini API key (content generation + embeddings)
+- Trigger.dev v4 account (background job orchestration)
+- Supabase project with `uploads` storage bucket (document/audio file uploads)
+- SendGrid API key (OTP verification + study reminders)
+- ElevenLabs API key (live lecture Scribe V2 transcription)
+- Apify API token (YouTube transcript extraction)
 
 ### Installation
 
@@ -211,43 +247,55 @@ User Input (YouTube URL / PDF / Audio / Text / Live Lecture)
     # Database
     MONGODB_URI=your_mongodb_connection_string
 
-    # AI / LLM
+    # AI / LLM — API keys
     GROQ_API_KEY=your_groq_api_key
     GEMINI_API_KEY=your_gemini_api_key
-    CONTENT_GENERATION_MODEL=gemini-2.0-flash
-    CHATBOT_MODEL=llama-3.3-70b-versatile
 
-    # Authentication
-    JWT_SECRET=your_jwt_secret_key
+    # AI / LLM — model selection (must match keys in lib/cost/config.ts)
+    CONTENT_GENERATION_MODEL=gemini-2.5-flash
+    CHATBOT_MODEL=llama-3.3-70b-versatile
+    CLARA_MODEL=gemini-3-flash-preview
+    # Optional — enables educational-content filter before generation
+    ENABLE_CONTENT_VALIDATION=true
+    CONTENT_VALIDATION_MODEL=gemini-2.0-flash-exp
+
+    # Authentication (both JWT_SECRET and ADMIN_JWT_SECRET must be ≥ 32 chars and distinct)
+    JWT_SECRET=your_jwt_secret_key_at_least_32_characters
+    ADMIN_JWT_SECRET=your_admin_jwt_secret_at_least_32_characters
     JWT_EXPIRE_DAYS=1
     JWT_REMEMBER_DAYS=30
 
     # Email (SendGrid)
     SENDGRID_API_KEY=your_sendgrid_api_key
+    EMAIL_FROM=no-reply@yourdomain.com
 
-    # File Storage (Supabase)
+    # Public URL used in transactional emails (CTA links)
+    NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+    # File Storage (Supabase) — service role key is server-side only
     NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-    # Redis (recommendation caching)
+    # Redis (recommendation cache + rate limiting)
     REDIS_URL=your_redis_connection_url
 
-    # Background Jobs (Trigger.dev)
+    # Background Jobs (Trigger.dev v4)
     TRIGGER_SECRET_KEY=your_trigger_secret_key
 
-    # Live Lecture (ElevenLabs)
+    # Live Lecture (ElevenLabs Scribe V2)
     ELEVENLABS_API_KEY=your_elevenlabs_api_key
 
-    # Transcript Proxy (production)
-    WEBSHARE_PROXY_URL=http://user:pass@p.webshare.io:80
+    # YouTube Transcripts (Apify)
+    APIFY_API_TOKEN=your_apify_api_token
 
-    # Admin Portal
+    # Admin Portal (min 8 chars)
     ADMIN_PASSWORD=your_admin_password
     ```
 
-    **Model Configuration:**
-    - `CONTENT_GENERATION_MODEL` and `CHATBOT_MODEL` must match keys in `lib/cost/config.ts`
-    - See `docs/cost-tracking.md` for cost tracking documentation
+    **Notes:**
+    - `CONTENT_GENERATION_MODEL`, `CHATBOT_MODEL`, `CLARA_MODEL` must match keys in `lib/cost/config.ts` — see `docs/cost-tracking.md` for details.
+    - `JWT_SECRET` and `ADMIN_JWT_SECRET` are validated at runtime (Zod) — the app crashes fast on missing or too-short values.
+    - Trigger.dev tasks read the same envs; set them in the Trigger.dev dashboard for dev/staging/prod environments.
 
 4. **Run the development server:**
     ```bash
@@ -259,11 +307,23 @@ User Input (YouTube URL / PDF / Audio / Text / Live Lecture)
 ## Available Scripts
 
 ```bash
-yarn dev        # Start development server
+yarn dev        # Start development server (http://localhost:3000)
 yarn build      # Build for production
 yarn start      # Start production server
 yarn lint       # Run ESLint
+yarn test       # Run Jest test suite
 ```
+
+### Trigger.dev tasks
+
+Background jobs live in `trigger/` and must be deployed separately from the Next.js app. Staging and production only run the **latest deployment**, so every change in `trigger/` needs a re-deploy:
+
+```bash
+npx trigger.dev@latest dev        # Run tasks locally against the dev environment
+npx trigger.dev@latest deploy     # Deploy to production
+```
+
+See `docs/dev_rules/trigger_rules.md` for Trigger.dev v4 conventions.
 
 ## Contributing
 
