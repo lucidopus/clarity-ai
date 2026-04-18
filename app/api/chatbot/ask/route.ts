@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import { chatbotLlm, CHATBOT_MODEL_NAME } from '@/lib/sdk';
 import { getChatbotContext } from '@/lib/chatbot-context';
 import { checkChatbotRateLimit } from '@/lib/rate-limit';
-import { CHATBOT_SYSTEM_PROMPT, ANIMATION_TOOL_PROMPT_ADDENDUM, VISUALIZE_COMMAND_ADDENDUM } from '@/lib/prompts';
+import { buildClaraSystemPrompt, ANIMATION_TOOL_PROMPT_ADDENDUM, VISUALIZE_COMMAND_ADDENDUM } from '@/lib/prompts';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     const context = await getChatbotContext(decoded.userId, videoId);
 
     // 7. Build system prompt
-    let systemPrompt = CHATBOT_SYSTEM_PROMPT(context);
+    let systemPrompt = buildClaraSystemPrompt(context);
     if (useAnimationTool) {
       systemPrompt += ANIMATION_TOOL_PROMPT_ADDENDUM;
       if (forceVisualize) {

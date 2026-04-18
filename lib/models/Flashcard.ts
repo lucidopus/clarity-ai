@@ -13,6 +13,16 @@ export interface IFSRSCard {
   last_review?: Date;
 }
 
+export type FlashcardCardType = 'definition' | 'mechanism' | 'discrimination' | 'application' | 'cloze';
+export type BloomLevel = 'recall' | 'understand' | 'apply' | 'analyze';
+
+export interface IFlashcardSourceRef {
+  startTime?: number;
+  endTime?: number;
+  page?: number;
+  quote?: string;
+}
+
 export interface IFlashcard extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
@@ -20,6 +30,12 @@ export interface IFlashcard extends Document {
   question: string;
   answer: string;
   difficulty?: 'easy' | 'medium' | 'hard' | null;
+  /** Pedagogical category (SuperMemo-style). Optional for back-compat with cards generated before this field existed. */
+  cardType?: FlashcardCardType;
+  /** Bloom's taxonomy level. Optional for back-compat. */
+  bloomLevel?: BloomLevel;
+  /** Pointer to where in the source this card was derived from. Powers Clara's "show me where" behavior. */
+  sourceRef?: IFlashcardSourceRef;
   generationType: 'ai' | 'human';
   fsrs?: IFSRSCard;
   createdAt: Date;
@@ -39,12 +55,22 @@ const FSRSCardSchema = new Schema<IFSRSCard>({
   last_review: { type: Date },
 }, { _id: false });
 
+const FlashcardSourceRefSchema = new Schema<IFlashcardSourceRef>({
+  startTime: { type: Number },
+  endTime: { type: Number },
+  page: { type: Number },
+  quote: { type: String },
+}, { _id: false });
+
 const FlashcardSchema: Schema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   sourceId: { type: String, required: true },
   question: { type: String, required: true },
   answer: { type: String, required: true },
   difficulty: { type: String, required: false, enum: ['easy', 'medium', 'hard'], default: null },
+  cardType: { type: String, required: false, enum: ['definition', 'mechanism', 'discrimination', 'application', 'cloze'] },
+  bloomLevel: { type: String, required: false, enum: ['recall', 'understand', 'apply', 'analyze'] },
+  sourceRef: { type: FlashcardSourceRefSchema, required: false },
   generationType: { type: String, required: true, enum: ['ai', 'human'] },
   fsrs: { type: FSRSCardSchema },
 }, {

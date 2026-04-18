@@ -309,6 +309,24 @@ export async function generateMaterials(
 
     // Track LLM cost
     const llmCost = calculateLLMCost(usage.promptTokens, usage.completionTokens, GEMINI_MODEL_NAME);
+
+    // Capture per-cardType and Bloom distributions so the admin cost view
+    // shows what kind of materials we're actually paying for, not just counts.
+    const cardTypeBreakdown: Record<string, number> = {};
+    const flashcardBloomBreakdown: Record<string, number> = {};
+    for (const fc of materials.flashcards as Array<{ cardType?: string; bloomLevel?: string }>) {
+      if (fc.cardType) cardTypeBreakdown[fc.cardType] = (cardTypeBreakdown[fc.cardType] || 0) + 1;
+      if (fc.bloomLevel) flashcardBloomBreakdown[fc.bloomLevel] = (flashcardBloomBreakdown[fc.bloomLevel] || 0) + 1;
+    }
+    const quizBloomBreakdown: Record<string, number> = {};
+    for (const q of materials.quizzes as Array<{ bloomLevel?: string }>) {
+      if (q.bloomLevel) quizBloomBreakdown[q.bloomLevel] = (quizBloomBreakdown[q.bloomLevel] || 0) + 1;
+    }
+    const mindMapEdgeTypeBreakdown: Record<string, number> = {};
+    for (const e of materials.mindMap.edges as Array<{ type?: string }>) {
+      if (e.type) mindMapEdgeTypeBreakdown[e.type] = (mindMapEdgeTypeBreakdown[e.type] || 0) + 1;
+    }
+
     services.push({
       service: ServiceType.GEMINI_LLM,
       usage: {
@@ -326,6 +344,10 @@ export async function generateMaterials(
             realWorldProblemsGenerated: materials.realWorldProblems.length,
             mindMapNodesGenerated: materials.mindMap.nodes.length,
             mindMapEdgesGenerated: materials.mindMap.edges.length,
+            cardTypeBreakdown,
+            flashcardBloomBreakdown,
+            quizBloomBreakdown,
+            mindMapEdgeTypeBreakdown,
           },
         },
       },
@@ -349,28 +371,45 @@ export async function saveLearningMaterials(userId: string, videoId: string, mat
 
   const { initFSRSCard } = await import('@/lib/services/fsrs');
   await Flashcard.insertMany(
-    materials.flashcards.map((fc: { question: string; answer: string; difficulty: string }) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    materials.flashcards.map((fc: any) => ({
       userId,
       sourceId: videoId,
       question: fc.question,
       answer: fc.answer,
       difficulty: fc.difficulty,
+      cardType: fc.cardType,
+      bloomLevel: fc.bloomLevel,
+      sourceRef: fc.sourceRef,
       generationType: 'ai',
       fsrs: initFSRSCard(),
     }))
   );
 
+  // Quizzes now carry `richOptions` (text + isCorrect + per-distractor
+  // misconception). The Mongoose model still requires the legacy `options[]`
+  // and `correctAnswerIndex` for back-compat with older UI code paths, so
+  // derive them here at persist time. New code should read `richOptions`.
   await Quiz.insertMany(
-    materials.quizzes.map((quiz: { questionText: string; options: string[]; correctAnswerIndex: number; explanation: string; difficulty?: string }) => ({
-      userId,
-      sourceId: videoId,
-      questionText: quiz.questionText,
-      options: quiz.options,
-      correctAnswerIndex: quiz.correctAnswerIndex,
-      explanation: quiz.explanation,
-      difficulty: quiz.difficulty || 'medium',
-      generationType: 'ai',
-    }))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    materials.quizzes.map((quiz: any) => {
+      const richOptions: Array<{ text: string; isCorrect: boolean; misconception?: string }> = quiz.richOptions ?? [];
+      const derivedOptions = richOptions.map((o) => o.text);
+      const derivedCorrectIndex = Math.max(0, richOptions.findIndex((o) => o.isCorrect));
+      return {
+        userId,
+        sourceId: videoId,
+        questionText: quiz.questionText,
+        options: quiz.options ?? derivedOptions,
+        correctAnswerIndex: typeof quiz.correctAnswerIndex === 'number' ? quiz.correctAnswerIndex : derivedCorrectIndex,
+        richOptions,
+        explanation: quiz.explanation,
+        difficulty: quiz.difficulty || 'medium',
+        bloomLevel: quiz.bloomLevel,
+        sourceRef: quiz.sourceRef,
+        generationType: 'ai',
+      };
+    })
   );
 
   await MindMap.findOneAndUpdate(

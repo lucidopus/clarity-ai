@@ -5,7 +5,7 @@ import LiveSession from '@/lib/models/LiveSession';
 import SourceContent from '@/lib/models/SourceContent';
 import { getGeminiLlm } from '@/lib/sdk';
 import { checkQARateLimit } from '@/lib/live-lecture/redis';
-import { LIVE_LECTURE_QA_PROMPT, EXPLAIN_LAST_2_MIN_PROMPT } from '@/lib/live-lecture/prompts';
+import { LIVE_LECTURE_QA_PROMPT, EXPLAIN_LAST_2_MIN_PROMPT } from '@/lib/prompts';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
 import { logGenerationCost } from '@/lib/cost/logger';

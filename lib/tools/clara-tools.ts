@@ -26,6 +26,7 @@ export const TOOL_LABELS: Record<string, string> = {
   quizzes: 'Checking your quiz questions',
   progress: 'Reviewing your study progress',
   set_study_contract: 'Saving your study window',
+  search_transcript: 'Searching the source for…',
 };
 
 // ── Individual fetchers (module-level, accept userId + sourceId) ─────
@@ -151,6 +152,107 @@ async function fetchProgress(userId: string, sourceId: string): Promise<string> 
   return lines.join('\n');
 }
 
+// ── search_transcript helpers ───────────────────────────────────────
+
+/** Escape user-supplied text for safe insertion into a RegExp. */
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Format a timestamp (seconds) as "M:SS" or "H:MM:SS". */
+function fmtTimestamp(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+interface TranscriptHit {
+  /** ±150 chars of context around the match, with the match marked. */
+  context: string;
+  /** Optional source-grounded location label, e.g. "around 12:34" or "page 7". */
+  location?: string;
+}
+
+async function searchTranscript(
+  userId: string,
+  sourceId: string,
+  query: string,
+  limit: number,
+): Promise<string> {
+  await dbConnect();
+
+  const trimmed = query.trim();
+  if (!trimmed) return 'Search query was empty — provide a phrase, term, or moment to search for.';
+
+  const doc = await SourceContent.findOne({ userId, sourceId })
+    .select('fullText segments')
+    .lean();
+  if (!doc) return 'No source content available to search.';
+
+  const { fullText, segments } = doc as unknown as {
+    fullText: string;
+    segments?: Array<{ text: string; startTime?: number; endTime?: number; page?: number }>;
+  };
+
+  if (!fullText || fullText.length === 0) return 'No source content available to search.';
+
+  const escaped = escapeRegExp(trimmed);
+  // Try word-boundary first (better for short tokens like "TLS"), fall back to substring.
+  const wordPattern = new RegExp(`\\b${escaped}\\b`, 'gi');
+  const subPattern = new RegExp(escaped, 'gi');
+  const re = wordPattern.test(fullText) ? new RegExp(`\\b${escaped}\\b`, 'gi') : subPattern;
+
+  const hits: TranscriptHit[] = [];
+  let m: RegExpExecArray | null;
+  const seenStarts = new Set<number>();
+
+  while ((m = re.exec(fullText)) !== null && hits.length < limit) {
+    const start = m.index;
+    if (seenStarts.has(start)) {
+      if (re.lastIndex === start) re.lastIndex++;
+      continue;
+    }
+    seenStarts.add(start);
+
+    const matchText = m[0];
+    const ctxStart = Math.max(0, start - 150);
+    const ctxEnd = Math.min(fullText.length, start + matchText.length + 150);
+    const before = (ctxStart > 0 ? '… ' : '') + fullText.slice(ctxStart, start);
+    const after = fullText.slice(start + matchText.length, ctxEnd) + (ctxEnd < fullText.length ? ' …' : '');
+    const context = `${before}**${matchText}**${after}`.replace(/\s+/g, ' ').trim();
+
+    let location: string | undefined;
+    if (segments && segments.length > 0) {
+      const segMatch = segments.find((s) => s.text && s.text.toLowerCase().includes(matchText.toLowerCase()));
+      if (segMatch) {
+        if (typeof segMatch.startTime === 'number') {
+          location = `around ${fmtTimestamp(segMatch.startTime)}`;
+        } else if (typeof segMatch.page === 'number') {
+          location = `page ${segMatch.page}`;
+        }
+      }
+    }
+
+    hits.push({ context, location });
+
+    if (re.lastIndex === start) re.lastIndex++;
+  }
+
+  if (hits.length === 0) {
+    return `No matches for "${trimmed}" in the source. The phrase may have been paraphrased or not covered directly.`;
+  }
+
+  const lines = hits.map((h, i) => {
+    const tag = h.location ? ` (${h.location})` : '';
+    return `${i + 1}.${tag} "${h.context}"`;
+  });
+
+  return `[${hits.length} match${hits.length === 1 ? '' : 'es'} for "${trimmed}"]\n\n${lines.join('\n\n')}`;
+}
+
 // ── Fetcher registry (used by the tool) ─────────────────────────────
 
 type SourceKey = 'source' | 'flashcards' | 'quizzes' | 'progress';
@@ -265,5 +367,33 @@ export function createClaraTools(
     },
   );
 
-  return [requestInformation, setStudyContract];
+  const searchTranscriptTool = tool(
+    async (input: { query: string; limit?: number }) => {
+      const limit = Math.min(Math.max(1, input.limit ?? 5), 10);
+      // Search the *active* sub-source the learner is viewing — that's where
+      // their question is grounded.
+      return searchTranscript(userId, activeSourceId || generationSourceId, input.query, limit);
+    },
+    {
+      name: 'search_transcript',
+      description:
+        "Search the source for a specific phrase, term, or moment. Use when the learner references a quote, a precise term, or a specific moment ('around minute 12', 'when she mentioned X'). Returns matching passages with surrounding context and timestamp/page when available. Prefer this over recalling the source from memory.",
+      schema: z.object({
+        query: z
+          .string()
+          .min(1)
+          .max(200)
+          .describe('The phrase, term, or short keyword to search for in the source. Keep it short — 1–6 words works best.'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .optional()
+          .describe('Maximum number of matches to return (default 5).'),
+      }),
+    },
+  );
+
+  return [requestInformation, setStudyContract, searchTranscriptTool];
 }

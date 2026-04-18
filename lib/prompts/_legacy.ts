@@ -1,4 +1,4 @@
-import { CHATBOT_NAME } from './config';
+import { CHATBOT_NAME } from '../config';
 
 const LEARNING_MATERIALS_PROMPT_TEMPLATE = `You are an educational expert creating comprehensive study materials from {{SOURCE_DESCRIPTION}}.
 

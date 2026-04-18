@@ -32,7 +32,11 @@ interface TranscriptSegment {
 // Use Record types for flexibility with LLM output structures
 type RealWorldProblem = Record<string, unknown> & { id: string };
 type FlashcardItem = Record<string, unknown> & { question: string; answer: string };
-type QuizItem = Record<string, unknown> & { questionText: string; options: string[] };
+// `options` is the legacy shape (string[] + correctAnswerIndex); `richOptions`
+// is the new shape ({ text, isCorrect, misconception? }[]). Both are optional
+// here so this loose interface accepts either; Phase 4 derives the legacy
+// fields from richOptions before persisting.
+type QuizItem = Record<string, unknown> & { questionText: string };
 
 interface LearningMaterials {
   title: string;
