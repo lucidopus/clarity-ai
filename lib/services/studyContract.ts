@@ -8,7 +8,7 @@
 
 export interface StudyContract {
   windowStart: string;  // "HH:MM" 24h
-  windowEnd: string;    // "HH:MM" 24h (must be strictly later than windowStart)
+  windowEnd: string;    // "HH:MM" 24h (may cross midnight for overnight windows)
   timezone: string;     // IANA, e.g. "America/New_York"
   contractedAt: Date;
 }
@@ -32,8 +32,8 @@ export function validateStudyContract(
   const end = parseHHMM(windowEnd);
   if (start === null) return 'Start time must be in HH:MM format (24-hour).';
   if (end === null) return 'End time must be in HH:MM format (24-hour).';
-  if (end <= start) return 'End time must be after start time.';
-  const durationMinutes = end - start;
+  const raw = end - start;
+  const durationMinutes = raw < 0 ? raw + 1440 : raw;
   if (durationMinutes < 15) return 'Pick a window of at least 15 minutes.';
   if (durationMinutes > 8 * 60) return 'Pick a window of at most 8 hours.';
   try {
@@ -72,14 +72,16 @@ export function isNowInContractWindow(
   if (!contract) return false;
   const start = parseHHMM(contract.windowStart);
   const end = parseHHMM(contract.windowEnd);
-  if (start === null || end === null || end <= start) return false;
+  if (start === null || end === null) return false;
   let current: number;
   try {
     current = minutesInZone(at, contract.timezone);
   } catch {
     return false;
   }
-  return current >= start && current < end;
+  if (end > start) return current >= start && current < end;
+  // overnight window (e.g. 11:00 PM – 1:00 AM)
+  return current >= start || current < end;
 }
 
 /** Minutes until the window opens (positive) or negative if past start / no contract. */

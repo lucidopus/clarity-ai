@@ -19,6 +19,11 @@ function timeToMinutes(hhmm: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+function calcDuration(start: string, end: string): number {
+  const raw = timeToMinutes(end) - timeToMinutes(start);
+  return raw < 0 ? raw + 1440 : raw;
+}
+
 function resolveTimezone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -642,7 +647,7 @@ export default function SettingsPage() {
       setContractError('Pick a start and end time first.');
       return;
     }
-    const durationMinutes = timeToMinutes(windowEnd) - timeToMinutes(windowStart);
+    const durationMinutes = calcDuration(windowStart, windowEnd);
     if (durationMinutes < 15 || durationMinutes > 8 * 60) {
       setContractError('Pick a window between 15 minutes and 8 hours.');
       return;
@@ -1141,10 +1146,7 @@ export default function SettingsPage() {
 
         {(() => {
           const isUnset = !windowStart || !windowEnd;
-          const durationMinutes = isUnset
-            ? 0
-            : timeToMinutes(windowEnd) - timeToMinutes(windowStart);
-          const endBeforeStart = !isUnset && durationMinutes <= 0;
+          const durationMinutes = isUnset ? 0 : calcDuration(windowStart, windowEnd);
           const durationOk = !isUnset && durationMinutes >= 15 && durationMinutes <= 8 * 60;
           const dirty =
             hasSavedContract &&
@@ -1159,8 +1161,6 @@ export default function SettingsPage() {
             ? `${durationMinutes}-minute window · ${activeTimezone.replace('_', ' ')}`
             : isUnset
             ? 'Pick a stretch between 15 minutes and 8 hours when you can reliably show up.'
-            : endBeforeStart
-            ? 'End time must be after start time.'
             : 'Window must be 15 minutes to 8 hours.';
           const saveLabel = isSavingContract
             ? 'Saving…'
