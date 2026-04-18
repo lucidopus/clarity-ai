@@ -1292,7 +1292,7 @@ export default function SettingsPage() {
                           className={`absolute left-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${ambientInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
                         >
                           <p className="font-medium text-foreground mb-1">Why ambient sound?</p>
-                          <p>A steady rhythm your brain locks onto, making it easier to stay in the zone. Keep the volume soft, just enough to hear it, and it&apos;ll cover up sudden noises without becoming a distraction itself. Headphones work best, and most people notice the difference within a few minutes.</p>
+                          <p>A steady rhythm your brain locks onto, making it easier to stay in the zone. Keep the volume soft, just enough to hear it, so it fades into the background rather than becoming a distraction itself. Headphones work best, and most people notice the difference within a few minutes.</p>
                         </div>
                       </div>
                     </div>
