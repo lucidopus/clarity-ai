@@ -304,18 +304,20 @@ export default function SegmentNotePopup({
             style={{
               width: 'min(560px, 92vw)',
               background: 'var(--card-bg)',
-              border: '1px solid var(--border)',
-              boxShadow: '0 24px 60px -16px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.2)',
+              border: '1px solid rgba(250,204,21,0.45)',
+              boxShadow: '0 24px 60px -16px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.2), 0 0 0 1px rgba(250,204,21,0.1), 0 0 32px -8px rgba(250,204,21,0.2)',
             }}
           >
+            {/* Yellow top accent bar */}
+            <div style={{ height: 3, background: 'linear-gradient(90deg, #facc15 0%, rgba(250,204,21,0.4) 100%)' }} />
             {/* Header — single inline row */}
             <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span
                   className="inline-flex items-center gap-1 font-mono text-[11px] px-2 py-1 rounded-md"
                   style={{
-                    background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-                    color: 'var(--accent)',
+                    background: 'rgba(250,204,21,0.15)',
+                    color: '#facc15',
                   }}
                 >
                   <Play size={9} fill="currentColor" />
@@ -368,7 +370,7 @@ export default function SegmentNotePopup({
               <div
                 className="text-[12.5px] italic leading-snug pl-3 line-clamp-2"
                 style={{
-                  borderLeft: '2px solid color-mix(in srgb, var(--accent) 55%, transparent)',
+                  borderLeft: '2px solid rgba(250,204,21,0.6)',
                   color: 'var(--secondary)',
                 }}
               >
@@ -422,11 +424,11 @@ export default function SegmentNotePopup({
             {/* Footer */}
             <div
               className="px-5 py-3 border-t flex items-center justify-between gap-3"
-              style={{ borderColor: 'var(--border)' }}
+              style={{ borderColor: 'rgba(250,204,21,0.2)' }}
             >
               <div className="flex items-center gap-3 text-[11px]" style={{ color: 'var(--secondary)' }}>
                 <span className="inline-flex items-center gap-1.5">
-                  <Play size={10} style={{ color: 'var(--accent)' }} />
+                  <Play size={10} style={{ color: '#facc15' }} />
                   Resumes on save
                 </span>
                 {charCount > 0 && (
@@ -463,7 +465,7 @@ export default function SegmentNotePopup({
                   onClick={handleSave}
                   disabled={!canSave}
                   className="inline-flex items-center gap-2 pl-3 pr-2 py-1.5 text-[12px] leading-none rounded-md font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  style={{ background: 'var(--accent)', color: '#06080d' }}
+                  style={{ background: '#facc15', color: '#06080d' }}
                 >
                   <span className="leading-none">Save note</span>
                   <span
@@ -509,15 +511,15 @@ export default function SegmentNotePopup({
             }
             .segment-note-editor li { margin-bottom: 2px; }
             .segment-note-editor code {
-              background: color-mix(in srgb, var(--secondary) 14%, transparent);
-              color: var(--accent);
+              background: rgba(250,204,21,0.1);
+              color: #facc15;
               padding: 1px 5px;
               border-radius: 4px;
               font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
               font-size: 13px;
             }
             .segment-note-editor blockquote {
-              border-left: 3px solid var(--accent);
+              border-left: 3px solid rgba(250,204,21,0.6);
               padding-left: 10px;
               color: var(--secondary);
               margin: 6px 0;
@@ -531,7 +533,7 @@ export default function SegmentNotePopup({
               height: 0;
             }
             .segment-note-editor ::selection {
-              background: color-mix(in srgb, var(--accent) 22%, transparent);
+              background: rgba(250,204,21,0.2);
             }
             @keyframes segmentAnchorPulse {
               0% {
@@ -575,8 +577,8 @@ function FmtButton({
       title={title}
       className="w-7 h-7 grid place-items-center rounded-md transition-colors hover:bg-background cursor-pointer"
       style={{
-        color: active ? 'var(--accent)' : 'var(--secondary)',
-        background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
+        color: active ? '#facc15' : 'var(--secondary)',
+        background: active ? 'rgba(250,204,21,0.15)' : 'transparent',
       }}
     >
       {children}
