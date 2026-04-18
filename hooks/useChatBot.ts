@@ -287,7 +287,9 @@ export function useChatBot(
                 }
 
                 case 'token': {
-                  accumulatedContent += event.content as string;
+                  const tokenText = typeof event.content === 'string' ? event.content : '';
+                  if (!tokenText) break;
+                  accumulatedContent += tokenText;
                   setMessages(prev => prev.map(msg =>
                     msg.id === assistantMessageId
                       ? { ...msg, content: accumulatedContent }

@@ -40,6 +40,29 @@ function emitSSE(
 }
 
 /**
+ * Normalize LangChain AIMessageChunk.content to a plain string. The field is
+ * typed `string | MessageContentComplex[]`, and Groq/tool-calling models often
+ * return an array of `{ type: 'text', text: string }` parts. Naively coercing
+ * the array via `+=` yields "[object Object]" in the streamed response.
+ */
+function extractText(content: unknown): string {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === 'string') return part;
+        if (part && typeof part === 'object') {
+          const text = (part as { text?: unknown }).text;
+          if (typeof text === 'string') return text;
+        }
+        return '';
+      })
+      .join('');
+  }
+  return '';
+}
+
+/**
  * Execute a Clara tool by name, returning the string result.
  */
 async function executeTool(
@@ -203,7 +226,7 @@ export async function POST(request: NextRequest) {
 
           for await (const chunk of stream) {
             const aiChunk = chunk as AIMessageChunk;
-            const content = aiChunk.content as string;
+            const content = extractText(aiChunk.content);
 
             toolAccumulator.addChunk(aiChunk);
 
@@ -301,7 +324,7 @@ export async function POST(request: NextRequest) {
               const answerStream = await model.stream(messagesWithTools, { callbacks: [tokenCallback], signal: abortController.signal });
 
               for await (const chunk of answerStream) {
-                const content = (chunk as AIMessageChunk).content as string;
+                const content = extractText((chunk as AIMessageChunk).content);
                 if (content) {
                   assistantResponse += content;
                   emitSSE(controller, encoder, { type: 'token', content });
