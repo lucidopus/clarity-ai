@@ -79,14 +79,14 @@ export default function StudyContractPrompt({
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data?.message || 'Could not save your study window. Try again.');
+        setError(data?.message || 'Could not save your Clarity Mode hours. Try again.');
         setSaving(false);
         return;
       }
       onSaved?.();
       onClose();
     } catch {
-      setError('Could not save your study window. Try again.');
+      setError('Could not save your Clarity Mode hours. Try again.');
       setSaving(false);
     }
   };
@@ -115,7 +115,7 @@ export default function StudyContractPrompt({
           <div className="flex-1">
             <div className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-accent mb-1">
               <Sparkles className="w-3 h-3" aria-hidden="true" />
-              Your study window
+              Your Clarity Mode
             </div>
             <h2 id="study-contract-title" className="text-xl font-bold text-foreground leading-tight">
               When do you usually study?
@@ -134,8 +134,8 @@ export default function StudyContractPrompt({
 
         <p className="text-sm text-muted-foreground leading-relaxed mb-5">
           Picking a specific time — not &quot;later&quot; — is the single strongest move for
-          building a habit. We&apos;ll send one supportive nudge 15 minutes before your window,
-          every day. Studying inside it earns the Gold tier. Change it anytime from Clara.
+          building a habit. We&apos;ll send one supportive nudge 15 minutes before Clarity Mode
+          opens, every day. Studying inside it earns the Gold tier. Change it anytime from Clara.
         </p>
 
         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -146,7 +146,7 @@ export default function StudyContractPrompt({
               value={windowStart}
               onChange={(e) => setWindowStart(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent tabular-nums cursor-pointer"
-              aria-label="Study window start time"
+              aria-label="Clarity Mode start time"
             />
           </label>
           <label className="block">
@@ -156,7 +156,7 @@ export default function StudyContractPrompt({
               value={windowEnd}
               onChange={(e) => setWindowEnd(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent tabular-nums cursor-pointer"
-              aria-label="Study window end time"
+              aria-label="Clarity Mode end time"
             />
           </label>
         </div>

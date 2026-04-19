@@ -310,7 +310,7 @@ export default function StreakWidget() {
                   {todayTier === 'gold' ? (
                     <div
                       className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-200 border border-amber-400/70 dark:border-amber-500/40"
-                      aria-label="Gold day — flashcards cleared, challenges done, and inside your study window"
+                      aria-label="Gold day — flashcards cleared, challenges done, and inside your Clarity Mode"
                     >
                       <Sparkles className="w-3 h-3" strokeWidth={2.5} aria-hidden="true" />
                       Gold day
@@ -335,8 +335,8 @@ export default function StreakWidget() {
                   {studyContract && (
                     <div
                       className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-background text-muted-foreground border border-border"
-                      aria-label={`Study window ${studyContract.windowStart}–${studyContract.windowEnd}`}
-                      title="Your study window. Activity inside it earns the Gold tier."
+                      aria-label={`Clarity Mode ${studyContract.windowStart}–${studyContract.windowEnd}`}
+                      title="Your Clarity Mode hours. Activity inside them earns the Gold tier."
                     >
                       <Clock className="w-3 h-3" aria-hidden="true" />
                       {studyContract.windowStart}–{studyContract.windowEnd}

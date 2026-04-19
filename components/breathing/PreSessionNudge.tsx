@@ -103,7 +103,7 @@ export default function PreSessionNudge() {
                   <span>Starting soon</span>
                 </div>
                 <p className="mt-1 text-base font-bold leading-tight text-foreground">
-                  Study starts in {mmss(msUntilStart)}
+                  Clarity Mode in {mmss(msUntilStart)}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   Settle in with a 5-min warm-up — helps you focus faster.

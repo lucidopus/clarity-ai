@@ -668,7 +668,7 @@ export default function SettingsPage() {
       });
       const data = await response.json();
       if (!response.ok || !data.success) {
-        setContractError(data?.message || 'Could not save your study window. Try again.');
+        setContractError(data?.message || 'Could not save your Clarity Mode hours. Try again.');
         return;
       }
       setSavedWindowStart(windowStart);
@@ -676,10 +676,10 @@ export default function SettingsPage() {
       setSavedTimezone(timezone);
       setHasSavedContract(true);
       window.dispatchEvent(new Event('focus-mode:refresh'));
-      addToast('Study window saved', 'success');
+      addToast('Clarity Mode saved', 'success');
     } catch (error) {
       console.error('Save study window error:', error);
-      setContractError('Could not save your study window. Try again.');
+      setContractError('Could not save your Clarity Mode hours. Try again.');
     } finally {
       setIsSavingContract(false);
     }
@@ -692,7 +692,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/streak-contract', { method: 'DELETE' });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setContractError(data?.message || 'Could not clear your study window. Try again.');
+        setContractError(data?.message || 'Could not clear your Clarity Mode hours. Try again.');
         return;
       }
       setSavedWindowStart(null);
@@ -702,10 +702,10 @@ export default function SettingsPage() {
       setWindowStart('');
       setWindowEnd('');
       window.dispatchEvent(new Event('focus-mode:refresh'));
-      addToast('Study window cleared', 'success');
+      addToast('Clarity Mode cleared', 'success');
     } catch (error) {
       console.error('Clear study window error:', error);
-      setContractError('Could not clear your study window. Try again.');
+      setContractError('Could not clear your Clarity Mode hours. Try again.');
     } finally {
       setIsClearingContract(false);
     }
@@ -1134,16 +1134,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Study Window Section */}
+      {/* Clarity Mode Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground mb-1 flex items-center gap-2">
               <Clock className="w-5 h-5 text-accent" aria-hidden="true" />
-              Study Window
+              Clarity Mode
             </h2>
             <p className="text-sm text-muted-foreground">
-              Studying inside this window earns the Gold day tier on your heatmap.
+              Studying inside your Clarity Mode hours earns the Gold day tier on your heatmap.
               We&apos;ll send one supportive nudge 15 minutes before it opens.
             </p>
           </div>
@@ -1220,7 +1220,7 @@ export default function SettingsPage() {
                     }}
                     disabled={!contractLoaded || isSavingContract || isClearingContract}
                     className="w-full px-4 py-3 bg-card-bg border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors tabular-nums cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Study window start time"
+                    aria-label="Clarity Mode start time"
                   />
                 </label>
                 <label className="block">
@@ -1234,7 +1234,7 @@ export default function SettingsPage() {
                     }}
                     disabled={!contractLoaded || isSavingContract || isClearingContract}
                     className="w-full px-4 py-3 bg-card-bg border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors tabular-nums cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Study window end time"
+                    aria-label="Clarity Mode end time"
                   />
                 </label>
               </div>
@@ -1302,7 +1302,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Shows a 5-minute breathing exercise 5 minutes before your study window starts. Skip or dismiss anytime — never interrupts your session.
+                      Shows a 5-minute breathing exercise 5 minutes before Clarity Mode starts. Skip or dismiss anytime — never interrupts your session.
                     </p>
                   </div>
                 </div>
@@ -1345,7 +1345,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Show a play/pause control during your focus window.
+                      Show a play/pause control during Clarity Mode.
                     </p>
                   </div>
                 </div>
@@ -1355,7 +1355,7 @@ export default function SettingsPage() {
                     className="sr-only peer"
                     checked={ambientEnabled}
                     onChange={(e) => setAmbientEnabled(e.target.checked)}
-                    aria-label="Toggle ambient sound control in focus window"
+                    aria-label="Toggle ambient sound control in Clarity Mode"
                   />
                   <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
                 </label>

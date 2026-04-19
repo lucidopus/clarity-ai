@@ -169,7 +169,7 @@ function FocusBadge({
           if (e.currentTarget.matches(':focus-visible')) setFocused(true);
         }}
         onBlur={() => setFocused(false)}
-        aria-label={`Focus window active, ${formatRemaining(
+        aria-label={`Clarity Mode active, ${formatRemaining(
           minutesLeft,
         )} remaining. Click to edit in settings.`}
         className="relative inline-flex items-center justify-center rounded-full bg-card-bg/60 backdrop-blur-md hover:bg-card-bg/90 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -262,7 +262,7 @@ function FocusEntryFlash({
       {show && (
         <FocusToast
           key="focus-entry-flash"
-          tagLabel="Focus window"
+          tagLabel="Clarity Mode"
           title="You’re in. Let’s study."
           meta={meta}
         />
@@ -309,7 +309,7 @@ function PreWindowMountGuard({
   return (
     <FocusToast
       tagLabel="Starting soon"
-      title="Focus window in 15 minutes"
+      title="Clarity Mode in 15 minutes"
       meta={meta}
       onDismiss={() => setDismissed(true)}
     />

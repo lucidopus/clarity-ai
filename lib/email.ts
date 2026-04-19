@@ -68,7 +68,7 @@ const BODY_TEMPLATES_UPCOMING: BodyTemplate[] = [
   },
   // Transition — tactical ritual
   {
-    subhead: ({ durationLabel }) => `Your ${durationLabel} focus window.`,
+    subhead: ({ durationLabel }) => `Your Clarity Mode — ${durationLabel}.`,
     body: ({ startTimeLabel }) =>
       `Fifteen minutes to clear your desk, grab water, and put your phone in the other room. We start at ${startTimeLabel}.`,
   },
@@ -113,7 +113,7 @@ const BODY_TEMPLATES_NOW: BodyTemplate[] = [
     body: () => "It's time.",
   },
   {
-    subhead: ({ durationLabel }) => `Your ${durationLabel} focus window.`,
+    subhead: ({ durationLabel }) => `Your Clarity Mode — ${durationLabel}.`,
     body: () =>
       'Clear your desk, grab water, and put your phone in the other room. We start now.',
   },

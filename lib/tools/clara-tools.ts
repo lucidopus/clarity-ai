@@ -25,7 +25,7 @@ export const TOOL_LABELS: Record<string, string> = {
   flashcards: 'Looking at your flashcards',
   quizzes: 'Checking your quiz questions',
   progress: 'Reviewing your study progress',
-  set_study_contract: 'Saving your study window',
+  set_study_contract: 'Saving your Clarity Mode hours',
   search_transcript: 'Searching the source for…',
 };
 
@@ -330,7 +330,7 @@ export function createClaraTools(
   const setStudyContract = tool(
     async (input: { windowStart: string; windowEnd: string; timezone: string }) => {
       const invalid = validateStudyContract(input.windowStart, input.windowEnd, input.timezone);
-      if (invalid) return `Could not save the study window: ${invalid}`;
+      if (invalid) return `Could not save your Clarity Mode hours: ${invalid}`;
       await dbConnect();
       await User.updateOne(
         { _id: userId },
@@ -345,12 +345,12 @@ export function createClaraTools(
           },
         },
       );
-      return `Study window saved: ${input.windowStart}–${input.windowEnd} (${input.timezone}). Activity inside this window earns the Gold day tier. A single pre-window reminder will be sent 15 minutes before it starts.`;
+      return `Clarity Mode set: ${input.windowStart}–${input.windowEnd} (${input.timezone}). Activity during Clarity Mode earns the Gold day tier. A single reminder will be sent 15 minutes before it opens.`;
     },
     {
       name: 'set_study_contract',
       description:
-        "Save the student's daily study window (their Cognitive Contract). Use only when the student has explicitly picked a specific start and end time for studying. Implementation-intention research shows pegging a goal to a concrete time is far more effective than willpower.",
+        "Save the student's daily Clarity Mode hours (their Cognitive Contract). Use only when the student has explicitly picked a specific start and end time for studying. Implementation-intention research shows pegging a goal to a concrete time is far more effective than willpower.",
       schema: z.object({
         windowStart: z
           .string()
