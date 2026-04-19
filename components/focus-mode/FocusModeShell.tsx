@@ -61,7 +61,7 @@ function FocusToast({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       role="status"
       aria-live="polite"
-      className="fixed bottom-6 right-6 sm:right-44 z-50 w-[22rem] max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
+      className="fixed bottom-[calc(var(--mobile-chrome-bottom)+1rem)] right-4 sm:bottom-6 sm:right-44 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
     >
       <div className="relative flex items-stretch">
         <div
@@ -457,9 +457,9 @@ export default function FocusModeShell() {
         // Timer orb sits on the right so the primary focus signal is the
         // corner-most element; ambient is to its left.
         <div
-          className={`fixed bottom-6 ${
-            hasChatBubble ? 'right-[6.5rem]' : 'right-6'
-          } z-40 flex items-center gap-3 transition-[right] duration-300 ease-out`}
+          className={`fixed bottom-[calc(var(--mobile-chrome-bottom)+1rem)] ${
+            hasChatBubble ? 'right-[5rem] md:right-[6.5rem]' : 'right-4 md:right-6'
+          } md:bottom-6 z-40 flex items-center gap-3 transition-[right] duration-300 ease-out`}
         >
           {ambientEnabled && <FocusAmbientPlayer forcePause={!isInWindow} />}
           {isInWindow && minutesRemaining !== null && windowTotalMinutes > 0 && (

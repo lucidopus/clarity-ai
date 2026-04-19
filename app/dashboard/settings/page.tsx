@@ -901,7 +901,7 @@ export default function SettingsPage() {
               </div>
               <div className="relative group">
                 <Info className="w-4 h-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="absolute right-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <p className="font-medium text-foreground mb-1">Why the limit?</p>
                   <p>Clarity personalizes your flashcards, quizzes, case studies, and Clara&apos;s tutoring based on your learning profile. Changing it often would make your existing materials inconsistent, so we limit updates to {MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} per month to keep things deliberate.</p>
                 </div>
@@ -1289,7 +1289,7 @@ export default function SettingsPage() {
                         </button>
                         <div
                           role="tooltip"
-                          className={`absolute left-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${ambientInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                          className={`absolute left-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${ambientInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
                         >
                           <p className="font-medium text-foreground mb-1">Why ambient sound?</p>
                           <p>A steady rhythm your brain locks onto, making it easier to stay in the zone. Keep the volume soft, just enough to hear it, so it fades into the background rather than becoming a distraction itself. Headphones work best, and most people notice the difference within a few minutes.</p>

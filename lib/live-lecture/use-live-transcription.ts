@@ -12,6 +12,7 @@ import {
   type StoredSession,
 } from './indexeddb';
 import { getUserFriendlyMessage } from '@/lib/utils/user-error';
+import { hasMediaDevices, hasDisplayCapture, MEDIA_UNAVAILABLE_MESSAGE } from '@/lib/utils/media';
 
 export interface TranscriptSegment {
   text: string;
@@ -208,6 +209,9 @@ export function useLiveTranscription(config: UseLiveTranscriptionConfig): UseLiv
       // Get audio stream
       let stream: MediaStream;
       if (audioSource === 'system') {
+        if (!hasDisplayCapture()) {
+          throw new Error(MEDIA_UNAVAILABLE_MESSAGE);
+        }
         stream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
           audio: true,
@@ -219,6 +223,9 @@ export function useLiveTranscription(config: UseLiveTranscriptionConfig): UseLiv
           throw new Error('No system audio available. Make sure to share a tab or screen with audio.');
         }
       } else {
+        if (!hasMediaDevices()) {
+          throw new Error(MEDIA_UNAVAILABLE_MESSAGE);
+        }
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,

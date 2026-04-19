@@ -14,9 +14,9 @@ export default function Navbar() {
   const showMarketingLinks = !pathname?.startsWith('/onboarding') && !pathname?.startsWith('/auth');
 
   return (
-    <nav className="sticky top-0 z-50 bg-[color-mix(in_srgb,var(--background)_72%,transparent)] backdrop-blur-md border-b border-white/50 dark:border-white/6 px-8 h-14 flex items-center after:absolute after:-bottom-px after:left-0 after:right-0 after:h-[2px] after:bg-linear-to-r after:from-transparent after:via-accent/40 after:to-transparent">
+    <nav className="sticky top-0 z-50 bg-[color-mix(in_srgb,var(--background)_92%,transparent)] md:bg-[color-mix(in_srgb,var(--background)_72%,transparent)] backdrop-blur-md border-b border-white/50 dark:border-white/6 px-4 sm:px-6 md:px-8 after:absolute after:-bottom-px after:left-0 after:right-0 after:h-[2px] after:bg-linear-to-r after:from-transparent after:via-accent/40 after:to-transparent">
       <div className="max-w-7xl mx-auto w-full">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 cursor-pointer shrink-0">
             <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center">
@@ -82,12 +82,13 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-2 ml-auto">
+          <div className="md:hidden flex items-center space-x-1 ml-auto">
             <ThemeToggle />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg hover:bg-card-bg transition-colors"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg hover:bg-card-bg transition-colors cursor-pointer"
               aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
                 <svg
@@ -122,58 +123,58 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden pt-3 pb-2 mt-2 border-t border-border/50">
+          <div className="md:hidden py-3 border-t border-border/50 bg-background/95 -mx-4 sm:-mx-6 px-4 sm:px-6">
             <div className="flex flex-col space-y-1">
               {showMarketingLinks && (
                 <>
                   <Link
                     href="#features"
-                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
+                    className="flex items-center min-h-11 text-sm text-secondary hover:text-foreground transition-colors px-3 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Features
                   </Link>
                   <Link
                     href="#why-clarity"
-                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
+                    className="flex items-center min-h-11 text-sm text-secondary hover:text-foreground transition-colors px-3 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Why Clarity
                   </Link>
                   <Link
                     href="#how-it-works"
-                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
+                    className="flex items-center min-h-11 text-sm text-secondary hover:text-foreground transition-colors px-3 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     How It Works
                   </Link>
                   <Link
                     href="#pricing"
-                    className="text-sm text-secondary hover:text-foreground transition-colors px-3 py-2 rounded-lg hover:bg-card-bg cursor-pointer"
+                    className="flex items-center min-h-11 text-sm text-secondary hover:text-foreground transition-colors px-3 rounded-lg hover:bg-card-bg cursor-pointer"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Pricing
                   </Link>
                 </>
               )}
-              <div className="pt-2 mt-1 border-t border-border flex flex-col space-y-1">
+              <div className="pt-3 mt-2 border-t border-border flex flex-col gap-2">
                 {loading ? (
                   <div className="text-sm text-secondary text-center py-2">Loading...</div>
                 ) : user ? (
                   <>
-                    <Button href="/dashboard" variant="ghost" size="sm" className="w-full">
+                    <Button href="/dashboard" variant="ghost" size="sm" className="w-full justify-center" onClick={() => setMobileMenuOpen(false)}>
                       Dashboard
                     </Button>
-                    <Button onClick={logout} variant="ghost" size="sm" className="w-full">
+                    <Button onClick={() => { setMobileMenuOpen(false); logout(); }} variant="ghost" size="sm" className="w-full justify-center">
                       Logout
                     </Button>
                   </>
                 ) : (
                   <>
-                    <Button href="/auth/signin" variant="ghost" size="sm" className="w-full">
+                    <Button href="/auth/signin" variant="ghost" size="sm" className="w-full justify-center" onClick={() => setMobileMenuOpen(false)}>
                       Sign In
                     </Button>
-                    <Button href="/auth/signup" variant="primary" size="sm" className="w-full">
+                    <Button href="/auth/signup" variant="primary" size="sm" className="w-full justify-center" onClick={() => setMobileMenuOpen(false)}>
                       Get Started
                     </Button>
                   </>

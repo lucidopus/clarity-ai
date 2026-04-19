@@ -206,7 +206,7 @@ export default function FlashcardViewer({
       </div>
 
       {/* Flashcard */}
-      <div className="relative h-[400px] mb-8 perspective-1000">
+      <div className="relative h-[min(60dvh,400px)] sm:h-[400px] mb-6 sm:mb-8 perspective-1000">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -226,7 +226,7 @@ export default function FlashcardViewer({
             >
                {/* Front of card (Question) */}
                <div
-                 className="absolute inset-0 bg-card-bg border-2 border-border rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer"
+                 className="absolute inset-0 bg-card-bg border-2 border-border rounded-2xl p-5 sm:p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer mobile-safe-prose"
                  style={{ backfaceVisibility: 'hidden' }}
                >
                 {/* User-Created Badge */}
@@ -238,7 +238,7 @@ export default function FlashcardViewer({
                 )}
 
                 <div className="text-sm font-medium text-accent mb-4">Question</div>
-                <p className="text-2xl font-semibold text-foreground text-center">
+                <p className="text-xl sm:text-2xl font-semibold text-foreground text-center break-words">
                   {currentCard.question}
                 </p>
                 <div className="mt-8 text-sm text-muted-foreground">
@@ -248,14 +248,14 @@ export default function FlashcardViewer({
 
                {/* Back of card (Answer) */}
                <div
-                 className="absolute inset-0 bg-accent/5 border-2 border-accent rounded-2xl p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer"
+                 className="absolute inset-0 bg-accent/5 border-2 border-accent rounded-2xl p-5 sm:p-8 flex flex-col items-center justify-center backface-hidden cursor-pointer mobile-safe-prose"
                  style={{
                    backfaceVisibility: 'hidden',
                    transform: 'rotateY(180deg)',
                  }}
                >
                 <div className="text-sm font-medium text-accent mb-4">Answer</div>
-                <p className="text-2xl font-semibold text-foreground text-center">
+                <p className="text-xl sm:text-2xl font-semibold text-foreground text-center break-words">
                   {currentCard.answer}
                 </p>
                 <button
@@ -274,23 +274,24 @@ export default function FlashcardViewer({
         </AnimatePresence>
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center justify-between gap-4">
+      {/* Controls — wraps on narrow phones, full row on sm+ */}
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
         <Button
           variant="secondary"
           onClick={handlePrev}
           disabled={currentIndex === 0}
-          className="flex-1"
+          className="flex-1 min-w-[5.5rem] sm:min-w-[9rem] px-3 sm:px-4 text-xs sm:text-sm"
         >
-          <ChevronLeft className="w-5 h-5 mr-2" />
-          Previous
+          <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+          <span className="sm:hidden">Prev</span>
+          <span className="hidden sm:inline">Previous</span>
         </Button>
 
         <Button
           variant={masteredCards.has(currentCard.id) ? 'primary' : 'secondary'}
           onClick={handleMastered}
           disabled={isUpdatingMastery}
-          className="px-4 min-w-[140px]"
+          className="flex-1 sm:flex-none shrink-0 px-3 sm:px-4 min-w-[6.5rem] sm:min-w-[140px]"
         >
           <motion.div
             className="flex items-center justify-center"
@@ -299,18 +300,23 @@ export default function FlashcardViewer({
             }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Check className={`w-4 h-4 mr-2 ${masteredCards.has(currentCard.id) ? '' : 'opacity-60'}`} />
-            <span className="font-medium">
+            <Check className={`w-4 h-4 mr-1.5 sm:mr-2 ${masteredCards.has(currentCard.id) ? '' : 'opacity-60'}`} />
+            <span className="font-medium text-xs sm:text-sm whitespace-nowrap">
               {isUpdatingMastery
-                ? 'Saving...'
+                ? 'Saving…'
                 : masteredCards.has(currentCard.id)
                   ? 'Mastered'
-                  : 'Mark Mastered'}
+                  : (
+                    <>
+                      <span className="sm:hidden">Mastered</span>
+                      <span className="hidden sm:inline">Mark Mastered</span>
+                    </>
+                  )}
             </span>
           </motion.div>
         </Button>
 
-        <Button variant="secondary" onClick={handleFlip} className="px-6">
+        <Button variant="secondary" onClick={handleFlip} className="px-6 min-h-11 min-w-11" aria-label="Flip card">
           <RotateCw className="w-5 h-5" />
         </Button>
 
@@ -343,10 +349,10 @@ export default function FlashcardViewer({
           variant="primary"
           onClick={handleNext}
           disabled={currentIndex === flashcards.length - 1}
-          className="flex-1 cursor-pointer"
+          className="flex-1 min-w-[5.5rem] sm:min-w-[9rem] px-3 sm:px-4 text-xs sm:text-sm cursor-pointer"
         >
           Next
-          <ChevronRight className="w-5 h-5 ml-2" />
+          <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 ml-1 sm:ml-2" />
         </Button>
       </div>
 

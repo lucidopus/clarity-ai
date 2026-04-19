@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Minimize2, Square, Loader2, ExternalLink, Lightbulb, Sparkles, BookOpen, HelpCircle, ListChecks, Star } from 'lucide-react';
+import { hasMediaDevices, hasDisplayCapture, MEDIA_UNAVAILABLE_MESSAGE } from '@/lib/utils/media';
 import { ToastContainer, type ToastType } from '@/components/Toast';
 import { useRouter } from 'next/navigation';
 import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
@@ -260,12 +261,18 @@ export default function LiveLectureBubble() {
         // Capture audio stream
         let stream: MediaStream;
         if (config!.audioSource === 'system') {
+          if (!hasDisplayCapture()) {
+            throw new Error(MEDIA_UNAVAILABLE_MESSAGE);
+          }
           stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
           stream.getVideoTracks().forEach(track => track.stop());
           if (stream.getAudioTracks().length === 0) {
             throw new Error('No system audio available. Make sure to share a tab with audio.');
           }
         } else {
+          if (!hasMediaDevices()) {
+            throw new Error(MEDIA_UNAVAILABLE_MESSAGE);
+          }
           stream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
           });
@@ -629,7 +636,7 @@ export default function LiveLectureBubble() {
   // Connecting state
   if (phase === 'connecting') {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-[calc(var(--mobile-chrome-bottom)+5.5rem)] right-4 md:bottom-6 md:right-6 z-50">
         <div className="flex items-center gap-3 px-4 py-3 bg-card-bg border border-border rounded-full shadow-xl">
           <Loader2 className="w-4 h-4 text-accent animate-spin" />
           <span className="text-sm text-foreground font-medium">Connecting to Clara...</span>
@@ -642,7 +649,7 @@ export default function LiveLectureBubble() {
   if (phase === 'processing') {
     return (
       <>
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-[calc(var(--mobile-chrome-bottom)+5.5rem)] right-4 md:bottom-6 md:right-6 z-50">
           <div className="flex items-center gap-3 px-5 py-3.5 bg-card-bg border border-border rounded-2xl shadow-xl">
             {sourceId ? (
               <>
@@ -683,7 +690,7 @@ export default function LiveLectureBubble() {
           <motion.button
             key="collapsed-pill"
             onClick={() => setExpanded(true)}
-            className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-card-bg border border-border rounded-full shadow-xl hover:shadow-2xl transition-shadow cursor-pointer"
+            className="fixed bottom-[calc(var(--mobile-chrome-bottom)+5.5rem)] right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-3 px-5 py-3.5 bg-card-bg border border-border rounded-full shadow-xl hover:shadow-2xl transition-shadow cursor-pointer"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -724,7 +731,7 @@ export default function LiveLectureBubble() {
             />
 
             <motion.div
-              className="relative w-full max-w-4xl mx-4 h-[85vh] max-h-[860px] bg-card-bg border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+              className="relative w-full max-w-4xl mx-2 sm:mx-4 h-[85dvh] max-h-[860px] bg-card-bg border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
@@ -754,8 +761,9 @@ export default function LiveLectureBubble() {
                 {/* Minimize */}
                 <button
                   onClick={() => setExpanded(false)}
-                  className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background transition-colors cursor-pointer"
+                  className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg text-muted-foreground hover:text-foreground hover:bg-background transition-colors cursor-pointer"
                   title="Minimize to corner"
+                  aria-label="Minimize"
                 >
                   <Minimize2 className="w-4 h-4" />
                 </button>
@@ -807,7 +815,7 @@ export default function LiveLectureBubble() {
                     window.dispatchEvent(new CustomEvent('live-lecture-explain-last-2-min'));
                     setActiveTab('clara');
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-lg transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 sm:min-h-0 sm:py-1.5 text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   <Lightbulb className="w-3 h-3" />
                   Explain Last 2 Min
@@ -817,7 +825,7 @@ export default function LiveLectureBubble() {
                     window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'Summarize everything covered so far in this lecture' }));
                     setActiveTab('clara');
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 sm:min-h-0 sm:py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   <Sparkles className="w-3 h-3" />
                   Summarize
@@ -827,7 +835,7 @@ export default function LiveLectureBubble() {
                     window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'List the key terms and definitions mentioned in this lecture so far' }));
                     setActiveTab('clara');
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 sm:min-h-0 sm:py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   <BookOpen className="w-3 h-3" />
                   Key Terms
@@ -837,7 +845,7 @@ export default function LiveLectureBubble() {
                     window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'Generate 3 quick quiz questions based on what has been covered so far' }));
                     setActiveTab('clara');
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 sm:min-h-0 sm:py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   <HelpCircle className="w-3 h-3" />
                   Quiz Me
@@ -847,7 +855,7 @@ export default function LiveLectureBubble() {
                     window.dispatchEvent(new CustomEvent('live-lecture-quick-prompt', { detail: 'What are the key takeaways and action items from this lecture so far?' }));
                     setActiveTab('clara');
                   }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 min-h-11 sm:min-h-0 sm:py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground bg-background hover:bg-card-bg/80 border border-border/50 rounded-lg transition-colors cursor-pointer shrink-0"
                 >
                   <ListChecks className="w-3 h-3" />
                   Takeaways

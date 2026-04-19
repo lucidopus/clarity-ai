@@ -22,7 +22,7 @@ export default function StatCard({ icon, label, value, trend, className = '' }: 
             </div>
           </div>
           <p className="text-sm text-muted-foreground mb-1">{label}</p>
-          <p className="text-3xl font-bold text-foreground">{value}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-foreground">{value}</p>
           {trend && (
             <div className="mt-2 flex items-center space-x-1">
               <span

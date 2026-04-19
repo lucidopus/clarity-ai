@@ -7,6 +7,7 @@ import Button from '@/components/Button';
 import { Rating } from '@/lib/services/fsrs';
 import { speak, cancelSpeech, matchRating } from '@/lib/services/voice';
 import type { RatingWord } from '@/lib/services/voice';
+import { hasMediaDevices } from '@/lib/utils/media';
 
 interface DueCard {
   _id: string;
@@ -120,6 +121,11 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
     }
 
     let cancelled = false;
+    if (!hasMediaDevices()) {
+      setMicError(true);
+      setVoiceEnabled(false);
+      return;
+    }
     navigator.mediaDevices
       .getUserMedia({ audio: true, video: false })
       .then((s) => {
@@ -440,7 +446,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
           className="bg-card-bg border border-border rounded-2xl p-10 max-w-sm w-full text-center shadow-xl"
         >
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">All caught up!</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">All caught up!</h2>
           <p className="text-muted-foreground mb-6">No cards are due for voice review right now.</p>
           <Button variant="primary" onClick={onClose}>Close</Button>
         </motion.div>
@@ -457,7 +463,7 @@ export default function VoiceFlashcardReview({ onClose, onSessionComplete }: Pro
           className="bg-card-bg border border-border rounded-2xl p-8 max-w-sm w-full text-center shadow-xl"
         >
           <CheckCircle2 className="w-14 h-14 text-accent mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">Session Complete</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Session Complete</h2>
           <p className="text-muted-foreground mb-6">{reviewedCount} card{reviewedCount !== 1 ? 's' : ''} reviewed</p>
           <Button variant="primary" onClick={onClose} className="w-full">Done</Button>
         </motion.div>

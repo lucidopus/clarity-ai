@@ -60,7 +60,7 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
           <div className={`absolute left-0 top-0 bottom-0 w-12 bg-linear-to-r from-background to-transparent z-10 flex items-center justify-start pl-2 transition-opacity duration-300 ${showLeftArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
              <button 
                 onClick={() => scroll('left')}
-                className="w-8 h-8 rounded-full bg-background/95 border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
+                className="w-11 h-11 rounded-full bg-background/95 border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
              >
                 <ChevronLeft className="w-5 h-5" />
              </button>
@@ -70,7 +70,7 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
           <div className={`absolute right-0 top-0 bottom-0 w-12 bg-linear-to-l from-background to-transparent z-10 flex items-center justify-end pr-2 transition-opacity duration-300 ${showRightArrow ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <button 
                 onClick={() => scroll('right')}
-                className="w-8 h-8 rounded-full bg-background/95 border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
+                className="w-11 h-11 rounded-full bg-background/95 border border-border shadow-md flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
                 aria-label="Scroll right"
              >
                 <ChevronRight className="w-5 h-5" />
@@ -78,13 +78,14 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
           </div>
           
           {/* Scroll Container */}
-          <div 
+          <div
             ref={rowRef}
             onScroll={handleScroll}
-            className="flex gap-4 overflow-x-auto no-scrollbar px-4 sm:px-8 pb-4"
+            className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar snap-x px-4 sm:px-8 pb-4"
+            style={{ scrollPaddingInline: '1rem' }}
           >
              {items.map((video, idx) => (
-                 <div key={`${video._id}-${idx}`} className="flex-shrink-0 w-[280px] sm:w-[320px]">
+                 <div key={`${video._id}-${idx}`} className="flex-shrink-0 snap-start w-[260px] sm:w-[320px]">
                     <VideoCard
                         id={video._id}
                         title={video.title}

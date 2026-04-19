@@ -3,6 +3,85 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Mobile foundations: safe-area insets + iOS auto-zoom prevention + landscape guard.
+   `viewport-fit=cover` in app/layout.tsx is required for env(safe-area-inset-*) to
+   report non-zero on notched iOS devices. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* Mobile shell dimensions (used by fixed top bar / bottom nav / FAB offset math) */
+  --mobile-top-bar-h: 3.5rem;   /* h-14 */
+  --mobile-bottom-nav-h: 4rem;  /* h-16 */
+
+  /* Bottom offset for any mobile-floating element (FAB, live-lecture bubble,
+     focus-mode orb). Defaults to just the safe-area inset; MobileBottomNav
+     (when mounted) bumps this to clear the nav strip via a body attribute. */
+  --mobile-chrome-bottom: env(safe-area-inset-bottom);
+}
+
+body[data-has-mobile-nav='true'] {
+  --mobile-chrome-bottom: calc(var(--mobile-bottom-nav-h) + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  /* Desktop: no mobile chrome to clear, and safe-area inset is always zero. */
+  :root,
+  body[data-has-mobile-nav='true'] {
+    --mobile-chrome-bottom: 0px;
+  }
+}
+
+/* Hints for env() support so Tailwind arbitrary values work; no plugin needed. */
+.pt-safe { padding-top: var(--safe-top); }
+.pb-safe { padding-bottom: var(--safe-bottom); }
+.pl-safe { padding-left: var(--safe-left); }
+.pr-safe { padding-right: var(--safe-right); }
+
+/* iOS Safari auto-zooms on input focus when font-size < 16px. Force 16px on
+   text inputs at phone widths. Desktop keeps whatever size the site set. */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="number"],
+  textarea,
+  [contenteditable="true"] {
+    font-size: 16px;
+  }
+}
+
+/* Landscape phones with very little vertical room (e.g. 568×320 iPhone SE rot.).
+   Drops sticky chrome and sheet max-height so the remaining content area isn't
+   cut down to ~100px. Must stay strict — desktop users never hit this. */
+@media (max-height: 480px) and (pointer: coarse) {
+  .landscape-phone-flatten {
+    position: static !important;
+  }
+  .landscape-phone-fill {
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* Force user-generated content (KaTeX, ProseMirror, markdown) to wrap/scroll on
+   mobile instead of overflowing. Paired with container `.mobile-safe-prose`. */
+.mobile-safe-prose {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.mobile-safe-prose pre,
+.mobile-safe-prose code,
+.mobile-safe-prose .katex-display {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
 /* Design Tokens - Clarity AI */
 :root {
   /* Light Mode Colors (Default) */
@@ -96,6 +175,16 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Last-line-of-defence horizontal overflow guard. `clip` (not `hidden`) so we
+   don't create a scroll container — any child that actively wants horizontal
+   scroll (tab strips, category rows, heatmaps) keeps working. Catches stray
+   wide elements (long titles, prose blocks, unwrapped grids) on phones. */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100vw;
 }
 
 /* Focus styles for accessibility */

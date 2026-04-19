@@ -18,7 +18,9 @@ import {
   Pencil,
   Trash2,
   Play,
+  Plus,
   ChevronUp,
+  ChevronDown,
   Sparkles,
 } from 'lucide-react';
 import type { NotesShape, SaveNotes, SegmentNote, TranscriptSegment } from './types';
@@ -31,6 +33,7 @@ interface NotesPanelProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
   onOpenCommandPalette: () => void;
+  onAddSegmentNote?: () => void;
   transcript: TranscriptSegment[];
   onSeek: (time: number) => void;
   onEditSegmentNote: (segmentIndex: number) => void;
@@ -44,6 +47,7 @@ export default function NotesPanel({
   collapsed,
   onToggleCollapse,
   onOpenCommandPalette,
+  onAddSegmentNote,
   transcript,
   onSeek,
   onEditSegmentNote,
@@ -57,6 +61,23 @@ export default function NotesPanel({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const notesRef = useRef(notes);
   notesRef.current = notes;
+
+  // Tapping a moment timestamp on mobile jumps the video AND closes the
+  // notes sheet so the user lands on the playhead. Desktop leaves the panel
+  // open since there's room for both.
+  const handleSegmentSeek = useCallback(
+    (time: number) => {
+      onSeek(time);
+      if (
+        typeof window !== 'undefined' &&
+        window.matchMedia('(max-width: 1023px)').matches &&
+        !collapsed
+      ) {
+        onToggleCollapse();
+      }
+    },
+    [onSeek, onToggleCollapse, collapsed]
+  );
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -150,18 +171,28 @@ export default function NotesPanel({
 
   return (
     <aside
-      className="border-l flex flex-col min-h-0 transition-[width] duration-300 ease-out shrink-0"
+      className={`
+        flex flex-col min-h-0 transition-[height,width,transform] duration-300 ease-out
+        fixed bottom-0 left-0 right-0 z-[55] border-t shadow-[0_-8px_24px_rgba(0,0,0,0.12)]
+        lg:static lg:z-auto lg:shadow-none lg:border-t-0 lg:border-l lg:shrink-0
+        ${collapsed
+          ? 'h-12 lg:h-auto w-full lg:w-11'
+          : 'h-[78dvh] lg:h-auto w-full lg:w-[var(--notes-w)]'}
+      `}
       style={{
-        width: collapsed ? 44 : width,
+        // lg+ reads this var for the expanded width; <lg uses a fixed-bottom
+        // sheet instead (see the responsive classes above).
+        ['--notes-w' as string]: `${width}px`,
         background: 'var(--card-bg)',
         borderColor: 'var(--border)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
       {collapsed ? (
         <button
           type="button"
           onClick={onToggleCollapse}
-          className="w-11 h-full flex flex-col items-center pt-4 gap-3 cursor-pointer hover:bg-(--background)/40 transition-colors"
+          className="w-full h-11 px-4 flex flex-row items-center justify-center gap-2 lg:w-11 lg:h-full lg:flex-col lg:px-0 lg:pt-4 lg:gap-3 cursor-pointer hover:bg-(--background)/40 transition-colors"
           title="Open notes (N)"
         >
           <span
@@ -172,15 +203,24 @@ export default function NotesPanel({
               color: 'var(--accent)',
             }}
           >
-            <PanelRightOpen size={14} />
+            {/* Mobile (<lg): up chevron — sheet slides up from below.
+                Desktop (lg+): side-rail panel-right icon. */}
+            <ChevronUp size={14} className="lg:hidden" />
+            <PanelRightOpen size={14} className="hidden lg:inline-block" />
           </span>
           <span
-            className="font-mono uppercase tracking-[0.18em] text-[10px] font-semibold"
+            className="lg:hidden text-xs font-semibold"
+            style={{ color: 'var(--secondary)' }}
+          >
+            Open notes
+          </span>
+          <span
+            className="hidden lg:inline font-mono uppercase tracking-[0.18em] text-[10px] font-semibold"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', color: 'var(--secondary)' }}
           >
             Notes · N
           </span>
-          <span className="mt-auto mb-3" style={{ color: 'var(--secondary)' }}>
+          <span className="hidden lg:inline mt-auto mb-3" style={{ color: 'var(--secondary)' }}>
             <PenLine size={14} />
           </span>
         </button>
@@ -215,11 +255,27 @@ export default function NotesPanel({
                   </>
                 )}
               </span>
+              {/* Add segment note — visible on mobile since ⌘/ isn't
+                  reachable there. Hidden on lg+ to keep the desktop toolbar
+                  identical to before (keyboard users already have ⌘/). */}
+              {onAddSegmentNote && (
+                <button
+                  type="button"
+                  onClick={onAddSegmentNote}
+                  aria-label="Add note at current moment"
+                  className="lg:hidden w-9 h-9 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
+                  title="Add note at current moment"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  <Plus size={16} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onOpenCommandPalette}
-                className="w-7 h-7 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
-                title="Actions (⌘P)"
+                aria-label="Search and actions"
+                className="w-9 h-9 lg:w-7 lg:h-7 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
+                title="Actions"
                 style={{ color: 'var(--secondary)' }}
               >
                 <Search size={14} />
@@ -227,18 +283,23 @@ export default function NotesPanel({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="w-7 h-7 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
-                title="Collapse notes (N)"
+                aria-label="Close notes"
+                className="w-9 h-9 lg:w-7 lg:h-7 grid place-items-center rounded-md hover:bg-background transition-colors cursor-pointer"
+                title="Collapse notes"
                 style={{ color: 'var(--secondary)' }}
               >
-                <PanelRightClose size={14} />
+                {/* Mobile (<lg): down chevron — sheet slides back down.
+                    Desktop (lg+): panel-right-close rail collapse icon. */}
+                <ChevronDown size={16} className="lg:hidden" />
+                <PanelRightClose size={14} className="hidden lg:inline-block" />
               </button>
             </div>
           </div>
 
-          {/* Shortcut strip */}
+          {/* Shortcut strip — desktop only; mobile has no physical keyboard
+              and the visible toolbar buttons already cover the same actions. */}
           <div
-            className="px-5 py-2 border-b flex items-center gap-3 text-[11px] overflow-x-auto"
+            className="hidden lg:flex px-5 py-2 border-b items-center gap-3 text-[11px] overflow-x-auto"
             style={{ borderColor: 'var(--border)', color: 'var(--secondary)' }}
           >
             <span className="flex items-center gap-1.5">
@@ -262,7 +323,7 @@ export default function NotesPanel({
             open={drawerOpen}
             onToggle={() => setDrawerOpen((o) => !o)}
             entries={segmentNoteEntries}
-            onSeek={onSeek}
+            onSeek={handleSegmentSeek}
             onEdit={onEditSegmentNote}
             onDelete={handleDeleteSegmentNote}
           />
@@ -493,7 +554,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
           <button
             type="button"
             onClick={onEdit}
-            className="w-6 h-6 grid place-items-center rounded-md hover:bg-card-bg cursor-pointer"
+            className="w-10 h-10 lg:w-6 lg:h-6 grid place-items-center rounded-md hover:bg-card-bg cursor-pointer"
             title="Edit note"
             style={{ color: 'var(--secondary)' }}
           >
@@ -504,7 +565,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
               <button
                 type="button"
                 onClick={onDelete}
-                className="text-[10px] px-2 h-6 rounded-md font-medium cursor-pointer"
+                className="text-[10px] px-3 h-10 lg:h-6 rounded-md font-medium cursor-pointer"
                 style={{ background: '#ef4444', color: '#fff' }}
               >
                 Delete
@@ -512,7 +573,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
-                className="text-[10px] px-2 h-6 rounded-md font-medium cursor-pointer"
+                className="text-[10px] px-3 h-10 lg:h-6 rounded-md font-medium cursor-pointer"
                 style={{ color: 'var(--secondary)' }}
               >
                 Cancel
@@ -522,7 +583,7 @@ function SegmentNoteBand({ timestamp, caption, content, onSeek, onEdit, onDelete
             <button
               type="button"
               onClick={() => setConfirming(true)}
-              className="w-6 h-6 grid place-items-center rounded-md hover:bg-card-bg cursor-pointer"
+              className="w-10 h-10 lg:w-6 lg:h-6 grid place-items-center rounded-md hover:bg-card-bg cursor-pointer"
               title="Delete note"
               style={{ color: 'var(--secondary)' }}
             >

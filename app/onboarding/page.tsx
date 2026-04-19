@@ -60,7 +60,7 @@ function OnboardingContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         {/* Header Skeleton */}
         <div className="border-b border-border bg-card-bg/50">
           <div className="max-w-4xl mx-auto px-4 py-4">
@@ -157,7 +157,7 @@ function OnboardingContent() {
 export default function OnboardingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="h-8 w-8 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
       </div>
     }>

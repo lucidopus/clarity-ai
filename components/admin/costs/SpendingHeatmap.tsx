@@ -133,8 +133,8 @@ export default function SpendingHeatmap({ days }: SpendingHeatmapProps) {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <div className="inline-block min-w-full">
+        <div className="overflow-x-auto heatmap-scroll snap-x" style={{ scrollPaddingInline: '0.5rem' }}>
+          <div className="inline-block min-w-full snap-start">
             <div className="flex mb-2">
               <div className="w-12"></div>
               {[0, 1, 2, 3, 4, 5, 6].map((day) => (

@@ -68,7 +68,7 @@ export default function DiscoverPage() {
 
   if (loading) {
       return (
-          <div className="min-h-screen flex items-center justify-center">
+          <div className="min-h-dvh flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
       );
@@ -76,7 +76,7 @@ export default function DiscoverPage() {
 
   if (error) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+        <div className="min-h-dvh flex flex-col items-center justify-center space-y-4">
              <p className="text-destructive font-medium">{error}</p>
              <Button variant="secondary" onClick={() => window.location.reload()}>Retry</Button>
         </div>
@@ -85,7 +85,7 @@ export default function DiscoverPage() {
 
   if (categories.length === 0) {
       return (
-          <div className="min-h-screen pt-20 px-4 text-center">
+          <div className="min-h-dvh pt-20 px-4 text-center">
               <h2 className="text-xl font-bold">No recommendations yet.</h2>
               <p className="text-muted-foreground">We&apos;re generating your personalized feed. Check back in a few minutes!</p>
           </div>
@@ -93,58 +93,73 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="min-h-screen pb-20 fade-in">
+    <div className="min-h-dvh pb-20 fade-in">
       
       {/* Navbar */}
       <DiscoverNavbar subtitle="Explore new topics and expand your horizons." />
 
       {/* Hero Section */}
       {heroVideo && (
-        <section className="relative h-[50vh] min-h-[400px] w-full mb-8 rounded-3xl overflow-hidden group mx-auto max-w-[98%] mt-4">
-            {/* Hero Background */}
-            <div className="absolute inset-0 bg-linear-to-r from-background via-background/80 to-transparent z-10" />
+        <section className="relative aspect-[4/5] sm:aspect-auto sm:h-[50vh] sm:min-h-[400px] w-full mb-6 sm:mb-8 rounded-2xl sm:rounded-3xl overflow-hidden group mx-auto max-w-[calc(100%-1rem)] sm:max-w-[98%] mt-4">
+            {/* Hero Background — thumbnail reads at full opacity on mobile with
+                a bottom-anchored scrim; side gradient on sm+ keeps the legacy
+                left-column layout for wider viewports. */}
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/20 to-transparent sm:bg-linear-to-r sm:from-background sm:via-background/80 sm:to-transparent" />
             <div className="absolute inset-0">
                 {heroVideo.thumbnail && (
-                    <Image 
-                        src={heroVideo.thumbnail} 
+                    <Image
+                        src={heroVideo.thumbnail}
                         alt={heroVideo.title}
                         fill
-                        className="object-cover opacity-50"
+                        className="object-cover opacity-100 sm:opacity-50"
                         priority
                     />
                 )}
             </div>
-            
-            {/* Hero Content */}
-            <div className="relative z-20 h-full flex flex-col justify-center px-8 max-w-2xl space-y-6">
-                <span className="inline-block px-3 py-1 bg-accent/20 text-accent rounded-full text-xs font-bold uppercase tracking-wide w-fit border border-accent/20">
+
+            {/* More Info — mobile-only compact corner icon. On desktop the
+                inline "More Info" button in the CTA row below takes its place. */}
+            <button
+                type="button"
+                onClick={() => setSelectedVideo(heroVideo)}
+                aria-label="More info"
+                className="sm:hidden absolute top-3 right-3 z-30 inline-flex items-center justify-center w-11 h-11 rounded-full bg-black/40 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 transition-colors cursor-pointer"
+            >
+                <Info className="w-5 h-5" />
+            </button>
+
+            {/* Hero Content — bottom-left anchored on mobile (over the scrim);
+                centered left-column on sm+. */}
+            <div className="relative z-20 h-full flex flex-col justify-end sm:justify-center px-5 sm:px-8 pb-5 sm:pb-0 max-w-2xl space-y-3 sm:space-y-6">
+                <span className="inline-block px-2.5 py-1 bg-accent text-white sm:bg-accent/20 sm:text-accent rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest w-fit border border-accent sm:border-accent/20 shadow-md sm:shadow-none">
                     Top Pick For You
                 </span>
-                
-                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-foreground leading-tight drop-shadow-sm shadow-black">
+
+                <h1 className="text-2xl sm:text-3xl md:text-5xl font-extrabold tracking-tight text-white sm:text-foreground leading-tight drop-shadow-sm shadow-black line-clamp-3">
                     {heroVideo.title}
                 </h1>
-                
-                <p className="text-lg text-muted-foreground line-clamp-3 max-w-xl">
+
+                <p className="hidden sm:block text-lg text-muted-foreground line-clamp-3 max-w-xl">
                     {heroVideo.description || `Recommended because you're interested in ${heroVideo.tags?.[0] || 'this topic'}.`}
                 </p>
-                
-                <div className="flex flex-wrap gap-4 pt-4">
-                    <Button 
-                        variant="primary" 
-                        size="lg" 
-                        className="rounded-xl font-bold shadow-xl hover:shadow-accent/40 transition-all"
+
+                <div className="flex flex-row flex-wrap gap-2 sm:gap-4 pt-1 sm:pt-4">
+                    <Button
+                        variant="primary"
+                        size="sm"
+                        className="rounded-xl font-bold shadow-xl hover:shadow-accent/40 transition-all min-h-11 sm:min-h-0 sm:text-lg sm:px-8 sm:py-4"
                         onClick={() => router.push(`/generations/${heroVideo.videoId || heroVideo._id}`)}
                     >
-                        <Play className="w-5 h-5 fill-current mr-2" />
+                        <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current mr-1.5 sm:mr-2" />
                         Watch Now
                     </Button>
-                    <Button 
-                        variant="secondary" 
-                        className="rounded-xl font-semibold backdrop-blur-md"
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="hidden sm:inline-flex rounded-xl font-semibold backdrop-blur-md sm:text-lg sm:px-8 sm:py-4"
                         onClick={() => setSelectedVideo(heroVideo)}
                     >
-                        <Info className="w-5 h-5 mr-2" />
+                        <Info className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
                         More Info
                     </Button>
                 </div>

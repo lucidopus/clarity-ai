@@ -76,10 +76,10 @@ export default function Step5Preferences({
     >
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-foreground mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
           Your Learning Preferences
         </h2>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base sm:text-lg text-muted-foreground">
           Tell us what works best for you so we can prioritize the right materials.
         </p>
       </div>

@@ -1,8 +1,8 @@
 export default function Loading() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
       {/* Hero Section Skeleton */}
-      <section className="relative overflow-hidden opacity-100 transition-opacity duration-700 h-screen flex items-center">
+      <section className="relative overflow-hidden opacity-100 transition-opacity duration-700 h-dvh flex items-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <div className="h-16 bg-secondary/20 rounded-lg mb-6 animate-pulse"></div>

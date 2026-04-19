@@ -16,7 +16,7 @@ export default function AuthError({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="mx-auto max-w-md text-center">
         <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-accent/10">
           <AlertCircle className="h-6 w-6 text-accent" aria-hidden="true" />

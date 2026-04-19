@@ -8,6 +8,7 @@ import {
   Upload, File, Headphones
 } from 'lucide-react';
 import Button from './Button';
+import { safeRandomUUID } from '@/lib/utils/uuid';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -156,7 +157,7 @@ export default function GenerateModal({
         return;
       }
       const newSource: AddedSource = {
-        id: crypto.randomUUID(),
+        id: safeRandomUUID(),
         type: 'youtube',
         label: url.trim().length > 40 ? url.trim().slice(0, 37) + '...' : url.trim(),
         meta: 'YouTube',
@@ -176,7 +177,7 @@ export default function GenerateModal({
       }
       const titleStr = textTitle.trim() || `Text notes (${wordCount} words)`;
       const newSource: AddedSource = {
-        id: crypto.randomUUID(),
+        id: safeRandomUUID(),
         type: 'text',
         label: titleStr.length > 40 ? titleStr.slice(0, 37) + '...' : titleStr,
         meta: `${wordCount} words`,
@@ -220,7 +221,7 @@ export default function GenerateModal({
         const label = docFile.name.length > 35 ? docFile.name.slice(0, 32) + '...' : docFile.name;
 
         const newSource: AddedSource = {
-          id: crypto.randomUUID(),
+          id: safeRandomUUID(),
           type: 'document',
           label,
           meta: `${ext} - ${fileSizeMB} MB`,
@@ -273,7 +274,7 @@ export default function GenerateModal({
         const label = audioFile.name.length > 35 ? audioFile.name.slice(0, 32) + '...' : audioFile.name;
 
         const newSource: AddedSource = {
-          id: crypto.randomUUID(),
+          id: safeRandomUUID(),
           type: 'audio',
           label,
           meta: `${ext} - ${fileSizeMB} MB`,
@@ -322,15 +323,15 @@ export default function GenerateModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4"
           onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="bg-card-bg border border-border rounded-2xl shadow-xl w-full max-w-[740px] mx-4 overflow-hidden"
+            className="bg-card-bg border-t sm:border border-border rounded-t-2xl sm:rounded-2xl landscape-phone-fill shadow-xl w-full sm:w-full sm:max-w-[740px] max-h-[90dvh] overflow-hidden flex flex-col pb-[env(safe-area-inset-bottom)] sm:pb-0"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-border">
@@ -352,18 +353,18 @@ export default function GenerateModal({
               </Button>
             </div>
 
-            {/* Two-panel body */}
-            <div className="flex min-h-[360px]">
+            {/* Two-panel body — stacks on mobile, side-by-side on sm+ */}
+            <div className="flex flex-col sm:flex-row sm:min-h-[360px] flex-1 overflow-y-auto">
               {/* ── LEFT: Focus Input ──────────────────────────────── */}
-              <div className="flex-1 p-5 border-r border-border flex flex-col">
-                {/* Source type pills */}
-                <div className="flex gap-1 mb-4">
+              <div className="flex-1 p-5 border-b sm:border-b-0 sm:border-r border-border flex flex-col">
+                {/* Source type pills — horizontal scroll on narrow phones */}
+                <div className="flex gap-1 mb-4 -mx-1 px-1 overflow-x-auto no-scrollbar snap-x">
                   {SOURCE_PILLS.map((pill) => (
                     <button
                       key={pill.id}
                       type="button"
                       onClick={() => handleTabChange(pill.id)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-3 min-h-11 shrink-0 snap-start rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer ${
                         activeTab === pill.id
                           ? 'bg-accent/10 text-accent border border-accent/25'
                           : 'text-muted-foreground hover:text-foreground border border-transparent'
@@ -656,7 +657,7 @@ export default function GenerateModal({
               </div>
 
               {/* ── RIGHT: Source Panel ────────────────────────────── */}
-              <div className="w-[240px] p-5 flex flex-col bg-muted/10">
+              <div className="w-full sm:w-[240px] p-5 flex flex-col bg-muted/10">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Sources ({sources.length})

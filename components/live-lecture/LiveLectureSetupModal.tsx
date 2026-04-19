@@ -173,7 +173,7 @@ export default function LiveLectureSetupModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-[61] flex items-end sm:items-center justify-center sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -182,30 +182,31 @@ export default function LiveLectureSetupModal({
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-          {/* Modal */}
+          {/* Modal — bottom sheet on mobile, centered on sm+ */}
           <motion.div
-            className="relative w-full max-w-lg mx-4 bg-card-bg border border-border rounded-2xl shadow-2xl overflow-hidden"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
+            className="relative w-full sm:max-w-lg bg-card-bg border-t sm:border border-border rounded-t-2xl sm:rounded-2xl landscape-phone-fill shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col pb-[env(safe-area-inset-bottom)] sm:pb-0"
+            initial={{ y: 24, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Start a Live Session</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">Clara will listen along and help you learn</p>
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-border shrink-0">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-semibold text-foreground">Start a Live Session</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Clara will listen along and help you learn</p>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card-bg/80 transition-colors"
+                aria-label="Close"
+                className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg text-muted-foreground hover:text-foreground hover:bg-card-bg/80 transition-colors shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="px-6 py-5 space-y-5">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-5 flex-1 overflow-y-auto">
               {/* Lecture Name */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1.5">Lecture Name</label>
@@ -270,9 +271,10 @@ export default function LiveLectureSetupModal({
                         <span className="text-sm text-foreground truncate flex-1">{doc.fileName}</span>
                         <button
                           onClick={() => removeDoc(i)}
-                          className="p-0.5 rounded text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Remove ${doc.fileName}`}
+                          className="inline-flex items-center justify-center min-h-11 min-w-11 -m-2 rounded text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     ))}

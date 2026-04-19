@@ -186,14 +186,58 @@ interface VideoMaterials {
 
 type TabType = 'flashcards' | 'quizzes' | 'transcript' | 'prerequisites' | 'mindmap' | 'casestudies';
 
-const baseTabs = [
-  { id: 'transcript' as TabType, label: 'Learn', icon: Video },
-  { id: 'prerequisites' as TabType, label: 'Prerequisites', icon: CheckCircle2 },
-  { id: 'flashcards' as TabType, label: 'Flashcards', icon: BookOpen },
-  { id: 'quizzes' as TabType, label: 'Quizzes', icon: Brain },
-  { id: 'casestudies' as TabType, label: 'Challenges', icon: Target },
-  { id: 'mindmap' as TabType, label: 'Mind Map', icon: Network },
+type GenerationTab = { id: TabType; label: string; icon: React.ElementType };
+
+const baseTabs: GenerationTab[] = [
+  { id: 'transcript', label: 'Learn', icon: Video },
+  { id: 'prerequisites', label: 'Prerequisites', icon: CheckCircle2 },
+  { id: 'flashcards', label: 'Flashcards', icon: BookOpen },
+  { id: 'quizzes', label: 'Quizzes', icon: Brain },
+  { id: 'casestudies', label: 'Challenges', icon: Target },
+  { id: 'mindmap', label: 'Mind Map', icon: Network },
 ];
+
+function MobileTabStrip({
+  tabs,
+  activeTab,
+  onSelect,
+}: {
+  tabs: GenerationTab[];
+  activeTab: TabType;
+  onSelect: (id: TabType) => void;
+}) {
+  const activeRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    activeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [activeTab]);
+
+  return (
+    <div className="md:hidden sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-20 bg-background/95 backdrop-blur-md border-b border-border">
+      <div className="flex gap-1 overflow-x-auto no-scrollbar snap-x px-3 py-2" style={{ scrollPaddingInline: '0.75rem' }}>
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              ref={isActive ? activeRef : undefined}
+              onClick={() => onSelect(tab.id)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex items-center gap-2 shrink-0 snap-start min-h-11 px-3.5 py-2 rounded-full text-sm font-medium transition-colors cursor-pointer ${
+                isActive
+                  ? 'bg-accent/10 text-accent'
+                  : 'text-muted-foreground hover:text-foreground bg-card-bg/60'
+              }`}
+            >
+              <Icon className="w-4 h-4" aria-hidden="true" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function VideoMaterialsPage() {
   const params = useParams();
@@ -544,7 +588,7 @@ export default function VideoMaterialsPage() {
 
   if (loading) {
      return (
-       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+       <div className="min-h-dvh bg-background flex flex-col items-center justify-center p-6">
          <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
          <p className="mt-4 text-muted-foreground">{loadingMessage}</p>
        </div>
@@ -553,7 +597,7 @@ export default function VideoMaterialsPage() {
 
   if (processingStatus === 'processing' || processingStatus === 'pending') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex flex-col items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -599,7 +643,7 @@ export default function VideoMaterialsPage() {
 
   if (error || !materials) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="min-h-dvh bg-background flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
             <span className="text-3xl">⚠️</span>
@@ -613,15 +657,18 @@ export default function VideoMaterialsPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden relative">
-      
+    <div className="flex h-dvh bg-background overflow-hidden relative">
+
       {/* Sidebar — icon rail that expands to reveal labels on hover. Layout
           reserves only the 80px rail; the panel grows over the main content
           when expanded so nothing reflows. Each row uses a fixed 80px icon
           column + a label that gets revealed as the width animates, so icons
-          stay rooted in place during the transition. */}
+          stay rooted in place during the transition.
+
+          Hidden on mobile (<md); mobile uses the horizontal tab strip below
+          the top bar for the same tab navigation. */}
       <div
-        className="relative shrink-0 w-20 h-full z-40"
+        className="hidden md:block relative shrink-0 w-20 h-full z-40"
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
       >
@@ -694,33 +741,39 @@ export default function VideoMaterialsPage() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden h-full relative">
         {/* Minimal Header (Title) - Sticky */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-sm z-30 shrink-0 gap-4">
-             <div className="flex items-center gap-3 min-w-0">
+        <div
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          className="flex items-center justify-between px-3 sm:px-6 border-b border-border bg-background/80 backdrop-blur-sm z-30 shrink-0 gap-2 sm:gap-4 h-14 sm:h-16"
+        >
+             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <Button
                   onClick={() => router.push('/dashboard/gallery')}
                   variant="ghost"
                   size="sm"
-                  className="flex items-center gap-2 shrink-0"
+                  className="flex items-center gap-2 shrink-0 min-h-11"
                   title="Back to Gallery"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span className="hidden sm:inline">Back to Gallery</span>
                 </Button>
-                <div className="w-px h-6 bg-border shrink-0"></div>
-                <h1 className="text-lg font-semibold text-foreground truncate">
+                <div className="hidden sm:block w-px h-6 bg-border shrink-0"></div>
+                <h1 className="text-base sm:text-lg font-semibold text-foreground truncate min-w-0">
                     {materials.video.title}
                 </h1>
                 {materials.isReadOnly && materials.authorUsername && (
-                  <span className="shrink-0 text-xs bg-accent/10 text-accent px-2.5 py-1 rounded-full font-medium">
+                  <span className="hidden sm:inline-block shrink-0 text-xs bg-accent/10 text-accent px-2.5 py-1 rounded-full font-medium">
                     by @{materials.authorUsername}
                   </span>
                 )}
              </div>
 
-             <div className="flex items-center gap-3 shrink-0">
+             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                 <ThemeToggle />
              </div>
         </div>
+
+        {/* Mobile-only horizontal tab strip (proxies the icon-rail sidebar on <md) */}
+        <MobileTabStrip tabs={baseTabs} activeTab={activeTab} onSelect={setActiveTab} />
 
         {/* Content Scroll Area */}
         <div className="flex-1 overflow-y-auto scrollbar-themed p-4 md:p-5 lg:p-6 scroll-smooth will-change-transform">
@@ -855,7 +908,7 @@ export default function VideoMaterialsPage() {
                   )}
 
                   {activeTab === 'mindmap' && (
-                     <div className="h-[calc(100vh-140px)] w-full -mt-4 border border-border rounded-xl overflow-hidden bg-card-bg">
+                     <div className="min-h-[28rem] h-[calc(100dvh-10rem)] md:h-[calc(100dvh-140px)] w-full -mt-4 border border-border rounded-xl overflow-hidden bg-card-bg">
                         <MindMapViewer
                           videoId={videoId}
                           nodes={materials.mindMap.nodes}

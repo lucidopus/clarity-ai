@@ -91,10 +91,10 @@ export default function Step4Motivation({
     >
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-foreground mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
           Confidence & Motivation
         </h2>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base sm:text-lg text-muted-foreground">
           Help us understand your learning confidence and what drives you.
         </p>
       </div>

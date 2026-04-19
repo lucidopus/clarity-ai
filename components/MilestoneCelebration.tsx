@@ -67,7 +67,7 @@ export default function MilestoneCelebration({ milestone, shieldEarnedAtMileston
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+      className="fixed inset-0 z-[70] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
     >
       <motion.div
@@ -90,12 +90,13 @@ export default function MilestoneCelebration({ milestone, shieldEarnedAtMileston
           </div>
         </div>
 
-        {/* Milestone badge */}
+        {/* Milestone badge — desktop only; on mobile the hero halo + title
+            already communicate the count and the pill sat awkwardly next to
+            the halo in a horizontal inline row. */}
         <div
-          className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-bold mb-3"
+          className="hidden sm:inline-flex items-center px-3 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 text-sm font-bold mb-3"
           aria-hidden="true"
         >
-          <Flame className="w-3.5 h-3.5 opacity-80" />
           {milestone} days
         </div>
 

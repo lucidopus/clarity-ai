@@ -175,7 +175,7 @@ export default function StudySessionPage() {
           <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-8 h-8 text-green-500" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Session Complete</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">Session Complete</h2>
           <p className="text-muted-foreground mb-6">
             {flashcardsReviewed > 0 && `${flashcardsReviewed} cards reviewed`}
             {flashcardsReviewed > 0 && quizzesCompleted > 0 && ' + '}

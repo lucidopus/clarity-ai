@@ -286,7 +286,7 @@ function VerifyEmailForm() {
 // Main page component wrapped in Suspense because we use useSearchParams
 export default function VerifyEmailPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-dvh flex items-center justify-center bg-background px-4">
       <Suspense fallback={<Card className="w-full max-w-md p-8 text-center">Loading...</Card>}>
         <VerifyEmailForm />
       </Suspense>

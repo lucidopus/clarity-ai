@@ -144,7 +144,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         {showSlashMenu && (
           <div
             ref={menuRef}
-            className="absolute bottom-full left-0 mb-1.5 w-72 rounded-lg border border-border bg-background shadow-lg overflow-hidden z-50"
+            className="absolute bottom-full left-0 mb-1.5 w-[min(calc(100vw-2rem),18rem)] rounded-lg border border-border bg-background shadow-lg overflow-hidden z-50"
           >
             <div className="px-2.5 py-1.5 text-[10px] font-medium uppercase tracking-wider text-secondary/50">
               Commands

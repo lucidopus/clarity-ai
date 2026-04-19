@@ -39,7 +39,7 @@ export default function Button({
     sm: 'px-4 py-2 text-sm',
     md: 'px-6 py-3 text-base',
     lg: 'px-8 py-4 text-lg',
-    icon: 'p-2 rounded-full h-10 w-10',
+    icon: 'p-2 rounded-full h-11 w-11',
   };
 
   const disabledStyles = 'opacity-50 cursor-not-allowed';
@@ -48,7 +48,7 @@ export default function Button({
 
   if (href && !disabled) {
     return (
-      <Link href={href} className={combinedClassName}>
+      <Link href={href} className={combinedClassName} onClick={onClick}>
         {children}
       </Link>
     );

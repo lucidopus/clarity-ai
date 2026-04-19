@@ -105,10 +105,10 @@ export default function Step3Personality({
     >
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-foreground mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
           Your Learning Personality
         </h2>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base sm:text-lg text-muted-foreground">
           Rate each statement honestly. There are no right or wrong answers.
         </p>
       </div>

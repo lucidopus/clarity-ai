@@ -291,7 +291,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
       <div className="mb-3 flex items-center gap-1 flex-wrap pb-3 border-b border-border">
         <button
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`p-2 rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
+          className={`p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
             editor.isActive('bold') ? 'bg-accent text-white border-accent' : 'text-muted-foreground hover:text-foreground hover:border-accent'
           }`}
           title="Bold (⌘/Ctrl+B)"
@@ -300,7 +300,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         </button>
         <button
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`p-2 rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
+          className={`p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
             editor.isActive('italic') ? 'bg-accent text-white border-accent' : 'text-muted-foreground hover:text-foreground hover:border-accent'
           }`}
           title="Italic (⌘/Ctrl+I)"
@@ -309,7 +309,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         </button>
         <button
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`p-2 rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
+          className={`p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
             editor.isActive('underline') ? 'bg-accent text-white border-accent' : 'text-muted-foreground hover:text-foreground hover:border-accent'
           }`}
           title="Underline (⌘/Ctrl+U)"
@@ -318,7 +318,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         </button>
         <button
           onClick={() => editor.chain().focus().toggleStrike().run()}
-          className={`p-2 rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
+          className={`p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
             editor.isActive('strike') ? 'bg-accent text-white border-accent' : 'text-muted-foreground hover:text-foreground hover:border-accent'
           }`}
           title="Strikethrough (⌘/Ctrl+Shift+S)"
@@ -328,7 +328,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         <div className="w-px h-6 bg-border mx-1" />
         <button
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`p-2 rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
+          className={`p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
             editor.isActive('bulletList') ? 'bg-accent text-white border-accent' : 'text-muted-foreground hover:text-foreground hover:border-accent'
           }`}
           title="Bullet List"
@@ -337,7 +337,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         </button>
         <button
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={`p-2 rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
+          className={`p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border transition-all duration-200 ${
             editor.isActive('orderedList') ? 'bg-accent text-white border-accent' : 'text-muted-foreground hover:text-foreground hover:border-accent'
           }`}
           title="Numbered List"
@@ -347,7 +347,7 @@ export default function NotesEditor({ videoId, segmentId, notes, onSaveNotes }: 
         <div className="w-px h-6 bg-border mx-1" />
         <button
           onClick={() => setShowShortcuts(!showShortcuts)}
-          className="p-2 rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
+          className="p-1.5 sm:p-2 min-h-9 min-w-9 sm:min-h-11 sm:min-w-11 inline-flex items-center justify-center rounded-lg cursor-pointer hover:bg-background border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-all duration-200"
           title="View keyboard shortcuts"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

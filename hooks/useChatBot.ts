@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUserFriendlyMessage } from '@/lib/utils/user-error';
+import { safeRandomUUID } from '@/lib/utils/uuid';
 
 export interface ChatMessage {
   id: string;
@@ -138,7 +139,7 @@ export function useChatBot(
 
     // Add user message immediately
     const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: safeRandomUUID(),
       role: 'user',
       content: actualMessage,
       timestamp: new Date(),
@@ -148,7 +149,7 @@ export function useChatBot(
     setMessages(prev => [...prev, userMessage]);
 
     // Create assistant message placeholder
-    const assistantMessageId = crypto.randomUUID();
+    const assistantMessageId = safeRandomUUID();
     const assistantMessage: ChatMessage = {
       id: assistantMessageId,
       role: 'assistant',

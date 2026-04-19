@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card-bg/50">
         <div className="max-w-4xl mx-auto px-4 py-4">

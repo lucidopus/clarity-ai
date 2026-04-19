@@ -70,7 +70,7 @@ export default function FlashcardEditor({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
             onClick={handleClose}
           />
 
@@ -80,21 +80,21 @@ export default function FlashcardEditor({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[61] flex items-end sm:items-center justify-center sm:p-4"
           >
-            <div className="bg-card-bg border border-border rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            <div className="bg-card-bg border-t sm:border border-border rounded-t-2xl sm:rounded-2xl landscape-phone-fill shadow-2xl sm:max-w-6xl w-full max-h-[92dvh] overflow-hidden flex flex-col pb-[env(safe-area-inset-bottom)] sm:pb-0">
               {/* Header */}
-              <div className="flex items-center justify-between px-8 py-6 border-b border-border">
-                <div>
+              <div className="flex items-center justify-between gap-3 px-4 sm:px-8 py-4 sm:py-6 border-b border-border shrink-0">
+                <div className="min-w-0">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                       <Edit3 className="w-5 h-5 text-accent" />
                     </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-foreground">
+                    <div className="min-w-0">
+                      <h2 className="text-lg sm:text-2xl font-bold text-foreground truncate">
                         Edit Your Flashcard
                       </h2>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="hidden sm:block text-sm text-muted-foreground mt-1">
                         Update your custom flashcard
                       </p>
                     </div>
@@ -102,15 +102,16 @@ export default function FlashcardEditor({
                 </div>
                 <button
                   onClick={handleClose}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-2 hover:bg-background rounded-lg"
+                  className="inline-flex items-center justify-center min-h-11 min-w-11 text-muted-foreground hover:text-foreground transition-colors hover:bg-background rounded-lg cursor-pointer shrink-0"
                   disabled={isLoading}
+                  aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Content */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-8 max-h-[calc(90vh-180px)] overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 p-4 sm:p-8 flex-1 overflow-y-auto">
                 {/* Left Side: Form */}
                 <div className="space-y-6">
                   <form id="flashcard-editor-form" onSubmit={handleSubmit} className="space-y-6">
@@ -202,7 +203,7 @@ export default function FlashcardEditor({
                   </div>
 
                   {/* Preview Card */}
-                  <div className="relative h-[400px] perspective-1000 flex-1">
+                  <div className="relative h-[min(60dvh,400px)] sm:h-[400px] perspective-1000 flex-1">
                     {hasContent ? (
                       <motion.div
                         className="relative w-full h-full cursor-pointer"
@@ -264,7 +265,7 @@ export default function FlashcardEditor({
               </div>
 
               {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-3 px-8 py-3 border-t border-border">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 px-4 sm:px-8 py-3 border-t border-border shrink-0">
                   <Button
                     type="button"
                     onClick={handleClose}

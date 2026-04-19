@@ -71,7 +71,7 @@ function SearchPageContent() {
   }
 
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-dvh pb-20">
       <DiscoverNavbar 
         initialQuery={query || ''}
         showBackButton={true}
@@ -205,7 +205,7 @@ function SearchPageContent() {
 
 export default function SearchPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen grid place-items-center"><Loader2 className="animate-spin" /></div>}>
+        <Suspense fallback={<div className="min-h-dvh grid place-items-center"><Loader2 className="animate-spin" /></div>}>
             <SearchPageContent />
         </Suspense>
     );

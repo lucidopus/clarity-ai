@@ -401,7 +401,7 @@ export default function DocumentContentViewer({
   // the stage a full-height frame to fill.
   if (isPdf && safeFileUrl) {
     return (
-      <div className="flex flex-col h-[calc(100vh-160px)]">
+      <div className="flex flex-col h-[calc(100dvh-10rem)] sm:h-[calc(100dvh-160px)]">
         <DocumentStage
           fileUrl={safeFileUrl}
           title={materials.video.title}

@@ -10,6 +10,8 @@ import { LiveLectureProvider } from '@/lib/live-lecture/LiveLectureContext';
 import LiveLectureBubble from '@/components/live-lecture/LiveLectureBubble';
 import { FocusModeProvider } from '@/lib/focus-mode/FocusModeContext';
 import FocusModeShell from '@/components/focus-mode/FocusModeShell';
+import MobileTopBar from '@/components/MobileTopBar';
+import MobileBottomNav from '@/components/MobileBottomNav';
 
 export default function DashboardLayout({
   children,
@@ -66,9 +68,9 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-background overflow-hidden">
-        {/* Sidebar Skeleton */}
-        <div className="w-64 bg-card-bg border-r border-border flex flex-col">
+      <div className="flex h-dvh bg-background overflow-hidden">
+        {/* Sidebar Skeleton — hidden on mobile, shown md+ */}
+        <div className="hidden md:flex w-64 bg-card-bg border-r border-border flex-col">
           <div className="p-6 border-b border-border">
             <div className="h-8 bg-accent/20 rounded animate-pulse w-32"></div>
           </div>
@@ -86,7 +88,7 @@ export default function DashboardLayout({
 
         {/* Main Content Area Skeleton */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-8 py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
             {/* Header Skeleton */}
             <div className="flex items-center justify-between mb-8">
               <div>
@@ -149,7 +151,7 @@ export default function DashboardLayout({
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="min-h-dvh flex items-center justify-center bg-background px-4">
         <div className="max-w-md w-full text-center space-y-4">
           <div className="p-4 rounded-full bg-red-100 text-red-600 inline-block">
              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
@@ -176,16 +178,22 @@ export default function DashboardLayout({
   return (
     <FocusModeProvider>
       <LiveLectureProvider>
-        <div className="flex h-screen bg-background overflow-hidden">
-          {/* Sidebar */}
+        <div className="flex h-dvh bg-background overflow-hidden">
+          {/* Sidebar — hidden on mobile (md:flex on Sidebar itself) */}
           <Sidebar />
 
           {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-7xl mx-auto px-8 py-6">
+          <main className="flex-1 overflow-y-auto flex flex-col">
+            {/* Mobile-only top bar (rendered by MobileTopBar on <md; Batch 2) */}
+            <MobileTopBar onOpenSearch={() => setIsSearchOpen(true)} />
+
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-4 md:py-6 flex-1 pb-[calc(var(--mobile-bottom-nav-h)+env(safe-area-inset-bottom)+1rem)] md:pb-6">
               {children}
             </div>
           </main>
+
+          {/* Mobile bottom nav (rendered only on <md; Batch 2) */}
+          <MobileBottomNav />
 
           <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
           <LiveLectureBubble />

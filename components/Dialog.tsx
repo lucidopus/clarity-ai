@@ -93,20 +93,20 @@ export default function Dialog({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
             onClick={!isLoading ? onClose : undefined}
           />
 
-          {/* Dialog */}
+          {/* Dialog — bottom sheet on mobile (<sm), centered modal on sm+ */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[61] flex items-end sm:items-center justify-center sm:p-4"
             onKeyDown={handleKeyDown}
           >
-            <div className="bg-card-bg border border-border rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-card-bg border-t sm:border border-border rounded-t-2xl sm:rounded-2xl landscape-phone-fill shadow-2xl max-w-full sm:max-w-md w-full max-h-[90dvh] overflow-hidden pb-[env(safe-area-inset-bottom)] sm:pb-0">
               {/* Header */}
               <div className="flex items-start gap-4 px-6 py-5 border-b border-border">
                 <div className={`w-12 h-12 rounded-full ${config.iconBg} flex items-center justify-center shrink-0`}>
@@ -123,15 +123,16 @@ export default function Dialog({
                 {!isLoading && (
                   <button
                     onClick={onClose}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-background rounded-lg shrink-0"
+                    aria-label="Close dialog"
+                    className="inline-flex items-center justify-center min-h-11 min-w-11 text-muted-foreground hover:text-foreground transition-colors hover:bg-background rounded-lg shrink-0"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 )}
               </div>
 
-              {/* Footer Actions */}
-              <div className="flex items-center justify-end gap-3 px-6 py-3 bg-muted/5">
+              {/* Footer Actions — stack on narrow phones, row on sm+ */}
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 px-4 sm:px-6 py-3 bg-muted/5">
                 {actions && actions.length > 0 ? (
                   actions.map((action, index) => (
                     <Button
