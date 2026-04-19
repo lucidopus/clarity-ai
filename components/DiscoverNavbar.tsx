@@ -39,13 +39,13 @@ export default function DiscoverNavbar({ title = "Discover", subtitle, initialQu
   const isSearchMode = !!initialQuery;
 
   return (
-    <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">
-      
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-border">
+
       {/* Left: Title OR Back Button */}
-      <div>
+      <div className="min-w-0">
         {showBackButton ? (
             <Button
-                variant="ghost" 
+                variant="ghost"
                 size="sm"
                 onClick={() => router.push('/dashboard/discover')}
                 className="gap-2 pl-0 text-muted-foreground hover:text-foreground"
@@ -55,23 +55,25 @@ export default function DiscoverNavbar({ title = "Discover", subtitle, initialQu
             </Button>
         ) : (
             <div>
-                <h1 className="text-3xl font-bold text-foreground mb-1">{title}</h1>
-                {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1">{title}</h1>
+                {subtitle && <p className="text-sm sm:text-base text-muted-foreground">{subtitle}</p>}
             </div>
         )}
       </div>
 
-      {/* Center/Right: Actions & Search */}
-      <div className="flex items-center space-x-4">
-        
+      {/* Center/Right: Actions & Search — hidden on mobile; MobileTopBar
+           already provides search + theme toggle at the dashboard shell level,
+           so duplicating them here would stack two search pills. */}
+      <div className="hidden sm:flex items-center gap-4">
+
         {/* Sleek Search Trigger */}
-        <div 
+        <div
           onClick={openGlobalSearch}
           className={`
-            group relative flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all duration-300
-            ${isSearchMode 
-                ? 'w-80 bg-secondary/10 border-accent/20 border hover:border-accent' 
-                : 'w-64 bg-secondary/10 hover:bg-secondary/20 border border-transparent hover:border-border'
+            group relative flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all duration-300 min-h-11
+            ${isSearchMode
+                ? 'sm:w-80 bg-secondary/10 border-accent/20 border hover:border-accent'
+                : 'sm:w-64 bg-secondary/10 hover:bg-secondary/20 border border-transparent hover:border-border'
             }
             rounded-full
           `}

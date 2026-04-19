@@ -386,47 +386,48 @@ export default function GalleryPage() {
         </div>
       </div>
 
-      {/* Library Stats Summary */}
+      {/* Library Stats Summary — 2×2 grid on mobile, single row on sm+ */}
       {!loading && videos.length > 0 && (
-        <div className="bg-card-bg border border-border rounded-xl px-6 py-4 mb-6">
-          <div className="flex items-center justify-evenly text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+        <div className="bg-card-bg border border-border rounded-xl px-4 sm:px-6 py-4 mb-6">
+          <div className="grid grid-cols-2 gap-y-3 gap-x-4 sm:flex sm:items-center sm:justify-evenly text-sm">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
                 <Library className="w-4 h-4 text-accent" />
               </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{videos.length}</span>
+              <div className="min-w-0">
+                <span className="text-base sm:text-lg font-bold text-foreground">{videos.length}</span>
                 <span className="text-muted-foreground ml-1">videos</span>
               </div>
             </div>
-            <div className="w-px h-8 bg-border" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+            <div className="hidden sm:block w-px h-8 bg-border" />
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
                 <Layers className="w-4 h-4 text-accent" />
               </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{videos.reduce((acc, v) => acc + (v.flashcardCount || 0), 0)}</span>
+              <div className="min-w-0">
+                <span className="text-base sm:text-lg font-bold text-foreground">{videos.reduce((acc, v) => acc + (v.flashcardCount || 0), 0)}</span>
                 <span className="text-muted-foreground ml-1">flashcards</span>
               </div>
             </div>
-            <div className="w-px h-8 bg-border" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+            <div className="hidden sm:block w-px h-8 bg-border" />
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
                 <HelpCircle className="w-4 h-4 text-accent" />
               </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{videos.reduce((acc, v) => acc + (v.quizCount || 0), 0)}</span>
+              <div className="min-w-0">
+                <span className="text-base sm:text-lg font-bold text-foreground">{videos.reduce((acc, v) => acc + (v.quizCount || 0), 0)}</span>
                 <span className="text-muted-foreground ml-1">quizzes</span>
               </div>
             </div>
-            <div className="w-px h-8 bg-border" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center">
+            <div className="hidden sm:block w-px h-8 bg-border" />
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center shrink-0">
                 <Clock className="w-4 h-4 text-accent" />
               </div>
-              <div>
-                <span className="text-lg font-bold text-foreground">{Math.round(videos.reduce((acc, v) => acc + (v.duration || 0), 0) / 60)}</span>
-                <span className="text-muted-foreground ml-1">min of content</span>
+              <div className="min-w-0 truncate">
+                <span className="text-base sm:text-lg font-bold text-foreground">{Math.round(videos.reduce((acc, v) => acc + (v.duration || 0), 0) / 60)}</span>
+                <span className="text-muted-foreground ml-1">min</span>
+                <span className="text-muted-foreground hidden sm:inline"> of content</span>
               </div>
             </div>
           </div>

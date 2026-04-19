@@ -197,7 +197,7 @@ export default function SmartReviewSession({ onClose, onSessionComplete, initial
           className="bg-card-bg border border-border rounded-2xl p-10 max-w-sm w-full text-center shadow-xl"
         >
           <CheckCircle2 className="w-14 h-14 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">All caught up!</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">All caught up!</h2>
           <p className="text-muted-foreground mb-6">No cards are due right now. Come back later to review.</p>
           <Button variant="primary" onClick={onClose}>Close</Button>
         </motion.div>
@@ -218,7 +218,7 @@ export default function SmartReviewSession({ onClose, onSessionComplete, initial
           className="bg-card-bg border border-border rounded-2xl p-8 max-w-sm w-full text-center shadow-xl"
         >
           <CheckCircle2 className="w-14 h-14 text-accent mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-1">Session Complete</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1">Session Complete</h2>
           <p className="text-muted-foreground mb-6">{total} cards reviewed in {sessionMinutes || 1}m</p>
 
           <div className="grid grid-cols-4 gap-2 mb-6 text-sm">

@@ -287,7 +287,7 @@ export default function AdminDashboardPage() {
           <p className="text-sm font-medium text-muted-foreground mb-2">
             {label}
           </p>
-          <p className="text-3xl font-bold text-foreground mb-1">
+          <p className="text-2xl sm:text-3xl font-bold text-foreground mb-1">
             {value.toLocaleString()}
           </p>
           {trendLabel && (

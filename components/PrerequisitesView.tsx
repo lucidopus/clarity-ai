@@ -38,7 +38,7 @@ const PrerequisiteCard = memo(function PrerequisiteCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       onClick={() => onToggle(prerequisite.id)}
-      className={`p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
+      className={`p-4 sm:p-6 rounded-xl border-2 transition-all duration-200 cursor-pointer ${
         isCompleted
           ? 'border-green-500 bg-green-500/5'
           : 'border-border bg-card-bg hover:border-accent/50'
@@ -50,13 +50,18 @@ const PrerequisiteCard = memo(function PrerequisiteCard({
             e.stopPropagation();
             onToggle(prerequisite.id);
           }}
-          className={`shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-            isCompleted
-              ? 'border-green-500 bg-green-500'
-              : 'border-muted-foreground hover:border-accent'
-          }`}
+          aria-label={isCompleted ? 'Mark as incomplete' : 'Mark as complete'}
+          className={`shrink-0 min-h-11 min-w-11 -m-2.5 p-2.5 rounded-full flex items-center justify-center transition-colors`}
         >
-          {isCompleted && <CheckCircle2 className="w-4 h-4 text-white" />}
+          <span
+            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              isCompleted
+                ? 'border-green-500 bg-green-500'
+                : 'border-muted-foreground hover:border-accent'
+            }`}
+          >
+            {isCompleted && <CheckCircle2 className="w-4 h-4 text-white" />}
+          </span>
         </button>
 
         <div className="flex-1">

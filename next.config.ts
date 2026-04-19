@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // LAN hosts allowed to hit Next's dev HMR/assets — needed for testing the
+  // mobile layout on a phone over the local network. Dev-only; prod ignores.
+  allowedDevOrigins: ['10.0.0.11'],
   // Stub Node.js built-ins that manim-web's opentype.js dependency references
   // (they are only used in Node.js font-loading paths, never in the browser)
   turbopack: {

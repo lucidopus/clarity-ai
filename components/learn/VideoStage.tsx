@@ -174,13 +174,65 @@ export default function VideoStage({
   }, [scrubDragging, seekFromScrubber]);
 
   const requestFullscreen = useCallback(() => {
-    const el = stageRef.current;
-    if (!el) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      el.requestFullscreen?.();
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    // Vendor-prefixed fullscreen API shims. iOS Safari <16.4 exposes
+    // webkit* variants; newer Chromium/Safari use the standard names. We try
+    // the YouTube iframe first (it owns the actual video element) then the
+    // stage div as a fallback for non-video fullscreen.
+    type FullscreenEl = HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+      webkitEnterFullscreen?: () => void;
+      msRequestFullscreen?: () => Promise<void> | void;
+    };
+    type FullscreenDoc = Document & {
+      webkitFullscreenElement?: Element | null;
+      webkitExitFullscreen?: () => Promise<void> | void;
+      msFullscreenElement?: Element | null;
+      msExitFullscreen?: () => Promise<void> | void;
+    };
+    const doc = document as FullscreenDoc;
+
+    // Exit if already fullscreen.
+    if (document.fullscreenElement || doc.webkitFullscreenElement || doc.msFullscreenElement) {
+      if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+      else if (doc.msExitFullscreen) doc.msExitFullscreen();
+      return;
     }
+
+    // Try the stage first — desktop Chrome/Safari/Firefox support
+    // `requestFullscreen()` on arbitrary elements, and this preserves our
+    // custom control bar (scrubber, markers, notes button) inside the
+    // fullscreen view. On iOS Safari, stage.requestFullscreen rejects, so
+    // we fall back to requesting on the YouTube iframe (which owns a
+    // <video> element and is the only element iOS will fullscreen).
+    const iframe = stage.querySelector('iframe') as FullscreenEl | null;
+    const stageEl = stage as FullscreenEl;
+
+    const requestOn = (el: FullscreenEl): Promise<void> => {
+      if (el.requestFullscreen) {
+        const result = el.requestFullscreen();
+        return Promise.resolve(result).then(() => undefined);
+      }
+      if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+        return Promise.resolve();
+      }
+      if (el.webkitEnterFullscreen) {
+        el.webkitEnterFullscreen();
+        return Promise.resolve();
+      }
+      return Promise.reject(new Error('Fullscreen not supported'));
+    };
+
+    requestOn(stageEl).catch(() => {
+      // iOS Safari and legacy browsers: fall back to the iframe/video.
+      if (iframe) {
+        requestOn(iframe).catch(() => {});
+      }
+    });
   }, []);
 
   const cycleRate = useCallback(() => {
@@ -265,11 +317,13 @@ export default function VideoStage({
         </div>
       )}
 
-      {/* Hint chips */}
+      {/* Hint chips — desktop only; mobile has no keyboard so these are pure
+          chrome noise there. The visible Notes / Actions buttons cover the
+          same actions on phones. */}
       {showHints && (
         <>
           <div
-            className="pointer-events-none absolute z-20 inline-flex items-center gap-1.5 rounded-lg text-[11px]"
+            className="pointer-events-none absolute z-20 hidden lg:inline-flex items-center gap-1.5 rounded-lg text-[11px]"
             style={{
               top: 16,
               left: 16,
@@ -286,7 +340,7 @@ export default function VideoStage({
           </div>
           {notesCollapsed && (
             <div
-              className="pointer-events-none absolute z-20 inline-flex items-center gap-1.5 rounded-lg text-[11px]"
+              className="pointer-events-none absolute z-20 hidden lg:inline-flex items-center gap-1.5 rounded-lg text-[11px]"
               style={{
                 top: 16,
                 right: 16,
@@ -383,7 +437,7 @@ export default function VideoStage({
                     }}
                   />
                   <div
-                    className="pointer-events-none absolute opacity-0 group-hover/marker:opacity-100 transition-opacity duration-150 whitespace-nowrap rounded-md"
+                    className="pointer-events-none hidden sm:block absolute opacity-0 group-hover/marker:opacity-100 transition-opacity duration-150 whitespace-nowrap rounded-md"
                     style={{
                       bottom: 18,
                       ...tooltipAnchor,
@@ -482,7 +536,7 @@ export default function VideoStage({
                     }}
                   />
                   <div
-                    className="pointer-events-none absolute opacity-0 group-hover/note:opacity-100 transition-opacity duration-150 rounded-md"
+                    className="pointer-events-none hidden sm:block absolute opacity-0 group-hover/note:opacity-100 transition-opacity duration-150 rounded-md"
                     style={{
                       bottom: 18,
                       ...tooltipAnchor,
@@ -523,67 +577,78 @@ export default function VideoStage({
             })}
         </div>
 
-        <div className="flex items-center justify-between text-[12px] text-white/85">
-          <div className="flex gap-4 items-center">
+        <div className="flex items-center justify-between text-[12px] text-white/85 gap-2">
+          <div className="flex gap-3 sm:gap-4 items-center min-w-0">
+            {/* Back 10s — desktop only; 5s rewind covers the same need on mobile */}
             <button
               type="button"
               onClick={() => seek(currentTime - 10)}
-              className="hover:text-white cursor-pointer"
+              className="hidden sm:inline-flex hover:text-white cursor-pointer"
               title="Back 10s"
+              aria-label="Back 10 seconds"
             >
               <SkipBack size={16} />
             </button>
             <button
               type="button"
               onClick={() => seek(currentTime - 5)}
-              className="relative grid place-items-center w-5 h-5 hover:text-white cursor-pointer"
+              className="relative grid place-items-center w-8 h-8 sm:w-5 sm:h-5 hover:text-white cursor-pointer"
               title="Back 5s (←)"
               aria-label="Back 5 seconds"
             >
-              <RotateCcw size={18} strokeWidth={1.75} />
+              <RotateCcw size={20} strokeWidth={1.75} className="sm:size-[18px]" />
               <span
                 className="absolute inset-0 grid place-items-center font-mono font-semibold pointer-events-none"
-                style={{ fontSize: 8, paddingTop: 1 }}
+                style={{ fontSize: 9, paddingTop: 1 }}
               >
                 5
               </span>
             </button>
-            <button type="button" onClick={togglePlay} className="hover:text-white cursor-pointer" title="Play / Pause (Space)">
-              {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+            <button
+              type="button"
+              onClick={togglePlay}
+              className="hover:text-white cursor-pointer w-9 h-9 sm:w-auto sm:h-auto grid place-items-center"
+              title="Play / Pause (Space)"
+              aria-label={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isPlaying ? <Pause size={20} className="sm:size-4" /> : <Play size={20} className="sm:size-4" />}
             </button>
             <button
               type="button"
               onClick={() => seek(currentTime + 5)}
-              className="relative grid place-items-center w-5 h-5 hover:text-white cursor-pointer"
+              className="relative grid place-items-center w-8 h-8 sm:w-5 sm:h-5 hover:text-white cursor-pointer"
               title="Forward 5s (→)"
               aria-label="Forward 5 seconds"
             >
-              <RotateCw size={18} strokeWidth={1.75} />
+              <RotateCw size={20} strokeWidth={1.75} className="sm:size-[18px]" />
               <span
                 className="absolute inset-0 grid place-items-center font-mono font-semibold pointer-events-none"
-                style={{ fontSize: 8, paddingTop: 1 }}
+                style={{ fontSize: 9, paddingTop: 1 }}
               >
                 5
               </span>
             </button>
+            {/* Forward 10s — desktop only */}
             <button
               type="button"
               onClick={() => seek(currentTime + 10)}
-              className="hover:text-white cursor-pointer"
+              className="hidden sm:inline-flex hover:text-white cursor-pointer"
               title="Forward 10s"
+              aria-label="Forward 10 seconds"
             >
               <SkipForward size={16} />
             </button>
-            <span className="font-mono text-white/85">
-              {formatTimestamp(currentTime)} / {formatTimestamp(duration)}
+            <span className="font-mono text-[11px] sm:text-[12px] text-white/85 whitespace-nowrap tabular-nums">
+              {formatTimestamp(currentTime)}<span className="text-white/50">/{formatTimestamp(duration)}</span>
             </span>
           </div>
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-3 sm:gap-4 items-center shrink-0">
             <button
               type="button"
               onClick={cycleRate}
-              className="font-mono text-white/60 hover:text-white cursor-pointer"
+              className="font-mono text-white/60 hover:text-white cursor-pointer px-1.5 min-w-9 text-center"
               title="Playback speed"
+              aria-label="Playback speed"
             >
               {playbackRate}×
             </button>
@@ -592,24 +657,32 @@ export default function VideoStage({
               onClick={toggleCaptions}
               className={`hover:text-white cursor-pointer ${showCaptions ? 'text-white' : 'text-white/60'}`}
               title="Toggle captions"
+              aria-label="Toggle captions"
             >
               <span className="font-mono text-[11px] px-1.5 py-0.5 rounded border border-white/30">CC</span>
             </button>
             <div className="flex items-center gap-2 group/vol">
-              <button type="button" onClick={toggleMute} className="hover:text-white cursor-pointer" title="Mute">
-                {isMuted || volume === 0 ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              <button type="button" onClick={toggleMute} className="hover:text-white cursor-pointer w-9 h-9 sm:w-auto sm:h-auto grid place-items-center" title="Mute" aria-label="Mute">
+                {isMuted || volume === 0 ? <VolumeX size={18} className="sm:size-4" /> : <Volume2 size={18} className="sm:size-4" />}
               </button>
+              {/* Volume slider — desktop hover only; on mobile a tap toggles mute */}
               <input
                 type="range"
                 min={0}
                 max={100}
                 value={isMuted ? 0 : volume}
                 onChange={(e) => setVolume(parseInt(e.target.value, 10))}
-                className="w-0 group-hover/vol:w-20 transition-all duration-200 accent-white opacity-0 group-hover/vol:opacity-100 cursor-pointer"
+                className="hidden sm:block w-0 group-hover/vol:w-20 transition-all duration-200 accent-white opacity-0 group-hover/vol:opacity-100 cursor-pointer"
               />
             </div>
-            <button type="button" onClick={requestFullscreen} className="hover:text-white cursor-pointer" title="Fullscreen">
-              <Maximize size={16} />
+            <button
+              type="button"
+              onClick={requestFullscreen}
+              className="hover:text-white cursor-pointer w-9 h-9 sm:w-auto sm:h-auto grid place-items-center"
+              title="Fullscreen"
+              aria-label="Fullscreen"
+            >
+              <Maximize size={18} className="sm:size-4" />
             </button>
           </div>
         </div>

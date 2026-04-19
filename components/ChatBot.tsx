@@ -273,7 +273,7 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.3, delay: 1 }}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] pointer-events-none"
+            className="hidden md:block fixed bottom-4 left-1/2 -translate-x-1/2 z-[9998] pointer-events-none"
           >
             <div className="px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-md border border-border">
               <div className="flex items-center gap-1.5 text-xs">
@@ -289,7 +289,7 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
       {!isOpen && (
       <motion.button
         data-chatbot-bubble
-        className="fixed cursor-pointer bottom-6 right-6 z-40 h-16 w-16 rounded-full bg-accent text-white shadow-lg hover:shadow-xl flex items-center justify-center"
+        className="fixed cursor-pointer bottom-[calc(var(--mobile-chrome-bottom)+1rem)] right-4 md:bottom-6 md:right-6 z-40 h-14 w-14 md:h-16 md:w-16 rounded-full bg-accent text-white shadow-lg hover:shadow-xl flex items-center justify-center"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.05 }}
@@ -303,7 +303,7 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
       {/* Chatbot Modal */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div className="fixed inset-0 z-[61] flex items-end sm:items-center justify-center sm:p-4">
             {/* Backdrop */}
             <motion.div
               className="absolute inset-0 bg-black/30 backdrop-blur-sm cursor-pointer"
@@ -315,7 +315,7 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
 
             {/* Dialog */}
              <motion.div
-               className="relative z-10 flex h-[800px] w-full max-w-4xl flex-col rounded-2xl border border-border bg-background shadow-2xl"
+               className="relative z-10 flex h-[92dvh] sm:h-[800px] w-full sm:max-w-4xl flex-col rounded-t-2xl sm:rounded-2xl landscape-phone-fill border-t sm:border border-border bg-background shadow-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
                initial={{ y: '100%', opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                exit={{ y: '100%', opacity: 0 }}
@@ -335,17 +335,19 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
                  <div className="flex items-center gap-2">
                    <button
                      onClick={() => setShowClearConfirm(true)}
-                     className="flex items-center gap-1 px-2 py-1 rounded-md border border-border bg-card-bg hover:bg-card-bg/80 transition-colors cursor-pointer text-secondary hover:text-foreground text-xs"
+                     className="inline-flex items-center gap-1 min-h-11 px-3 py-1 rounded-md border border-border bg-card-bg hover:bg-card-bg/80 transition-colors cursor-pointer text-secondary hover:text-foreground text-xs"
                      title="Clear conversation"
+                     aria-label="Clear conversation"
                    >
                      <Trash2 className="h-3 w-3" />
                      Clear Chat
                    </button>
                    <button
                      onClick={() => setIsOpen(false)}
-                     className="rounded-lg p-2 hover:bg-card-bg"
+                     className="inline-flex items-center justify-center min-h-11 min-w-11 rounded-lg hover:bg-card-bg cursor-pointer"
+                     aria-label="Close chat"
                    >
-                     <X className="h-5 w-5 cursor-pointer" />
+                     <X className="h-5 w-5" />
                    </button>
                  </div>
               </div>

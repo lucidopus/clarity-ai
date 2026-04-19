@@ -7,15 +7,15 @@ interface WelcomeBannerProps {
 export default function WelcomeBanner({ firstName, subtitle, className = '' }: WelcomeBannerProps) {
   return (
     <div
-      className={`bg-gradient-to-r from-accent/10 via-accent/5 to-transparent border border-accent/20 rounded-lg p-8 mb-8 ${className}`}
+      className={`bg-gradient-to-r from-accent/10 via-accent/5 to-transparent border border-accent/20 rounded-lg p-5 sm:p-8 mb-6 sm:mb-8 ${className}`}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2 break-words">
             Welcome back, {firstName}! 👋
           </h1>
           {subtitle && (
-            <p className="text-lg text-muted-foreground">{subtitle}</p>
+            <p className="text-base sm:text-lg text-muted-foreground">{subtitle}</p>
           )}
         </div>
         <div className="hidden md:block">

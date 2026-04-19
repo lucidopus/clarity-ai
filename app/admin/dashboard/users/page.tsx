@@ -438,8 +438,8 @@ export default function AdminUsersPage() {
 
       {/* User Details Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card-bg rounded-xl border border-border max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center sm:p-4 z-[60]">
+          <div className="bg-card-bg rounded-t-xl sm:rounded-xl border-t sm:border border-border sm:max-w-5xl w-full max-h-[92dvh] overflow-hidden flex flex-col pb-[env(safe-area-inset-bottom)] sm:pb-0">
             {/* Header */}
             <div className="bg-card-bg border-b border-border px-6 py-5 flex items-start justify-between">
               <div className="flex items-start gap-4">
@@ -526,28 +526,28 @@ export default function AdminUsersPage() {
                           <Video className="w-5 h-5 text-cyan-500" />
                           <p className="text-sm text-muted-foreground">Videos</p>
                         </div>
-                        <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalVideos}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-foreground">{selectedUser.stats.totalVideos}</p>
                       </div>
                       <div className="bg-linear-to-br from-purple-500/10 to-purple-600/5 rounded-xl p-4 border border-purple-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <CreditCard className="w-5 h-5 text-purple-500" />
                           <p className="text-sm text-muted-foreground">Flashcards</p>
                         </div>
-                        <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalFlashcards}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-foreground">{selectedUser.stats.totalFlashcards}</p>
                       </div>
                       <div className="bg-linear-to-br from-blue-500/10 to-blue-600/5 rounded-xl p-4 border border-blue-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <FileQuestion className="w-5 h-5 text-blue-500" />
                           <p className="text-sm text-muted-foreground">Quizzes</p>
                         </div>
-                        <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalQuizzes}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-foreground">{selectedUser.stats.totalQuizzes}</p>
                       </div>
                       <div className="bg-linear-to-br from-emerald-500/10 to-emerald-600/5 rounded-xl p-4 border border-emerald-500/20">
                         <div className="flex items-center gap-2 mb-2">
                           <Activity className="w-5 h-5 text-emerald-500" />
                           <p className="text-sm text-muted-foreground">Activities</p>
                         </div>
-                        <p className="text-3xl font-bold text-foreground">{selectedUser.stats.totalActivities}</p>
+                        <p className="text-2xl sm:text-3xl font-bold text-foreground">{selectedUser.stats.totalActivities}</p>
                       </div>
                     </div>
 
@@ -684,7 +684,7 @@ export default function AdminUsersPage() {
                   <div className="space-y-4">
                     <div className="bg-background rounded-xl border border-border p-5">
                       <h3 className="text-lg font-semibold text-foreground mb-4">Total Activities</h3>
-                      <p className="text-4xl font-bold text-accent">{selectedUser.stats.totalActivities}</p>
+                      <p className="text-3xl sm:text-4xl font-bold text-accent">{selectedUser.stats.totalActivities}</p>
                     </div>
 
                     {Object.keys(selectedUser.stats.activityBreakdown).length > 0 && (

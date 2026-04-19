@@ -429,7 +429,7 @@ export default function CaseStudyWorkspacePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-dvh flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading workspace...</p>
@@ -440,7 +440,7 @@ export default function CaseStudyWorkspacePage() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-dvh flex items-center justify-center bg-background">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-2">Error</h2>
           <p className="text-muted-foreground mb-6">{error || 'Failed to load case study'}</p>
@@ -451,40 +451,45 @@ export default function CaseStudyWorkspacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-card-bg border-b border-border">
-        <div className="max-w-[1800px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <header
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        className="sticky top-0 z-10 bg-card-bg border-b border-border"
+      >
+        <div className="max-w-[1800px] mx-auto px-3 sm:px-6 py-2 sm:py-4">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
               <Button
                 onClick={() => router.push(`/generations/${videoId}`)}
                 variant="ghost"
                 size="sm"
+                className="shrink-0 min-h-11 px-2 sm:px-3"
+                aria-label="Back to Video"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Video
+                <ArrowLeft className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Back to Video</span>
               </Button>
-              <div className="h-6 w-px bg-border" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-lg font-semibold text-foreground">
+              <div className="hidden sm:block h-6 w-px bg-border" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 min-w-0">
+                  <h1 className="text-sm sm:text-lg font-semibold text-foreground truncate">
                     {data.problem.title}
                   </h1>
                   {data.isReadOnly && data.authorUsername && (
-                    <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full font-medium">
+                    <span className="hidden sm:inline-block shrink-0 text-xs bg-accent/10 text-accent px-2 py-0.5 rounded-full font-medium">
                       by @{data.authorUsername}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="hidden sm:block text-sm text-muted-foreground truncate">
                   {data.video.title}
                 </p>
               </div>
             </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 sm:gap-3 shrink-0">
                 {renderAutoSaveText() && (
-                  <span className="text-xs text-muted-foreground">{renderAutoSaveText()}</span>
+                  <span className="hidden sm:inline text-xs text-muted-foreground">{renderAutoSaveText()}</span>
                 )}
                 <ThemeToggle />
               </div>
@@ -503,7 +508,7 @@ export default function CaseStudyWorkspacePage() {
          >
             <button
               onClick={toggleLeftPanel}
-              className="group relative cursor-pointer flex items-center justify-center w-8 h-12 bg-card-bg border-r border-t border-b border-border rounded-r-lg shadow-sm transition-all duration-200 hover:w-12 text-secondary hover:text-foreground hover:bg-muted hover:border-accent/50"
+              className="group relative cursor-pointer flex items-center justify-center w-11 h-12 bg-card-bg border-r border-t border-b border-border rounded-r-lg shadow-sm transition-all duration-200 hover:w-12 text-secondary hover:text-foreground hover:bg-muted hover:border-accent/50"
               title="Show research desk (Ctrl+H)"
               aria-label="Show research desk"
             >
@@ -528,7 +533,7 @@ export default function CaseStudyWorkspacePage() {
                 toggleRightPanel();
                 resetActivity();
               }}
-              className="group cursor-pointer relative flex items-center justify-end w-8 h-12 bg-card-bg border-l border-t border-b border-border rounded-l-lg shadow-sm transition-all duration-200 hover:w-12 text-secondary hover:text-foreground hover:bg-muted hover:border-accent/50 animate-shine"
+              className="group cursor-pointer relative flex items-center justify-end w-11 h-12 bg-card-bg border-l border-t border-b border-border rounded-l-lg shadow-sm transition-all duration-200 hover:w-12 text-secondary hover:text-foreground hover:bg-muted hover:border-accent/50 animate-shine"
               title="Chat With Clara (Ctrl+G)"
               aria-label="Show AI Guide"
             >
@@ -560,9 +565,9 @@ export default function CaseStudyWorkspacePage() {
         )}
 
        {/* Main Workspace */}
-       <main className="max-w-[1800px] mx-auto px-6 py-8">
+       <main className="max-w-[1800px] mx-auto px-4 sm:px-6 py-4 sm:py-8">
          {/* Mobile Panel Controls - Only show when panels are closed */}
-         <div className="flex items-center gap-2 mb-6 lg:hidden">
+         <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6 lg:hidden">
            {!showLeftPanel && (
              <Button
                onClick={toggleLeftPanel}
@@ -589,19 +594,18 @@ export default function CaseStudyWorkspacePage() {
            )}
          </div>
 
-          <div className="flex gap-0 relative">
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-0 relative">
           {/* Left Panel: Research Desk */}
           <AnimatePresence>
             {showLeftPanel && (
               <motion.div
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: '320px' }}
-                exit={{ opacity: 0, width: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="shrink-0 relative border-r border-border/60 dark:border-border/30"
-                style={{ width: '320px' }}
+                className="w-full lg:shrink-0 lg:relative border-b lg:border-b-0 lg:border-r border-border/60 dark:border-border/30 lg:w-[320px]"
               >
-                <div className="space-y-6 pr-4">
+                <div className="space-y-6 lg:pr-4">
             {/* Notes */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -727,11 +731,11 @@ export default function CaseStudyWorkspacePage() {
            </AnimatePresence>
 
            {/* Center Panel: Workbench */}
-           <div className="flex-1 min-w-0 space-y-6 px-4">
+           <div className="flex-1 min-w-0 space-y-6 sm:px-4">
               {/* Problem Scenario */}
-              <div className="bg-card-bg border border-border rounded-xl p-6">
-                <h2 className="text-xl font-bold text-foreground mb-4">The Challenge</h2>
-                <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
+              <div className="bg-card-bg border border-border rounded-xl p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">The Challenge</h2>
+                <div className="prose prose-sm max-w-none mobile-safe-prose prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
                   <ReactMarkdown>
                     {data.problem.scenario}
                   </ReactMarkdown>
@@ -778,7 +782,7 @@ export default function CaseStudyWorkspacePage() {
                        <span className="text-xs text-muted-foreground">by @{data.authorUsername}</span>
                      )}
                    </div>
-                   <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
+                   <div className="prose prose-sm max-w-none mobile-safe-prose prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:border prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
                      <ReactMarkdown>{data.authorSolution}</ReactMarkdown>
                    </div>
                  </div>
@@ -789,15 +793,14 @@ export default function CaseStudyWorkspacePage() {
            <AnimatePresence>
              {showRightPanel && !data.isReadOnly && (
                <motion.div
-                 initial={{ opacity: 0, width: 0 }}
-                 animate={{ opacity: 1, width: '500px' }}
-                 exit={{ opacity: 0, width: 0 }}
+                 initial={{ opacity: 0 }}
+                 animate={{ opacity: 1 }}
+                 exit={{ opacity: 0 }}
                  transition={{ duration: 0.3 }}
-                 className="shrink-0 relative border-l border-border/60 dark:border-border/30"
-                 style={{ width: '500px' }}
+                 className="w-full lg:shrink-0 lg:relative border-t lg:border-t-0 lg:border-l border-border/60 dark:border-border/30 lg:w-[500px]"
                >
-                 <div className="pl-4">
-              <div className="sticky top-24 bg-card-bg border border-border rounded-xl p-6 h-[calc(100vh-8rem)] flex flex-col">
+                 <div className="lg:pl-4">
+              <div className="lg:sticky lg:top-24 bg-card-bg border border-border rounded-xl p-4 sm:p-6 min-h-[24rem] h-[70dvh] lg:h-[calc(100dvh-8rem)] flex flex-col">
                <div className="flex items-center gap-2 mb-4">
                  <Sparkles className="w-5 h-5 text-accent" />
                  <h2 className="text-lg font-semibold text-foreground">Clara</h2>

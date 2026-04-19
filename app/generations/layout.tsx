@@ -22,10 +22,10 @@ export default function GenerationsLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         {/* Header Skeleton */}
         <div className="border-b border-border bg-card-bg/50">
-          <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-secondary/20 rounded-lg animate-pulse"></div>
@@ -43,7 +43,7 @@ export default function GenerationsLayout({
         </div>
 
         {/* Main Content Skeleton */}
-        <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Sidebar - Materials Tabs Skeleton */}
             <div className="lg:col-span-1">
@@ -107,7 +107,7 @@ export default function GenerationsLayout({
 
   return (
     <FocusModeProvider>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-dvh bg-background">
         {/* Main Content - Navbar is integrated into the page itself */}
         {children}
         <FocusModeShell />

@@ -95,13 +95,14 @@ Behavioral-science-backed habit system designed to reinforce consistency without
 - **Streak Shields** — Automatic save when you miss a day (new users start with 1 as an endowed-progress onboarding gift).
 - **Recovery Window** — 48-hour grace period after a broken streak with a harder qualification threshold to restore it.
 - **Milestone Celebrations** — Animated shield-earn and streak-milestone moments at 3, 7, 14, 30, 60, 100, 365 days.
-- **Cognitive Contract** — Self-chosen daily study window (Gollwitzer implementation intentions); pre-window email reminder keeps the commitment salient.
+- **Cognitive Contract** — Self-chosen daily Clarity Mode hours (Gollwitzer implementation intentions); pre-window email reminder keeps the commitment salient.
 
-### Focus Mode
+### Clarity Mode
 
-Distraction-free study session with a durable timer that persists across reloads and tabs:
+The scheduled daily hours when the app goes into distraction-free study. A ritual, not a setting:
 
-- **Focus Window** — Start/stop an intentional study block with Doherty-threshold feedback.
+- **Clarity Mode Window** — Start/stop an intentional study block with Doherty-threshold feedback.
+- **Pre-session Breathing Warm-up** — Five-minute Petal Halo box-breathing overlay that fires 5 min before Clarity Mode opens (opt-out in settings).
 - **Ambient Sound Orb** — Optional white-noise player with cross-tab BroadcastChannel hand-off so only one tab owns playback.
 - **Horizon-Dissolve Closure** — Calm outro animation when a session ends.
 - **Clara-in-Focus** — The AI tutor bubble stays reachable but tucked out of the way.

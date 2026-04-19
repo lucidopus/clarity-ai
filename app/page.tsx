@@ -376,6 +376,10 @@ export default function Home() {
                   className="flex-1 bg-transparent !border-none !focus:ring-0 !ring-0 !outline-none text-foreground placeholder-secondary/50 px-4 py-3 shadow-none focus:outline-none"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
+                  // Browser extensions (Grammarly, LastPass, 1Password) inject
+                  // attributes like `__gcruniqueid` on inputs before React
+                  // hydrates — this silences the resulting hydration warning.
+                  suppressHydrationWarning
                 />
                 <Button 
                   href={url ? `/dashboard?url=${encodeURIComponent(url)}` : '/auth/signup'} 

@@ -5,44 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useState } from 'react';
 import { motion } from 'framer-motion'; // still used for layoutId indicator + opacity fade
-import { 
-  Home, 
-  Compass, 
-  Library, 
-  Settings, 
-  ChevronLeft, 
-  Menu, 
-  LogOut
-} from 'lucide-react';
-
-interface NavItem {
-  name: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-const navItems: NavItem[] = [
-  {
-    name: 'Home',
-    href: '/dashboard/home',
-    icon: Home,
-  },
-  {
-    name: 'Discover',
-    href: '/dashboard/discover',
-    icon: Compass,
-  },
-  {
-    name: 'Library',
-    href: '/dashboard/gallery',
-    icon: Library,
-  },
-  {
-    name: 'Settings',
-    href: '/dashboard/settings',
-    icon: Settings,
-  },
-];
+import { ChevronLeft, Menu, LogOut } from 'lucide-react';
+import { primaryNavItems } from '@/lib/navigation/primary-nav';
+import { Z_INDEX } from '@/lib/constants/z-index';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -51,7 +16,8 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`bg-card-bg border-r border-border shrink-0 z-40 flex flex-col h-screen sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-64'}`}
+      style={{ zIndex: Z_INDEX.sidebar }}
+      className={`hidden md:flex bg-card-bg border-r border-border shrink-0 flex-col h-dvh sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-64'}`}
     >
       {/* Sidebar Header: Logo & Toggle */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
@@ -74,10 +40,11 @@ export default function Sidebar() {
          </div>
          
          {!isCollapsed && (
-           <button 
+           <button
               onClick={() => setIsCollapsed(true)}
-              className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-background transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center min-h-11 min-w-11 text-muted-foreground hover:text-foreground rounded-md hover:bg-background transition-colors cursor-pointer"
               title="Collapse Sidebar"
+              aria-label="Collapse sidebar"
            >
               <ChevronLeft className="w-4 h-4" />
            </button>
@@ -88,16 +55,17 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 gap-2 flex flex-col">
           {/* Expand Button (only visible when collapsed) */}
           {isCollapsed && (
-             <button 
+             <button
               onClick={() => setIsCollapsed(false)}
-              className="w-full flex items-center justify-center py-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg mb-2 cursor-pointer transition-colors"
+              className="w-full flex items-center justify-center min-h-11 py-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg mb-2 cursor-pointer transition-colors"
               title="Expand Sidebar"
+              aria-label="Expand sidebar"
             >
               <Menu className="w-5 h-5" />
             </button>
           )}
 
-          {navItems.map((item) => {
+          {primaryNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 

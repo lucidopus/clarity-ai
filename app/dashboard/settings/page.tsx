@@ -10,9 +10,10 @@ import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
-import { Edit2, Save, X, Info, Clock, CheckCircle2, Volume2 } from 'lucide-react';
+import { Edit2, Save, X, Info, Clock, CheckCircle2, Volume2, Wind } from 'lucide-react';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
+import { useBreathing } from '@/lib/breathing/useBreathing';
 
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
@@ -179,6 +180,10 @@ export default function SettingsPage() {
   // Focus-mode ambient sound preference — client-side only, no server sync.
   const [ambientEnabled, setAmbientEnabled] = useAmbientEnabled();
   const [ambientInfoOpen, setAmbientInfoOpen] = useState(false);
+
+  // Pre-session breathing warm-up preference — client-side only.
+  const breathing = useBreathing(user?.id ?? null);
+  const [breathingInfoOpen, setBreathingInfoOpen] = useState(false);
 
   // Learning profile update limit state
   const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
@@ -663,7 +668,7 @@ export default function SettingsPage() {
       });
       const data = await response.json();
       if (!response.ok || !data.success) {
-        setContractError(data?.message || 'Could not save your study window. Try again.');
+        setContractError(data?.message || 'Could not save your Clarity Mode hours. Try again.');
         return;
       }
       setSavedWindowStart(windowStart);
@@ -671,10 +676,10 @@ export default function SettingsPage() {
       setSavedTimezone(timezone);
       setHasSavedContract(true);
       window.dispatchEvent(new Event('focus-mode:refresh'));
-      addToast('Study window saved', 'success');
+      addToast('Clarity Mode saved', 'success');
     } catch (error) {
       console.error('Save study window error:', error);
-      setContractError('Could not save your study window. Try again.');
+      setContractError('Could not save your Clarity Mode hours. Try again.');
     } finally {
       setIsSavingContract(false);
     }
@@ -687,7 +692,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/streak-contract', { method: 'DELETE' });
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        setContractError(data?.message || 'Could not clear your study window. Try again.');
+        setContractError(data?.message || 'Could not clear your Clarity Mode hours. Try again.');
         return;
       }
       setSavedWindowStart(null);
@@ -697,10 +702,10 @@ export default function SettingsPage() {
       setWindowStart('');
       setWindowEnd('');
       window.dispatchEvent(new Event('focus-mode:refresh'));
-      addToast('Study window cleared', 'success');
+      addToast('Clarity Mode cleared', 'success');
     } catch (error) {
       console.error('Clear study window error:', error);
-      setContractError('Could not clear your study window. Try again.');
+      setContractError('Could not clear your Clarity Mode hours. Try again.');
     } finally {
       setIsClearingContract(false);
     }
@@ -901,7 +906,7 @@ export default function SettingsPage() {
               </div>
               <div className="relative group">
                 <Info className="w-4 h-4 text-muted-foreground cursor-help hover:text-foreground transition-colors" />
-                <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="absolute right-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <p className="font-medium text-foreground mb-1">Why the limit?</p>
                   <p>Clarity personalizes your flashcards, quizzes, case studies, and Clara&apos;s tutoring based on your learning profile. Changing it often would make your existing materials inconsistent, so we limit updates to {MAX_LEARNING_PROFILE_UPDATES_PER_MONTH} per month to keep things deliberate.</p>
                 </div>
@@ -1129,16 +1134,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Study Window Section */}
+      {/* Clarity Mode Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h2 className="text-xl font-semibold text-foreground mb-1 flex items-center gap-2">
               <Clock className="w-5 h-5 text-accent" aria-hidden="true" />
-              Study Window
+              Clarity Mode
             </h2>
             <p className="text-sm text-muted-foreground">
-              Studying inside this window earns the Gold day tier on your heatmap.
+              Studying inside your Clarity Mode hours earns the Gold day tier on your heatmap.
               We&apos;ll send one supportive nudge 15 minutes before it opens.
             </p>
           </div>
@@ -1215,7 +1220,7 @@ export default function SettingsPage() {
                     }}
                     disabled={!contractLoaded || isSavingContract || isClearingContract}
                     className="w-full px-4 py-3 bg-card-bg border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors tabular-nums cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Study window start time"
+                    aria-label="Clarity Mode start time"
                   />
                 </label>
                 <label className="block">
@@ -1229,7 +1234,7 @@ export default function SettingsPage() {
                     }}
                     disabled={!contractLoaded || isSavingContract || isClearingContract}
                     className="w-full px-4 py-3 bg-card-bg border border-border rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-card-bg focus:ring-accent transition-colors tabular-nums cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Study window end time"
+                    aria-label="Clarity Mode end time"
                   />
                 </label>
               </div>
@@ -1272,6 +1277,49 @@ export default function SettingsPage() {
 
               <div className="mt-5 pt-4 border-t border-border flex items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
+                  <Wind className="w-4 h-4 text-accent mt-0.5 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-foreground">Pre-session breathing warm-up</p>
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          aria-expanded={breathingInfoOpen}
+                          aria-label="Why a breathing warm-up?"
+                          onClick={() => setBreathingInfoOpen((v) => !v)}
+                          onBlur={() => setBreathingInfoOpen(false)}
+                          className="inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        >
+                          <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <div
+                          role="tooltip"
+                          className={`absolute left-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${breathingInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                        >
+                          <p className="font-medium text-foreground mb-1">Why it helps</p>
+                          <p>Based on a 2024 meta-analysis of 111 randomised trials (9,500+ participants) showing brief mindfulness breathing improves sustained attention and working memory. (Scientific Reports, 2024)</p>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Shows a 5-minute breathing exercise 5 minutes before Clarity Mode starts. Skip or dismiss anytime — never interrupts your session.
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={breathing.enabled}
+                    onChange={(e) => breathing.setEnabled(e.target.checked)}
+                    aria-label="Toggle pre-session breathing warm-up"
+                  />
+                  <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
+                </label>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
                   <Volume2 className="w-4 h-4 text-accent mt-0.5 shrink-0" aria-hidden="true" />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
@@ -1289,7 +1337,7 @@ export default function SettingsPage() {
                         </button>
                         <div
                           role="tooltip"
-                          className={`absolute left-0 top-full mt-2 w-72 p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${ambientInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                          className={`absolute left-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${ambientInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
                         >
                           <p className="font-medium text-foreground mb-1">Why ambient sound?</p>
                           <p>A steady rhythm your brain locks onto, making it easier to stay in the zone. Keep the volume soft, just enough to hear it, so it fades into the background rather than becoming a distraction itself. Headphones work best, and most people notice the difference within a few minutes.</p>
@@ -1297,7 +1345,7 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Show a play/pause control during your focus window.
+                      Show a play/pause control during Clarity Mode.
                     </p>
                   </div>
                 </div>
@@ -1307,7 +1355,7 @@ export default function SettingsPage() {
                     className="sr-only peer"
                     checked={ambientEnabled}
                     onChange={(e) => setAmbientEnabled(e.target.checked)}
-                    aria-label="Toggle ambient sound control in focus window"
+                    aria-label="Toggle ambient sound control in Clarity Mode"
                   />
                   <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
                 </label>

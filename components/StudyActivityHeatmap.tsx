@@ -27,7 +27,7 @@ function formatFriendlyDate(isoLike: string) {
 function formatActivities(count: number, dateISO: string, tier?: DayTier) {
   const dateLabel = formatFriendlyDate(dateISO);
   const tierLabel =
-    tier === 'gold' ? ' · Gold day — studied in your window, all flashcards cleared, all challenges done'
+    tier === 'gold' ? ' · Gold day — studied in Clarity Mode, all flashcards cleared, all challenges done'
     : tier === 'orange' ? ' · Flashcards cleared'
     : tier === 'gray' ? ' · Studied (10+ min)'
     : count > 0 ? ' · Some activity'
@@ -360,7 +360,7 @@ export default function StudyActivityHeatmap() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 rounded-[3px] bg-yellow-400 shadow-[inset_0_0_0_2px_rgba(146,64,14,0.75)] dark:shadow-[inset_0_0_0_2px_rgba(120,53,15,0.85)]" />
-              Gold day <span className="text-muted-foreground/80">· study window + cards + challenges</span>
+              Gold day <span className="text-muted-foreground/80">· Clarity Mode + cards + challenges</span>
             </span>
           </div>
 

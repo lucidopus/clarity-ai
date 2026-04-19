@@ -61,7 +61,7 @@ function FocusToast({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       role="status"
       aria-live="polite"
-      className="fixed bottom-6 right-6 sm:right-44 z-50 w-[22rem] max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
+      className="fixed bottom-[calc(var(--mobile-chrome-bottom)+5.5rem)] right-4 sm:bottom-24 sm:right-6 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
     >
       <div className="relative flex items-stretch">
         <div
@@ -169,7 +169,7 @@ function FocusBadge({
           if (e.currentTarget.matches(':focus-visible')) setFocused(true);
         }}
         onBlur={() => setFocused(false)}
-        aria-label={`Focus window active, ${formatRemaining(
+        aria-label={`Clarity Mode active, ${formatRemaining(
           minutesLeft,
         )} remaining. Click to edit in settings.`}
         className="relative inline-flex items-center justify-center rounded-full bg-card-bg/60 backdrop-blur-md hover:bg-card-bg/90 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -262,7 +262,7 @@ function FocusEntryFlash({
       {show && (
         <FocusToast
           key="focus-entry-flash"
-          tagLabel="Focus window"
+          tagLabel="Clarity Mode"
           title="You’re in. Let’s study."
           meta={meta}
         />
@@ -309,7 +309,7 @@ function PreWindowMountGuard({
   return (
     <FocusToast
       tagLabel="Starting soon"
-      title="Focus window in 15 minutes"
+      title="Clarity Mode in 15 minutes"
       meta={meta}
       onDismiss={() => setDismissed(true)}
     />
@@ -457,9 +457,9 @@ export default function FocusModeShell() {
         // Timer orb sits on the right so the primary focus signal is the
         // corner-most element; ambient is to its left.
         <div
-          className={`fixed bottom-6 ${
-            hasChatBubble ? 'right-[6.5rem]' : 'right-6'
-          } z-40 flex items-center gap-3 transition-[right] duration-300 ease-out`}
+          className={`fixed bottom-[calc(var(--mobile-chrome-bottom)+1rem)] ${
+            hasChatBubble ? 'right-[5rem] md:right-[6.5rem]' : 'right-4 md:right-6'
+          } md:bottom-6 z-40 flex items-center gap-3 transition-[right] duration-300 ease-out`}
         >
           {ambientEnabled && <FocusAmbientPlayer forcePause={!isInWindow} />}
           {isInWindow && minutesRemaining !== null && windowTotalMinutes > 0 && (

@@ -149,7 +149,7 @@ export default function OnboardingFlow({ isEditMode = false }: OnboardingFlowPro
     : `${currentStep}`;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Edit mode header */}
         {isEditMode && (

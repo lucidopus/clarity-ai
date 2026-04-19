@@ -193,8 +193,8 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
               <Trophy className="w-14 h-14 text-white drop-shadow-sm" />
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Quiz Complete!</h1>
-          <p className="text-xl text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-2">Quiz Complete!</h1>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground">
             You got <span className="font-bold text-accent">{correctCount}</span> out of {quizzes.length} questions right
           </p>
         </motion.div>
@@ -671,9 +671,9 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.3 }}
-        className="bg-card-bg border-2 border-border rounded-2xl p-8 mb-8"
+        className="bg-card-bg border-2 border-border rounded-2xl p-5 sm:p-8 mb-6 sm:mb-8 mobile-safe-prose"
       >
-        <h3 className="text-2xl font-semibold text-foreground mb-6">
+        <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-5 sm:mb-6 break-words">
           {currentQuestion.questionText}
         </h3>
 
@@ -701,7 +701,7 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
                   <button
                     key={rating}
                     onClick={() => setCurrentConfidence(rating)}
-                    className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all duration-200 cursor-pointer ${
+                    className={`flex-1 min-h-11 py-2 px-3 rounded-xl text-sm font-medium border-2 transition-all duration-200 cursor-pointer ${
                       currentConfidence === rating
                         ? 'border-accent bg-accent/10 text-accent'
                         : 'border-border bg-card-bg text-muted-foreground hover:border-accent/40 hover:text-foreground'
@@ -744,16 +744,17 @@ export default function QuizInterface({ quizzes, videoId }: QuizInterfaceProps) 
       </motion.div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2 sm:gap-4">
         <Button
           variant="secondary"
           onClick={handlePrev}
           disabled={currentQuestionIndex === 0}
+          className="flex-1 sm:flex-none"
         >
           Previous
         </Button>
 
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-stretch sm:items-end gap-1 flex-1 sm:flex-none">
           {!submitted ? (
             <>
               <Button

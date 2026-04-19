@@ -88,10 +88,10 @@ export default function QuizReview({
         <h2 className="text-2xl font-bold text-foreground mb-2">
           Quiz Complete!
         </h2>
-        <p className="text-lg text-muted-foreground mb-4">
+        <p className="text-base sm:text-lg text-muted-foreground mb-4">
           {getScoreMessage()}
         </p>
-        <div className="text-4xl font-bold mb-2">
+        <div className="text-3xl sm:text-4xl font-bold mb-2">
           <span className={getScoreColor()}>{score}</span>
           <span className="text-muted-foreground">/{total}</span>
         </div>

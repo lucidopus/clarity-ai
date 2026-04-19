@@ -9,7 +9,7 @@ interface TopBarProps {
 
 export default function TopBar({ mode, onToggleMode }: TopBarProps) {
   return (
-    <div className="absolute z-50 flex gap-2 items-center" style={{ top: 12, left: 16 }}>
+    <div className="absolute z-50 hidden lg:flex gap-2 items-center" style={{ top: 12, left: 16 }}>
       <button
         type="button"
         onClick={onToggleMode}

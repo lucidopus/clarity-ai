@@ -246,20 +246,16 @@ export default function VideoAndTranscriptViewer({
 
   return (
     <div
-      className="relative w-full flex overflow-hidden rounded-2xl border border-border"
+      className="relative w-full flex flex-col lg:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-border lg:h-[calc(100dvh-200px)] lg:min-h-[640px]"
       style={{
         background: 'var(--background)',
-        height: 'calc(100dvh - 200px)',
-        minHeight: 640,
       }}
     >
       <TopBar mode={mode} onToggleMode={toggleMode} />
 
-      {/* Center: video */}
-      <section
-        className="flex-1 min-w-0 flex flex-col relative"
-        style={{ paddingLeft: 16, paddingRight: 16, paddingTop: 52, paddingBottom: 16 }}
-      >
+      {/* Center: video — full aspect on mobile, flexible on lg+. Extra
+          bottom padding on <lg reserves space for the fixed Notes handle. */}
+      <section className="flex-1 min-w-0 flex flex-col relative px-3 sm:px-4 pt-3 sm:pt-[3.25rem] pb-16 sm:pb-4 min-h-[60dvh] lg:min-h-0 lg:pb-4">
         <VideoStage
           containerRef={player.containerRef}
           scrubberRef={scrubberRef}
@@ -292,6 +288,7 @@ export default function VideoAndTranscriptViewer({
         collapsed={notesCollapsed}
         onToggleCollapse={toggleNotes}
         onOpenCommandPalette={() => setPaletteOpen(true)}
+        onAddSegmentNote={() => openSegmentNotePopup()}
         transcript={transcript}
         onSeek={player.seek}
         onEditSegmentNote={(idx) => openSegmentNotePopup(idx)}

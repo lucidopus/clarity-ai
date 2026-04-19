@@ -96,10 +96,10 @@ export default function Step2Challenges({
     >
       {/* Header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-foreground mb-3">
+        <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-3">
           What learning challenges do you face?
         </h2>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-base sm:text-lg text-muted-foreground">
           Select any obstacles you encounter. We&apos;ll tailor support to help you overcome them.
         </p>
       </div>

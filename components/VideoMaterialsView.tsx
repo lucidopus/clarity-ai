@@ -155,7 +155,7 @@ export default function VideoMaterialsView({
 
             {/* Info */}
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-foreground mb-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground mb-2 break-words">
                 {video.title}
               </h1>
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
@@ -330,7 +330,7 @@ export default function VideoMaterialsView({
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-2xl font-bold text-foreground">
+              <h3 className="text-xl sm:text-2xl font-bold text-foreground">
                 Meet {CHATBOT_NAME}
               </h3>
               <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
