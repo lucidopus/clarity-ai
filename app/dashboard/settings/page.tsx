@@ -10,9 +10,10 @@ import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
-import { Edit2, Save, X, Info, Clock, CheckCircle2, Volume2 } from 'lucide-react';
+import { Edit2, Save, X, Info, Clock, CheckCircle2, Volume2, Wind } from 'lucide-react';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
+import { useBreathing } from '@/lib/breathing/useBreathing';
 
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
@@ -179,6 +180,10 @@ export default function SettingsPage() {
   // Focus-mode ambient sound preference — client-side only, no server sync.
   const [ambientEnabled, setAmbientEnabled] = useAmbientEnabled();
   const [ambientInfoOpen, setAmbientInfoOpen] = useState(false);
+
+  // Pre-session breathing warm-up preference — client-side only.
+  const breathing = useBreathing(user?.id ?? null);
+  const [breathingInfoOpen, setBreathingInfoOpen] = useState(false);
 
   // Learning profile update limit state
   const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
@@ -1271,6 +1276,49 @@ export default function SettingsPage() {
               </div>
 
               <div className="mt-5 pt-4 border-t border-border flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3 min-w-0">
+                  <Wind className="w-4 h-4 text-accent mt-0.5 shrink-0" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium text-foreground">Pre-session breathing warm-up</p>
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          aria-expanded={breathingInfoOpen}
+                          aria-label="Why a breathing warm-up?"
+                          onClick={() => setBreathingInfoOpen((v) => !v)}
+                          onBlur={() => setBreathingInfoOpen(false)}
+                          className="inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                        >
+                          <Info className="w-3.5 h-3.5" aria-hidden="true" />
+                        </button>
+                        <div
+                          role="tooltip"
+                          className={`absolute left-0 top-full mt-2 w-[min(calc(100vw-2rem),18rem)] p-3 rounded-lg bg-card-bg border border-border shadow-lg text-xs text-muted-foreground transition-all duration-200 z-50 group-hover:opacity-100 group-hover:visible ${breathingInfoOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}
+                        >
+                          <p className="font-medium text-foreground mb-1">Why it helps</p>
+                          <p>Based on a 2024 meta-analysis of 111 randomised trials (9,500+ participants) showing brief mindfulness breathing improves sustained attention and working memory. (Scientific Reports, 2024)</p>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Shows a 5-minute breathing exercise 5 minutes before your study window starts. Skip or dismiss anytime — never interrupts your session.
+                    </p>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={breathing.enabled}
+                    onChange={(e) => breathing.setEnabled(e.target.checked)}
+                    aria-label="Toggle pre-session breathing warm-up"
+                  />
+                  <div className="w-11 h-6 bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-accent rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent" />
+                </label>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-border flex items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
                   <Volume2 className="w-4 h-4 text-accent mt-0.5 shrink-0" aria-hidden="true" />
                   <div className="min-w-0">

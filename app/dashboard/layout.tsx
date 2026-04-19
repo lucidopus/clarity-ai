@@ -10,6 +10,7 @@ import { LiveLectureProvider } from '@/lib/live-lecture/LiveLectureContext';
 import LiveLectureBubble from '@/components/live-lecture/LiveLectureBubble';
 import { FocusModeProvider } from '@/lib/focus-mode/FocusModeContext';
 import FocusModeShell from '@/components/focus-mode/FocusModeShell';
+import PreSessionNudge from '@/components/breathing/PreSessionNudge';
 import MobileTopBar from '@/components/MobileTopBar';
 import MobileBottomNav from '@/components/MobileBottomNav';
 
@@ -198,6 +199,7 @@ export default function DashboardLayout({
           <GlobalSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
           <LiveLectureBubble />
           <FocusModeShell />
+          <PreSessionNudge />
         </div>
       </LiveLectureProvider>
     </FocusModeProvider>

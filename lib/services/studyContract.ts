@@ -6,6 +6,11 @@
  * Rooted in Gollwitzer's implementation-intentions research (if-then planning).
  */
 
+import { zonedWallClockToUtc, zonedYmd } from '@/lib/time/zone';
+
+// Re-export so existing server callers keep working without direct import churn.
+export { zonedWallClockToUtc, zonedYmd };
+
 export interface StudyContract {
   windowStart: string;  // "HH:MM" 24h
   windowEnd: string;    // "HH:MM" 24h (may cross midnight for overnight windows)
@@ -99,59 +104,6 @@ export function minutesUntilWindowStart(
     return null;
   }
   return start - current;
-}
-
-/**
- * Convert a wall-clock time (year/month/day/hour/minute) in a given IANA
- * timezone to the corresponding UTC Date. Handles DST transitions by
- * measuring the zone's offset at the candidate instant and correcting once.
- */
-function zonedWallClockToUtc(
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute: number,
-  timezone: string,
-): Date {
-  const naive = Date.UTC(year, month - 1, day, hour, minute);
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(new Date(naive));
-  const f: Record<string, number> = {};
-  for (const p of parts) {
-    if (p.type !== 'literal') f[p.type] = Number(p.value);
-  }
-  if (f.hour === 24) f.hour = 0;
-  const asIfUtc = Date.UTC(f.year, f.month - 1, f.day, f.hour, f.minute, f.second);
-  const offset = asIfUtc - naive;
-  return new Date(naive - offset);
-}
-
-/** "Today" in the given timezone, as a {year, month, day}. */
-function zonedYmd(at: Date, timezone: string): { year: number; month: number; day: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(at);
-  let year = 0;
-  let month = 0;
-  let day = 0;
-  for (const p of parts) {
-    if (p.type === 'year') year = Number(p.value);
-    else if (p.type === 'month') month = Number(p.value);
-    else if (p.type === 'day') day = Number(p.value);
-  }
-  return { year, month, day };
 }
 
 /**

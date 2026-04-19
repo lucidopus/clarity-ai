@@ -61,7 +61,7 @@ function FocusToast({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       role="status"
       aria-live="polite"
-      className="fixed bottom-[calc(var(--mobile-chrome-bottom)+1rem)] right-4 sm:bottom-6 sm:right-44 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
+      className="fixed bottom-[calc(var(--mobile-chrome-bottom)+5.5rem)] right-4 sm:bottom-24 sm:right-6 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
     >
       <div className="relative flex items-stretch">
         <div

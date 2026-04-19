@@ -13,6 +13,7 @@ import {
   isNowInContractWindow,
   minutesUntilWindowStart,
 } from '@/lib/services/studyContract';
+import { nextWindowStartUtc } from '@/lib/breathing/timing';
 
 export interface StudyContractLite {
   windowStart: string;
@@ -31,6 +32,15 @@ interface FocusModeState {
   minutesUntilStart: number | null;
   isPreWindow: boolean;
   justPreEntered: boolean;
+  /** Precise ms until the next window opens, or null if no contract. Derived
+   *  from the same tick loop as the rest of this context — consumers should
+   *  not run their own schedulers. */
+  msUntilWindowStart: number | null;
+  /** True when `0 < msUntilWindowStart <= 5 * 60_000` — the 5-minute warm-up
+   *  zone for the pre-session breathing nudge. */
+  isWarmupWindow: boolean;
+  /** The UTC instant of the upcoming window start (or null). */
+  nextWindowStartAt: Date | null;
 }
 
 const defaultState: FocusModeState = {
@@ -42,6 +52,9 @@ const defaultState: FocusModeState = {
   minutesUntilStart: null,
   isPreWindow: false,
   justPreEntered: false,
+  msUntilWindowStart: null,
+  isWarmupWindow: false,
+  nextWindowStartAt: null,
 };
 
 const PRE_WINDOW_LEAD_MIN = 15;
@@ -184,6 +197,15 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
     minutesUntilStart !== null &&
     minutesUntilStart > 0 &&
     minutesUntilStart <= PRE_WINDOW_LEAD_MIN;
+  const nextWindowStartAt = contract
+    ? nextWindowStartUtc(contract.windowStart, contract.timezone, now)
+    : null;
+  const msUntilWindowStart =
+    nextWindowStartAt ? nextWindowStartAt.getTime() - now.getTime() : null;
+  const isWarmupWindow =
+    msUntilWindowStart !== null &&
+    msUntilWindowStart > 0 &&
+    msUntilWindowStart <= 5 * 60 * 1000;
 
   // Synchronous transition detection: set `justEntered` / `justExited` during
   // the same render that flips `isInWindow`. See `prevIsInWindow` comment.
@@ -271,6 +293,9 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
       minutesUntilStart,
       isPreWindow,
       justPreEntered,
+      msUntilWindowStart,
+      isWarmupWindow,
+      nextWindowStartAt,
     }),
     [
       contract,
@@ -281,6 +306,9 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
       minutesUntilStart,
       isPreWindow,
       justPreEntered,
+      msUntilWindowStart,
+      isWarmupWindow,
+      nextWindowStartAt,
     ],
   );
 
