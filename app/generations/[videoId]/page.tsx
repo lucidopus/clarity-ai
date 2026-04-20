@@ -268,6 +268,19 @@ export default function VideoMaterialsPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const sidebarCollapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Collapsed rail width — narrower on tablet (md-range) to reclaim content
+  // space on iPad mini/portrait (744-1023 px), full 80 px on desktop (lg+).
+  const [collapsedRailPx, setCollapsedRailPx] = useState(80);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = (matches: boolean) => setCollapsedRailPx(matches ? 80 : 64);
+    apply(mq.matches);
+    const handler = (e: MediaQueryListEvent) => apply(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const handleSidebarMouseEnter = () => {
     if (sidebarCollapseTimerRef.current) {
       clearTimeout(sidebarCollapseTimerRef.current);
@@ -668,13 +681,13 @@ export default function VideoMaterialsPage() {
           Hidden on mobile (<md); mobile uses the horizontal tab strip below
           the top bar for the same tab navigation. */}
       <div
-        className="hidden md:block relative shrink-0 w-20 h-full z-40"
+        className="hidden md:block relative shrink-0 w-16 lg:w-20 h-full z-40"
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
       >
         <motion.aside
           initial={false}
-          animate={{ width: isSidebarCollapsed ? 80 : 256 }}
+          animate={{ width: isSidebarCollapsed ? collapsedRailPx : 256 }}
           transition={{ type: 'tween', duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
           className="absolute top-0 left-0 h-full bg-card-bg border-r border-border flex flex-col overflow-hidden shadow-xl"
           style={{ willChange: 'width' }}
@@ -683,7 +696,7 @@ export default function VideoMaterialsPage() {
           <div className="h-16 flex items-center border-b border-border shrink-0">
             <button
               onClick={() => router.push('/dashboard')}
-              className="w-20 h-full flex items-center justify-center shrink-0 cursor-pointer"
+              className="w-16 lg:w-20 h-full flex items-center justify-center shrink-0 cursor-pointer"
               title="Back to Dashboard"
             >
               <span className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold text-lg hover:opacity-80 transition-opacity">
@@ -713,7 +726,7 @@ export default function VideoMaterialsPage() {
                   {isActive && (
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full" />
                   )}
-                  <div className="w-20 flex items-center justify-center shrink-0">
+                  <div className="w-16 lg:w-20 flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="text-sm whitespace-nowrap">{tab.label}</span>
@@ -729,7 +742,7 @@ export default function VideoMaterialsPage() {
               className="flex items-center w-full h-12 transition-colors cursor-pointer text-red-500/80 hover:text-red-500 hover:bg-red-500/10"
               title="Logout"
             >
-              <div className="w-20 flex items-center justify-center shrink-0">
+              <div className="w-16 lg:w-20 flex items-center justify-center shrink-0">
                 <LogOut className="w-4 h-4" />
               </div>
               <span className="text-sm whitespace-nowrap">Logout</span>

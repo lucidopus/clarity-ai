@@ -117,7 +117,7 @@ export default function Step5Preferences({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {timeOptions.map((option, index) => (
               <motion.div
                 key={option.id}

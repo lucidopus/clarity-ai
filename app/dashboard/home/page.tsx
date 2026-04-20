@@ -306,7 +306,7 @@ export default function DashboardHomePage() {
       {loading && (
         <div className="space-y-5">
           {/* Row 1: Clarity Score + Heatmap */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-card-bg border border-border rounded-2xl p-5 animate-pulse">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -348,7 +348,7 @@ export default function DashboardHomePage() {
           </div>
 
           {/* Row 2: Smart Review + Streak + Daily Challenges */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-card-bg border border-border rounded-2xl p-5 animate-pulse">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -425,7 +425,7 @@ export default function DashboardHomePage() {
           {/* Learning Insights */}
           <div>
             <div className="h-6 w-40 rounded bg-secondary/20 mb-3 animate-pulse" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="bg-card-bg border border-border rounded-2xl p-6 animate-pulse">
                   <div className="h-5 w-36 rounded bg-secondary/20 mb-4" />
@@ -438,7 +438,7 @@ export default function DashboardHomePage() {
           {/* Recent Activity */}
           <div>
             <div className="h-6 w-36 rounded bg-secondary/20 mb-3 animate-pulse" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="bg-card-bg rounded-xl border border-border p-4 animate-pulse">
                   <div className="aspect-video bg-secondary/20 rounded-lg mb-3" />
@@ -459,7 +459,7 @@ export default function DashboardHomePage() {
       {!loading && !error && stats && (
         <div className="space-y-5">
           {/* Snapshot — at-a-glance score + activity */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <ClarityScoreWidget />
             <StudyActivityHeatmap />
           </div>
@@ -469,7 +469,7 @@ export default function DashboardHomePage() {
             <h3 className="text-lg font-semibold text-foreground mb-3">Today&apos;s Focus</h3>
             <div className="space-y-4">
               <TodaysMixCard />
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <StreakWidget />
                 <CardsDueWidget />
                 <DailyChallengesCard />
@@ -483,7 +483,7 @@ export default function DashboardHomePage() {
           {/* Study Rhythm — when you study (patterns over time) */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Study Rhythm</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <WeekdayConsistencyBars />
               <FocusHoursChart />
             </div>
@@ -492,7 +492,7 @@ export default function DashboardHomePage() {
           {/* Learning Insights — content & performance analytics */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-3">Learning Insights</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <VideoEngagementList />
               <ActivityFunnelCard />
               <FlashcardDifficultyDonut />
@@ -511,7 +511,7 @@ export default function DashboardHomePage() {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {recentVideos.map((v) => (
                   <RecentVideoCard
                     key={v._id}

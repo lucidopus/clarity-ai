@@ -216,7 +216,7 @@ export default function PrerequisitesView({ prerequisites, isReadOnly = false }:
             <CheckCircle2 className="w-5 h-5 text-accent" />
             Key Prerequisites
           </h2>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {requiredPrerequisites.map((prerequisite, index) => (
               <PrerequisiteCard
                 key={prerequisite.id}
@@ -238,7 +238,7 @@ export default function PrerequisitesView({ prerequisites, isReadOnly = false }:
             <BookOpen className="w-5 h-5 text-muted-foreground" />
             Optional Prerequisites
           </h2>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {optionalPrerequisites.map((prerequisite, index) => (
               <PrerequisiteCard
                 key={prerequisite.id}

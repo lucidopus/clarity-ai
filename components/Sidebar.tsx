@@ -12,12 +12,19 @@ import { Z_INDEX } from '@/lib/constants/z-index';
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // On tablet (md-to-lg-), collapse by default — a 256-px expanded sidebar
+  // eats 31% of an 810-px iPad portrait. Desktop (lg+) expands by default.
+  // Computed once on mount so window-snapping / iPad multitasking doesn't
+  // re-collapse after the user manually expands.
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(max-width: 1023px)').matches;
+  });
 
   return (
     <aside
       style={{ zIndex: Z_INDEX.sidebar }}
-      className={`hidden md:flex bg-card-bg border-r border-border shrink-0 flex-col h-dvh sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-64'}`}
+      className={`hidden md:flex bg-card-bg border-r border-border shrink-0 flex-col h-dvh sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-56 lg:w-64'}`}
     >
       {/* Sidebar Header: Logo & Toggle */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">

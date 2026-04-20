@@ -85,7 +85,7 @@ export default function CategoryRow({ title, items, categoryId: _categoryId }: C
             style={{ scrollPaddingInline: '1rem' }}
           >
              {items.map((video, idx) => (
-                 <div key={`${video._id}-${idx}`} className="flex-shrink-0 snap-start w-[260px] sm:w-[320px]">
+                 <div key={`${video._id}-${idx}`} className="flex-shrink-0 snap-start w-[260px] sm:w-[320px] md:w-[340px] lg:w-[320px]">
                     <VideoCard
                         id={video._id}
                         title={video.title}

@@ -340,7 +340,7 @@ export default function AdminDashboardPage() {
           <div className="h-8 bg-secondary/20 rounded w-48 mb-2"></div>
           <div className="h-4 bg-secondary/20 rounded w-96"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
@@ -358,7 +358,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={<Users className="w-6 h-6 text-accent" />}
           label="Total Users"

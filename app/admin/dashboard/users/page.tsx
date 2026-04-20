@@ -230,7 +230,7 @@ export default function AdminUsersPage() {
       {/* Collapsible Filters */}
       {showFilters && (
         <div className="bg-card-bg rounded-xl border border-border p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Sort By */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -439,7 +439,7 @@ export default function AdminUsersPage() {
       {/* User Details Modal */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center sm:p-4 z-[60]">
-          <div className="bg-card-bg rounded-t-xl sm:rounded-xl border-t sm:border border-border sm:max-w-5xl w-full max-h-[92dvh] overflow-hidden flex flex-col pb-[env(safe-area-inset-bottom)] sm:pb-0">
+          <div className="bg-card-bg rounded-t-xl sm:rounded-xl border-t sm:border border-border sm:max-w-3xl md:max-w-4xl lg:max-w-5xl w-full max-h-[92dvh] overflow-hidden flex flex-col pb-[env(safe-area-inset-bottom)] sm:pb-0">
             {/* Header */}
             <div className="bg-card-bg border-b border-border px-6 py-5 flex items-start justify-between">
               <div className="flex items-start gap-4">

@@ -315,7 +315,7 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
 
             {/* Dialog */}
              <motion.div
-               className="relative z-10 flex h-[92dvh] sm:h-[800px] w-full sm:max-w-4xl flex-col rounded-t-2xl sm:rounded-2xl landscape-phone-fill border-t sm:border border-border bg-background shadow-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
+               className="relative z-10 flex h-[92dvh] sm:h-[800px] w-full sm:max-w-3xl lg:max-w-4xl flex-col rounded-t-2xl sm:rounded-2xl landscape-phone-fill border-t sm:border border-border bg-background shadow-2xl pb-[env(safe-area-inset-bottom)] sm:pb-0"
                initial={{ y: '100%', opacity: 0 }}
                animate={{ y: 0, opacity: 1 }}
                exit={{ y: '100%', opacity: 0 }}
