@@ -1191,13 +1191,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        {/* Footer Minimal */}
-        <footer className="py-8 text-center text-sm text-secondary/60 relative z-10 border-t border-border/50">
-          <div className="max-w-7xl mx-auto px-4">
-            <p>&copy; {new Date().getFullYear()} Clarity AI. All rights reserved.</p>
-          </div>
-        </footer>
     </main>
   );
 }
