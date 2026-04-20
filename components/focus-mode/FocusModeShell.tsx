@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { Clock } from 'lucide-react';
-import { useFocusMode } from '@/lib/focus-mode/FocusModeContext';
+import { Clock, Plus, Settings as SettingsIcon } from 'lucide-react';
+import { useFocusMode, type StudyContractLite } from '@/lib/focus-mode/FocusModeContext';
 import FocusAmbientPlayer from '@/components/focus-mode/FocusAmbientPlayer';
 import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
 import { usePauseBudget } from '@/lib/focus-mode/use-pause-budget';
@@ -12,6 +12,7 @@ import PauseButton from '@/components/focus-mode/PauseButton';
 import PauseOverlay from '@/components/focus-mode/PauseOverlay';
 import EchoPromptOverlay from '@/components/focus-mode/EchoPromptOverlay';
 import EchoAnswerOverlay from '@/components/focus-mode/EchoAnswerOverlay';
+import { STUDY_CONTRACT } from '@/lib/limits';
 
 function formatRemaining(mins: number): string {
   if (mins < 1) return '<1m';
@@ -136,14 +137,39 @@ function FocusAmbient({ active, reduceMotion }: { active: boolean; reduceMotion:
 function FocusBadge({
   minutesLeft,
   windowTotalMinutes,
+  contract,
 }: {
   minutesLeft: number;
   windowTotalMinutes: number;
+  contract: StudyContractLite | null;
 }) {
   const router = useRouter();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const show = hovered || focused;
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const show = (hovered || focused) && !popoverOpen;
+
+  useEffect(() => {
+    if (!popoverOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPopoverOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+    const onClick = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      if (!containerRef.current.contains(e.target as Node)) setPopoverOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onClick);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onClick);
+    };
+  }, [popoverOpen]);
 
   // Visual: elapsed time grows as an SVG stroke arc around a breathing halo.
   // SVG's 0deg sits at 3 o'clock, so we rotate the arc element -90deg to start
@@ -160,13 +186,15 @@ function FocusBadge({
 
   return (
     <div
+      ref={containerRef}
       className="relative"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => router.push('/dashboard/settings')}
+        onClick={() => setPopoverOpen((v) => !v)}
         onFocus={(e) => {
           // Only show the tooltip for keyboard focus, not mouse clicks —
           // otherwise clicking the orb leaves the tooltip stuck open until
@@ -176,10 +204,22 @@ function FocusBadge({
         onBlur={() => setFocused(false)}
         aria-label={`Clarity Mode active, ${formatRemaining(
           minutesLeft,
-        )} remaining. Click to edit in settings.`}
+        )} remaining. Click to add time or open settings.`}
+        aria-haspopup="dialog"
+        aria-expanded={popoverOpen}
         className="relative inline-flex items-center justify-center rounded-full bg-card-bg/60 backdrop-blur-md hover:bg-card-bg/90 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         style={{ width: SIZE, height: SIZE }}
       >
+        {/* Subtle "+" indicator so returning users discover the extend
+            affordance. Nudged to -top-1 -right-1 + background-colored
+            outline so the focus-visible ring passes visually behind the
+            badge instead of clipping it. */}
+        <span
+          aria-hidden="true"
+          className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-accent text-background flex items-center justify-center shadow-sm ring-2 ring-background"
+        >
+          <Plus className="w-2.5 h-2.5" strokeWidth={3} />
+        </span>
         <span
           className="absolute rounded-full focus-mode-halo-breathe"
           aria-hidden="true"
@@ -246,7 +286,177 @@ function FocusBadge({
           </motion.span>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {popoverOpen && (
+          <ExtendPopover
+            key="focus-badge-popover"
+            minutesLeft={minutesLeft}
+            contract={contract}
+            onOpenSettings={() => {
+              setPopoverOpen(false);
+              router.push('/dashboard/settings');
+            }}
+            onClose={() => setPopoverOpen(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function ExtendPopover({
+  minutesLeft,
+  contract,
+  onOpenSettings,
+  onClose,
+}: {
+  minutesLeft: number;
+  contract: StudyContractLite | null;
+  onOpenSettings: () => void;
+  onClose: () => void;
+}) {
+  const [pending, setPending] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const used = contract?.todayExtensions?.totalMinutesAdded ?? 0;
+  const usedCount = contract?.todayExtensions?.count ?? 0;
+  const countRemaining = Math.max(0, STUDY_CONTRACT.extensions.maxPerDay - usedCount);
+  const minutesRemaining = Math.max(0, STUDY_CONTRACT.extensions.maxMinutesPerDay - used);
+  const countExhausted = countRemaining === 0;
+
+  // Focus trap — Tab cycles among this dialog's enabled focusables and
+  // Shift+Tab loops backward. Without this, Tab would leak into page
+  // content behind the popover (UX review flagged; WCAG 2.4.3).
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const root = dialogRef.current;
+    if (!root) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const focusables = Array.from(
+        root.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    root.addEventListener('keydown', onKey);
+    return () => root.removeEventListener('keydown', onKey);
+  }, []);
+
+  const handleExtend = useCallback(async (minutes: number) => {
+    if (pending !== null || countExhausted || minutes > minutesRemaining) return;
+    setPending(minutes);
+    setError(null);
+    try {
+      const res = await fetch('/api/streak-contract/extend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ minutes }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        setError(data?.message || 'Could not add time. Try again.');
+        return;
+      }
+      // Refresh the FocusMode context so minutesLeft reflects the new end.
+      window.dispatchEvent(new Event('focus-mode:refresh'));
+      onClose();
+    } catch {
+      setError('Could not add time. Try again.');
+    } finally {
+      setPending(null);
+    }
+  }, [pending, countExhausted, minutesRemaining, onClose]);
+
+  return (
+    <motion.div
+      ref={dialogRef}
+      role="dialog"
+      aria-label="Extend Clarity Mode"
+      aria-modal="true"
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+      className="absolute bottom-full right-0 mb-2 w-56 rounded-xl border border-border bg-card-bg/95 backdrop-blur-md shadow-xl overflow-hidden"
+    >
+      <div className="px-3 py-2.5 border-b border-border">
+        <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-accent">
+          <Clock className="w-3 h-3" aria-hidden="true" />
+          <span>Clarity Mode</span>
+        </div>
+        <p className="mt-0.5 text-sm font-medium text-foreground">
+          {formatRemaining(minutesLeft)} left
+        </p>
+      </div>
+      <div className="p-2">
+        {countExhausted ? (
+          <div className="px-2 py-2 space-y-1">
+            <p className="text-xs text-foreground">No extensions left for this session.</p>
+            <p className="text-[11px] text-muted-foreground">Resets when your next window opens.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {STUDY_CONTRACT.extensionIncrements.map((increment, idx) => {
+              const wouldExceed = increment > minutesRemaining;
+              const disabled = pending !== null || wouldExceed;
+              return (
+                <button
+                  key={increment}
+                  type="button"
+                  autoFocus={idx === 0}
+                  onClick={() => handleExtend(increment)}
+                  disabled={disabled}
+                  className="w-full min-h-11 flex items-center justify-between px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-accent/10 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <span className="flex items-center gap-2">
+                    <Plus className="w-3.5 h-3.5 text-accent" aria-hidden="true" />
+                    <span>{increment} min</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {pending === increment
+                      ? 'Adding…'
+                      : wouldExceed
+                      ? "Over today's limit"
+                      : ''}
+                  </span>
+                </button>
+              );
+            })}
+            <p className="mt-1 px-3 text-[11px] text-muted-foreground">
+              {countRemaining} extension{countRemaining === 1 ? '' : 's'} · {minutesRemaining} min left today
+            </p>
+          </div>
+        )}
+        {error && (
+          <p className="mt-2 px-3 text-xs text-red-600 dark:text-red-400">{error}</p>
+        )}
+      </div>
+      <div className="border-t border-border">
+        <button
+          type="button"
+          onClick={onOpenSettings}
+          className="w-full flex items-center justify-between px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <span className="flex items-center gap-2">
+            <SettingsIcon className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Open settings</span>
+          </span>
+          <span aria-hidden="true">→</span>
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
@@ -453,7 +663,9 @@ export default function FocusModeShell() {
         const s = parseHHMM(contract.windowStart);
         const e = parseHHMM(contract.windowEnd);
         const raw = e - s;
-        return Math.max(0, raw <= 0 ? raw + 1440 : raw);
+        const base = Math.max(0, raw <= 0 ? raw + 1440 : raw);
+        const extMinutes = contract.todayExtensions?.totalMinutesAdded ?? 0;
+        return base + extMinutes;
       })()
     : 0;
   const windowDurationLabel = contract ? formatDuration(windowTotalMinutes) : '';
@@ -575,6 +787,7 @@ export default function FocusModeShell() {
             <FocusBadge
               minutesLeft={minutesRemaining}
               windowTotalMinutes={windowTotalMinutes}
+              contract={contract}
             />
           )}
           {!isInWindow && justExited && <FocusBadgeDissolving />}

@@ -12,14 +12,22 @@ import React, {
 import {
   isNowInContractWindow,
   minutesUntilWindowStart,
+  minutesUntilWindowEnd,
 } from '@/lib/services/studyContract';
 import { nextWindowStartUtc } from '@/lib/breathing/timing';
 import { CLARITY_MODE } from '@/lib/limits';
+
+export interface TodayExtensionsLite {
+  date: string;
+  count: number;
+  totalMinutesAdded: number;
+}
 
 export interface StudyContractLite {
   windowStart: string;
   windowEnd: string;
   timezone: string;
+  todayExtensions?: TodayExtensionsLite | null;
 }
 
 interface FocusModeState {
@@ -74,40 +82,16 @@ export function useFocusMode(): FocusModeState {
   return useContext(FocusModeContext);
 }
 
-function parseHHMM(value: string): number {
-  const [h, m] = value.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-
-function currentMinutesInZone(at: Date, timezone: string): number | null {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: timezone,
-      hour12: false,
-      hour: '2-digit',
-      minute: '2-digit',
-    }).formatToParts(at);
-    let h = 0;
-    let m = 0;
-    for (const p of parts) {
-      if (p.type === 'hour') h = Number(p.value);
-      else if (p.type === 'minute') m = Number(p.value);
-    }
-    if (h === 24) h = 0;
-    return h * 60 + m;
-  } catch {
-    return null;
-  }
-}
-
+/**
+ * Minutes remaining in the effective window (active windowEnd + any
+ * extensions applied for this session, via the shared service helper).
+ * Returns null when outside the window.
+ */
 function computeMinutesRemaining(
   contract: StudyContractLite,
   at: Date,
 ): number | null {
-  const end = parseHHMM(contract.windowEnd);
-  const current = currentMinutesInZone(at, contract.timezone);
-  if (current === null) return null;
-  return Math.max(0, end - current);
+  return minutesUntilWindowEnd(contract, at);
 }
 
 /**
@@ -164,8 +148,18 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const data = await res.json();
-      const next = (data?.studyContract ?? null) as StudyContractLite | null;
-      setContract(next && next.windowStart && next.windowEnd && next.timezone ? next : null);
+      const raw = (data?.studyContract ?? null) as (StudyContractLite & {
+        contractedAt?: string;
+      }) | null;
+      const next: StudyContractLite | null = raw && raw.windowStart && raw.windowEnd && raw.timezone
+        ? {
+            windowStart: raw.windowStart,
+            windowEnd: raw.windowEnd,
+            timezone: raw.timezone,
+            todayExtensions: raw.todayExtensions ?? null,
+          }
+        : null;
+      setContract(next);
     } catch {
       // Non-fatal — app works without focus mode.
     } finally {

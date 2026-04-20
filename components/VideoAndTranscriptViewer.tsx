@@ -39,6 +39,9 @@ export default function VideoAndTranscriptViewer({
 
   const player = useYouTubePlayer({ videoId: ytId, autoplay: autoplayVideos });
   const scrubberRef = useRef<HTMLDivElement | null>(null);
+  // Fullscreen target: the whole viewer (video + notes rail) so segment
+  // notes and transcript stay visible in fullscreen, not just the video.
+  const viewerRootRef = useRef<HTMLDivElement | null>(null);
 
   // Default to study mode → notes open. Users land here from a material click;
   // they came here to study, not just to watch.
@@ -246,7 +249,8 @@ export default function VideoAndTranscriptViewer({
 
   return (
     <div
-      className="relative w-full flex flex-col lg:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-border lg:h-[calc(100dvh-200px)] lg:min-h-[640px]"
+      ref={viewerRootRef}
+      className="viewer-fullscreen-root relative w-full flex flex-col lg:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-border lg:h-[calc(100dvh-200px)] lg:min-h-[640px]"
       style={{
         background: 'var(--background)',
       }}
@@ -259,6 +263,7 @@ export default function VideoAndTranscriptViewer({
         <VideoStage
           containerRef={player.containerRef}
           scrubberRef={scrubberRef}
+          fullscreenTargetRef={viewerRootRef}
           isReady={player.isReady}
           isPlaying={player.isPlaying}
           currentTime={player.currentTime}

@@ -4,7 +4,8 @@ import StudyDay from '@/lib/models/StudyDay';
 import Flashcard from '@/lib/models/Flashcard';
 import DailyChallenge from '@/lib/models/DailyChallenge';
 import { recordChallengeActivity } from './dailyChallenges';
-import { isNowInContractWindow } from './studyContract';
+import { isNowInContractWindow, effectiveWindowAt } from './studyContract';
+import { resolvePendingContract } from './studyContract.server';
 
 export type ActivityType =
   | 'flashcard_review'
@@ -126,6 +127,7 @@ async function computeTierFlags(
     windowStart: string;
     windowEnd: string;
     timezone: string;
+    todayExtensions?: { date: string; count: number; totalMinutesAdded: number } | null;
   } | null,
   date: string,
 ): Promise<{ fsrsQueueCleared: boolean; challengesCompleted: boolean; inContractWindow: boolean }> {
@@ -160,7 +162,29 @@ export async function recordStudyActivity(
 ): Promise<StreakResult | null> {
   await dbConnect();
 
-  const today = getUTCDateString();
+  // Lazy pending→active promotion so the rest of this function sees the
+  // current contract (issue #104). No-op when nothing is due.
+  await resolvePendingContract(userId);
+
+  const now = new Date();
+  const todayUtc = getUTCDateString(now);
+
+  // Session-date attribution for extensions that spill across UTC midnight.
+  // When the user is still inside yesterday's extended session (e.g. 23:00
+  // window extended to 00:30), we want the gold-tier credit to land on the
+  // day the session opened, not on today's UTC date. Only deviates from
+  // todayUtc when the session opened on a different UTC day.
+  const contractDoc = await User.findById(userId).select('studyContract').lean() as {
+    studyContract?: {
+      windowStart: string;
+      windowEnd: string;
+      timezone: string;
+      todayExtensions?: { date: string; count: number; totalMinutesAdded: number } | null;
+    } | null;
+  } | null;
+  const win = effectiveWindowAt(contractDoc?.studyContract ?? null, now);
+  const sessionUtc = win ? win.openAt.toISOString().split('T')[0] : null;
+  const today = sessionUtc && sessionUtc !== todayUtc ? sessionUtc : todayUtc;
 
   // Atomically increment the day's activity counter
   const studyDay = await StudyDay.findOneAndUpdate(
@@ -189,7 +213,12 @@ export async function recordStudyActivity(
       return { ...base, todayTier: 'empty' };
     }
     const u = await User.findById(userId).select('studyContract').lean() as {
-      studyContract?: { windowStart: string; windowEnd: string; timezone: string } | null;
+      studyContract?: {
+        windowStart: string;
+        windowEnd: string;
+        timezone: string;
+        todayExtensions?: { date: string; count: number; totalMinutesAdded: number } | null;
+      } | null;
     } | null;
     const flags = await computeTierFlags(userId, fresh, u?.studyContract ?? null, today);
     const changedFields: Record<string, boolean> = {};
@@ -234,7 +263,6 @@ export async function recordStudyActivity(
   if (!user) return null;
 
   const lastStudy = user.lastStudyDate;
-  const now = new Date();
 
   type Action = 'firstEver' | 'increment' | 'shield' | 'recover' | 'reset' | 'recoveryPending';
   let action: Action;
@@ -328,10 +356,18 @@ export async function recordStudyActivity(
 
   // Persist updated streak state and always clear the recovery deadline after a
   // definitive streak action (increment / shield / recover / reset).
+  //
+  // `lastStudyDate` is always stamped with the current UTC calendar day, NOT
+  // the session-attribution day. Without this, a cross-midnight extension
+  // that credits yesterday's session (today=yesterdayUtc) would leave
+  // lastStudyDate=yesterdayUtc. The user's next-day morning study would then
+  // compute diff=1 and increment the streak AGAIN for the same calendar day.
+  // Tier flags still land on the session-attribution StudyDay doc via
+  // `today`; only the streak anchor advances to todayUtc.
   const shieldSet: Record<string, unknown> = {
     studyStreak: newStreak,
     longestStudyStreak: newLongest,
-    lastStudyDate: today,
+    lastStudyDate: todayUtc,
     streakShields: newShields,
     streakRecoveryDeadline: null,
   };

@@ -335,15 +335,16 @@ export default function SegmentNotePopup({
                     style={{ color: 'var(--secondary)' }}
                   />
                   <span
-                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 opacity-0 group-hover/info:opacity-100 transition-opacity duration-150 whitespace-normal rounded-md text-[11px] leading-snug z-10"
+                    role="tooltip"
+                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 opacity-0 group-hover/info:opacity-100 transition-opacity duration-150 whitespace-normal rounded-md text-[11px] leading-snug z-20"
                     style={{
                       top: 'calc(100% + 8px)',
                       width: 240,
                       padding: '8px 10px',
-                      background: 'rgba(17,21,28,0.96)',
+                      background: 'var(--card-bg)',
                       border: '1px solid var(--border)',
                       color: 'var(--foreground)',
-                      boxShadow: '0 8px 24px -8px rgba(0,0,0,0.5)',
+                      boxShadow: '0 8px 24px -8px rgba(0,0,0,0.25)',
                     }}
                   >
                     Pinned to {formatTimestamp(segment.start)}. Shows up in your notes panel and pops as an Up Next card 10s before this moment on replay.

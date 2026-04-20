@@ -66,3 +66,19 @@ export const CLARITY_MODE = {
     phaseClosingCutoff: 0.75,
   },
 } as const;
+
+// ── Study Contract (edit budget + extensions + grace) ────────────────────────
+// The commitment device must flex around real-life schedules without letting
+// users retroactively claim Gold. Centralized so all call sites read one
+// value. See issue #104 for the behavioral rationale.
+
+export const STUDY_CONTRACT = {
+  /** Rolling window of allowed edits. Prevents same-day re-stamping. */
+  editBudget: { max: 3, windowSec: 7 * 24 * 3_600 },
+  /** Per-day in-flow extensions. Both caps must hold. */
+  extensions: { maxPerDay: 3, maxMinutesPerDay: 90 },
+  /** Fixed allowed increments (minutes). Reject anything else at the API. */
+  extensionIncrements: [15, 30, 60] as const,
+  /** Minutes past windowStart that still count as "on time." */
+  startGraceMinutes: 10,
+} as const;

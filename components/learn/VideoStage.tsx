@@ -20,6 +20,12 @@ import { findActiveSegmentIndex, formatTimestamp, clamp } from './utils';
 interface VideoStageProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   scrubberRef?: React.RefObject<HTMLDivElement | null>;
+  /**
+   * Element to fullscreen instead of the stage. Pass the outer viewer root
+   * so segment notes + transcript rail stay visible in fullscreen. Falls
+   * back to the internal stage ref when omitted.
+   */
+  fullscreenTargetRef?: React.RefObject<HTMLDivElement | null>;
   isReady: boolean;
   isPlaying: boolean;
   currentTime: number;
@@ -57,6 +63,7 @@ function tooltipAnchorFor(pct: number): React.CSSProperties {
 export default function VideoStage({
   containerRef,
   scrubberRef: externalScrubberRef,
+  fullscreenTargetRef,
   isReady,
   isPlaying,
   currentTime,
@@ -174,8 +181,12 @@ export default function VideoStage({
   }, [scrubDragging, seekFromScrubber]);
 
   const requestFullscreen = useCallback(() => {
+    // Prefer the outer viewer root (video + notes rail) so segment notes
+    // and transcript segments stay visible in fullscreen. Fall back to
+    // the stage div if no outer ref was provided.
+    const target = fullscreenTargetRef?.current ?? stageRef.current;
     const stage = stageRef.current;
-    if (!stage) return;
+    if (!target) return;
 
     // Vendor-prefixed fullscreen API shims. iOS Safari <16.4 exposes
     // webkit* variants; newer Chromium/Safari use the standard names. We try
@@ -202,14 +213,13 @@ export default function VideoStage({
       return;
     }
 
-    // Try the stage first — desktop Chrome/Safari/Firefox support
-    // `requestFullscreen()` on arbitrary elements, and this preserves our
-    // custom control bar (scrubber, markers, notes button) inside the
-    // fullscreen view. On iOS Safari, stage.requestFullscreen rejects, so
-    // we fall back to requesting on the YouTube iframe (which owns a
-    // <video> element and is the only element iOS will fullscreen).
-    const iframe = stage.querySelector('iframe') as FullscreenEl | null;
-    const stageEl = stage as FullscreenEl;
+    // Try the target first — desktop Chrome/Safari/Firefox support
+    // `requestFullscreen()` on arbitrary elements, which preserves our
+    // custom control bar + notes rail inside the fullscreen view. On iOS
+    // Safari, element.requestFullscreen rejects for anything that isn't a
+    // <video>, so we fall back to the YouTube iframe (video-only fullscreen).
+    const iframe = stage?.querySelector('iframe') as FullscreenEl | null;
+    const targetEl = target as FullscreenEl;
 
     const requestOn = (el: FullscreenEl): Promise<void> => {
       if (el.requestFullscreen) {
@@ -227,13 +237,13 @@ export default function VideoStage({
       return Promise.reject(new Error('Fullscreen not supported'));
     };
 
-    requestOn(stageEl).catch(() => {
+    requestOn(targetEl).catch(() => {
       // iOS Safari and legacy browsers: fall back to the iframe/video.
       if (iframe) {
         requestOn(iframe).catch(() => {});
       }
     });
-  }, []);
+  }, [fullscreenTargetRef]);
 
   const cycleRate = useCallback(() => {
     const idx = RATES.indexOf(playbackRate);

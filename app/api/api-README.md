@@ -99,3 +99,12 @@ All Next.js API route handlers. Every leaf directory contains a `route.ts` file 
 | `echo` | GET, POST | GET returns the latest pending Echo (within 48 h). POST closes a pending Echo with `{ action: 'submit'|'skip', attemptedAnswer?, selfConfidence? }`. |
 | `echo/create` | POST | Writes the T-3 "one question" Echo. Derives `sessionDate` server-side from the user's contract + current instant. |
 | `echo/draft` | POST | Optional Clara-assisted drafting for the Echo prompt (rate-limited to 3/hour). |
+
+## Streaks & Contract (`streaks/`, `streak-contract/`)
+
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `streaks` | GET | Returns the authenticated user's streak state, today's tier flags, and active study contract (with any session extensions). Lazily resolves pending contract edits. |
+| `streak-contract` | GET, POST, DELETE | GET returns `{ activeContract, pendingContract, editsRemaining, editBudgetMax, editsResetAt }`. POST queues an edit that activates at next local midnight (first-time setup bypasses the budget). DELETE clears the contract. Enforces the 3-edits/rolling-7d budget from `STUDY_CONTRACT.editBudget`. |
+| `streak-contract/pending` | DELETE | Cancels a queued edit without refunding the consumed edit slot (prevents save→cancel→save abuse). |
+| `streak-contract/extend` | POST | Pushes windowEnd later by 15/30/60 minutes. Only valid inside the already-extended window. Enforces `{maxPerDay: 3, maxMinutesPerDay: 90}` per-session. Attributed to the session-opening date so post-midnight extensions still roll up to yesterday's StudyDay. |

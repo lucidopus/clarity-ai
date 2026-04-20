@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import StudyDay from '@/lib/models/StudyDay';
 import { dayTier } from '@/lib/services/streaks';
+import { resolvePendingContract } from '@/lib/services/studyContract.server';
 import { internalServerError } from '@/lib/errors/apiResponse';
 
 function getUTCDateString(): string {
@@ -14,6 +15,8 @@ export async function GET(request: NextRequest) {
   try {
     const decoded = getAuthUser(request);
     await dbConnect();
+
+    await resolvePendingContract(decoded.userId);
 
     const [user, todayDoc] = await Promise.all([
       User.findById(decoded.userId)
@@ -26,7 +29,13 @@ export async function GET(request: NextRequest) {
           lastStudyDate?: string;
           streakRecoveryDeadline?: Date | null;
           lastShieldEvent?: { type: 'earned' | 'consumed'; at: Date } | null;
-          studyContract?: { windowStart: string; windowEnd: string; timezone: string; contractedAt: Date } | null;
+          studyContract?: {
+            windowStart: string;
+            windowEnd: string;
+            timezone: string;
+            contractedAt: Date;
+            todayExtensions?: { date: string; count: number; totalMinutesAdded: number } | null;
+          } | null;
           createdAt?: Date;
         } | null>,
       StudyDay.findOne({ userId: decoded.userId, date: getUTCDateString() })

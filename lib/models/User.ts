@@ -88,6 +88,24 @@ export interface IUser extends Document {
     windowEnd: string;    // "HH:MM" 24h (may cross midnight for overnight windows)
     timezone: string;     // IANA, e.g. "America/New_York"
     contractedAt: Date;
+    // Queued edit — activates at its `effectiveAt` (next local midnight).
+    pending?: {
+      windowStart: string;
+      windowEnd: string;
+      timezone: string;
+      effectiveAt: Date;
+      queuedAt: Date;
+    } | null;
+    // Rolling-7d edit budget. Each entry is a queued-edit timestamp. Capped
+    // via `$push/$slice` (same pattern as recoveryRedemptions).
+    editHistory?: Date[];
+    // Per-day extension tracking keyed by local-date in contract timezone.
+    // Naturally resets when the date key changes on the next extension.
+    todayExtensions?: {
+      date: string;              // "YYYY-MM-DD" in contract tz
+      count: number;             // max from STUDY_CONTRACT.extensions
+      totalMinutesAdded: number; // max from STUDY_CONTRACT.extensions
+    } | null;
   } | null;
   studyContractLastRemindedAt?: Date | null;
   // Next UTC instant we should fire a pre-window reminder email for this user.
@@ -158,6 +176,25 @@ const UserSchema: Schema = new Schema({
       windowEnd: { type: String, required: true },
       timezone: { type: String, required: true },
       contractedAt: { type: Date, required: true, default: Date.now },
+      pending: {
+        type: new Schema({
+          windowStart: { type: String, required: true },
+          windowEnd: { type: String, required: true },
+          timezone: { type: String, required: true },
+          effectiveAt: { type: Date, required: true },
+          queuedAt: { type: Date, required: true },
+        }, { _id: false }),
+        default: null,
+      },
+      editHistory: { type: [Date], default: [] },
+      todayExtensions: {
+        type: new Schema({
+          date: { type: String, required: true },
+          count: { type: Number, required: true, min: 0 },
+          totalMinutesAdded: { type: Number, required: true, min: 0 },
+        }, { _id: false }),
+        default: null,
+      },
     }, { _id: false }),
     default: null,
   },

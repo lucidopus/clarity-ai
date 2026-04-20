@@ -40,6 +40,20 @@ body[data-has-mobile-nav='true'] {
 .pl-safe { padding-left: var(--safe-left); }
 .pr-safe { padding-right: var(--safe-right); }
 
+/* Video viewer fullscreen: override the page-constrained height + rounded
+   border so the viewer fills the whole screen while keeping the notes rail
+   visible. Vendor prefixes cover pre-standard Safari/Chromium. */
+.viewer-fullscreen-root:fullscreen,
+.viewer-fullscreen-root:-webkit-full-screen,
+.viewer-fullscreen-root:-ms-fullscreen {
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  min-height: 100dvh !important;
+  border-radius: 0 !important;
+  border: none !important;
+}
+
 /* iOS Safari auto-zooms on input focus when font-size < 16px. Force 16px on
    text inputs at phone widths. Desktop keeps whatever size the site set. */
 @media (max-width: 767px) {

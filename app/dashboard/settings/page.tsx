@@ -10,7 +10,7 @@ import { useLiveLecture } from '@/lib/live-lecture/LiveLectureContext';
 import PasswordVerificationModal from '@/components/PasswordVerificationModal';
 import DeleteAccountConfirmModal from '@/components/DeleteAccountConfirmModal';
 import { ToastContainer, type ToastType } from '@/components/Toast';
-import { Edit2, Save, X, Info, Clock, CheckCircle2, Volume2, Wind } from 'lucide-react';
+import { Edit2, Save, X, Info, Clock, Volume2, Wind, AlertTriangle, Timer } from 'lucide-react';
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
 import { useBreathing } from '@/lib/breathing/useBreathing';
@@ -30,6 +30,47 @@ function resolveTimezone(): string {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   } catch {
     return 'UTC';
+  }
+}
+
+function formatHHMM12(hhmm: string): string {
+  if (!hhmm) return '';
+  const [hRaw, mRaw] = hhmm.split(':').map(Number);
+  if (Number.isNaN(hRaw) || Number.isNaN(mRaw)) return '';
+  const hr12 = hRaw === 0 ? 12 : hRaw > 12 ? hRaw - 12 : hRaw;
+  const suffix = hRaw >= 12 ? 'PM' : 'AM';
+  return `${hr12}:${mRaw.toString().padStart(2, '0')} ${suffix}`;
+}
+
+function formatEffectiveAt(iso: string, timezone: string): string {
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      weekday: 'short',
+      timeZone: timezone,
+    }).format(new Date(iso));
+  } catch {
+    return new Date(iso).toLocaleString();
+  }
+}
+
+function formatResetWhen(iso: string): string {
+  try {
+    const ms = new Date(iso).getTime() - Date.now();
+    if (!Number.isFinite(ms) || ms <= 0) return 'soon';
+    const days = Math.floor(ms / (24 * 60 * 60 * 1000));
+    if (days >= 1) {
+      return new Intl.DateTimeFormat('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      }).format(new Date(iso));
+    }
+    const hours = Math.ceil(ms / (60 * 60 * 1000));
+    return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+  } catch {
+    return 'soon';
   }
 }
 
@@ -176,6 +217,17 @@ export default function SettingsPage() {
   const [isSavingContract, setIsSavingContract] = useState(false);
   const [isClearingContract, setIsClearingContract] = useState(false);
   const [contractError, setContractError] = useState<string | null>(null);
+  // Edit-budget + pending-edit state (issue #104)
+  const [pendingContract, setPendingContract] = useState<{
+    windowStart: string;
+    windowEnd: string;
+    timezone: string;
+    effectiveAt: string;
+  } | null>(null);
+  const [editsRemaining, setEditsRemaining] = useState<number | null>(null);
+  const [editBudgetMax, setEditBudgetMax] = useState<number | null>(null);
+  const [editsResetAt, setEditsResetAt] = useState<string | null>(null);
+  const [isCancellingPending, setIsCancellingPending] = useState(false);
 
   // Focus-mode ambient sound preference — client-side only, no server sync.
   const [ambientEnabled, setAmbientEnabled] = useAmbientEnabled();
@@ -274,25 +326,36 @@ export default function SettingsPage() {
     }
   }, [user]);
 
-  // Load current study window (cognitive contract) from /api/streaks
+  // Load current study window (cognitive contract) + budget + pending state
   useEffect(() => {
     const loadContract = async () => {
       try {
-        const response = await fetch('/api/streaks');
+        const response = await fetch('/api/streak-contract');
         if (!response.ok) return;
         const data = await response.json();
-        const contract = data?.studyContract as
+        const active = data?.activeContract as
           | { windowStart: string; windowEnd: string; timezone: string }
           | null
           | undefined;
-        if (contract) {
-          setWindowStart(contract.windowStart);
-          setWindowEnd(contract.windowEnd);
-          setSavedWindowStart(contract.windowStart);
-          setSavedWindowEnd(contract.windowEnd);
-          setSavedTimezone(contract.timezone);
+        if (active) {
+          setWindowStart(active.windowStart);
+          setWindowEnd(active.windowEnd);
+          setSavedWindowStart(active.windowStart);
+          setSavedWindowEnd(active.windowEnd);
+          setSavedTimezone(active.timezone);
           setHasSavedContract(true);
         }
+        if (data?.pendingContract) {
+          setPendingContract({
+            windowStart: data.pendingContract.windowStart,
+            windowEnd: data.pendingContract.windowEnd,
+            timezone: data.pendingContract.timezone,
+            effectiveAt: data.pendingContract.effectiveAt,
+          });
+        }
+        if (typeof data?.editsRemaining === 'number') setEditsRemaining(data.editsRemaining);
+        if (typeof data?.editBudgetMax === 'number') setEditBudgetMax(data.editBudgetMax);
+        if (data?.editsResetAt) setEditsResetAt(data.editsResetAt);
       } catch (error) {
         console.error('Failed to load study window:', error);
       } finally {
@@ -669,19 +732,65 @@ export default function SettingsPage() {
       const data = await response.json();
       if (!response.ok || !data.success) {
         setContractError(data?.message || 'Could not save your Clarity Mode hours. Try again.');
+        if (typeof data?.editsRemaining === 'number') setEditsRemaining(data.editsRemaining);
+        if (data?.editsResetAt) setEditsResetAt(data.editsResetAt);
         return;
       }
-      setSavedWindowStart(windowStart);
-      setSavedWindowEnd(windowEnd);
-      setSavedTimezone(timezone);
+      // Active window may not have flipped yet — pending edits activate at
+      // next local midnight. Reflect both slots + the refreshed budget.
+      if (data.activeContract) {
+        setSavedWindowStart(data.activeContract.windowStart);
+        setSavedWindowEnd(data.activeContract.windowEnd);
+        setSavedTimezone(data.activeContract.timezone);
+        setWindowStart(data.activeContract.windowStart);
+        setWindowEnd(data.activeContract.windowEnd);
+      } else {
+        setSavedWindowStart(windowStart);
+        setSavedWindowEnd(windowEnd);
+        setSavedTimezone(timezone);
+      }
       setHasSavedContract(true);
+      setPendingContract(data.pendingContract ?? null);
+      if (typeof data.editsRemaining === 'number') setEditsRemaining(data.editsRemaining);
+      if (typeof data.editBudgetMax === 'number') setEditBudgetMax(data.editBudgetMax);
+      setEditsResetAt(data.editsResetAt ?? null);
       window.dispatchEvent(new Event('focus-mode:refresh'));
-      addToast('Clarity Mode saved', 'success');
+      addToast(
+        data.pendingContract
+          ? 'Changes saved. They take effect tomorrow.'
+          : 'Clarity Mode saved',
+        'success',
+      );
     } catch (error) {
       console.error('Save study window error:', error);
       setContractError('Could not save your Clarity Mode hours. Try again.');
     } finally {
       setIsSavingContract(false);
+    }
+  };
+
+  const handleCancelPendingChange = async () => {
+    setIsCancellingPending(true);
+    setContractError(null);
+    try {
+      const response = await fetch('/api/streak-contract/pending', { method: 'DELETE' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        setContractError(data?.message || 'Could not cancel the scheduled change.');
+        return;
+      }
+      setPendingContract(null);
+      if (savedWindowStart) setWindowStart(savedWindowStart);
+      if (savedWindowEnd) setWindowEnd(savedWindowEnd);
+      if (typeof data.editsRemaining === 'number') setEditsRemaining(data.editsRemaining);
+      if (typeof data.editBudgetMax === 'number') setEditBudgetMax(data.editBudgetMax);
+      setEditsResetAt(data.editsResetAt ?? null);
+      addToast('Scheduled change cancelled.', 'info');
+    } catch (error) {
+      console.error('Cancel pending change error:', error);
+      setContractError('Could not cancel the scheduled change.');
+    } finally {
+      setIsCancellingPending(false);
     }
   };
 
@@ -701,6 +810,7 @@ export default function SettingsPage() {
       setHasSavedContract(false);
       setWindowStart('');
       setWindowEnd('');
+      setPendingContract(null);
       window.dispatchEvent(new Event('focus-mode:refresh'));
       addToast('Clarity Mode cleared', 'success');
     } catch (error) {
@@ -1136,18 +1246,38 @@ export default function SettingsPage() {
 
       {/* Clarity Mode Section */}
       <div className="bg-card-bg rounded-2xl p-6 border border-border mb-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-1 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-accent" aria-hidden="true" />
-              Clarity Mode
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Studying inside your Clarity Mode hours earns the Gold day tier on your heatmap.
-              We&apos;ll send one supportive nudge 15 minutes before it opens.
-            </p>
-          </div>
-        </div>
+        {(() => {
+          const isUnset = !windowStart || !windowEnd;
+          const durationMinutes = isUnset ? 0 : calcDuration(windowStart, windowEnd);
+          const durationOk = !isUnset && durationMinutes >= 15 && durationMinutes <= 8 * 60;
+          const headerTimezone = savedTimezone || resolveTimezone();
+          const headerStatus = durationOk
+            ? `${durationMinutes}-minute window · ${headerTimezone.replace('_', ' ')}`
+            : null;
+          return (
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground mb-1 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-accent" aria-hidden="true" />
+                  Clarity Mode
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Studying inside your Clarity Mode hours earns the Gold day tier on your heatmap.
+                  We&apos;ll send one supportive nudge 15 minutes before it opens.
+                </p>
+              </div>
+              {headerStatus && (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 text-accent px-3 py-1 text-xs font-medium shrink-0"
+                  aria-label={`Current Clarity Mode: ${headerStatus}`}
+                >
+                  <Timer className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{headerStatus}</span>
+                </span>
+              )}
+            </div>
+          );
+        })()}
 
         {(() => {
           const isUnset = !windowStart || !windowEnd;
@@ -1156,11 +1286,19 @@ export default function SettingsPage() {
           const dirty =
             hasSavedContract &&
             (windowStart !== savedWindowStart || windowEnd !== savedWindowEnd);
+          const budgetExhausted =
+            hasSavedContract &&
+            editsRemaining !== null &&
+            editsRemaining === 0 &&
+            !pendingContract;
+          const hasPending = !!pendingContract;
           const saveDisabled =
             isSavingContract ||
             isClearingContract ||
             !durationOk ||
-            (hasSavedContract && !dirty);
+            (hasSavedContract && !dirty) ||
+            budgetExhausted ||
+            hasPending;
           const activeTimezone = savedTimezone || resolveTimezone();
           const statusCopy = durationOk
             ? `${durationMinutes}-minute window · ${activeTimezone.replace('_', ' ')}`
@@ -1170,8 +1308,19 @@ export default function SettingsPage() {
           const saveLabel = isSavingContract
             ? 'Saving…'
             : hasSavedContract
-            ? 'Save changes'
+            ? 'Save for tomorrow'
             : 'Save window';
+
+          const editsLeftCopy =
+            editsRemaining === null || editBudgetMax === null
+              ? null
+              : editsRemaining === 0
+              ? `No edits left this week${editsResetAt ? ` · resets ${formatResetWhen(editsResetAt)}` : ''}.`
+              : `${editsRemaining} edit${editsRemaining === 1 ? '' : 's'} left this week${editsResetAt ? ` · resets ${formatResetWhen(editsResetAt)}` : ''}.`;
+
+          const pendingBannerCopy = pendingContract
+            ? `New window: ${formatHHMM12(pendingContract.windowStart)} – ${formatHHMM12(pendingContract.windowEnd)}. Takes effect at ${formatEffectiveAt(pendingContract.effectiveAt, pendingContract.timezone)}.`
+            : null;
 
           const presets: { label: string; start: string; end: string }[] = [
             { label: 'Morning · 7:00–8:00 AM', start: '07:00', end: '08:00' },
@@ -1187,6 +1336,24 @@ export default function SettingsPage() {
 
           return (
             <div className="p-4 bg-background rounded-xl border border-border">
+              {pendingBannerCopy && (
+                <div className="mb-4 rounded-lg border-l-4 border-accent bg-accent/5 px-4 py-3 flex items-start gap-3">
+                  <Clock className="w-4 h-4 shrink-0 text-accent mt-0.5" aria-hidden="true" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground">Changes saved for tomorrow</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{pendingBannerCopy}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelPendingChange}
+                    disabled={isCancellingPending || isSavingContract || isClearingContract}
+                    className="text-xs font-medium text-accent hover:text-accent/80 hover:underline transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {isCancellingPending ? 'Cancelling…' : 'Cancel change'}
+                  </button>
+                </div>
+              )}
+
               {isUnset && !hasSavedContract && (
                 <div className="mb-4">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2">
@@ -1239,14 +1406,27 @@ export default function SettingsPage() {
                 </label>
               </div>
 
-              <div className="rounded-lg border border-border bg-card-bg px-3 py-2 mb-3 text-xs text-muted-foreground flex items-center gap-2">
-                {durationOk ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" aria-hidden="true" />
-                ) : (
+              {!durationOk && (
+                <div className="rounded-lg border border-border bg-card-bg px-3 py-2 mb-3 text-xs text-muted-foreground flex items-center gap-2">
                   <Clock className="w-4 h-4 shrink-0 text-muted-foreground/50" aria-hidden="true" />
-                )}
-                <span>{statusCopy}</span>
-              </div>
+                  <span>{statusCopy}</span>
+                </div>
+              )}
+
+              {hasSavedContract && !hasPending && editsLeftCopy && (
+                <div className={`mb-3 rounded-lg border px-3 py-2 text-xs flex items-center gap-2 ${
+                  budgetExhausted
+                    ? 'border-amber-500/50 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200'
+                    : 'border-border bg-card-bg text-muted-foreground'
+                }`}>
+                  {budgetExhausted ? (
+                    <AlertTriangle className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  ) : (
+                    <Info className="w-4 h-4 shrink-0" aria-hidden="true" />
+                  )}
+                  <span>{editsLeftCopy}</span>
+                </div>
+              )}
 
               {contractError && (
                 <div className="mb-3 text-sm text-red-600 dark:text-red-400 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
@@ -1254,7 +1434,7 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 <Button
                   variant="primary"
                   onClick={handleSaveStudyWindow}
@@ -1274,6 +1454,12 @@ export default function SettingsPage() {
                   </Button>
                 )}
               </div>
+
+              {hasSavedContract && !hasPending && dirty && !budgetExhausted && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Changes take effect at midnight so today&apos;s gold credit stays honest.
+                </p>
+              )}
 
               <div className="mt-5 pt-4 border-t border-border flex items-center justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
