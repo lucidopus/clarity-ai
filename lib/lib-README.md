@@ -48,4 +48,6 @@ All shared server-side and isomorphic library code for the Clarity AI platform.
 | `tools/` | LangChain tool definitions for Clara's agentic capabilities: `render-animation.ts` (animation tool), shared `.bindTools()` utilities. |
 | `types/animation.ts` | AnimationSpec Zod discriminated union schema for 8 animation template types. |
 | `utils/webgl-detect.ts` | WebGL/Canvas/SVG feature detection for animation rendering fallback chain. |
-| `services/` | Business-logic services: category selector for Discover recommendations. |
+| `services/` | Business-logic services: category selector for Discover recommendations, `echo.ts` (Clarity Mode Echo CRUD + sweep), `pauseBudget.ts` (pause-budget formula), `studyContract.ts` (contract window math, `contractSessionDate`, `contractWindowMinutes`). |
+| `chatbot/` | `clarityModeContext.ts` — builds the `## Clarity Mode` natural-language block appended to Clara's system prompt when the user is inside their study window. State-only; no behavioral rules. |
+| `focus-mode/` | Client-side hooks for Clarity Mode: `FocusModeContext.tsx` (window state, transition flags, `echoPromptDue`), `use-pause-budget.ts` (server-anchored pause accounting). |

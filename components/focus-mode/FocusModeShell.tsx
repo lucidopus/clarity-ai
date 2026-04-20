@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Clock } from 'lucide-react';
 import { useFocusMode } from '@/lib/focus-mode/FocusModeContext';
 import FocusAmbientPlayer from '@/components/focus-mode/FocusAmbientPlayer';
 import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
+import { usePauseBudget } from '@/lib/focus-mode/use-pause-budget';
+import PauseButton from '@/components/focus-mode/PauseButton';
+import PauseOverlay from '@/components/focus-mode/PauseOverlay';
+import EchoPromptOverlay from '@/components/focus-mode/EchoPromptOverlay';
+import EchoAnswerOverlay from '@/components/focus-mode/EchoAnswerOverlay';
 
 function formatRemaining(mins: number): string {
   if (mins < 1) return '<1m';
@@ -433,18 +438,103 @@ export default function FocusModeShell() {
     justExited,
     justPreEntered,
     contract,
+    echoPromptDue,
+    acknowledgeEchoPrompt,
   } = useFocusMode();
   const reduceMotion = useReducedMotion() ?? false;
   const [ambientEnabled] = useAmbientEnabled();
   const hasChatBubble = useHasChatBubble();
   useFocusTabTitle(isInWindow);
 
+  const pauseState = usePauseBudget(isInWindow);
+
   const windowTotalMinutes = contract
-    ? Math.max(0, parseHHMM(contract.windowEnd) - parseHHMM(contract.windowStart))
+    ? (() => {
+        const s = parseHHMM(contract.windowStart);
+        const e = parseHHMM(contract.windowEnd);
+        const raw = e - s;
+        return Math.max(0, raw <= 0 ? raw + 1440 : raw);
+      })()
     : 0;
   const windowDurationLabel = contract ? formatDuration(windowTotalMinutes) : '';
   const windowStartLabel = contract ? formatHHMM12(contract.windowStart) : '';
   const windowEndLabel = contract ? formatHHMM12(contract.windowEnd) : '';
+
+  // Echo state machine:
+  //   1. T-3 triggers `echoPromptDue` (context). If pauseActive, we suppress
+  //      silently by acknowledging without opening the overlay. Otherwise we
+  //      show EchoPromptOverlay modally.
+  //   2. On window open, we fetch the most recent pending Echo (if any) and
+  //      surface EchoAnswerOverlay. The entry-flash toast is gated on this
+  //      overlay being closed so the two can't collide on one frame.
+  const [echoPromptOpen, setEchoPromptOpen] = useState(false);
+  const [pendingEcho, setPendingEcho] = useState<{ id: string; question: string } | null>(null);
+  const [echoAnswerOpen, setEchoAnswerOpen] = useState(false);
+  const [entryFlashReady, setEntryFlashReady] = useState(false);
+
+  // Fire T-3 prompt (unless user is paused — we suppress silently).
+  // We are syncing React state to an external event signal from the
+  // FocusMode context, which is exactly what an effect is for here.
+  useEffect(() => {
+    if (!echoPromptDue) return;
+    if (pauseState.pauseActive) {
+      acknowledgeEchoPrompt();
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEchoPromptOpen(true);
+    acknowledgeEchoPrompt();
+  }, [echoPromptDue, pauseState.pauseActive, acknowledgeEchoPrompt]);
+
+  // When a new window opens, see if there's a pending Echo to surface.
+  // We start with the answer overlay hidden and the entry flash gated until
+  // either the overlay closes or we confirm there is nothing pending.
+  useEffect(() => {
+    if (!justEntered) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setEntryFlashReady(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/echo');
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (res.ok && data?.echo) {
+          setPendingEcho({ id: data.echo.id, question: data.echo.question });
+          setEchoAnswerOpen(true);
+        } else {
+          setEntryFlashReady(true);
+        }
+      } catch {
+        if (!cancelled) setEntryFlashReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [justEntered]);
+
+  const handleEchoAnswerClose = useCallback(() => {
+    setEchoAnswerOpen(false);
+  }, []);
+
+  // AnimatePresence's onExitComplete is the only frame-accurate signal that
+  // the overlay has finished unmounting. Gate the entry flash on THAT rather
+  // than a racy setTimeout — reduced-motion users also get it right.
+  const handleEchoAnswerExited = useCallback(() => {
+    setPendingEcho(null);
+    setEntryFlashReady(true);
+  }, []);
+
+  const handleTogglePause = useCallback(() => {
+    if (pauseState.pauseActive) {
+      pauseState.resumePause();
+    } else {
+      pauseState.startPause();
+    }
+  }, [pauseState]);
 
   return (
     <>
@@ -461,7 +551,26 @@ export default function FocusModeShell() {
             hasChatBubble ? 'right-[5rem] md:right-[6.5rem]' : 'right-4 md:right-6'
           } md:bottom-6 z-40 flex items-center gap-3 transition-[right] duration-300 ease-out`}
         >
-          {ambientEnabled && <FocusAmbientPlayer forcePause={!isInWindow} />}
+          {ambientEnabled && <FocusAmbientPlayer forcePause={!isInWindow || pauseState.pauseActive} />}
+          {isInWindow && (
+            <div className="relative">
+              <PauseButton
+                pauseActive={pauseState.pauseActive}
+                budgetExhausted={pauseState.budgetExhausted}
+                pauseSecondsRemaining={pauseState.pauseSecondsRemaining}
+                pauseMinutesBudgeted={pauseState.pauseMinutesBudgeted}
+                pending={pauseState.pending}
+                onTogglePause={handleTogglePause}
+              />
+              <PauseOverlay
+                pauseActive={pauseState.pauseActive}
+                pauseSecondsRemaining={pauseState.pauseSecondsRemaining}
+                pauseMinutesBudgeted={pauseState.pauseMinutesBudgeted}
+                onResume={pauseState.resumePause}
+                pending={pauseState.pending}
+              />
+            </div>
+          )}
           {isInWindow && minutesRemaining !== null && windowTotalMinutes > 0 && (
             <FocusBadge
               minutesLeft={minutesRemaining}
@@ -472,7 +581,7 @@ export default function FocusModeShell() {
         </div>
       )}
       <FocusEntryFlash
-        show={justEntered}
+        show={justEntered && entryFlashReady && !echoAnswerOpen}
         windowDurationLabel={windowDurationLabel}
         windowEndLabel={windowEndLabel}
       />
@@ -480,6 +589,17 @@ export default function FocusModeShell() {
         show={justPreEntered && !!contract}
         windowDurationLabel={windowDurationLabel}
         windowStartLabel={windowStartLabel}
+      />
+      <EchoPromptOverlay
+        open={echoPromptOpen}
+        onClose={() => setEchoPromptOpen(false)}
+        onSaved={() => setEchoPromptOpen(false)}
+      />
+      <EchoAnswerOverlay
+        open={echoAnswerOpen}
+        echo={pendingEcho}
+        onClose={handleEchoAnswerClose}
+        onExited={handleEchoAnswerExited}
       />
     </>
   );

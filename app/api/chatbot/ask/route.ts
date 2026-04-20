@@ -22,6 +22,8 @@ import { createClaraTools, TOOL_LABELS } from '@/lib/tools/clara-tools';
 import { INPUT_LIMITS } from '@/lib/limits';
 import { AnimationSpecSchema } from '@/lib/types/animation';
 import { apiErrorResponse } from '@/lib/errors/apiResponse';
+import User from '@/lib/models/User';
+import { buildClarityModeContextBlock } from '@/lib/chatbot/clarityModeContext';
 
 const ANIMATION_TOOL_ENABLED = process.env.ENABLE_ANIMATION_TOOL === 'true';
 
@@ -157,8 +159,17 @@ export async function POST(request: NextRequest) {
       console.error('Failed to save user message:', saveError);
     }
 
-    // 6. Fetch context
-    const context = await getChatbotContext(decoded.userId, videoId);
+    // 6. Fetch context (+ Clarity Mode state if user is inside their window)
+    const [context, userDoc] = await Promise.all([
+      getChatbotContext(decoded.userId, videoId),
+      User.findById(decoded.userId)
+        .select('studyContract')
+        .lean<{ studyContract?: { windowStart: string; windowEnd: string; timezone: string } | null } | null>(),
+    ]);
+    const clarityMode = buildClarityModeContextBlock(userDoc?.studyContract ?? null, new Date());
+    if (clarityMode.active) {
+      context.clarityMode = clarityMode.block;
+    }
 
     // 7. Build system prompt
     let systemPrompt = buildClaraSystemPrompt(context);

@@ -20,6 +20,12 @@ export interface IStudyDay extends Document {
   fsrsQueueCleared: boolean;
   challengesCompleted: boolean;
   inContractWindow: boolean;
+  // Clarity Mode — Pause Budget accounting. Server-anchored so a mid-pause
+  // refresh rehydrates from `pauseStartedAt` instead of resetting to zero.
+  pauseMinutesBudgeted: number;   // captured at first pause, immutable for the day
+  pauseSecondsUsed: number;       // cumulative seconds actually spent paused
+  pauseCount: number;             // total pause invocations
+  pauseStartedAt: Date | null;    // non-null while a pause is in flight
 }
 
 const StudyDaySchema: Schema = new Schema(
@@ -36,6 +42,11 @@ const StudyDaySchema: Schema = new Schema(
     fsrsQueueCleared: { type: Boolean, default: false },
     challengesCompleted: { type: Boolean, default: false },
     inContractWindow: { type: Boolean, default: false },
+    // Clarity Mode pause accounting (see IStudyDay)
+    pauseMinutesBudgeted: { type: Number, default: 0 },
+    pauseSecondsUsed: { type: Number, default: 0 },
+    pauseCount: { type: Number, default: 0 },
+    pauseStartedAt: { type: Date, default: null },
   },
   { timestamps: false, collection: 'study_days' }
 );

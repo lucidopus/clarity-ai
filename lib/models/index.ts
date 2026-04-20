@@ -19,3 +19,4 @@ export { default as FlashcardReview, type IFlashcardReview } from './FlashcardRe
 export { default as StudyDay, type IStudyDay } from './StudyDay';
 export { default as DailyChallenge, type IDailyChallenge, type IChallenge, type ChallengeType } from './DailyChallenge';
 export { default as TodaysMix, type ITodaysMix, type ITodaysMixItem } from './TodaysMix';
+export { default as Echo, type IEcho } from './Echo';

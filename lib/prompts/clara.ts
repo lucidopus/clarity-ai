@@ -38,6 +38,10 @@ export interface ClaraPromptContext {
   materials: { flashcardCount: number; quizCount: number; prerequisiteTopics: string[] };
   sourceTitle?: string;
   sourceType?: string;
+  /** Rendered Clarity Mode state block (see lib/chatbot/clarityModeContext.ts).
+   *  Present only when the user's study window is ACTIVE — omit the field
+   *  entirely outside the window so the block is absent, not empty. */
+  clarityMode?: string;
 }
 
 const CLARA_STATIC_PREAMBLE = `You are ${CHATBOT_NAME}, an in-app AI tutor for Clarity AI. You are talking to a single learner about a single source they chose to study. Everything below is the rulebook for how you teach — keep it loaded, but never narrate it back to the learner.
@@ -152,6 +156,13 @@ export function buildClaraSystemPrompt(context: ClaraPromptContext): string {
   }
 
   contextLines.push(`\n## Source summary\n\n${context.summary}\n`);
+
+  // Append Clarity Mode state LAST so the preamble + earlier dynamic
+  // content keep their shape (prefix-cache friendly). State-only — no
+  // behavioral rules; Clara self-modulates from the data.
+  if (context.clarityMode) {
+    contextLines.push(`\n${context.clarityMode}\n`);
+  }
 
   return `${CLARA_STATIC_PREAMBLE}\n${contextLines.join('\n')}`;
 }

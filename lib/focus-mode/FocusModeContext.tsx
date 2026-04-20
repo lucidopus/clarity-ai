@@ -14,6 +14,7 @@ import {
   minutesUntilWindowStart,
 } from '@/lib/services/studyContract';
 import { nextWindowStartUtc } from '@/lib/breathing/timing';
+import { CLARITY_MODE } from '@/lib/limits';
 
 export interface StudyContractLite {
   windowStart: string;
@@ -41,6 +42,12 @@ interface FocusModeState {
   isWarmupWindow: boolean;
   /** The UTC instant of the upcoming window start (or null). */
   nextWindowStartAt: Date | null;
+  /** True once per window when we cross into the Echo T-3 zone. Flips to
+   *  false after a consumer acknowledges by calling `acknowledgeEchoPrompt`.
+   *  Suppressed silently if the consumer chooses not to fire (e.g. user
+   *  is mid-pause). */
+  echoPromptDue: boolean;
+  acknowledgeEchoPrompt: () => void;
 }
 
 const defaultState: FocusModeState = {
@@ -55,6 +62,8 @@ const defaultState: FocusModeState = {
   msUntilWindowStart: null,
   isWarmupWindow: false,
   nextWindowStartAt: null,
+  echoPromptDue: false,
+  acknowledgeEchoPrompt: () => {},
 };
 
 const PRE_WINDOW_LEAD_MIN = 15;
@@ -144,6 +153,8 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
   const [prevIsInWindow, setPrevIsInWindow] = useState<boolean | null>(null);
   const wasPreWindowRef = useRef(false);
   const armedRef = useRef(false);
+  const [echoPromptDue, setEchoPromptDue] = useState(false);
+  const echoFiredForWindowRef = useRef(false);
 
   const loadContract = useCallback(async () => {
     try {
@@ -222,12 +233,33 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
         // Window (re)opened — cancel any lingering dissolve, flash entry.
         setJustExited(false);
         setJustEntered(true);
+        // Fresh window — reset the Echo prompt one-shot so the next T-3
+        // transition inside this window can fire it.
+        echoFiredForWindowRef.current = false;
       } else {
         // Window closed — flag dissolve in the same render so the ambient
         // player stays mounted and its wrapper fade + audio fade can run.
         setJustExited(true);
+        echoFiredForWindowRef.current = false;
+        setEchoPromptDue(false);
       }
     }
+  }
+
+  // Echo prompt one-shot: fire when we cross into the T-3 zone inside the
+  // window. Edge-triggered via a ref so consumer re-renders can't re-fire it.
+  // Consumers must call `acknowledgeEchoPrompt()` to flip the flag back to
+  // false — suppressing (e.g. during a pause) is still an acknowledge.
+  if (
+    isInWindow &&
+    minutesRemaining !== null &&
+    minutesRemaining <= CLARITY_MODE.echo.promptMinutesBeforeEnd &&
+    minutesRemaining > 0 &&
+    !echoFiredForWindowRef.current &&
+    !echoPromptDue
+  ) {
+    echoFiredForWindowRef.current = true;
+    setEchoPromptDue(true);
   }
 
   // Clear `justEntered` after the entry flash finishes.
@@ -283,6 +315,10 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isPreWindow, contractLoaded, contract, now]);
 
+  const acknowledgeEchoPrompt = useCallback(() => {
+    setEchoPromptDue(false);
+  }, []);
+
   const value = useMemo<FocusModeState>(
     () => ({
       contract,
@@ -296,6 +332,8 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
       msUntilWindowStart,
       isWarmupWindow,
       nextWindowStartAt,
+      echoPromptDue,
+      acknowledgeEchoPrompt,
     }),
     [
       contract,
@@ -309,6 +347,8 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
       msUntilWindowStart,
       isWarmupWindow,
       nextWindowStartAt,
+      echoPromptDue,
+      acknowledgeEchoPrompt,
     ],
   );
 
