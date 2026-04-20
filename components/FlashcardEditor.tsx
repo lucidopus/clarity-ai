@@ -111,7 +111,7 @@ export default function FlashcardEditor({
               </div>
 
               {/* Content */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 p-4 sm:p-8 flex-1 overflow-y-auto">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-12 p-4 sm:p-8 flex-1 overflow-y-auto">
                 {/* Left Side: Form */}
                 <div className="space-y-6">
                   <form id="flashcard-editor-form" onSubmit={handleSubmit} className="space-y-6">

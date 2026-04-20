@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion'; // still used for layoutId indicator + opacity fade
 import { ChevronLeft, Menu, LogOut } from 'lucide-react';
 import { primaryNavItems } from '@/lib/navigation/primary-nav';
@@ -12,12 +12,29 @@ import { Z_INDEX } from '@/lib/constants/z-index';
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  // Default to expanded so SSR and client first-render agree (no hydration
+  // mismatch). After mount, auto-collapse if the viewport is in the tablet
+  // range (md-to-lg-) — a 256-px expanded sidebar eats 31% of an 810-px
+  // iPad portrait. Ran once on mount so window-snapping / iPad multitasking
+  // doesn't re-collapse after the user manually expands. Brief flash from
+  // w-56 to w-20 on tablet first paint is acceptable vs. a hydration warning.
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      // One-time viewport-aware bootstrap — not a reactive subscription.
+      // Does not listen to resize, which is by design (prevents iPad
+      // multitasking window-snap flicker after user manually expands).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsCollapsed(true);
+    }
+  }, []);
 
   return (
     <aside
       style={{ zIndex: Z_INDEX.sidebar }}
-      className={`hidden md:flex bg-card-bg border-r border-border shrink-0 flex-col h-dvh sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-64'}`}
+      className={`hidden md:flex bg-card-bg border-r border-border shrink-0 flex-col h-dvh sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-56 lg:w-64'}`}
     >
       {/* Sidebar Header: Logo & Toggle */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">

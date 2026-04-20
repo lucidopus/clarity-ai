@@ -594,7 +594,7 @@ export default function CaseStudyWorkspacePage() {
            )}
          </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-0 relative">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-0 relative">
           {/* Left Panel: Research Desk */}
           <AnimatePresence>
             {showLeftPanel && (
@@ -603,9 +603,9 @@ export default function CaseStudyWorkspacePage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="w-full lg:shrink-0 lg:relative border-b lg:border-b-0 lg:border-r border-border/60 dark:border-border/30 lg:w-[320px]"
+                className="w-full md:shrink-0 md:relative border-b md:border-b-0 md:border-r border-border/60 dark:border-border/30 md:w-[280px] lg:w-[320px]"
               >
-                <div className="space-y-6 lg:pr-4">
+                <div className="space-y-6 md:pr-4">
             {/* Notes */}
             <div className="bg-card-bg border border-border rounded-xl p-6">
               <div className="flex items-center gap-2 mb-4">

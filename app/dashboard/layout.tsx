@@ -71,7 +71,7 @@ export default function DashboardLayout({
     return (
       <div className="flex h-dvh bg-background overflow-hidden">
         {/* Sidebar Skeleton — hidden on mobile, shown md+ */}
-        <div className="hidden md:flex w-64 bg-card-bg border-r border-border flex-col">
+        <div className="hidden md:flex md:w-56 lg:w-64 bg-card-bg border-r border-border flex-col">
           <div className="p-6 border-b border-border">
             <div className="h-8 bg-accent/20 rounded animate-pulse w-32"></div>
           </div>
