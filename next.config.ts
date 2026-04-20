@@ -12,13 +12,19 @@ const nextConfig: NextConfig = {
     },
   },
   async headers() {
+    const isDev = process.env.NODE_ENV !== 'production';
+    // Dev-only: allow HMR WebSocket + inline eval for Turbopack/Webpack dev
+    // runtime. Without this, iOS Safari throws `SecurityError: The operation
+    // is insecure` when the HMR socket is blocked by CSP, which escapes as
+    // an unhandled promise rejection and kills React hydration.
+    const connectExtras = isDev ? " ws: wss: http: https:" : "";
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com https://s.ytimg.com", // unsafe-inline for Next.js streaming hydration, unsafe-eval for React dev mode; YouTube hosts for IFrame Player API
       "style-src 'self' 'unsafe-inline'",      // Tailwind + dynamic styles
       "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com https://images.unsplash.com https://via.placeholder.com https://*.supabase.co",
       "font-src 'self'",
-      "connect-src 'self' https://*.supabase.co",
+      `connect-src 'self' https://*.supabase.co${connectExtras}`,
       "frame-src https://www.youtube.com",
       "media-src 'self' blob: https://*.supabase.co",
       "object-src 'none'",
