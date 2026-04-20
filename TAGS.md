@@ -52,6 +52,7 @@ This document lists all available GitHub labels for this repository and provides
 - **comp: dashboard** - Analytics, Charts, Stats
 - **comp: chat** - Chatbot, RAG flow
 - **comp: auth** - Login, Signup, User Profile
+- **comp: clarity-mode** - Scheduled study ritual: study contract, breathing warm-up, ambient sound, focus orb, Echo, pauses, Clara context
 
 ## Type Tags
 

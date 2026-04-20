@@ -216,7 +216,7 @@ Routes: `/admin` (login) · `/admin/dashboard` (analytics) · `/admin/dashboard/
 
 ## Your Senior Engineering Manager (SEM) — Gemini
 
-Think of Gemini as a **senior software engineer on loan from Google** — strong peer, not the decision-maker. Use it as a **different brain** for code review, ideation, sanity-checking a chunk of logic, fact-checking a library/API claim, or unblocking yourself when you're stuck after a couple of real attempts.
+Think of Gemini as a **senior software engineer on loan from Google** — strong peer, not the decision-maker. Use it as a **different brain** for code review, ideation, sanity-checking a chunk of logic, fact-checking a library/API claim, or unblocking yourself when you're stuck after a couple of real attempts. It's almost always get your plans reviewed by Gemini.
 
 **Important boundary: Gemini is not for the big calls.** If a decision is genuinely high-stakes or architecturally load-bearing (new systems, auth/security flows, data model changes, pipeline restructuring, irreversible migrations, anything that would cost real rework if wrong) — **bring it to me (the user), not to Gemini**. Gemini is for the peer-review-sized stuff in between "I can obviously do this" and "I need the user's call."
 
