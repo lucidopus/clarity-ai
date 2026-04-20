@@ -89,3 +89,13 @@ All Next.js API route handlers. Every leaf directory contains a `route.ts` file 
 | `user/profile` | GET, PATCH | Fetch or update user's public profile fields. |
 | `account` | DELETE | Deletes the authenticated user's entire account and all data. |
 | `test/proxy` | GET | Diagnostic endpoint to verify Webshare proxy connectivity. |
+
+## Clarity Mode (`clarity-mode/`, `echo/`)
+
+| Route | Methods | Description |
+|-------|---------|-------------|
+| `clarity-mode/pause/start` | POST, GET | Atomic pause-start with in-window + budget guards. GET returns today's authoritative pause snapshot so the client can rehydrate from server state (mid-pause refresh). |
+| `clarity-mode/pause/resume` | POST | Atomic pause-resume: computes elapsed delta server-side, clamps to remaining budget so over-sleeps can't over-bill. |
+| `echo` | GET, POST | GET returns the latest pending Echo (within 48 h). POST closes a pending Echo with `{ action: 'submit'|'skip', attemptedAnswer?, selfConfidence? }`. |
+| `echo/create` | POST | Writes the T-3 "one question" Echo. Derives `sessionDate` server-side from the user's contract + current instant. |
+| `echo/draft` | POST | Optional Clara-assisted drafting for the Echo prompt (rate-limited to 3/hour). |

@@ -107,6 +107,62 @@ export function minutesUntilWindowStart(
 }
 
 /**
+ * Length of a contract window in minutes, overnight-safe. Returns null if
+ * the window times are malformed.
+ */
+export function contractWindowMinutes(
+  contract: Pick<StudyContract, 'windowStart' | 'windowEnd'> | null | undefined,
+): number | null {
+  if (!contract) return null;
+  const start = parseHHMM(contract.windowStart);
+  const end = parseHHMM(contract.windowEnd);
+  if (start === null || end === null) return null;
+  const raw = end - start;
+  return raw <= 0 ? raw + 1440 : raw;
+}
+
+/**
+ * `sessionDate` key for a Clarity Mode window: YYYY-MM-DD in the contract's
+ * timezone, anchored to the calendar day the *opening* edge falls on. For
+ * overnight windows (e.g. 23:00–01:00), a user inside the post-midnight tail
+ * still rolls up to the day the window opened.
+ */
+export function contractSessionDate(
+  contract: Pick<StudyContract, 'windowStart' | 'windowEnd' | 'timezone'> | null | undefined,
+  at: Date = new Date(),
+): string | null {
+  if (!contract) return null;
+  const start = parseHHMM(contract.windowStart);
+  const end = parseHHMM(contract.windowEnd);
+  if (start === null || end === null) return null;
+  let current: number;
+  try {
+    current = minutesInZone(at, contract.timezone);
+  } catch {
+    return null;
+  }
+  // For an overnight window whose post-midnight tail is still open, roll the
+  // date back by one day so sessionDate matches the *opening* day.
+  let todayYmd: { year: number; month: number; day: number };
+  try {
+    todayYmd = zonedYmd(at, contract.timezone);
+  } catch {
+    return null;
+  }
+  const overnight = end <= start;
+  if (overnight && current < end) {
+    // Anchor to local noon of "today", subtract 24h → yesterday.
+    const todayNoonUtc = zonedWallClockToUtc(
+      todayYmd.year, todayYmd.month, todayYmd.day, 12, 0, contract.timezone,
+    );
+    const yesterdayAnchor = new Date(todayNoonUtc.getTime() - 24 * 60 * 60 * 1000);
+    const y = zonedYmd(yesterdayAnchor, contract.timezone);
+    return `${y.year}-${String(y.month).padStart(2, '0')}-${String(y.day).padStart(2, '0')}`;
+  }
+  return `${todayYmd.year}-${String(todayYmd.month).padStart(2, '0')}-${String(todayYmd.day).padStart(2, '0')}`;
+}
+
+/**
  * Next UTC instant when we should fire the pre-window reminder for a user.
  * Fires 15 minutes before `windowStart` in the user's local timezone, and
  * rolls forward to tomorrow if today's slot has already passed. DST-safe

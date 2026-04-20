@@ -30,6 +30,9 @@ export interface ChatbotContext {
     quizCount: number;
     prerequisiteTopics: string[];
   };
+  /** Rendered Clarity Mode state block — set by the chatbot route when the
+   *  user is currently inside their study window. Omitted otherwise. */
+  clarityMode?: string;
 }
 
 export async function getChatbotContext(

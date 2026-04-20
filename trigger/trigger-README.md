@@ -46,6 +46,14 @@ Sends study window reminder emails exactly 15 minutes before each user's window 
   - `nextReminderAt` is set on contract save in `app/api/streak-contract/route.ts` and cleared on contract delete
   - Respects `preferences.general.studyReminders` opt-out
 
+### `sweep-expired-echos.ts`
+**Task ID:** `sweep-expired-echos`
+
+Housekeeping cron for Clarity Mode Echoes.
+- **Schedule:** Every 6 hours (UTC cron `0 */6 * * *`)
+- **Max Duration:** 2 minutes
+- **Logic:** Rolls any `outcome: 'pending'` Echoes whose `createdAt` is older than `CLARITY_MODE.echo.pendingTtlHours` (default 48 h) to `outcome: 'skipped'`. Correctness does not depend on this task — `getPendingEcho` already filters by TTL at read time; the sweep just keeps the collection tidy and frees the `{userId, sessionDate}` uniqueness slot for the next session.
+
 ## Development Rules
 
 See [docs/dev_rules/trigger_rules.md](docs/dev_rules/trigger_rules.md) for:

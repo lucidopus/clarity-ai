@@ -40,3 +40,29 @@ export const INPUT_LIMITS = {
   /** Max source content chars sent to LLM context */
   sourceContentChars: UNLIMITED ? Infinity : 30_000,              // ~7.5k tokens
 } as const;
+
+// ── Clarity Mode (during-window pack) ────────────────────────────────────────
+// Knobs for the Echo (T-3 question + next-open answer), Pause Budget, and
+// Clara Context Injection phase boundaries. All magic numbers live here so
+// the feature code stays tunable from one place.
+
+export const CLARITY_MODE = {
+  echo: {
+    maxQuestionChars: 200,
+    maxAnswerChars: 1000,
+    pendingTtlHours: 48,
+    draftAssistPerSession: 3,
+    /** When to surface the Echo prompt, in minutes before windowEnd. */
+    promptMinutesBeforeEnd: 3,
+  },
+  pause: {
+    budgetFloorMinutes: 2,
+    budgetCeilingMinutes: 10,
+    /** 1 minute of pause budget per 15 minutes of window length. */
+    budgetPerWindowMinute: 1 / 15,
+  },
+  clara: {
+    phaseOpeningCutoff: 0.25,
+    phaseClosingCutoff: 0.75,
+  },
+} as const;
