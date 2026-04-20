@@ -161,7 +161,7 @@ export const MASTER_CATALOG: Category[] = [
     id: 'exam_crushers',
     label: 'Exam Crushers',
     type: 'RoleSpecific',
-    matcher: v => hasTagOrInitial(v, ['exam', 'study', 'test', 'review', 'revision', 'sat', 'gmat', 'finals']) // Targeted at students
+    matcher: v => hasTagOrInitial(v, ['exam', 'study', 'test', 'review', 'revision', 'sat', 'gmat', 'finals']) // Targeted at exam-prep learners
   },
   {
     id: 'industry_standards',

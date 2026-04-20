@@ -811,7 +811,7 @@ export default function Home() {
                  </div>
                  <h3 className="text-xl font-bold mb-3">User-Centered</h3>
                  <p className="text-secondary leading-relaxed">
-                   Every feature solves a real student problem. From &quot;Too long to watch&quot; to &quot;Hard to review,&quot; we build exactly what you need to study less and learn more.
+                   Every feature solves a real learner problem. From &quot;Too long to watch&quot; to &quot;Hard to review,&quot; we build exactly what you need to study less and learn more.
                  </p>
                   <div className="mt-8 pt-6 border-t border-accent/10">  
                     <div className="flex items-center gap-2 text-sm text-purple-400 font-medium">
@@ -819,7 +819,7 @@ export default function Home() {
                           <div className="w-6 h-6 rounded-full bg-accent/20 border border-card-bg"></div>
                           <div className="w-6 h-6 rounded-full bg-purple-500/20 border border-card-bg"></div>
                        </div>
-                       Student Approved
+                       Learner Approved
                     </div>
                  </div>
               </motion.div>

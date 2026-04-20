@@ -317,7 +317,7 @@ export function createClaraTools(
     {
       name: 'lookup_study_materials',
       description:
-        'Look up the student\'s learning materials for this source. Retrieves one or more types of study data in a single call — flashcards, quizzes, source content, and/or study progress. Always request everything you need at once.',
+        'Look up the learner\'s learning materials for this source. Retrieves one or more types of study data in a single call — flashcards, quizzes, source content, and/or study progress. Always request everything you need at once.',
       schema: z.object({
         sources: z
           .array(z.enum(['source', 'flashcards', 'quizzes', 'progress']))
@@ -350,19 +350,19 @@ export function createClaraTools(
     {
       name: 'set_study_contract',
       description:
-        "Save the student's daily Clarity Mode hours (their Cognitive Contract). Use only when the student has explicitly picked a specific start and end time for studying. Implementation-intention research shows pegging a goal to a concrete time is far more effective than willpower.",
+        "Save the learner's daily Clarity Mode hours (their Cognitive Contract). Use only when the learner has explicitly picked a specific start and end time for studying. Implementation-intention research shows pegging a goal to a concrete time is far more effective than willpower.",
       schema: z.object({
         windowStart: z
           .string()
           .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
-          .describe('Window start, 24-hour "HH:MM" format, in the student\'s local time.'),
+          .describe('Window start, 24-hour "HH:MM" format, in the learner\'s local time.'),
         windowEnd: z
           .string()
           .regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
           .describe('Window end, 24-hour "HH:MM" format, must be strictly after windowStart.'),
         timezone: z
           .string()
-          .describe('IANA timezone identifier, e.g. "America/New_York". Use the student\'s current timezone.'),
+          .describe('IANA timezone identifier, e.g. "America/New_York". Use the learner\'s current timezone.'),
       }),
     },
   );

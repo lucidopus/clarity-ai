@@ -250,14 +250,14 @@ export const processVideoPipelineTask = task({
     let combinedContent = buildCombinedContent(extractedTexts);
     const hasTimestamps = hasYouTube || sourcesToProcess.some(s => s.sourceType === "audio");
 
-    // For live lectures: append student focus notes & importance markers as extra context
+    // For live lectures: append learner focus notes & importance markers as extra context
     if (sourceType === "live_lecture") {
       try {
         const liveSession = await LiveSession.findOne({ sourceId });
         if (liveSession) {
           const extras: string[] = [];
           if (liveSession.focusNotes?.trim()) {
-            extras.push(`\n\n═══ Student's Focus Notes (taken during lecture) ═══\n\n${liveSession.focusNotes}`);
+            extras.push(`\n\n═══ Learner's Focus Notes (taken during lecture) ═══\n\n${liveSession.focusNotes}`);
           }
           if (liveSession.importanceMarkers?.length > 0) {
             const markerTimes = liveSession.importanceMarkers
@@ -267,7 +267,7 @@ export const processVideoPipelineTask = task({
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
               })
               .join(', ');
-            extras.push(`\n\n═══ Moments Marked as Important by Student ═══\n\nThe student highlighted these timestamps as particularly important: ${markerTimes}. Pay extra attention to content around these moments when generating study materials.`);
+            extras.push(`\n\n═══ Moments Marked as Important by Learner ═══\n\nThe learner highlighted these timestamps as particularly important: ${markerTimes}. Pay extra attention to content around these moments when generating study materials.`);
           }
           if (extras.length > 0) {
             combinedContent += extras.join('');

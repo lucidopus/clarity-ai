@@ -77,8 +77,8 @@ export default function MyNotesTab({ sessionId }: MyNotesTabProps) {
   const hasNotes = data.focusNotes.trim().length > 0;
   const hasTranscript = data.transcriptText.trim().length > 0;
 
-  // Build enhanced notes: merge student notes with AI transcript
-  // Student notes shown in bright text, transcript additions in muted
+  // Build enhanced notes: merge learner notes with AI transcript
+  // Learner notes shown in bright text, transcript additions in muted
   const markerPositions = new Set(
     data.markers
       .filter((m) => m.notePosition !== undefined)
@@ -107,7 +107,7 @@ export default function MyNotesTab({ sessionId }: MyNotesTabProps) {
         </div>
       </div>
 
-      {/* Student Focus Notes */}
+      {/* Learner Focus Notes */}
       {hasNotes && (
         <div className="bg-card-bg border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">

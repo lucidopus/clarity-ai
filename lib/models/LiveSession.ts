@@ -47,7 +47,7 @@ export interface ILiveSession extends Document {
   endedAt?: Date;
   durationSeconds?: number;
 
-  // Student content
+  // Learner content
   focusNotes: string;
   importanceMarkers: IImportanceMarker[];
 
@@ -113,7 +113,7 @@ const LiveSessionSchema: Schema = new Schema({
   endedAt: { type: Date },
   durationSeconds: { type: Number },
 
-  // Student content
+  // Learner content
   focusNotes: { type: String, default: '' },
   importanceMarkers: { type: [ImportanceMarkerSchema], default: [] },
 

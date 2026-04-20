@@ -50,7 +50,7 @@ const PROCESSING_TIPS = [
   "Indexing every second so you can search for a keyword and jump straight to the explanation.",
   "Calculating the optimal review schedule so you never study more than you need to.",
   // Motivational
-  "The average student spends 40% of study time just organizing notes. You're about to skip that entirely.",
+  "The average learner spends 40% of study time just organizing notes. You're about to skip that entirely.",
   "You brought the curiosity. We're building the structure around it.",
   "Great learners aren't born — they're built through consistent, small wins.",
   "These aren't just summaries. They're a personalized roadmap to mastery.",
