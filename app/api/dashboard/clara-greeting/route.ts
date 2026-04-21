@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(greeting, {
-      headers: { 'Cache-Control': 'private, max-age=3600' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Failed to generate Clara greeting:', error);

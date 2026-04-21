@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const decoded = getAuthUser(request);
     const result = await getClarityInsights(decoded.userId);
     return NextResponse.json(result, {
-      headers: { 'Cache-Control': 'private, max-age=21600' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Error computing clarity insights:', error);

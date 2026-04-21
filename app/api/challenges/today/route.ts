@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       challenges: doc?.challenges ?? [],
       allCompleted: doc?.allCompleted ?? false,
     }, {
-      headers: { 'Cache-Control': 'private, max-age=300' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Error fetching daily challenges:', error);

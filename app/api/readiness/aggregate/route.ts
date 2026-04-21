@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const userRole = learning?.role ?? null;
 
     return NextResponse.json({ ...result, userGoal, userGoals, userRole }, {
-      headers: { 'Cache-Control': 'private, max-age=3600' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Error fetching aggregate clarity score:', error);

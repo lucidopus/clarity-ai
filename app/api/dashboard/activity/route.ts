@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ weeklyActivity, recentVideos }, {
-      headers: { 'Cache-Control': 'private, max-age=120' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Failed to load dashboard activity', error);

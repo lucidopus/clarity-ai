@@ -13,7 +13,7 @@ export async function GET(
 
     const result = await getReadinessScore(decoded.userId, sourceId);
     return NextResponse.json(result, {
-      headers: { 'Cache-Control': 'private, max-age=86400' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Error computing clarity score:', error);

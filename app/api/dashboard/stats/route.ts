@@ -175,7 +175,7 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(stats, {
-      headers: { 'Cache-Control': 'private, max-age=300' },
+      headers: { 'Cache-Control': 'private, no-store' },
     });
   } catch (error) {
     console.error('Failed to load dashboard stats', error);
