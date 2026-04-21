@@ -1,117 +1,142 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
-import VerificationToken from '@/lib/models/VerificationToken';
 import { passwordSchema } from '@/lib/utils/auth-validation';
 import { checkRateLimit, recordFailedAttempt, getClientIp } from '@/lib/rate-limit-auth';
+import { logServerActivity } from '@/lib/serverActivityLogger';
+import { z } from 'zod';
+
+const resetSchema = z.object({
+  resetTicket: z.string().min(1, 'Reset ticket is required'),
+  newPassword: passwordSchema,
+  confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ['confirmPassword'],
+});
+
+interface ResetTicketPayload {
+  userId: string;
+  email: string;
+  purpose: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
     const body = await request.json();
-    const { email, token, newPassword } = body;
-
-    if (!email || !token || !newPassword) {
+    const parsed = resetSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, message: 'Email, token, and new password are required' },
+        {
+          success: false,
+          message: parsed.error.issues[0]?.message || 'Invalid input',
+        },
         { status: 400 }
       );
     }
 
-    // Rate limit: 10 attempts per 15 minutes per IP
     const clientIp = getClientIp(request.headers);
-    const rateLimit = checkRateLimit(clientIp, 10, 15);
-    if (rateLimit.limited) {
+    const rateLimitKey = `reset-password:${clientIp}`;
+    const { limited, retryAfterMs } = checkRateLimit(rateLimitKey, 10, 15 * 60 * 1000);
+    if (limited) {
       return NextResponse.json(
-        { success: false, message: 'Too many attempts. Please try again later.' },
+        {
+          success: false,
+          message: `Too many attempts. Try again in ${Math.ceil(retryAfterMs / 60000)} minutes.`,
+        },
         { status: 429 }
       );
     }
 
-    // Validate password strength
-    const passwordResult = passwordSchema.safeParse(newPassword);
-    if (!passwordResult.success) {
+    const { resetTicket, newPassword } = parsed.data;
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
+    let payload: ResetTicketPayload;
+    try {
+      payload = jwt.verify(resetTicket, jwtSecret, { algorithms: ['HS256'] }) as ResetTicketPayload;
+    } catch {
+      recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       return NextResponse.json(
-        { success: false, message: passwordResult.error.issues[0].message },
+        { success: false, message: 'Your reset session has expired. Please start again.' },
         { status: 400 }
       );
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail });
+    if (payload.purpose !== 'password_reset' || !payload.userId) {
+      recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
+      return NextResponse.json(
+        { success: false, message: 'Invalid reset session. Please start again.' },
+        { status: 400 }
+      );
+    }
 
+    const user = await User.findById(payload.userId);
     if (!user) {
-      recordFailedAttempt(clientIp, 15 * 60 * 1000);
+      recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       return NextResponse.json(
-        { success: false, message: 'Invalid or expired reset link' },
+        { success: false, message: 'Invalid reset session. Please start again.' },
         { status: 400 }
       );
     }
 
-    // Find the reset token
-    const storedToken = await VerificationToken.findOne({
-      userId: user._id,
-      type: 'password_reset',
-    });
-
-    if (!storedToken) {
-      recordFailedAttempt(clientIp, 15 * 60 * 1000);
-      return NextResponse.json(
-        { success: false, message: 'Invalid or expired reset link' },
-        { status: 400 }
-      );
-    }
-
-    // Check expiry
-    if (new Date() > storedToken.expiresAt) {
-      await VerificationToken.deleteOne({ _id: storedToken._id });
-      return NextResponse.json(
-        { success: false, message: 'Reset link has expired. Please request a new one.' },
-        { status: 400 }
-      );
-    }
-
-    // Track attempts (max 5 per token)
-    if (storedToken.attempts >= 5) {
-      await VerificationToken.deleteOne({ _id: storedToken._id });
-      return NextResponse.json(
-        { success: false, message: 'Too many failed attempts. Please request a new reset link.' },
-        { status: 400 }
-      );
-    }
-
-    // Verify token: SHA256(submitted) must match stored hash (timing-safe comparison)
-    const submittedHash = crypto.createHash('sha256').update(token).digest('hex');
-    const hashesMatch = crypto.timingSafeEqual(
-      Buffer.from(submittedHash, 'hex'),
-      Buffer.from(storedToken.tokenHash, 'hex')
-    );
-    if (!hashesMatch) {
-      await VerificationToken.updateOne(
-        { _id: storedToken._id },
-        { $inc: { attempts: 1 }, $set: { lastAttemptAt: new Date() } }
-      );
-      recordFailedAttempt(clientIp, 15 * 60 * 1000);
-      return NextResponse.json(
-        { success: false, message: 'Invalid or expired reset link' },
-        { status: 400 }
-      );
-    }
-
-    // Token is valid — update password
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await User.updateOne({ _id: user._id }, { $set: { passwordHash } });
 
-    // Delete the used token
-    await VerificationToken.deleteOne({ _id: storedToken._id });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Password has been reset successfully. You can now sign in.',
+    await logServerActivity(user._id, 'password_reset_completed', {
+      email: user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
     });
+
+    // Auto-login: issue a JWT cookie so the user is signed in immediately
+    const jwtExpireDays = process.env.JWT_EXPIRE_DAYS;
+    if (!jwtExpireDays) {
+      throw new Error('JWT expiration window is not configured');
+    }
+    const expireDays = parseInt(jwtExpireDays, 10);
+    const expiresInSeconds = expireDays * 24 * 60 * 60;
+    const signOptions: SignOptions = { expiresIn: expiresInSeconds, algorithm: 'HS256' };
+
+    const sessionToken = jwt.sign(
+      {
+        userId: user._id,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
+      jwtSecret,
+      signOptions
+    );
+
+    const response = NextResponse.json({
+      success: true,
+      message: 'Password has been reset.',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        emailVerified: user.emailVerified ?? false,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        preferences: user.preferences || null,
+      },
+    });
+
+    response.cookies.set('jwt', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      path: '/',
+      maxAge: expiresInSeconds,
+      sameSite: 'strict' as const,
+    });
+
+    return response;
   } catch (error) {
     console.error('Reset password error:', error);
     return NextResponse.json(

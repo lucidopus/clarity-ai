@@ -15,12 +15,19 @@ export async function GET(
     const { videoId } = await params;
 
     const video = await Video.findOne(
-      { userId: decoded.userId, videoId },
-      'processingStatus materialsStatus errorType errorMessage title thumbnail allSourceIds channelName'
+      { videoId },
+      'userId visibility processingStatus materialsStatus errorType errorMessage title thumbnail allSourceIds channelName'
     );
 
     if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
+    }
+
+    const isOwner = video.userId.toString() === decoded.userId;
+    const isPublic = video.visibility === 'public';
+
+    if (!isOwner && !isPublic) {
+      return NextResponse.json({ error: 'Unauthorized access to private video' }, { status: 403 });
     }
 
     return NextResponse.json({

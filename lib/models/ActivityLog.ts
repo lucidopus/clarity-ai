@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated' | 'source_generated' | 'chatbot_message_sent' | 'video_started' | 'recommendation_clicked' | 'email_verification_sent' | 'email_verification_success' | 'email_verification_failed' | 'email_verification_resent' | 'live_lecture_started' | 'live_lecture_ended' | 'animation_rendered' | 'document_study_session' | 'page_cleared';
+export type ActivityType = 'flashcard_viewed' | 'quiz_completed' | 'materials_viewed' | 'flashcard_mastered' | 'flashcard_created' | 'video_generated' | 'source_generated' | 'chatbot_message_sent' | 'video_started' | 'recommendation_clicked' | 'email_verification_sent' | 'email_verification_success' | 'email_verification_failed' | 'email_verification_resent' | 'live_lecture_started' | 'live_lecture_ended' | 'animation_rendered' | 'document_study_session' | 'page_cleared' | 'password_reset_requested' | 'password_reset_otp_verified' | 'password_reset_completed';
 
 export interface IActivityLog extends Document {
   _id: mongoose.Types.ObjectId;
@@ -16,7 +16,7 @@ export interface IActivityLog extends Document {
 
 const ActivityLogSchema: Schema<IActivityLog> = new Schema({
   userId: { type: Schema.Types.ObjectId, required: true, index: true, ref: 'User' },
-  activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created', 'video_generated', 'source_generated', 'chatbot_message_sent', 'video_started', 'recommendation_clicked', 'email_verification_sent', 'email_verification_success', 'email_verification_failed', 'email_verification_resent', 'live_lecture_started', 'live_lecture_ended', 'animation_rendered', 'document_study_session', 'page_cleared'] },
+  activityType: { type: String, required: true, enum: ['flashcard_viewed', 'quiz_completed', 'materials_viewed', 'flashcard_mastered', 'flashcard_created', 'video_generated', 'source_generated', 'chatbot_message_sent', 'video_started', 'recommendation_clicked', 'email_verification_sent', 'email_verification_success', 'email_verification_failed', 'email_verification_resent', 'live_lecture_started', 'live_lecture_ended', 'animation_rendered', 'document_study_session', 'page_cleared', 'password_reset_requested', 'password_reset_otp_verified', 'password_reset_completed'] },
   sourceId: { type: String },
   date: { type: Date, required: true },
   timestamp: { type: Date, required: true, default: () => new Date() },

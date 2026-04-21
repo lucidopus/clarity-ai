@@ -9,6 +9,7 @@ const PUBLIC_API_PATHS = new Set([
   '/api/auth/verify-email',
   '/api/auth/resend-verification',
   '/api/auth/forgot-password',
+  '/api/auth/verify-reset-otp',
   '/api/auth/reset-password',
   '/api/admin/auth/login',
   '/api/admin/auth/logout',

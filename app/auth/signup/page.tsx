@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
@@ -22,6 +23,8 @@ export default function SignupPage() {
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string[]> = {};
@@ -210,15 +213,26 @@ export default function SignupPage() {
              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
                Password
              </label>
-             <input
-               type="password"
-               id="password"
-               name="password"
-               value={formData.password}
-               onChange={handleChange}
-               required
-               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-             />
+             <div className="relative">
+               <input
+                 type={showPassword ? 'text' : 'password'}
+                 id="password"
+                 name="password"
+                 value={formData.password}
+                 onChange={handleChange}
+                 required
+                 className="w-full px-3 py-2 pr-10 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+               />
+               <button
+                 type="button"
+                 onClick={() => setShowPassword((v) => !v)}
+                 aria-label={showPassword ? 'Hide password' : 'Show password'}
+                 aria-pressed={showPassword}
+                 className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+               >
+                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+               </button>
+             </div>
              {errors.password && (
                <p className="text-red-500 text-sm mt-1">{errors.password[0]}</p>
              )}
@@ -228,15 +242,26 @@ export default function SignupPage() {
              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground mb-1">
                Confirm Password
              </label>
-             <input
-               type="password"
-               id="confirmPassword"
-               name="confirmPassword"
-               value={formData.confirmPassword}
-               onChange={handleChange}
-               required
-               className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-             />
+             <div className="relative">
+               <input
+                 type={showConfirmPassword ? 'text' : 'password'}
+                 id="confirmPassword"
+                 name="confirmPassword"
+                 value={formData.confirmPassword}
+                 onChange={handleChange}
+                 required
+                 className="w-full px-3 py-2 pr-10 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
+               />
+               <button
+                 type="button"
+                 onClick={() => setShowConfirmPassword((v) => !v)}
+                 aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                 aria-pressed={showConfirmPassword}
+                 className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+               >
+                 {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+               </button>
+             </div>
              {errors.confirmPassword && (
                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword[0]}</p>
              )}

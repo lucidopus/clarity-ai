@@ -14,7 +14,7 @@ interface SendVerificationEmailParams {
 interface SendPasswordResetEmailParams {
   to: string;
   name: string;
-  resetUrl: string;
+  otp: string;
 }
 
 interface SendStudyContractReminderParams {
@@ -196,11 +196,11 @@ export async function sendVerificationEmail({ to, otp, name }: SendVerificationE
   }
 }
 
-export async function sendPasswordResetEmail({ to, name, resetUrl }: SendPasswordResetEmailParams): Promise<boolean> {
+export async function sendPasswordResetEmail({ to, name, otp }: SendPasswordResetEmailParams): Promise<boolean> {
   if (!process.env.SENDGRID_API_KEY) {
     console.warn('SENDGRID_API_KEY is not defined. Email sending skipped.');
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[DEV MODE] Password reset link for ${to}: ${resetUrl}`);
+      console.log(`[DEV MODE] Password reset OTP for ${to}: ${otp}`);
     }
     return false;
   }
@@ -217,18 +217,16 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: SendPasswor
       name: 'Clarity AI',
     },
     subject: 'Reset your Clarity AI password',
-    text: `Hello ${name},\n\nWe received a request to reset your password. Use this link to set a new password:\n\n${resetUrl}\n\nThis link expires in 1 hour.\n\nIf you didn't request a password reset, you can safely ignore this email.`,
+    text: `Hello ${name},\n\nWe received a request to reset your password. Your verification code is: ${otp}\n\nThis code expires in 10 minutes.\n\nIf you didn't request a password reset, you can safely ignore this email.`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Reset your password</h2>
         <p>Hello ${escapeHtml(name)},</p>
-        <p>We received a request to reset your password. Click the button below to set a new password:</p>
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${escapeHtml(resetUrl)}" style="background-color: #0ea5e9; color: #fff; padding: 12px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+        <p>We received a request to reset your password. Use the code below to confirm it's you:</p>
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
+          <h1 style="color: #000; letter-spacing: 5px; margin: 0;">${escapeHtml(otp)}</h1>
         </div>
-        <p style="color: #666; font-size: 13px;">Or copy and paste this link into your browser:</p>
-        <p style="color: #666; font-size: 13px; word-break: break-all;">${escapeHtml(resetUrl)}</p>
-        <p>This link expires in 1 hour.</p>
+        <p>This code expires in 10 minutes.</p>
         <p style="color: #666; font-size: 12px; margin-top: 30px;">If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
       </div>
     `,
@@ -243,7 +241,7 @@ export async function sendPasswordResetEmail({ to, name, resetUrl }: SendPasswor
       console.error((error as { response: { body: unknown } }).response.body);
     }
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[EMAIL FAIL FALLBACK] Password reset link for ${to}: ${resetUrl}`);
+      console.log(`[EMAIL FAIL FALLBACK] Password reset OTP for ${to}: ${otp}`);
     }
     return false;
   }
