@@ -70,20 +70,19 @@ export default function DashboardLayout({
   if (loading) {
     return (
       <div className="flex h-dvh bg-background overflow-hidden">
-        {/* Sidebar Skeleton — hidden on mobile, shown md+ */}
-        <div className="hidden md:flex md:w-56 lg:w-64 bg-card-bg border-r border-border flex-col">
-          <div className="p-6 border-b border-border">
-            <div className="h-8 bg-accent/20 rounded animate-pulse w-32"></div>
+        {/* Sidebar Skeleton — matches the hover-expand icon-rail width
+             (w-16 / lg:w-20) so there's no layout jump when the real
+             Sidebar mounts. */}
+        <div className="hidden md:flex md:w-16 lg:w-20 bg-card-bg border-r border-border flex-col">
+          <div className="h-16 flex items-center justify-center border-b border-border">
+            <div className="w-8 h-8 bg-accent/20 rounded-lg animate-pulse"></div>
           </div>
-          <div className="flex-1 p-4">
-            <div className="space-y-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex items-center space-x-3 p-3 rounded-lg">
-                  <div className="w-5 h-5 bg-secondary/20 rounded animate-pulse"></div>
-                  <div className="h-4 bg-secondary/20 rounded animate-pulse flex-1"></div>
-                </div>
-              ))}
-            </div>
+          <div className="flex-1 py-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center justify-center h-12">
+                <div className="w-5 h-5 bg-secondary/20 rounded animate-pulse"></div>
+              </div>
+            ))}
           </div>
         </div>
 

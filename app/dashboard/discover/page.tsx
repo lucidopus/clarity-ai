@@ -100,11 +100,11 @@ export default function DiscoverPage() {
 
       {/* Hero Section */}
       {heroVideo && (
-        <section className="relative aspect-[4/5] sm:aspect-auto sm:h-[50vh] sm:min-h-[400px] w-full mb-6 sm:mb-8 rounded-2xl sm:rounded-3xl overflow-hidden group mx-auto max-w-[calc(100%-1rem)] sm:max-w-[98%] mt-4">
+        <section className="relative aspect-4/5 sm:aspect-auto sm:h-[50vh] sm:min-h-[400px] w-full mb-6 sm:mb-8 rounded-2xl sm:rounded-3xl overflow-hidden group mt-4">
             {/* Hero Background — thumbnail reads at full opacity on mobile with
                 a bottom-anchored scrim; side gradient on sm+ keeps the legacy
                 left-column layout for wider viewports. */}
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/90 via-black/20 to-transparent sm:bg-linear-to-r sm:from-background sm:via-background/80 sm:to-transparent" />
+            <div className="absolute inset-0 z-10 bg-linear-to-t from-black/90 via-black/20 to-transparent sm:bg-linear-to-r sm:from-background sm:via-background/80 sm:to-transparent" />
             <div className="absolute inset-0">
                 {heroVideo.thumbnail && (
                     <Image

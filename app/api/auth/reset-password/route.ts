@@ -6,6 +6,7 @@ import User from '@/lib/models/User';
 import { passwordSchema } from '@/lib/utils/auth-validation';
 import { checkRateLimit, recordFailedAttempt, getClientIp } from '@/lib/rate-limit-auth';
 import { logServerActivity } from '@/lib/serverActivityLogger';
+import { getRedis } from '@/lib/redis';
 import { z } from 'zod';
 
 const resetSchema = z.object({
@@ -18,9 +19,35 @@ const resetSchema = z.object({
 });
 
 interface ResetTicketPayload {
+  jti?: string;
   userId: string;
   email: string;
   purpose: string;
+}
+
+// Atomically mark a reset ticket's jti as consumed. Returns true if we were
+// the first to claim it; false if another request (or a replay) already
+// consumed it. Uses Redis SET NX with TTL matching the ticket's 10-min life.
+// Fails closed in production — replay protection is a security property, not
+// a perf nicety — but skips the guard in dev when REDIS_URL isn't configured
+// at all, so local dev doesn't require Redis just to test the flow.
+async function claimResetTicket(jti: string): Promise<boolean> {
+  if (!process.env.REDIS_URL) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[reset-password] REDIS_URL not set in production — failing closed.');
+      return false;
+    }
+    console.warn('[reset-password] REDIS_URL not set; skipping one-time-use guard (dev only).');
+    return true;
+  }
+  try {
+    const redis = getRedis();
+    const result = await redis.set(`prr:used:${jti}`, '1', 'EX', 900, 'NX');
+    return result === 'OK';
+  } catch (err) {
+    console.error('[reset-password] Redis claim failed:', err);
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -70,10 +97,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (payload.purpose !== 'password_reset' || !payload.userId) {
+    if (payload.purpose !== 'password_reset' || !payload.userId || !payload.jti) {
       recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       return NextResponse.json(
         { success: false, message: 'Invalid reset session. Please start again.' },
+        { status: 400 }
+      );
+    }
+
+    // One-time-use guard: claim the jti before touching the password. If
+    // another request already consumed it (replay), reject.
+    const claimed = await claimResetTicket(payload.jti);
+    if (!claimed) {
+      recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
+      return NextResponse.json(
+        { success: false, message: 'This reset session has already been used. Please start again.' },
         { status: 400 }
       );
     }

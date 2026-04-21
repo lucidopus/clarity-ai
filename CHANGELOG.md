@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Forgot Password (OTP)**: End-to-end password-reset flow replacing the prior URL-token design.
+  - `POST /api/auth/forgot-password` — generates a 6-digit OTP, stores a bcrypt-hashed `password_reset` `VerificationToken` (10-min expiry), and emails it. 5/15-min IP rate limit, 60-second resend throttle, and a constant-shape response to prevent email enumeration.
+  - `POST /api/auth/verify-reset-otp` (new) — verifies the OTP (max 5 attempts / token, 10/15-min IP ceiling), deletes the token on success, and issues a short-lived HS256 reset-ticket JWT (`purpose: 'password_reset'`, 10-min expiry).
+  - `POST /api/auth/reset-password` — accepts `{resetTicket, newPassword, confirmPassword}`, validates the ticket and password strength (`passwordSchema`), updates the user's hash, and issues a session JWT cookie so the user is signed in immediately.
+  - `app/auth/forgot-password/page.tsx` — new three-step stepper UI (email → OTP → new password) with resend cooldown, auto-advancing OTP boxes, show/hide password toggle, and auto-redirect to `/onboarding` or `/dashboard` after success.
+  - `app/auth/signin/page.tsx` — "Forgot password?" link added next to the password field.
+  - `lib/email.ts` — `sendPasswordResetEmail` reshaped to send an OTP code (matching the verify-email template) instead of a reset URL.
+  - `lib/models/ActivityLog.ts` — added `password_reset_requested`, `password_reset_otp_verified`, `password_reset_completed` activity types.
+- **Show/Hide Password Toggles**: Inline eye-icon toggles added to password inputs on signin and signup (two independent toggles on signup so password and confirm-password can be revealed separately).
+- **Brand-new-user Empty Dashboard**: When a user has no videos, flashcards, or quiz attempts, the dashboard home replaces the grid of zero-value widgets with a dedicated welcome surface — gradient hero, "Start with a source" quick-start cards (YouTube / Document / Text / Audio), a "What you'll build" feature strip, and a personalized nudge. New component: `components/dashboard/EmptyDashboard.tsx`.
+
 - **App-Wide Performance Improvements (Issue #102)**: Eliminated N+1 query patterns, replaced ephemeral in-memory caches with Redis, and reduced initial JS bundle size.
   - New `lib/cache.ts`: centralized `getCached<T>()` helper (Redis hit → DB fallback on error), `CacheKeys` factory, and `invalidate*` helpers for readiness, insights, dashStats
   - `lib/redis.ts`: lazy `getRedis()` initialization — no crash on missing `REDIS_URL` at module import time
@@ -147,6 +158,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Dashboard Sidebar — Hover-Expand Icon Rail**: Refactored the main dashboard sidebar to the same hover-expand pattern used on the generations page. The outer wrapper reserves only the rail width (64 px on tablet, 80 px on desktop) and an absolutely-positioned inner `motion.aside` animates to 256 px on mouse enter so the expanded panel floats over content instead of reflowing it. Icon column stays pinned, so icons don't shift during the transition. Replaces the prior click-to-toggle collapse.
+- **Discover Hero — Edge-to-Edge**: Removed the `mx-auto max-w-[calc(100%-1rem)] sm:max-w-[98%]` constraints so the Top-Pick hero fills the content column cleanly (no visible page-background strips on the left/right edges).
 - **Navbar Redesign**: Polished the marketing navbar with a frosted-glass backdrop blur effect, reduced height (h-14), refined typography, removed the "About" nav link, renamed "Sign Up" CTA to "Get Started", and improved mobile menu spacing and hover states.
 - **Multi-Source Pipeline Polish**: Replaced source-switcher pills with a clean segmented tab control; source type icons now appear on gallery cards instead of the text label "YouTube"; NotesEditor and floating summary button restricted to YouTube sources only; default text source title is "Text Notes".
 - **Live Lecture Panel UX**: Clara tab is always visible from session start; quick action buttons moved to a shared section independent of the active tab; resuming a session now restores previous chats, notes, and transcript from the server.
@@ -191,6 +204,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Cross-User Data Leak via Browser HTTP Cache (Security)**: Authenticated per-user API responses could be served from the browser cache to a different user on the same device after logout/login — for example, User A's Clarity Score rendering in User B's dashboard. Root cause: `Cache-Control: private, max-age=…` on nine per-user endpoints. `private` only excludes shared caches; the browser still caches keyed by URL alone, not by the `jwt` cookie, so another user landing on the same URL within the TTL window received A's response. Switched all nine endpoints to `Cache-Control: private, no-store`; the server-side Redis layer (correctly keyed by `userId`) continues to absorb the expensive recompute, so there is no meaningful performance regression. Endpoints fixed: `readiness/aggregate`, `readiness/insights`, `readiness/[sourceId]`, `flashcards/stats`, `challenges/today`, `dashboard/progress-narrative`, `dashboard/activity`, `dashboard/stats`, `dashboard/clara-greeting`.
 - **PDF Extraction in Trigger.dev**: Replaced `pdf-parse` with `unpdf` for container-compatible PDF extraction (pdf-parse uses Node.js native modules incompatible with Trigger.dev workers).
 - **TypeScript Discriminated Union**: Fixed narrowing error in the live-lecture `extract-context` route where the discriminant wasn't recognized after a type assertion.
 - **sourceId Mismatch**: Fixed `saveExtraction` using an extractor-generated UUID instead of the passed `sourceId`, causing orphaned SourceContent records.

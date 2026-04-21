@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/lib/models/User';
 import VerificationToken from '@/lib/models/VerificationToken';
@@ -8,6 +10,12 @@ import { escapeRegex } from '@/lib/utils/escape-regex';
 import { checkRateLimit, recordFailedAttempt, getClientIp } from '@/lib/rate-limit-auth';
 import { logServerActivity } from '@/lib/serverActivityLogger';
 import { z } from 'zod';
+
+// Static bcrypt hash used as a dummy target when the user or token doesn't
+// exist, so a wrong-email/no-token request takes ~the same time as a
+// token-found-but-wrong-OTP request. Prevents enumeration via response timing.
+const DUMMY_BCRYPT_HASH =
+  '$2b$10$CwTycUXWue0Thq9StjUM0uJ8vb0Dv8GwfS7JvsEbAnM7xYIi0xNuy';
 
 const verifySchema = z.object({
   email: z.string().email(),
@@ -48,6 +56,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
+      // Dummy bcrypt compare so a missing-user path takes the same time as
+      // the normal OTP-verify path (prevents enumeration via response timing).
+      await bcrypt.compare(otp, DUMMY_BCRYPT_HASH);
       recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       return NextResponse.json(
         { success: false, message: 'Invalid or expired code' },
@@ -61,6 +72,9 @@ export async function POST(request: NextRequest) {
     }).sort({ createdAt: -1 });
 
     if (!token) {
+      // Same timing-equalising dummy compare when no active reset token
+      // exists for the user (prevents "token exists?" enumeration).
+      await bcrypt.compare(otp, DUMMY_BCRYPT_HASH);
       recordFailedAttempt(rateLimitKey, 15 * 60 * 1000);
       return NextResponse.json(
         { success: false, message: 'Invalid or expired code' },
@@ -114,8 +128,12 @@ export async function POST(request: NextRequest) {
       throw new Error('JWT_SECRET is not configured');
     }
 
+    // Random jti so the ticket can be consumed exactly once at reset-password
+    // time (replay guard enforced against Redis).
+    const jti = crypto.randomUUID();
     const resetTicket = jwt.sign(
       {
+        jti,
         userId: user._id.toString(),
         email: user.email,
         purpose: 'password_reset',

@@ -27,6 +27,7 @@ const WeekdayConsistencyBars = dynamic(() => import('@/components/WeekdayConsist
 import DailyChallengesCard from '@/components/DailyChallengesCard';
 import ClarityScoreWidget from '@/components/dashboard/ReadinessWidget';
 import ClarityInsightsPanel from '@/components/dashboard/ClarityInsightsPanel';
+import EmptyDashboard from '@/components/dashboard/EmptyDashboard';
 import TodaysMixCard from '@/components/TodaysMixCard';
 import { getErrorConfig } from '@/lib/errorMessages';
 
@@ -456,7 +457,15 @@ export default function DashboardHomePage() {
         </div>
       )}
 
-      {!loading && !error && stats && (
+      {!loading && !error && stats && stats.totalVideos === 0 && stats.totalFlashcards === 0 && stats.totalQuizAttempts === 0 && (
+        <EmptyDashboard
+          firstName={user.firstName}
+          onGenerateClick={() => setShowGenerateModal(true)}
+          onLiveLectureClick={openLiveLecture}
+        />
+      )}
+
+      {!loading && !error && stats && !(stats.totalVideos === 0 && stats.totalFlashcards === 0 && stats.totalQuizAttempts === 0) && (
         <div className="space-y-5">
           {/* Snapshot — at-a-glance score + activity */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

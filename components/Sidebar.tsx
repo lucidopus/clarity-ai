@@ -3,147 +3,173 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion'; // still used for layoutId indicator + opacity fade
-import { ChevronLeft, Menu, LogOut } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
+import { LogOut } from 'lucide-react';
 import { primaryNavItems } from '@/lib/navigation/primary-nav';
 import { Z_INDEX } from '@/lib/constants/z-index';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  // Default to expanded so SSR and client first-render agree (no hydration
-  // mismatch). After mount, auto-collapse if the viewport is in the tablet
-  // range (md-to-lg-) — a 256-px expanded sidebar eats 31% of an 810-px
-  // iPad portrait. Ran once on mount so window-snapping / iPad multitasking
-  // doesn't re-collapse after the user manually expands. Brief flash from
-  // w-56 to w-20 on tablet first paint is acceptable vs. a hydration warning.
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Hover-expand behaviour mirroring the generations page sidebar: the outer
+  // wrapper reserves only the collapsed rail width, and an absolutely-
+  // positioned inner <aside> animates its width on hover so it grows over the
+  // main content instead of pushing it around.
+  //
+  // Expand is also triggered by keyboard focus inside the rail (so keyboard
+  // users see labels), and touch devices (no hover) force the sidebar to stay
+  // expanded since "hover" is not a thing there.
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Narrower rail on tablet (md-range), full 80-px rail on desktop (lg+).
+  const [collapsedRailPx, setCollapsedRailPx] = useState(80);
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (window.matchMedia('(max-width: 1023px)').matches) {
-      // One-time viewport-aware bootstrap — not a reactive subscription.
-      // Does not listen to resize, which is by design (prevents iPad
-      // multitasking window-snap flicker after user manually expands).
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsCollapsed(true);
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const apply = (matches: boolean) => setCollapsedRailPx(matches ? 80 : 64);
+    apply(mq.matches);
+    const handler = (e: MediaQueryListEvent) => apply(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Detect touch devices (coarse pointer, no hover) — on these we keep the
+  // sidebar expanded so users always see nav labels.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(hover: none), (pointer: coarse)');
+    const apply = (matches: boolean) => {
+      setIsTouchDevice(matches);
+      if (matches) setIsCollapsed(false);
+    };
+    apply(mq.matches);
+    const handler = (e: MediaQueryListEvent) => apply(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const expand = () => {
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+      collapseTimerRef.current = null;
     }
+    setIsCollapsed(false);
+  };
+
+  const scheduleCollapse = () => {
+    if (isTouchDevice) return; // touch devices stay expanded
+    if (collapseTimerRef.current) {
+      clearTimeout(collapseTimerRef.current);
+    }
+    collapseTimerRef.current = setTimeout(() => {
+      setIsCollapsed(true);
+      collapseTimerRef.current = null;
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current);
+    };
   }, []);
 
   return (
-    <aside
+    <div
+      className={`hidden md:block sticky top-0 shrink-0 h-dvh ${isTouchDevice ? 'w-64' : 'w-16 lg:w-20'}`}
       style={{ zIndex: Z_INDEX.sidebar }}
-      className={`hidden md:flex bg-card-bg border-r border-border shrink-0 flex-col h-dvh sticky top-0 overflow-hidden transition-[width] duration-200 ease-out ${isCollapsed ? 'w-20' : 'w-56 lg:w-64'}`}
+      onMouseEnter={expand}
+      onMouseLeave={scheduleCollapse}
+      onFocusCapture={expand}
+      onBlurCapture={scheduleCollapse}
     >
-      {/* Sidebar Header: Logo & Toggle */}
-      <div className="h-16 flex items-center px-4 border-b border-border shrink-0 justify-between">
-         <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center w-full' : ''}`}>
-            <Link href="/" className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center shrink-0 hover:opacity-90 transition-opacity">
-                    <span className="text-white font-bold text-lg">C</span>
-                </div>
-                {!isCollapsed && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="font-bold text-lg text-foreground truncate"
-                    >
-                        Clarity
-                    </motion.div>
-                )}
-            </Link>
-         </div>
-         
-         {!isCollapsed && (
-           <button
-              onClick={() => setIsCollapsed(true)}
-              className="inline-flex items-center justify-center min-h-11 min-w-11 text-muted-foreground hover:text-foreground rounded-md hover:bg-background transition-colors cursor-pointer"
-              title="Collapse Sidebar"
-              aria-label="Collapse sidebar"
-           >
-              <ChevronLeft className="w-4 h-4" />
-           </button>
-         )}
-      </div>
+      <motion.aside
+        initial={false}
+        animate={{ width: isCollapsed ? collapsedRailPx : 256 }}
+        transition={{ type: 'tween', duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
+        className="absolute top-0 left-0 h-full bg-card-bg border-r border-border flex flex-col overflow-hidden shadow-xl"
+        style={{ willChange: 'width' }}
+      >
+        {/* Header — logo stays anchored in the rail column, wordmark reveals as
+            the aside grows. */}
+        <div className="h-16 flex items-center border-b border-border shrink-0">
+          <Link
+            href="/"
+            aria-label="Clarity home"
+            className="w-16 lg:w-20 h-full flex items-center justify-center shrink-0 cursor-pointer"
+          >
+            <span className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center text-white font-bold text-lg hover:opacity-80 transition-opacity">
+              C
+            </span>
+          </Link>
+          <span className="font-bold text-lg text-foreground whitespace-nowrap">
+            Clarity
+          </span>
+        </div>
 
-      {/* Navigation Items */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 gap-2 flex flex-col">
-          {/* Expand Button (only visible when collapsed) */}
-          {isCollapsed && (
-             <button
-              onClick={() => setIsCollapsed(false)}
-              className="w-full flex items-center justify-center min-h-11 py-2 text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-lg mb-2 cursor-pointer transition-colors"
-              title="Expand Sidebar"
-              aria-label="Expand sidebar"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-          )}
-
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden py-2">
           {primaryNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive =
+              pathname === item.href || pathname.startsWith(`${item.href}/`);
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                title={isCollapsed ? item.name : ''}
-                className={`
-                  relative group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 cursor-pointer
-                  ${isActive 
-                    ? 'bg-accent/10 text-accent font-medium' 
+                title={isCollapsed ? item.name : undefined}
+                className={`relative flex items-center w-full h-12 transition-colors cursor-pointer ${
+                  isActive
+                    ? 'bg-accent/10 text-accent font-medium'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/10'
-                  }
-                  ${isCollapsed ? 'justify-center' : ''}
-                `}
+                }`}
               >
-                <Icon className={`shrink-0 ${isActive ? 'w-5 h-5' : 'w-5 h-5 opacity-70'}`} />
-                
-                {!isCollapsed && (
-                   <span className="truncate text-sm">{item.name}</span>
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-r-full" />
                 )}
-
-                {/* Active Indicator Line for Collapsed Mode */}
-                {isActive && isCollapsed && (
-                  <motion.div 
-                    layoutId="activeTabIndicator"
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-accent rounded-l-full"
-                  />
-                )}
+                <div className="w-16 lg:w-20 flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <span className="text-sm whitespace-nowrap">{item.name}</span>
               </Link>
             );
           })}
-      </div>
-      
-      {/* Sidebar Footer: User Section */}
-      <div className="p-3 border-t border-border shrink-0 space-y-2">
-          {!isCollapsed && (
-            <div className="mb-2 px-1">
-               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</h3>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-border shrink-0 py-2">
+          {user && (
+            <div
+              className="flex items-center w-full h-12"
+              title={user.email}
+            >
+              <div className="w-16 lg:w-20 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-full bg-accent/15 text-accent text-xs font-semibold flex items-center justify-center">
+                  {(user.firstName?.[0] ?? 'U').toUpperCase()}
+                  {(user.lastName?.[0] ?? '').toUpperCase()}
+                </div>
+              </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap truncate pr-4 max-w-[176px]">
+                {user.email}
+              </span>
             </div>
           )}
-           
-          <div className={`flex flex-col gap-2 ${isCollapsed ? 'items-center' : ''}`}>
-               {/* User Info / Profile Link (optional, currently just shows email in old one) */} 
-               {!isCollapsed && user && (
-                   <div className="px-1 py-2 text-xs text-muted-foreground truncate w-full bg-muted/30 rounded-lg mb-1">
-                       {user.email}
-                   </div>
-               )}
-
-               <button
-                  onClick={logout}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors text-red-500/80 hover:text-red-500 hover:bg-red-500/10 cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}
-                  title="Logout"
-               >
-                  <LogOut className="w-4 h-4 shrink-0" />
-                  {!isCollapsed && <span>Logout</span>}
-               </button>
-          </div>
-      </div>
-    </aside>
+          <button
+            onClick={logout}
+            title="Logout"
+            className="flex items-center w-full h-12 transition-colors cursor-pointer text-red-500/80 hover:text-red-500 hover:bg-red-500/10"
+          >
+            <div className="w-16 lg:w-20 flex items-center justify-center shrink-0">
+              <LogOut className="w-4 h-4 shrink-0" />
+            </div>
+            <span className="text-sm whitespace-nowrap">Logout</span>
+          </button>
+        </div>
+      </motion.aside>
+    </div>
   );
 }
