@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StickyNote, X, Play } from 'lucide-react';
 import type { Chapter, SegmentNote, TranscriptSegment } from './types';
@@ -22,7 +22,131 @@ interface UpNext {
   label: string;
 }
 
+interface NotifCardProps {
+  item: UpNext;
+  cardKey: string;
+  onSeek: (s: number) => void;
+  onDismiss: (key: string) => void;
+  onHoverEnter?: () => void;
+  onHoverLeave?: () => void;
+}
+
 const SURFACE_WINDOW_S = 10;
+
+function NotifCard({
+  item,
+  cardKey,
+  onSeek,
+  onDismiss,
+  onHoverEnter,
+  onHoverLeave,
+}: NotifCardProps) {
+  const labelRef = useRef<HTMLDivElement | null>(null);
+  const [isClipped, setIsClipped] = useState(false);
+
+  useEffect(() => {
+    const el = labelRef.current;
+    if (!el) return;
+    setIsClipped(el.scrollHeight > el.clientHeight + 1);
+  }, [item.label]);
+
+  // Fire hover-enter/leave for keyboard users too, but only when focus
+  // crosses the card boundary — not on internal button-to-button moves.
+  const handleFocus = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      onHoverEnter?.();
+    }
+  };
+  const handleBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      onHoverLeave?.();
+    }
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ x: 360, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: 360, opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.7 }}
+      className="flex gap-3 items-stretch"
+      onMouseEnter={onHoverEnter}
+      onMouseLeave={onHoverLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      style={{
+        pointerEvents: 'auto',
+        background: 'var(--card-bg)',
+        border: '1px solid var(--border)',
+        borderRadius: 14,
+        padding: '12px 14px 12px 12px',
+        minWidth: 260,
+        maxWidth: 320,
+        boxShadow: '0 18px 48px -16px rgba(0,0,0,0.55)',
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onSeek(item.time)}
+        className="w-[3px] rounded-full shrink-0 cursor-pointer"
+        style={{ background: item.kind === 'moment' ? '#facc15' : 'var(--accent)' }}
+        title="Jump to this moment"
+        aria-label="Jump to upcoming moment"
+      />
+      <button
+        type="button"
+        onClick={() => onSeek(item.time)}
+        className="flex-1 min-w-0 text-left cursor-pointer"
+      >
+        <div
+          className="font-mono uppercase tracking-widest text-[9px] font-bold flex items-center gap-1"
+          style={{ color: item.kind === 'moment' ? '#facc15' : 'var(--accent)' }}
+        >
+          {item.kind === 'moment' ? (
+            <StickyNote size={9} fill="currentColor" />
+          ) : (
+            <Play size={9} fill="currentColor" />
+          )}
+          {item.kind === 'moment' ? 'Your note' : 'Up next'}
+        </div>
+        <div
+          ref={labelRef}
+          className="font-semibold text-[14px] mt-0.5 leading-snug break-words"
+          style={{
+            color: 'var(--foreground)',
+            display: '-webkit-box',
+            WebkitLineClamp: 8,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            maskImage: isClipped
+              ? 'linear-gradient(to bottom, black 82%, transparent 100%)'
+              : undefined,
+            WebkitMaskImage: isClipped
+              ? 'linear-gradient(to bottom, black 82%, transparent 100%)'
+              : undefined,
+          }}
+        >
+          {item.label}
+        </div>
+        <div className="mt-1.5 font-mono text-[11px]" style={{ color: 'var(--secondary)' }}>
+          {formatTimestamp(item.time)} ·{' '}
+          {item.kind === 'moment' ? 'returning to your note' : 'chapter'}
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={() => onDismiss(cardKey)}
+        className="self-center w-7 h-7 grid place-items-center rounded-lg hover:bg-background transition-colors cursor-pointer"
+        style={{ color: 'var(--secondary)' }}
+        title="Dismiss"
+        aria-label="Dismiss up next card"
+      >
+        <X size={14} />
+      </button>
+    </motion.div>
+  );
+}
 
 export default function UpNextCard({
   currentTime,
@@ -81,79 +205,15 @@ export default function UpNextCard({
         {surfacedList.map((item) => {
           const key = `${item.kind}-${item.time}`;
           return (
-            <motion.div
+            <NotifCard
               key={key}
-              layout
-              initial={{ x: 360, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 360, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.7 }}
-              className="flex gap-3 items-stretch"
-              onMouseEnter={onHoverEnter}
-              onMouseLeave={onHoverLeave}
-              style={{
-                pointerEvents: 'auto',
-                background: 'var(--card-bg)',
-                border: '1px solid var(--border)',
-                borderRadius: 14,
-                padding: '12px 14px 12px 12px',
-                minWidth: 260,
-                maxWidth: 320,
-                boxShadow: '0 18px 48px -16px rgba(0,0,0,0.55)',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => onSeek(item.time)}
-                className="w-[3px] rounded-full shrink-0 cursor-pointer"
-                style={{ background: item.kind === 'moment' ? '#facc15' : 'var(--accent)' }}
-                title="Jump to this moment"
-                aria-label="Jump to upcoming moment"
-              />
-              <button
-                type="button"
-                onClick={() => onSeek(item.time)}
-                className="flex-1 min-w-0 text-left cursor-pointer"
-              >
-                <div
-                  className="font-mono uppercase tracking-widest text-[9px] font-bold flex items-center gap-1"
-                  style={{ color: item.kind === 'moment' ? '#facc15' : 'var(--accent)' }}
-                >
-                  {item.kind === 'moment' ? (
-                    <StickyNote size={9} fill="currentColor" />
-                  ) : (
-                    <Play size={9} fill="currentColor" />
-                  )}
-                  {item.kind === 'moment' ? 'Your note' : 'Up next'}
-                </div>
-                <div
-                  className="font-semibold text-[14px] mt-0.5 leading-snug break-words"
-                  style={{
-                    color: 'var(--foreground)',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 8,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {item.label}
-                </div>
-                <div className="mt-1.5 font-mono text-[11px]" style={{ color: 'var(--secondary)' }}>
-                  {formatTimestamp(item.time)} ·{' '}
-                  {item.kind === 'moment' ? 'returning to your note' : 'chapter'}
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => dismiss(key)}
-                className="self-center w-7 h-7 grid place-items-center rounded-lg hover:bg-background transition-colors cursor-pointer"
-                style={{ color: 'var(--secondary)' }}
-                title="Dismiss"
-                aria-label="Dismiss up next card"
-              >
-                <X size={14} />
-              </button>
-            </motion.div>
+              item={item}
+              cardKey={key}
+              onSeek={onSeek}
+              onDismiss={dismiss}
+              onHoverEnter={onHoverEnter}
+              onHoverLeave={onHoverLeave}
+            />
           );
         })}
       </AnimatePresence>
