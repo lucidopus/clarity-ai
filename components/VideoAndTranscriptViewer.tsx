@@ -43,6 +43,25 @@ export default function VideoAndTranscriptViewer({
   // notes and transcript stay visible in fullscreen, not just the video.
   const viewerRootRef = useRef<HTMLDivElement | null>(null);
 
+  // Hover-to-pause on floating note/segment cards. Counter handles the
+  // brief cross-card moment when a second card replaces the first.
+  const hoverCountRef = useRef(0);
+  const hoverWasPlayingRef = useRef(false);
+  const handleCardHoverEnter = useCallback(() => {
+    if (hoverCountRef.current === 0 && player.isPlaying) {
+      hoverWasPlayingRef.current = true;
+      player.pause();
+    }
+    hoverCountRef.current += 1;
+  }, [player]);
+  const handleCardHoverLeave = useCallback(() => {
+    hoverCountRef.current = Math.max(0, hoverCountRef.current - 1);
+    if (hoverCountRef.current === 0 && hoverWasPlayingRef.current) {
+      hoverWasPlayingRef.current = false;
+      player.play();
+    }
+  }, [player]);
+
   // Default to study mode → notes open. Users land here from a material click;
   // they came here to study, not just to watch.
   const [mode, setMode] = useState<'theater' | 'study'>('study');
@@ -307,6 +326,8 @@ export default function VideoAndTranscriptViewer({
         segmentNotes={notes.segmentNotes}
         transcript={transcript}
         onSeek={player.seek}
+        onHoverEnter={handleCardHoverEnter}
+        onHoverLeave={handleCardHoverLeave}
       />
 
       <CommandPalette

@@ -12,6 +12,8 @@ interface UpNextCardProps {
   segmentNotes: SegmentNote[];
   transcript: TranscriptSegment[];
   onSeek: (s: number) => void;
+  onHoverEnter?: () => void;
+  onHoverLeave?: () => void;
 }
 
 interface UpNext {
@@ -28,6 +30,8 @@ export default function UpNextCard({
   segmentNotes,
   transcript,
   onSeek,
+  onHoverEnter,
+  onHoverLeave,
 }: UpNextCardProps) {
   const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
 
@@ -52,7 +56,7 @@ export default function UpNextCard({
       const delta = seg.start - currentTime;
       if (delta <= 0 || delta > SURFACE_WINDOW_S) return;
       const preview =
-        (n.content || '').replace(/[#*_>`-]/g, '').trim().split('\n')[0].slice(0, 60) || 'Note';
+        (n.content || '').replace(/[#*_>`-]/g, '').replace(/\s+/g, ' ').trim() || 'Note';
       candidates.push({ kind: 'moment', time: seg.start, label: preview });
     });
 
@@ -85,6 +89,8 @@ export default function UpNextCard({
               exit={{ x: 360, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.7 }}
               className="flex gap-3 items-stretch"
+              onMouseEnter={onHoverEnter}
+              onMouseLeave={onHoverLeave}
               style={{
                 pointerEvents: 'auto',
                 background: 'var(--card-bg)',
@@ -121,8 +127,14 @@ export default function UpNextCard({
                   {item.kind === 'moment' ? 'Your note' : 'Up next'}
                 </div>
                 <div
-                  className="font-semibold text-[14px] mt-0.5 leading-tight"
-                  style={{ color: 'var(--foreground)' }}
+                  className="font-semibold text-[14px] mt-0.5 leading-snug break-words"
+                  style={{
+                    color: 'var(--foreground)',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 8,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                  }}
                 >
                   {item.label}
                 </div>

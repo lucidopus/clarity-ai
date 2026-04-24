@@ -14,7 +14,7 @@ export interface IMindMapEdge {
   source: string;
   target: string;
   label?: string;
-  type: 'hierarchy' | 'relation' | 'dependency';
+  type: 'hierarchy' | 'causes' | 'requires' | 'contradicts' | 'analogous-to';
 }
 
 export interface IMindMap extends Document {
@@ -49,7 +49,7 @@ const MindMapEdgeSchema: Schema = new Schema({
   source: { type: String, required: true },
   target: { type: String, required: true },
   label: { type: String },
-  type: { type: String, required: true, enum: ['hierarchy', 'relation', 'dependency'] },
+  type: { type: String, required: true, enum: ['hierarchy', 'causes', 'requires', 'contradicts', 'analogous-to'] },
 }, { _id: false });
 
 const MindMapSchema: Schema = new Schema({

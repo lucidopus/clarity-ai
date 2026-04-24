@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
               completionTokens = Math.ceil(assistantResponse.length / 4);
             }
 
-            const model = process.env.CONTENT_GENERATION_MODEL || 'gemini-2.0-flash';
+            const model = process.env.CONTENT_GENERATION_MODEL || 'gemini-3-flash-preview';
             const llmCost = calculateLLMCost(promptTokens, completionTokens, model);
             const services: IServiceUsage[] = [{
               service: ServiceType.GEMINI_LLM,

@@ -89,7 +89,7 @@ export interface AdaptedMindMap {
     source: string;
     target: string;
     label?: string;
-    type: 'hierarchy' | 'relation' | 'dependency';
+    type: 'hierarchy' | 'causes' | 'requires' | 'contradicts' | 'analogous-to';
   }>;
 }
 

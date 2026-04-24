@@ -40,7 +40,7 @@ interface MindMapViewerProps {
     source: string;
     target: string;
     label?: string;
-    type: 'hierarchy' | 'relation' | 'dependency';
+    type: 'hierarchy' | 'causes' | 'requires' | 'contradicts' | 'analogous-to';
   }>;
   readOnly?: boolean;
 }
@@ -91,28 +91,30 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
   const deleteEdgeRef = React.useRef<((edgeId: string) => void) | null>(null);
 
   const initialReactFlowEdges: Edge[] = useMemo(() =>
-    initialEdges.map((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      label: edge.label,
-      type: 'custom', // Changed from 'bezier' to 'custom' to use our CustomEdge component
-      animated: edge.type === 'relation',
-      style: {
-        stroke: edge.type === 'hierarchy' ? 'var(--accent)' :
-                edge.type === 'relation' ? 'rgb(115, 115, 115)' : // Mid-contrast neutral gray for relation edges
-                'var(--border)',
-        strokeWidth: 2,
-        strokeDasharray: edge.type === 'relation' ? '5,5' : undefined, // Dashed for relation edges
-      },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: edge.type === 'hierarchy' ? 'var(--accent)' : 'rgb(115, 115, 115)',
-      },
-      data: {
-        onDelete: (edgeId: string) => deleteEdgeRef.current?.(edgeId), // Use ref to avoid hook ordering issue
-      },
-    })),
+    initialEdges.map((edge) => {
+      const isHierarchy = edge.type === 'hierarchy';
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        label: edge.label,
+        type: 'custom',
+        animated: !isHierarchy,
+        style: {
+          stroke: isHierarchy ? 'var(--accent)' : 'rgb(115, 115, 115)',
+          strokeWidth: 2,
+          strokeDasharray: isHierarchy ? undefined : '5,5',
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isHierarchy ? 'var(--accent)' : 'rgb(115, 115, 115)',
+        },
+        data: {
+          semanticType: edge.type,
+          onDelete: (edgeId: string) => deleteEdgeRef.current?.(edgeId),
+        },
+      };
+    }),
     [initialEdges]
   );
 
@@ -212,11 +214,11 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge({
       ...params,
-      type: 'custom', // Use custom edge type for new connections
+      type: 'custom',
       animated: false,
       style: { stroke: 'var(--accent)', strokeWidth: 2 },
       markerEnd: { type: MarkerType.ArrowClosed, color: 'var(--accent)' },
-      data: { onDelete: handleDeleteEdge },
+      data: { semanticType: 'hierarchy', onDelete: handleDeleteEdge },
     }, eds)),
     [setEdges, handleDeleteEdge]
   );
@@ -267,7 +269,7 @@ export default function MindMapViewer({ videoId, nodes: initialNodes, edges: ini
             source: edge.source,
             target: edge.target,
             label: edge.label || '',
-            type: edge.animated ? 'relation' : 'hierarchy',
+            type: (edge.data?.semanticType as 'hierarchy' | 'causes' | 'requires' | 'contradicts' | 'analogous-to' | undefined) ?? (edge.animated ? 'analogous-to' : 'hierarchy'),
           })),
         }),
       });
