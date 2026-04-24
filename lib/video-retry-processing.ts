@@ -459,17 +459,32 @@ async function saveVideoMaterials(video: VideoDocument, materials: LearningMater
     );
   }
 
-  // Save quizzes
+  // Save quizzes — LLM V2 emits `richOptions` (text + isCorrect + misconception)
+  // but the Quiz model still requires the legacy `options[]` and
+  // `correctAnswerIndex`. Derive them here to match `lib/pipeline-helpers.ts`;
+  // without this, validation rejects the insert and the whole retry aborts
+  // with `processing_error`.
   if (materials.quizzes && materials.quizzes.length > 0) {
     await Quiz.deleteMany({ sourceId: video.videoId });
     await Quiz.insertMany(
-      materials.quizzes.map((quiz) => ({
-        ...quiz,
-        sourceId: video.videoId,
-        userId: video.userId,
-        generationType: 'ai',
-        difficulty: (quiz as Record<string, unknown>).difficulty || 'medium',
-      }))
+      materials.quizzes.map((quiz) => {
+        const q = quiz as Record<string, unknown>;
+        const richOptions: Array<{ text: string; isCorrect: boolean; misconception?: string }> =
+          (q.richOptions as Array<{ text: string; isCorrect: boolean; misconception?: string }>) ?? [];
+        const derivedOptions = richOptions.map((o) => o.text);
+        const derivedCorrectIndex = Math.max(0, richOptions.findIndex((o) => o.isCorrect));
+        return {
+          ...q,
+          sourceId: video.videoId,
+          userId: video.userId,
+          generationType: 'ai',
+          difficulty: q.difficulty || 'medium',
+          options: (q.options as string[] | undefined) ?? derivedOptions,
+          correctAnswerIndex:
+            typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : derivedCorrectIndex,
+          richOptions,
+        };
+      })
     );
   }
 
