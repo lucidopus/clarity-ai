@@ -160,7 +160,7 @@ export default function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
                           router.push(`/dashboard/discover/search?q=${encodeURIComponent(query)}`);
                       }
                   }}
-                  className="flex-1 bg-transparent border-none outline-none text-xl font-medium text-foreground placeholder:text-muted-foreground/40 h-10"
+                  className="flex-1 bg-transparent border-none outline-none text-xl font-medium text-foreground placeholder:text-muted-foreground/40 h-10 px-3"
                   autoComplete="off"
                 />
                 <div className="flex items-center gap-3">
