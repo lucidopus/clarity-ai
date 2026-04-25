@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { Chapter, SegmentNote, TranscriptSegment } from './types';
 import { formatTimestamp } from './utils';
+import { useFullscreenPortalTarget } from '@/hooks/useFullscreenPortalTarget';
 
 interface Action {
   id: string;
@@ -58,6 +59,7 @@ export default function CommandPalette({
   const [prevOpen, setPrevOpen] = useState(open);
   const [prevQuery, setPrevQuery] = useState(query);
   const [mounted, setMounted] = useState(false);
+  const portalTarget = useFullscreenPortalTarget();
   const inputRef = useRef<HTMLInputElement>(null);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -208,7 +210,7 @@ export default function CommandPalette({
 
   let runningIdx = -1;
 
-  if (!mounted) return null;
+  if (!mounted || !portalTarget) return null;
 
   const overlay = (
     <AnimatePresence>
@@ -250,7 +252,7 @@ export default function CommandPalette({
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Run an action or jump to a moment, chapter, or note…"
+                placeholder="Search the transcript, jump to a moment, chapter, or note…"
                 className="command-palette-input flex-1 min-w-0 bg-transparent appearance-none text-[15px]"
                 style={{
                   color: 'var(--foreground)',
@@ -288,53 +290,55 @@ export default function CommandPalette({
                   No matches for &ldquo;{query}&rdquo;
                 </div>
               ) : (
-                grouped.map(([section, items]) => (
-                  <div key={section}>
-                    <div
-                      className="font-mono uppercase tracking-widest px-3 pt-2 pb-1 text-[10px] font-bold"
-                      style={{ color: 'var(--secondary)' }}
-                    >
-                      {section}
+                <>
+                  {grouped.map(([section, items]) => (
+                    <div key={section}>
+                      <div
+                        className="font-mono uppercase tracking-widest px-3 pt-2 pb-1 text-[10px] font-bold"
+                        style={{ color: 'var(--secondary)' }}
+                      >
+                        {section}
+                      </div>
+                      {items.map((it) => {
+                        runningIdx += 1;
+                        const isActive = runningIdx === activeIdx;
+                        return (
+                          <button
+                            key={it.key}
+                            type="button"
+                            onMouseEnter={() => setActiveIdx(items.indexOf(it) === -1 ? activeIdx : flatList.indexOf(it))}
+                            onClick={it.onSelect}
+                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px]"
+                            style={{
+                              background: isActive ? 'var(--background)' : 'transparent',
+                              color: 'var(--foreground)',
+                            }}
+                          >
+                            <span className="shrink-0">{it.icon}</span>
+                            <span className="flex-1 truncate">{it.label}</span>
+                            {it.meta && (
+                              <span className="font-mono text-[11px] shrink-0" style={{ color: 'var(--secondary)' }}>
+                                {it.meta}
+                              </span>
+                            )}
+                            {it.hint && (
+                              <span
+                                className="font-mono text-[10px] shrink-0 px-1.5 py-0.5 rounded"
+                                style={{
+                                  background: 'var(--background)',
+                                  border: '1px solid var(--border)',
+                                  color: 'var(--secondary)',
+                                }}
+                              >
+                                {it.hint}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                    {items.map((it) => {
-                      runningIdx += 1;
-                      const isActive = runningIdx === activeIdx;
-                      return (
-                        <button
-                          key={it.key}
-                          type="button"
-                          onMouseEnter={() => setActiveIdx(items.indexOf(it) === -1 ? activeIdx : flatList.indexOf(it))}
-                          onClick={it.onSelect}
-                          className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-[13px]"
-                          style={{
-                            background: isActive ? 'var(--background)' : 'transparent',
-                            color: 'var(--foreground)',
-                          }}
-                        >
-                          <span className="shrink-0">{it.icon}</span>
-                          <span className="flex-1 truncate">{it.label}</span>
-                          {it.meta && (
-                            <span className="font-mono text-[11px] shrink-0" style={{ color: 'var(--secondary)' }}>
-                              {it.meta}
-                            </span>
-                          )}
-                          {it.hint && (
-                            <span
-                              className="font-mono text-[10px] shrink-0 px-1.5 py-0.5 rounded"
-                              style={{
-                                background: 'var(--background)',
-                                border: '1px solid var(--border)',
-                                color: 'var(--secondary)',
-                              }}
-                            >
-                              {it.hint}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))
+                  ))}
+                </>
               )}
             </div>
 
@@ -375,7 +379,7 @@ export default function CommandPalette({
         }
       `}</style>
     </>,
-    document.body,
+    portalTarget,
   );
 }
 

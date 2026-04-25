@@ -11,7 +11,6 @@ import {
   Volume2,
   VolumeX,
   Maximize,
-  Keyboard,
   PanelRightClose,
 } from 'lucide-react';
 import type { Chapter, SegmentNote, TranscriptSegment } from './types';
@@ -327,27 +326,11 @@ export default function VideoStage({
         </div>
       )}
 
-      {/* Hint chips — desktop only; mobile has no keyboard so these are pure
-          chrome noise there. The visible Notes / Actions buttons cover the
-          same actions on phones. */}
+      {/* Hint chip — only when notes are collapsed (theater mode), reminds
+          users how to bring the panel back. The header search bar already
+          covers the ⌘P / actions affordance, so no left-side chip needed. */}
       {showHints && (
         <>
-          <div
-            className="pointer-events-none absolute z-20 hidden lg:inline-flex items-center gap-1.5 rounded-lg text-[11px]"
-            style={{
-              top: 16,
-              left: 16,
-              background: 'rgba(17,21,28,0.72)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: 'rgba(255,255,255,0.85)',
-              padding: '6px 10px',
-            }}
-          >
-            <Keyboard size={12} />
-            <span>⌘P</span>
-            <span style={{ opacity: 0.7 }}>· actions</span>
-          </div>
           {notesCollapsed && (
             <div
               className="pointer-events-none absolute z-20 hidden lg:inline-flex items-center gap-1.5 rounded-lg text-[11px]"

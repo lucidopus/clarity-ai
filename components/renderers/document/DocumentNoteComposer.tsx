@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFullscreenPortalTarget } from '@/hooks/useFullscreenPortalTarget';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -41,6 +42,7 @@ export default function DocumentNoteComposer({
   const [saving, setSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [, forceTick] = useState(0);
+  const portalTarget = useFullscreenPortalTarget();
   const lastInitRef = useRef<string | null>(null);
   const handleSaveRef = useRef<() => void>(() => {});
 
@@ -139,7 +141,7 @@ export default function DocumentNoteComposer({
     onClose();
   }, [onDelete, onClose]);
 
-  if (!mounted) return null;
+  if (!mounted || !portalTarget) return null;
 
   return createPortal(
     <AnimatePresence>
@@ -216,6 +218,6 @@ export default function DocumentNoteComposer({
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    portalTarget
   );
 }

@@ -133,6 +133,38 @@ export default function DocumentStage({
   // page frame stays stable during a paging transition.
   const [docAspect, setDocAspect] = useState<number>(1.414);
 
+  // First-visit discoverability for the highlight-to-note flow. The selection
+  // HUD only appears when the user *already* selects text — they have to know
+  // the gesture exists. Bump the version suffix when the copy or behavior
+  // changes so prior dismissals don't suppress the new tip.
+  const HIGHLIGHT_TIP_KEY = 'clarity.docHighlightTip.v1';
+  const [showHighlightTip, setShowHighlightTip] = useState<boolean>(false);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(HIGHLIGHT_TIP_KEY) !== 'dismissed') {
+        setShowHighlightTip(true);
+      }
+    } catch {
+      // localStorage can throw in private/locked-down contexts — fall back to
+      // simply not showing the tip rather than crashing.
+    }
+  }, []);
+  const dismissHighlightTip = useCallback(() => {
+    setShowHighlightTip(false);
+    try {
+      localStorage.setItem(HIGHLIGHT_TIP_KEY, 'dismissed');
+    } catch {
+      // ignore — see above
+    }
+  }, []);
+  // Auto-graduate: the moment the user makes a selection (whether they action
+  // it or not) they've discovered the gesture, so retire the tip permanently.
+  useEffect(() => {
+    if (selection && showHighlightTip) {
+      dismissHighlightTip();
+    }
+  }, [selection, showHighlightTip, dismissHighlightTip]);
+
   const zoom = ZOOM_STEPS[zoomIdx] ?? 1;
 
   // Measure container to fit the page by *both* dimensions — on tall/portrait
@@ -799,6 +831,50 @@ export default function DocumentStage({
             onAction={handleSelectionAction}
             onDismiss={dismissSelection}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Highlight-to-note coachmark — first-visit only. The selection HUD
+          is the destination; this teaches the gesture that triggers it.
+          Suppressed while the inline search panel is open so the two top-anchored
+          surfaces don't visually stack. */}
+      <AnimatePresence>
+        {showHighlightTip && !selection && !searchOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="absolute left-1/2 -translate-x-1/2 z-30 hidden lg:flex items-center gap-2 rounded-full text-[11.5px]"
+            style={{
+              // 48px chrome + 14px gap so the tip floats just below the toolbar,
+              // over the actual PDF surface where the highlight gesture applies
+              // (not on top of the Search/Note/Open buttons in the chrome row).
+              top: 62,
+              background: 'rgba(17,21,28,0.80)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.10)',
+              color: 'rgba(255,255,255,0.92)',
+              padding: '6px 6px 6px 12px',
+              boxShadow: '0 6px 24px -8px rgba(0,0,0,0.5)',
+            }}
+            role="status"
+            aria-live="polite"
+          >
+            <StickyNote size={12} style={{ color: '#facc15' }} />
+            <span>Highlight any text to add a quoted note</span>
+            <button
+              type="button"
+              onClick={dismissHighlightTip}
+              aria-label="Dismiss tip"
+              title="Dismiss"
+              className="grid place-items-center rounded-full cursor-pointer transition-colors hover:bg-white/10"
+              style={{ width: 20, height: 20, color: 'rgba(255,255,255,0.7)' }}
+            >
+              <X size={11} />
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 

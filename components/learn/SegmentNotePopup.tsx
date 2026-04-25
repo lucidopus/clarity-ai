@@ -10,6 +10,7 @@ import { Markdown } from 'tiptap-markdown';
 import { Play, Trash2, Bold, Italic, List, Code, Info } from 'lucide-react';
 import type { Chapter, TranscriptSegment } from './types';
 import { clamp, formatTimestamp } from './utils';
+import { useFullscreenPortalTarget } from '@/hooks/useFullscreenPortalTarget';
 
 interface SegmentNotePopupProps {
   open: boolean;
@@ -56,41 +57,13 @@ export default function SegmentNotePopup({
   const [mounted, setMounted] = useState(false);
   const [, forceTick] = useState(0);
   const [spotlight, setSpotlight] = useState<ScrubberSpotlight | null>(null);
-  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
+  const portalTarget = useFullscreenPortalTarget();
   const lastInitRef = useRef<string | null>(null);
   // Ref so the tiptap editor's keymap can call the latest handleSave without
   // recreating the editor on every render.
   const handleSaveRef = useRef<() => void>(() => {});
 
   useEffect(() => { setMounted(true); }, []);
-
-  // When the viewer is in fullscreen, the browser only paints descendants of
-  // the fullscreen element. Portaling the overlay to document.body (the default)
-  // would render it outside that subtree and the popup would be invisible until
-  // the user exits fullscreen. Retarget to the active fullscreen element so the
-  // popup tracks into and out of fullscreen as the user toggles it.
-  useEffect(() => {
-    type FSDoc = Document & {
-      webkitFullscreenElement?: Element | null;
-      msFullscreenElement?: Element | null;
-    };
-    const doc = document as FSDoc;
-    const resolve = () =>
-      document.fullscreenElement ||
-      doc.webkitFullscreenElement ||
-      doc.msFullscreenElement ||
-      document.body;
-    const update = () => setPortalTarget(resolve());
-    update();
-    document.addEventListener('fullscreenchange', update);
-    document.addEventListener('webkitfullscreenchange', update);
-    document.addEventListener('msfullscreenchange', update);
-    return () => {
-      document.removeEventListener('fullscreenchange', update);
-      document.removeEventListener('webkitfullscreenchange', update);
-      document.removeEventListener('msfullscreenchange', update);
-    };
-  }, []);
 
   const editor = useEditor({
     immediatelyRender: false,

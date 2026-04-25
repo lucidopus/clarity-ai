@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFullscreenPortalTarget } from '@/hooks/useFullscreenPortalTarget';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target,
@@ -115,9 +116,10 @@ export default function DocumentFocusReview({
       ? Math.round(((greenCount + yellowPages.length * 0.5) / numPages) * 100)
       : 0;
 
-  // DocumentStage is loaded via next/dynamic with ssr:false, so this component
-  // only ever renders on the client — safe to portal straight to document.body.
-  if (typeof document === 'undefined') return null;
+  // Resolve the portal target dynamically — DocumentStage can request browser
+  // fullscreen on its own root, and document.body sits outside that subtree.
+  const portalTarget = useFullscreenPortalTarget();
+  if (!portalTarget) return null;
 
   const handleJump = (page: number) => {
     onJumpToPage(page);
@@ -257,7 +259,7 @@ export default function DocumentFocusReview({
         </motion.div>
       )}
     </AnimatePresence>,
-    document.body
+    portalTarget
   );
 }
 

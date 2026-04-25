@@ -259,14 +259,19 @@ export default function DocumentRightRail({
               </div>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => onOpenNote(activePage)}
-              className="w-full rounded-xl border border-dashed border-border hover:border-accent/40 hover:text-foreground text-muted-foreground px-3 py-4 text-[12px] transition flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <StickyNote className="w-3.5 h-3.5" />
-              Add note on this page
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenNote(activePage)}
+                className="w-full rounded-xl border border-dashed border-border hover:border-accent/40 hover:text-foreground text-muted-foreground px-3 py-4 text-[12px] transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <StickyNote className="w-3.5 h-3.5" />
+                Add note on this page
+              </button>
+              <p className="mt-1.5 text-[11px] text-muted-foreground text-center">
+                Tip: highlight any text on the page
+              </p>
+            </>
           )}
         </section>
 

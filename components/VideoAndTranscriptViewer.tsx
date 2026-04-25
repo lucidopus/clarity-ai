@@ -269,66 +269,72 @@ export default function VideoAndTranscriptViewer({
   return (
     <div
       ref={viewerRootRef}
-      className="viewer-fullscreen-root relative w-full flex flex-col lg:flex-row overflow-hidden rounded-xl sm:rounded-2xl border border-border lg:h-[calc(100dvh-200px)] lg:min-h-[640px]"
+      className="viewer-fullscreen-root relative w-full flex flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-border lg:h-[calc(100dvh-200px)] lg:min-h-[640px]"
       style={{
         background: 'var(--background)',
       }}
     >
-      <TopBar mode={mode} onToggleMode={toggleMode} />
+      <TopBar
+        mode={mode}
+        onToggleMode={toggleMode}
+        onOpenCommandPalette={() => setPaletteOpen(true)}
+      />
 
-      {/* Center: video — full aspect on mobile, flexible on lg+. Extra
-          bottom padding on <lg reserves space for the fixed Notes handle. */}
-      <section className="flex-1 min-w-0 flex flex-col relative px-3 sm:px-4 pt-3 sm:pt-[3.25rem] pb-16 sm:pb-4 min-h-[60dvh] lg:min-h-0 lg:pb-4">
-        <VideoStage
-          containerRef={player.containerRef}
-          scrubberRef={scrubberRef}
-          fullscreenTargetRef={viewerRootRef}
-          isReady={player.isReady}
-          isPlaying={player.isPlaying}
-          currentTime={player.currentTime}
-          duration={player.duration}
-          volume={player.volume}
-          isMuted={player.isMuted}
-          playbackRate={player.playbackRate}
-          togglePlay={player.togglePlay}
-          seek={player.seek}
-          setVolume={player.setVolume}
-          toggleMute={player.toggleMute}
-          setRate={player.setRate}
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 relative">
+        {/* Center: video — full aspect on mobile, flexible on lg+. Extra
+            bottom padding on <lg reserves space for the fixed Notes handle. */}
+        <section className="flex-1 min-w-0 flex flex-col relative px-3 sm:px-4 pt-3 pb-16 sm:pb-4 min-h-[60dvh] lg:min-h-0 lg:pb-4">
+          <VideoStage
+            containerRef={player.containerRef}
+            scrubberRef={scrubberRef}
+            fullscreenTargetRef={viewerRootRef}
+            isReady={player.isReady}
+            isPlaying={player.isPlaying}
+            currentTime={player.currentTime}
+            duration={player.duration}
+            volume={player.volume}
+            isMuted={player.isMuted}
+            playbackRate={player.playbackRate}
+            togglePlay={player.togglePlay}
+            seek={player.seek}
+            setVolume={player.setVolume}
+            toggleMute={player.toggleMute}
+            setRate={player.setRate}
+            transcript={transcript}
+            chapters={chapters}
+            segmentNotes={notes.segmentNotes}
+            showCaptions={showCaptions}
+            toggleCaptions={toggleCaptions}
+            notesCollapsed={notesCollapsed}
+            showHints={showHints}
+          />
+        </section>
+
+        <NotesPanel
+          videoTitle={videoTitle}
+          notes={notes}
+          onSaveNotes={onSaveNotes}
+          collapsed={notesCollapsed}
+          onToggleCollapse={toggleNotes}
+          onOpenCommandPalette={() => setPaletteOpen(true)}
+          onAddSegmentNote={() => openSegmentNotePopup()}
           transcript={transcript}
+          onSeek={player.seek}
+          onEditSegmentNote={(idx) => openSegmentNotePopup(idx)}
+          width={notesWidth}
+        />
+
+        {/* Up Next floats inside the content row so it doesn't cover the header */}
+        <UpNextCard
+          currentTime={player.currentTime}
           chapters={chapters}
           segmentNotes={notes.segmentNotes}
-          showCaptions={showCaptions}
-          toggleCaptions={toggleCaptions}
-          notesCollapsed={notesCollapsed}
-          showHints={showHints}
+          transcript={transcript}
+          onSeek={player.seek}
+          onHoverEnter={handleCardHoverEnter}
+          onHoverLeave={handleCardHoverLeave}
         />
-      </section>
-
-      <NotesPanel
-        videoTitle={videoTitle}
-        notes={notes}
-        onSaveNotes={onSaveNotes}
-        collapsed={notesCollapsed}
-        onToggleCollapse={toggleNotes}
-        onOpenCommandPalette={() => setPaletteOpen(true)}
-        onAddSegmentNote={() => openSegmentNotePopup()}
-        transcript={transcript}
-        onSeek={player.seek}
-        onEditSegmentNote={(idx) => openSegmentNotePopup(idx)}
-        width={notesWidth}
-      />
-
-      {/* Up Next floats at viewer root so it doesn't cover the player */}
-      <UpNextCard
-        currentTime={player.currentTime}
-        chapters={chapters}
-        segmentNotes={notes.segmentNotes}
-        transcript={transcript}
-        onSeek={player.seek}
-        onHoverEnter={handleCardHoverEnter}
-        onHoverLeave={handleCardHoverLeave}
-      />
+      </div>
 
       <CommandPalette
         open={paletteOpen}
