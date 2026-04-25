@@ -65,7 +65,6 @@ describe('createEcho', () => {
         sessionDate: '2026-04-19',
         question: 'hello world',
         outcome: 'pending',
-        wasClaraAssisted: false,
       }),
     );
   });

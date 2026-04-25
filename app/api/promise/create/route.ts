@@ -7,9 +7,8 @@ import { parseJsonBody, isErrorResponse } from '@/lib/utils/api';
 import { internalServerError } from '@/lib/errors/apiResponse';
 import { createStudyPromise, DuplicateStudyPromiseError } from '@/lib/services/studyPromise';
 import {
-  contractSessionDate,
-  isNowInContractWindow,
-  isNowInContractCloseGrace,
+  closingWindowInGrace,
+  effectiveWindowAt,
 } from '@/lib/services/studyContract';
 import { CLARITY_MODE } from '@/lib/limits';
 import { invalidatePromiseWeekly } from '@/lib/cache';
@@ -52,31 +51,22 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const graceMs = CLARITY_MODE.promise.closeGraceMinutes * 60 * 1000;
-    const inWindow = isNowInContractWindow(contract, now);
-    const inGrace = !inWindow && isNowInContractCloseGrace(contract, now, graceMs);
-    if (!inWindow && !inGrace) {
+    // Resolve the live window first; fall back to the just-closed window if
+    // we're inside the close-grace tail. Using the matched window object's
+    // own `sessionDateKey` guarantees the attribution is correct even when
+    // `now` has drifted several minutes past `closeAt` — the previous
+    // implementation probed `now - 1 ms`, which only landed inside the
+    // window when `now` was within a millisecond of `closeAt`.
+    const win =
+      effectiveWindowAt(contract, now) ??
+      closingWindowInGrace(contract, now, graceMs);
+    if (!win) {
       return NextResponse.json(
         { error: 'Promise can only be set inside or just after your Clarity Mode window' },
         { status: 409 },
       );
     }
-
-    // For the close-grace path, anchor sessionDate to the just-closed
-    // window by probing 1 ms back. `isNowInContractCloseGrace` already
-    // confirmed `closeAt ≤ now`, so `now - 1 ms` is guaranteed to sit
-    // inside the same session whose closing edge we're in the grace tail
-    // of — no risk of the probe landing before windowStart even for the
-    // shortest valid window.
-    let sessionDate: string | null;
-    if (inWindow) {
-      sessionDate = contractSessionDate(contract, now);
-    } else {
-      const probe = new Date(now.getTime() - 1);
-      sessionDate = contractSessionDate(contract, probe);
-    }
-    if (!sessionDate) {
-      return NextResponse.json({ error: 'Could not derive session date' }, { status: 500 });
-    }
+    const sessionDate = win.sessionDateKey;
 
     try {
       const promise = await createStudyPromise({

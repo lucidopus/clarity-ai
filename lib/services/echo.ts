@@ -17,7 +17,6 @@ export interface CreateEchoInput {
   userId: string | mongoose.Types.ObjectId;
   sessionDate: string;      // YYYY-MM-DD in the contract's timezone
   question: string;         // ≤ CLARITY_MODE.echo.maxQuestionChars
-  wasClaraAssisted?: boolean;
 }
 
 export interface SubmitAnswerInput {
@@ -60,7 +59,6 @@ export async function createEcho(input: CreateEchoInput): Promise<IEcho> {
       userId: toObjectId(input.userId),
       sessionDate: input.sessionDate,
       question,
-      wasClaraAssisted: !!input.wasClaraAssisted,
       outcome: 'pending',
       createdAt: new Date(),
     })) as IEcho;

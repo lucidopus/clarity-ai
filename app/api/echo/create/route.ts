@@ -14,7 +14,6 @@ import { CLARITY_MODE } from '@/lib/limits';
 
 const createSchema = z.object({
   question: z.string().min(1).max(CLARITY_MODE.echo.maxQuestionChars),
-  wasClaraAssisted: z.boolean().optional(),
 });
 
 /**
@@ -61,7 +60,6 @@ export async function POST(request: NextRequest) {
         userId: decoded.userId,
         sessionDate,
         question: parsed.data.question,
-        wasClaraAssisted: parsed.data.wasClaraAssisted,
       });
       return NextResponse.json({
         success: true,

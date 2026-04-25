@@ -2,19 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X, Sparkles } from 'lucide-react';
+import { Brain, X } from 'lucide-react';
 import { CLARITY_MODE } from '@/lib/limits';
 
 interface EchoPromptOverlayProps {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
-  /** Optional session signals passed to the Clara draft-assist endpoint. */
-  sessionSignals?: {
-    sourceTitle?: string;
-    summary?: string;
-    recentFocus?: string;
-  };
 }
 
 const MAX = CLARITY_MODE.echo.maxQuestionChars;
@@ -23,14 +17,11 @@ export default function EchoPromptOverlay({
   open,
   onClose,
   onSaved,
-  sessionSignals,
 }: EchoPromptOverlayProps) {
   const reduceMotion = useReducedMotion() ?? false;
   const [question, setQuestion] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [drafting, setDrafting] = useState(false);
-  const [wasClaraAssisted, setWasClaraAssisted] = useState(false);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -82,7 +73,7 @@ export default function EchoPromptOverlay({
       const res = await fetch('/api/echo/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: trimmed, wasClaraAssisted }),
+        body: JSON.stringify({ question: trimmed }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -94,31 +85,6 @@ export default function EchoPromptOverlay({
       setError('Could not save your question.');
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function handleDraft() {
-    setDrafting(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/echo/draft', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sessionSignals ?? {}),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        setError(data?.error || 'Draft assist is unavailable right now.');
-        return;
-      }
-      if (typeof data?.suggestedQuestion === 'string' && data.suggestedQuestion) {
-        setQuestion(data.suggestedQuestion);
-        setWasClaraAssisted(true);
-      }
-    } catch {
-      setError('Draft assist is unavailable right now.');
-    } finally {
-      setDrafting(false);
     }
   }
 
@@ -145,72 +111,59 @@ export default function EchoPromptOverlay({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0 : 0.28, ease: 'easeOut' }}
-            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card-bg shadow-2xl overflow-hidden"
+            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(32rem,calc(100vw-2rem))] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card-bg shadow-2xl"
           >
-            <div className="px-5 pt-5 pb-4 relative">
+            <div className="relative px-5 pt-5 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Dismiss"
-                className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="absolute top-3.5 right-3.5 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2 py-0.5">
-                Echo · 3 min left
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
+                <Brain className="h-3 w-3" aria-hidden="true" />
+                Recall · 3 min left
               </div>
-              <h2 id="echo-prompt-title" className="mt-2 text-base font-semibold leading-snug text-foreground">
-                Leave tomorrow-you one question.
+              <h2 id="echo-prompt-title" className="mt-3 text-xl font-semibold leading-snug text-foreground">
+                What&rsquo;s one thing you want to remember tomorrow?
               </h2>
-              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                Something you think you&rsquo;ll still know tomorrow. Private to you — no streak, no count. Your next Clarity Mode opens with it.
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                Write a self-quiz question about today&rsquo;s session. We&rsquo;ll surface it when your next window opens — try to answer from memory.
               </p>
 
-              <div className="mt-3">
+              <div className="mt-5">
                 <textarea
                   ref={textareaRef}
                   value={question}
-                  onChange={(e) => {
-                    setQuestion(e.target.value);
-                    setWasClaraAssisted(false);
-                  }}
+                  onChange={(e) => setQuestion(e.target.value)}
                   maxLength={MAX}
                   placeholder="e.g. What causes DNS propagation delay?"
                   aria-label="Your question"
-                  className="w-full resize-none rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
-                  rows={3}
+                  className="w-full resize-none rounded-lg bg-background border border-border px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
+                  rows={4}
                 />
                 <div
-                  className={`mt-1 flex items-center justify-between text-[11px] ${
+                  className={`mt-1.5 text-xs ${
                     trimmed.length > MAX - 20 ? 'text-amber-500' : 'text-muted-foreground'
                   }`}
                 >
-                  <span>{trimmed.length} / {MAX}</span>
-                  {wasClaraAssisted && <span className="text-accent/80">Clara drafted</span>}
+                  {trimmed.length} / {MAX}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleDraft}
-                disabled={drafting || submitting}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-dashed border-accent/40 px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/10 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <Sparkles className="w-3 h-3" aria-hidden="true" />
-                {drafting ? 'Drafting…' : 'Help me phrase one'}
-              </button>
-
               {error && (
-                <p role="alert" className="mt-2 text-[11px] text-red-400">
+                <p role="alert" className="mt-2.5 text-xs text-red-400">
                   {error}
                 </p>
               )}
 
-              <div className="mt-4 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1"
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1.5"
                 >
                   Skip
                 </button>
@@ -218,7 +171,7 @@ export default function EchoPromptOverlay({
                   type="button"
                   onClick={handleSave}
                   disabled={disabled}
-                  className="inline-flex items-center rounded-md bg-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center rounded-md bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   {submitting ? 'Saving…' : 'Save'}
                 </button>

@@ -212,21 +212,23 @@ export function isNowInContractWindow(
 }
 
 /**
- * True when `at` is within `graceMs` after the most recent contract window
- * closed. Returns `false` if currently inside the window (use
- * `isNowInContractWindow` for that) or if no recent window matches.
+ * Returns the most recently closed window whose `closeAt` sits within
+ * `[at - graceMs, at]` (i.e. the window we just exited and are still in the
+ * close-grace tail of), or null if none qualifies. Returns null if `at` is
+ * still inside an open window (use `effectiveWindowAt` for that).
  *
- * Used by the Promise close-prompt: the Promise is captured *after* the
- * window closes, so its API has to accept writes during the Horizon Dissolve
- * envelope and a brief slack period after.
+ * Used by close-of-window flows (Promise capture): the Promise can be saved
+ * during the Horizon Dissolve envelope and a brief slack period after, so we
+ * need the just-closed window's `sessionDateKey` to attribute the write
+ * correctly even when `at` has drifted minutes past the close edge.
  */
-export function isNowInContractCloseGrace(
+export function closingWindowInGrace(
   contract: ContractLike | null | undefined,
   at: Date = new Date(),
   graceMs: number = 10 * 60 * 1000,
-): boolean {
-  if (!contract) return false;
-  if (effectiveWindowAt(contract, at) !== null) return false;
+): EffectiveWindow | null {
+  if (!contract) return null;
+  if (effectiveWindowAt(contract, at) !== null) return null;
 
   // Probe the candidate days for a session whose closeAt sits within
   // [at - graceMs, at]. Reuses the same yesterday/today logic as the
@@ -235,7 +237,7 @@ export function isNowInContractCloseGrace(
   try {
     todayYmd = zonedYmd(at, contract.timezone);
   } catch {
-    return false;
+    return null;
   }
   const todayNoonUtc = zonedWallClockToUtc(
     todayYmd.year, todayYmd.month, todayYmd.day, 12, 0, contract.timezone,
@@ -245,7 +247,7 @@ export function isNowInContractCloseGrace(
 
   const start = parseHHMM(contract.windowStart);
   const end = parseHHMM(contract.windowEnd);
-  if (start === null || end === null) return false;
+  if (start === null || end === null) return null;
   const rawDuration = end > start ? end - start : end - start + 1440;
 
   for (const ymd of [todayYmd, yesterdayYmd]) {
@@ -257,11 +259,14 @@ export function isNowInContractCloseGrace(
     const startUtc = zonedWallClockToUtc(
       ymd.year, ymd.month, ymd.day, Math.floor(start / 60), start % 60, contract.timezone,
     );
+    const openAt = startUtc;
     const closeAt = new Date(startUtc.getTime() + (rawDuration + extMinutes) * 60_000);
     const elapsed = at.getTime() - closeAt.getTime();
-    if (elapsed >= 0 && elapsed <= graceMs) return true;
+    if (elapsed >= 0 && elapsed <= graceMs) {
+      return { openAt, closeAt, sessionDateKey };
+    }
   }
-  return false;
+  return null;
 }
 
 /** Minutes until the window opens (positive) or negative if past start / no contract. */

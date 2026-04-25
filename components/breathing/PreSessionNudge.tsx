@@ -5,7 +5,7 @@ import { Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useFocusMode } from '@/lib/focus-mode/FocusModeContext';
-import { sessionDateKey } from '@/lib/breathing/timing';
+import { sessionInstanceKey } from '@/lib/breathing/timing';
 import { useBreathing } from '@/lib/breathing/useBreathing';
 import BreathingOverlay from './BreathingOverlay';
 
@@ -35,7 +35,7 @@ export default function PreSessionNudge() {
 
   const sessionKey = useMemo(() => {
     if (!nextWindowStartAt || !contract) return null;
-    return sessionDateKey(nextWindowStartAt, contract.timezone);
+    return sessionInstanceKey(nextWindowStartAt, contract.timezone);
   }, [nextWindowStartAt, contract]);
 
   // The warm-up is the 5-min pre-window period itself, so the overlay picks

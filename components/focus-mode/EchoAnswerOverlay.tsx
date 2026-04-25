@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Brain, X } from 'lucide-react';
 import { CLARITY_MODE } from '@/lib/limits';
 
 interface EchoAnswerOverlayProps {
@@ -159,8 +159,9 @@ export default function EchoAnswerOverlay({ open, echo, onClose, onExited }: Ech
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2 py-0.5">
-                Echo · yesterday
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
+                <Brain className="h-3 w-3" aria-hidden="true" />
+                Recall · yesterday
               </div>
               <p className="mt-2 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                 Yesterday you asked yourself this — take a shot:

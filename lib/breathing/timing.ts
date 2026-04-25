@@ -1,7 +1,8 @@
 /**
  * Pure helpers that compute "when does the next study window start in UTC" and
- * a stable per-session date key for client-side dismissal dedupe. No React, no
- * side effects at import time. Safe to import from both client and server.
+ * a stable per-session-instance key for client-side dismissal dedupe. No
+ * React, no side effects at import time. Safe to import from both client and
+ * server.
  *
  * Reuses the DST-correction algorithm from `lib/time/zone.ts` — never
  * duplicate that logic.
@@ -64,25 +65,18 @@ export function nextWindowStartUtc(
 }
 
 /**
- * YYYY-MM-DD date key in the given IANA tz for a UTC instant. Used as the
- * per-session dismissal key so a late-night window (e.g., 23:00 start that
- * bleeds past midnight) is tied to the day the window *opened in the user's
- * local time*, not today's UTC date.
+ * Per-session dismissal key. Returns the window-start UTC instant as epoch ms
+ * (string form). Each distinct window opening — including a same-day contract
+ * change — gets its own dismissal slot, so dismissing one warm-up cannot
+ * silently suppress the next.
+ *
+ * Previously this returned YYYY-MM-DD, which collapsed all windows on the
+ * same calendar date into a single dismissal slot — a footgun if the user
+ * edited their contract mid-day.
+ *
+ * The `timezone` parameter is unused now but kept for caller compatibility;
+ * the windowStart instant is already an unambiguous global identifier.
  */
-export function sessionDateKey(windowStartUtc: Date, timezone: string): string {
-  // en-CA formats as YYYY-MM-DD natively, which dodges a locale-dependent
-  // parse step compared to en-US.
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: timezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(windowStartUtc);
-  let y = '', m = '', d = '';
-  for (const p of parts) {
-    if (p.type === 'year') y = p.value;
-    else if (p.type === 'month') m = p.value;
-    else if (p.type === 'day') d = p.value;
-  }
-  return `${y}-${m}-${d}`;
+export function sessionInstanceKey(windowStartUtc: Date, _timezone: string): string {
+  return String(windowStartUtc.getTime());
 }

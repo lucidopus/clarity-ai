@@ -9,8 +9,12 @@ import { useCallback, useEffect, useState } from 'react';
  * consistently and cross-tab sync works the same way.
  *
  * Storage keys (namespace `focus-mode:` to match sibling prefs):
- *   - focus-mode:breathing:enabled                    ("1"|"0", default "1")
- *   - focus-mode:breathing:dismissed:<userId>:<YYYY-MM-DD>   (presence = dismissed)
+ *   - focus-mode:breathing:enabled                                 ("1"|"0", default "1")
+ *   - focus-mode:breathing:dismissed:<userId>:<windowStartEpochMs> (presence = dismissed)
+ *
+ * The dismissal key is keyed on the window-start instant (epoch ms), not on
+ * a calendar date — so a same-day contract edit produces a fresh dismissal
+ * slot and the user is not silently suppressed.
  */
 
 const ENABLED_KEY = 'focus-mode:breathing:enabled';
@@ -37,22 +41,22 @@ function writeEnabled(next: boolean) {
   }
 }
 
-function dismissKey(userId: string | null, sessionDateKey: string): string {
-  return `${DISMISS_PREFIX}:${userId ?? 'anonymous'}:${sessionDateKey}`;
+function dismissKey(userId: string | null, sessionKey: string): string {
+  return `${DISMISS_PREFIX}:${userId ?? 'anonymous'}:${sessionKey}`;
 }
 
-function readDismissed(userId: string | null, sessionDateKey: string): boolean {
+function readDismissed(userId: string | null, sessionKey: string): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    return window.localStorage.getItem(dismissKey(userId, sessionDateKey)) === '1';
+    return window.localStorage.getItem(dismissKey(userId, sessionKey)) === '1';
   } catch {
     return false;
   }
 }
 
-function writeDismissed(userId: string | null, sessionDateKey: string) {
+function writeDismissed(userId: string | null, sessionKey: string) {
   try {
-    window.localStorage.setItem(dismissKey(userId, sessionDateKey), '1');
+    window.localStorage.setItem(dismissKey(userId, sessionKey), '1');
   } catch {
     // non-fatal
   }
@@ -61,8 +65,8 @@ function writeDismissed(userId: string | null, sessionDateKey: string) {
 export interface UseBreathing {
   enabled: boolean;
   setEnabled: (next: boolean) => void;
-  isDismissedForSession: (sessionDateKey: string) => boolean;
-  dismissForSession: (sessionDateKey: string) => void;
+  isDismissedForSession: (sessionKey: string) => boolean;
+  dismissForSession: (sessionKey: string) => void;
 }
 
 export function useBreathing(userId: string | null): UseBreathing {
@@ -97,13 +101,13 @@ export function useBreathing(userId: string | null): UseBreathing {
   }, []);
 
   const isDismissedForSession = useCallback(
-    (sessionDateKey: string) => readDismissed(userId, sessionDateKey),
+    (sessionKey: string) => readDismissed(userId, sessionKey),
     [userId],
   );
 
   const dismissForSession = useCallback(
-    (sessionDateKey: string) => {
-      writeDismissed(userId, sessionDateKey);
+    (sessionKey: string) => {
+      writeDismissed(userId, sessionKey);
       setDismissTick((t) => t + 1);
       window.dispatchEvent(new Event(DISMISS_EVENT));
     },

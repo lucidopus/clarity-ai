@@ -62,8 +62,14 @@ export default function ClarityModePromiseCard() {
 
   const { kept, total } = data!;
 
-  const isEmpty = total === 0;
-  const fillPct = isEmpty ? 0 : (kept / total) * 100;
+  // Hide entirely until the user has at least one reviewed Promise in the
+  // last 7 days. The empty / "pending only" states are zero-signal on the
+  // dashboard — the user can't act on them here (review happens inside
+  // Clarity Mode at next-window-open via PromiseReviewOverlay), and a
+  // dashboard tile that says "you have nothing to do here" wastes the slot.
+  if (total === 0) return null;
+
+  const fillPct = (kept / total) * 100;
 
   return (
     <motion.div
@@ -84,46 +90,36 @@ export default function ClarityModePromiseCard() {
         </div>
       </div>
 
-      {isEmpty ? (
-        <div className="flex-1 flex items-center">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Finish a Clarity Mode window to leave your first promise.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="flex items-baseline gap-2 mb-3">
-            <span
-              className="text-[40px] leading-none font-bold text-foreground tabular-nums tracking-tight"
-              aria-label={`${kept} of ${total} promises kept this week`}
-            >
-              {kept}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              of {total} kept
-            </span>
-          </div>
-          <div
-            className="h-2 rounded-full bg-muted/30 overflow-hidden"
-            role="progressbar"
-            aria-valuenow={kept}
-            aria-valuemin={0}
-            aria-valuemax={total}
-            aria-label={`${kept} of ${total} promises kept`}
-          >
-            <motion.div
-              className="h-full rounded-full bg-accent origin-left"
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: fillPct / 100 }}
-              transition={{ duration: reduceMotion ? 0 : 0.7, ease: 'easeOut' }}
-              style={{ width: '100%' }}
-            />
-          </div>
-          <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
-            Self-reported. Private to you — never used for streaks.
-          </p>
-        </>
-      )}
+      <div className="flex items-baseline gap-2 mb-3">
+        <span
+          className="text-[40px] leading-none font-bold text-foreground tabular-nums tracking-tight"
+          aria-label={`${kept} of ${total} promises kept this week`}
+        >
+          {kept}
+        </span>
+        <span className="text-sm text-muted-foreground">
+          of {total} kept
+        </span>
+      </div>
+      <div
+        className="h-2 rounded-full bg-muted/30 overflow-hidden"
+        role="progressbar"
+        aria-valuenow={kept}
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-label={`${kept} of ${total} promises kept`}
+      >
+        <motion.div
+          className="h-full rounded-full bg-accent origin-left"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: fillPct / 100 }}
+          transition={{ duration: reduceMotion ? 0 : 0.7, ease: 'easeOut' }}
+          style={{ width: '100%' }}
+        />
+      </div>
+      <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
+        Self-reported. Private to you — never used for streaks.
+      </p>
     </motion.div>
   );
 }

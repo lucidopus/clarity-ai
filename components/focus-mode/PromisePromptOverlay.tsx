@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Target, X } from 'lucide-react';
 import { CLARITY_MODE } from '@/lib/limits';
 
 interface PromisePromptOverlayProps {
@@ -120,31 +120,32 @@ export default function PromisePromptOverlay({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: reduceMotion ? 0 : 0.28, ease: 'easeOut' }}
-            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(22rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card-bg shadow-2xl overflow-hidden"
+            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(32rem,calc(100vw-2rem))] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card-bg shadow-2xl"
           >
-            <form onSubmit={handleSubmit} className="px-5 pt-5 pb-4 relative">
+            <form onSubmit={handleSubmit} className="relative px-5 pt-5 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Skip"
-                className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="absolute top-3.5 right-3.5 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2 py-0.5">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
+                <Target className="h-3 w-3" aria-hidden="true" />
                 Promise · tomorrow
               </div>
               <h2
                 id="promise-prompt-title"
-                className="mt-2 text-base font-semibold leading-snug text-foreground"
+                className="mt-3 text-xl font-semibold leading-snug text-foreground"
               >
-                One promise for tomorrow&rsquo;s window.
+                How will you show up tomorrow?
               </h2>
-              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                How you&rsquo;ll show up — not what you&rsquo;ll finish. Private to you. You&rsquo;ll see it when your next window opens.
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                A short rule for yourself — about <em>how</em> you&rsquo;ll work, not what you&rsquo;ll finish. We&rsquo;ll ask if you kept it when your next window opens.
               </p>
 
-              <div className="mt-3">
+              <div className="mt-5">
                 <input
                   ref={inputRef}
                   type="text"
@@ -153,38 +154,38 @@ export default function PromisePromptOverlay({
                   maxLength={MAX}
                   placeholder="One sentence."
                   aria-label="Your promise"
-                  className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
+                  className="w-full rounded-lg bg-background border border-border px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
                 />
                 <div
-                  className={`mt-1 flex items-center justify-between text-[11px] ${
+                  className={`mt-1.5 flex items-center justify-between gap-3 text-xs ${
                     trimmed.length > MAX - 20 ? 'text-amber-500' : 'text-muted-foreground'
                   }`}
                 >
                   <span className="italic">
                     e.g. &ldquo;start with the hard thing&rdquo; · &ldquo;no phone in the first 10&rdquo;
                   </span>
-                  <span className="tabular-nums shrink-0 ml-2">{trimmed.length} / {MAX}</span>
+                  <span className="tabular-nums shrink-0">{trimmed.length} / {MAX}</span>
                 </div>
               </div>
 
               {error && (
-                <p role="alert" className="mt-2 text-[11px] text-red-400">
+                <p role="alert" className="mt-2.5 text-xs text-red-400">
                   {error}
                 </p>
               )}
 
-              <div className="mt-4 flex items-center justify-between">
+              <div className="mt-6 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1"
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1.5"
                 >
                   Skip
                 </button>
                 <button
                   type="submit"
                   disabled={disabled}
-                  className="inline-flex items-center rounded-md bg-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center rounded-md bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   {submitting ? 'Saving…' : 'Save'}
                 </button>

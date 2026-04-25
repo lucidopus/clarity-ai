@@ -51,7 +51,6 @@ export const CLARITY_MODE = {
     maxQuestionChars: 200,
     maxAnswerChars: 1000,
     pendingTtlHours: 48,
-    draftAssistPerSession: 3,
     /** When to surface the Echo prompt, in minutes before windowEnd. */
     promptMinutesBeforeEnd: 3,
   },

@@ -18,8 +18,6 @@ export interface IEcho extends Document {
   createdAt: Date;
   /** The user's question, ≤ 200 chars. */
   question: string;
-  /** True when the question was drafted by Clara and accepted (telemetry). */
-  wasClaraAssisted: boolean;
   answeredAt?: Date;
   /** User's attempt at answering, ≤ 1000 chars. */
   attemptedAnswer?: string;
@@ -34,7 +32,6 @@ const EchoSchema: Schema = new Schema(
     sessionDate: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     question: { type: String, required: true, maxlength: 200 },
-    wasClaraAssisted: { type: Boolean, default: false },
     answeredAt: { type: Date, default: null },
     attemptedAnswer: { type: String, maxlength: 1000 },
     selfConfidence: { type: Number, min: 1, max: 5 },

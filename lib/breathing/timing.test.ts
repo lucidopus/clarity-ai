@@ -1,4 +1,4 @@
-import { nextWindowStartUtc, sessionDateKey } from './timing';
+import { nextWindowStartUtc, sessionInstanceKey } from './timing';
 
 describe('nextWindowStartUtc', () => {
   it('returns today\'s UTC instant when the window is still ahead today', () => {
@@ -71,24 +71,26 @@ describe('nextWindowStartUtc', () => {
   });
 });
 
-describe('sessionDateKey', () => {
-  it('returns YYYY-MM-DD in the window\'s local timezone', () => {
-    // 13:00 UTC is 09:00 EDT — same calendar day.
+describe('sessionInstanceKey', () => {
+  it('returns the window-start UTC instant as epoch ms (string)', () => {
     const windowStartUtc = new Date('2026-04-19T13:00:00Z');
-    expect(sessionDateKey(windowStartUtc, 'America/New_York')).toBe('2026-04-19');
+    expect(sessionInstanceKey(windowStartUtc, 'America/New_York')).toBe(
+      String(windowStartUtc.getTime()),
+    );
   });
 
-  it('uses the window\'s local calendar date, not UTC (late-night PST window)', () => {
-    // 07:45 UTC on 2026-04-20 is 23:45 PDT on 2026-04-19.
-    // The session belongs to 2026-04-19 in the user's tz.
-    const windowStartUtc = new Date('2026-04-20T06:45:00Z'); // 23:45 PDT prev day
-    expect(sessionDateKey(windowStartUtc, 'America/Los_Angeles')).toBe('2026-04-19');
+  it('produces distinct keys for different window-start instants on the same calendar date', () => {
+    // Two windows on the same local date — the old YYYY-MM-DD key would have
+    // collapsed both into one dismissal slot. The new key keeps them separate.
+    const earlier = new Date('2026-04-19T13:00:00Z'); // 09:00 EDT
+    const later = new Date('2026-04-19T20:55:00Z');   // 16:55 EDT (e.g. user moved their window same day)
+    expect(sessionInstanceKey(earlier, 'America/New_York'))
+      .not.toBe(sessionInstanceKey(later, 'America/New_York'));
   });
 
-  it('pairs with nextWindowStartUtc to produce the upcoming window\'s date', () => {
-    // 22:50 JST → nextWindowStartUtc for 23:00 JST returns today's 23:00 JST.
-    const now = new Date('2026-04-19T13:50:00Z');
-    const target = nextWindowStartUtc('23:00', 'Asia/Tokyo', now)!;
-    expect(sessionDateKey(target, 'Asia/Tokyo')).toBe('2026-04-19');
+  it('is timezone-independent (same instant → same key)', () => {
+    const instant = new Date('2026-04-19T13:00:00Z');
+    expect(sessionInstanceKey(instant, 'America/New_York'))
+      .toBe(sessionInstanceKey(instant, 'Asia/Tokyo'));
   });
 });
