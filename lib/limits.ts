@@ -89,6 +89,4 @@ export const STUDY_CONTRACT = {
   extensions: { maxPerDay: 3, maxMinutesPerDay: 90 },
   /** Fixed allowed increments (minutes). Reject anything else at the API. */
   extensionIncrements: [15, 30, 60] as const,
-  /** Minutes past windowStart that still count as "on time." */
-  startGraceMinutes: 10,
 } as const;

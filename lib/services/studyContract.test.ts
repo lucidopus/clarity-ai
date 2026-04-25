@@ -1,9 +1,9 @@
 /**
  * Unit tests for lib/services/studyContract.ts.
  *
- * Exercises: edit-budget math, grace/extension-aware window logic, cross-
- * midnight session attribution, and the computeEditBudget helper. All tests
- * are pure functions — no MongoDB round-trips.
+ * Exercises: edit-budget math, extension-aware window logic, cross-midnight
+ * session attribution, and the computeEditBudget helper. All tests are pure
+ * functions — no MongoDB round-trips.
  */
 
 import {
@@ -41,20 +41,17 @@ describe('validateStudyContract', () => {
   });
 });
 
-describe('isNowInContractWindow — grace + extensions', () => {
+describe('isNowInContractWindow — open at exact start, extensions', () => {
   const contract = { windowStart: '07:00', windowEnd: '08:00', timezone: TZ };
-  const grace = STUDY_CONTRACT.startGraceMinutes;
 
   test('true at exact start', () => {
     expect(isNowInContractWindow(contract, utcAt(7, 0))).toBe(true);
   });
-  test('false just before the grace boundary', () => {
-    expect(isNowInContractWindow(contract, utcAt(7, 0 - grace - 1))).toBe(false);
+  test('false one minute before start', () => {
+    expect(isNowInContractWindow(contract, utcAt(6, 59))).toBe(false);
   });
-  test('true at the grace boundary (inclusive)', () => {
-    // start - grace
-    const dt = new Date(utcAt(7, 0).getTime() - grace * 60_000);
-    expect(isNowInContractWindow(contract, dt)).toBe(true);
+  test('false ten minutes before start (no early-entry grace)', () => {
+    expect(isNowInContractWindow(contract, utcAt(6, 50))).toBe(false);
   });
   test('true shortly after start', () => {
     expect(isNowInContractWindow(contract, utcAt(7, 30))).toBe(true);

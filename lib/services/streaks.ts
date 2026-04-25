@@ -31,7 +31,10 @@ export interface StreakResult {
 // Milestone spacing follows the Lally-2010 habit-automaticity curve
 // (median time-to-automaticity is ~66 days). 7/21/66/180/365 is the
 // scientifically-motivated version of the old 7/30/100/365.
-const MILESTONES = [7, 21, 66, 180, 365];
+export const MILESTONES = [7, 21, 66, 180, 365];
+
+// Cap on simultaneously-held shields (matches the User schema enum).
+export const SHIELD_CAP = 3;
 
 // Thresholds for qualifying a "study day"
 const HARD_RECOVERY_REVIEWS = 10;
@@ -39,8 +42,17 @@ const HARD_RECOVERY_QUIZZES = 2;
 
 // Anti-laziness cap: at most one 48h recovery redemption per rolling 30-day window.
 // Research: prevents the "over-safety paradox" where shields + recovery compound.
-const RECOVERY_CAP_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
-const RECOVERY_CAP_COUNT = 1;
+export const RECOVERY_CAP_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+export const RECOVERY_CAP_COUNT = 1;
+
+export type StreakAction =
+  | 'firstEver'
+  | 'increment'
+  | 'shield'
+  | 'recover'
+  | 'reset'
+  | 'recoveryPending'
+  | 'noop';
 
 const ACTIVITY_FIELD: Record<ActivityType, string> = {
   flashcard_review: 'flashcardReviews',
@@ -89,10 +101,123 @@ function meetsHardThreshold(day: DayActivity): boolean {
 }
 
 // Recovery window closes 48h after the missed day starts: lastStudy + 3 days 00:00Z
-function computeRecoveryCutoff(lastStudy: string): Date {
+export function computeRecoveryCutoff(lastStudy: string): Date {
   const d = new Date(`${lastStudy}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + 3);
   return d;
+}
+
+/**
+ * Decide which streak action to take given the user's prior state plus
+ * today's activity counters. Pure — all DB-fetched data is passed in.
+ *
+ * Returns `{ action: 'noop' }` when the call should be treated as already-
+ * counted (same UTC day or stale lastStudy). Otherwise returns the action and,
+ * for `shield`, the number of shields to spend (one per bridged missed day).
+ *
+ * Decision priority for `diff > 1`:
+ *   1. shield  — when shields >= diff - 1 (all-or-nothing bridge)
+ *   2. recover — within 48h cutoff, recovery cap not hit, hard threshold met
+ *   3. recoveryPending — within 48h cutoff, recovery cap not hit, soft threshold only
+ *   4. reset   — past 48h cutoff, or recovery cap exhausted
+ */
+export function decideStreakAction(input: {
+  lastStudy: string | null | undefined;
+  today: string;
+  shields: number;
+  recoveryRedemptions: Date[];
+  now: Date;
+  todayActivity: DayActivity;
+}): { action: StreakAction; shieldsToConsume: number } {
+  const { lastStudy, today, shields, recoveryRedemptions, now, todayActivity } = input;
+
+  if (!lastStudy) {
+    return { action: 'firstEver', shieldsToConsume: 0 };
+  }
+  const diff = daysDiff(today, lastStudy);
+  if (diff <= 0) {
+    return { action: 'noop', shieldsToConsume: 0 };
+  }
+  if (diff === 1) {
+    return { action: 'increment', shieldsToConsume: 0 };
+  }
+  if (diff >= 2 && shields >= diff - 1) {
+    return { action: 'shield', shieldsToConsume: diff - 1 };
+  }
+  const cutoff = computeRecoveryCutoff(lastStudy);
+  if (now < cutoff) {
+    const recent = recoveryRedemptions.filter(
+      (d) => now.getTime() - new Date(d).getTime() < RECOVERY_CAP_WINDOW_MS,
+    );
+    if (recent.length >= RECOVERY_CAP_COUNT) {
+      return { action: 'reset', shieldsToConsume: 0 };
+    }
+    return {
+      action: meetsHardThreshold(todayActivity) ? 'recover' : 'recoveryPending',
+      shieldsToConsume: 0,
+    };
+  }
+  return { action: 'reset', shieldsToConsume: 0 };
+}
+
+/**
+ * Apply a decided streak action to the prior state. Pure — produces the
+ * new (streak, longest, shields, milestone) tuple plus event flags. Callers
+ * persist these. `noop` and `recoveryPending` are not state-advancing — the
+ * caller should short-circuit before this is invoked.
+ */
+export function applyStreakAction(input: {
+  action: StreakAction;
+  shieldsToConsume: number;
+  prevStreak: number;
+  prevLongest: number;
+  prevShields: number;
+  prevMilestones: number[];
+}): {
+  newStreak: number;
+  newLongest: number;
+  newShields: number;
+  newMilestone: number | undefined;
+  shieldConsumed: boolean;
+  shieldEarned: boolean;
+} {
+  const { action, shieldsToConsume, prevStreak, prevLongest, prevShields, prevMilestones } = input;
+
+  let newStreak = 1;
+  let shieldConsumed = false;
+  switch (action) {
+    case 'firstEver':
+    case 'reset':
+      newStreak = 1;
+      break;
+    case 'increment':
+    case 'recover':
+      newStreak = prevStreak + 1;
+      break;
+    case 'shield':
+      newStreak = prevStreak + 1;
+      shieldConsumed = true;
+      break;
+    case 'noop':
+    case 'recoveryPending':
+      // Caller should not be applying these — return unchanged state defensively.
+      newStreak = prevStreak;
+      break;
+  }
+
+  const newLongest = Math.max(prevLongest, newStreak);
+  const newMilestone = MILESTONES.find((m) => newStreak >= m && !prevMilestones.includes(m));
+
+  let newShields = prevShields;
+  if (shieldConsumed) newShields = Math.max(0, newShields - shieldsToConsume);
+  // Earn a shield every 7 consecutive days, capped at SHIELD_CAP.
+  const eligibleForEarn = newStreak > 0 && newStreak % 7 === 0;
+  if (eligibleForEarn) {
+    newShields = Math.min(SHIELD_CAP, newShields + 1);
+  }
+  const shieldEarned = newShields > prevShields;
+
+  return { newStreak, newLongest, newShields, newMilestone, shieldConsumed, shieldEarned };
 }
 
 // Compose a day's visual tier from the flags on the StudyDay doc.
@@ -264,37 +389,18 @@ export async function recordStudyActivity(
 
   const lastStudy = user.lastStudyDate;
 
-  type Action = 'firstEver' | 'increment' | 'shield' | 'recover' | 'reset' | 'recoveryPending';
-  let action: Action;
+  const { action, shieldsToConsume } = decideStreakAction({
+    lastStudy,
+    today,
+    shields: user.streakShields ?? 0,
+    recoveryRedemptions: user.recoveryRedemptions ?? [],
+    now,
+    todayActivity: studyDay,
+  });
 
-  if (!lastStudy) {
-    action = 'firstEver';
-  } else {
-    const diff = daysDiff(today, lastStudy);
-    if (diff <= 0) {
-      // Same UTC day or stale data — already counted
-      return refreshTierAndReturn(await currentStats());
-    } else if (diff === 1) {
-      action = 'increment';
-    } else if (diff === 2 && (user.streakShields ?? 0) > 0) {
-      action = 'shield';
-    } else {
-      // Streak broke. Check recovery window.
-      const cutoff = computeRecoveryCutoff(lastStudy);
-      if (now < cutoff) {
-        const recentRedemptions = (user.recoveryRedemptions ?? []).filter(
-          (d: Date) => now.getTime() - new Date(d).getTime() < RECOVERY_CAP_WINDOW_MS,
-        );
-        if (recentRedemptions.length >= RECOVERY_CAP_COUNT) {
-          // Cap hit — user has already used their monthly recovery. Reset.
-          action = 'reset';
-        } else {
-          action = meetsHardThreshold(studyDay) ? 'recover' : 'recoveryPending';
-        }
-      } else {
-        action = 'reset';
-      }
-    }
+  // Same UTC day or stale data — already counted.
+  if (action === 'noop') {
+    return refreshTierAndReturn(await currentStats());
   }
 
   // Recovery-pending: user studied today but hasn't met the hard threshold yet.
@@ -321,38 +427,21 @@ export async function recordStudyActivity(
   );
   if (!claimed) return refreshTierAndReturn(await currentStats()); // another request got there first
 
-  let newStreak = 1;
-  let shieldConsumed = false;
-  switch (action) {
-    case 'firstEver':
-      newStreak = 1;
-      break;
-    case 'increment':
-    case 'recover':
-      newStreak = (user.studyStreak ?? 0) + 1;
-      break;
-    case 'shield':
-      newStreak = (user.studyStreak ?? 0) + 1;
-      shieldConsumed = true;
-      break;
-    case 'reset':
-      newStreak = 1;
-      break;
-  }
-
-  const newLongest = Math.max(user.longestStudyStreak ?? 0, newStreak);
-  const currentMilestones: number[] = user.milestones ?? [];
-  const newMilestone = MILESTONES.find((m) => newStreak >= m && !currentMilestones.includes(m));
-
-  const prevShields = user.streakShields ?? 0;
-  let newShields = prevShields;
-  if (shieldConsumed) newShields = Math.max(0, newShields - 1);
-  // Earn a shield every 7 consecutive days, capped at 3.
-  const eligibleForEarn = newStreak > 0 && newStreak % 7 === 0;
-  if (eligibleForEarn) {
-    newShields = Math.min(3, newShields + 1);
-  }
-  const shieldEarned = newShields > prevShields;
+  const {
+    newStreak,
+    newLongest,
+    newShields,
+    newMilestone,
+    shieldConsumed,
+    shieldEarned,
+  } = applyStreakAction({
+    action,
+    shieldsToConsume,
+    prevStreak: user.studyStreak ?? 0,
+    prevLongest: user.longestStudyStreak ?? 0,
+    prevShields: user.streakShields ?? 0,
+    prevMilestones: user.milestones ?? [],
+  });
 
   // Persist updated streak state and always clear the recovery deadline after a
   // definitive streak action (increment / shield / recover / reset).
@@ -387,15 +476,21 @@ export async function recordStudyActivity(
   }
   await User.updateOne({ _id: userId }, update);
 
-  // If a shield was consumed, mark the missed day's StudyDay record
+  // Mark each bridged day's StudyDay record as shielded so the calendar/tier
+  // surfaces still see continuity instead of an empty gap.
   if (shieldConsumed) {
-    const missedD = new Date(`${today}T00:00:00Z`);
-    missedD.setUTCDate(missedD.getUTCDate() - 1);
-    await StudyDay.updateOne(
-      { userId, date: getUTCDateString(missedD) },
-      { $set: { shieldUsed: true } },
-      { upsert: true }
-    );
+    const ops = Array.from({ length: shieldsToConsume }, (_, i) => {
+      const missedD = new Date(`${today}T00:00:00Z`);
+      missedD.setUTCDate(missedD.getUTCDate() - (i + 1));
+      return {
+        updateOne: {
+          filter: { userId, date: getUTCDateString(missedD) },
+          update: { $set: { shieldUsed: true } },
+          upsert: true,
+        },
+      };
+    });
+    await StudyDay.bulkWrite(ops);
   }
 
   const base: StreakResult = {

@@ -134,11 +134,11 @@ export function activeExtensionMinutes(
  *   - An extension pushing a non-overnight window past midnight (e.g.
  *     23:00–23:30 +60min = 00:30) keeps the session anchored to yesterday.
  *
- * Grace applies symmetrically to the opening edge: the session is
- * considered "open" starting `startGraceMinutes` BEFORE `windowStart`.
+ * The session opens at exactly `windowStart` — no early-entry grace. The
+ * close edge can be pushed later by `todayExtensions`.
  */
 interface EffectiveWindow {
-  openAt: Date;      // grace-adjusted earliest qualifying instant
+  openAt: Date;      // earliest qualifying instant (exactly windowStart)
   closeAt: Date;     // exclusive end (after extensions)
   sessionDateKey: string; // "YYYY-MM-DD" of the session-opening day in tz
 }
@@ -152,7 +152,6 @@ function candidateWindow(
   const end = parseHHMM(contract.windowEnd);
   if (start === null || end === null) return null;
 
-  const graceMinutes = STUDY_CONTRACT.startGraceMinutes;
   const rawDuration = end > start ? end - start : end - start + 1440;
 
   const sessionDateKey = `${ymd.year}-${String(ymd.month).padStart(2, '0')}-${String(ymd.day).padStart(2, '0')}`;
@@ -163,7 +162,7 @@ function candidateWindow(
       : 0;
 
   const startUtc = zonedWallClockToUtc(ymd.year, ymd.month, ymd.day, Math.floor(start / 60), start % 60, contract.timezone);
-  const openAt = new Date(startUtc.getTime() - graceMinutes * 60_000);
+  const openAt = startUtc;
   const closeAt = new Date(startUtc.getTime() + (rawDuration + extMinutes) * 60_000);
 
   if (at >= openAt && at < closeAt) {
