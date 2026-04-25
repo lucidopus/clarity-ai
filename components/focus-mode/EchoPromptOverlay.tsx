@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Brain, X } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import { CLARITY_MODE } from '@/lib/limits';
 
 interface EchoPromptOverlayProps {
@@ -25,13 +25,11 @@ export default function EchoPromptOverlay({
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Escape-to-close + focus-trap + initial-focus when the modal opens.
-  // Keeps keyboard users inside the dialog until they explicitly save or skip.
+  // Esc to skip + focus trap + initial autofocus.
   useEffect(() => {
     if (!open) return;
     const el = dialogRef.current;
     if (!el) return;
-    // Give the textarea initial focus after the enter animation settles.
     const focusT = setTimeout(() => textareaRef.current?.focus(), 60);
 
     const handleKey = (e: KeyboardEvent) => {
@@ -91,49 +89,43 @@ export default function EchoPromptOverlay({
   return (
     <AnimatePresence>
       {open && (
-        <>
-          <motion.div
-            key="echo-prompt-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm"
-            aria-hidden="true"
-          />
-          <motion.div
-            ref={dialogRef}
-            key="echo-prompt"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="echo-prompt-title"
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: reduceMotion ? 0 : 0.28, ease: 'easeOut' }}
-            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(32rem,calc(100vw-2rem))] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card-bg shadow-2xl"
-          >
-            <div className="relative px-5 pt-5 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Dismiss"
-                className="absolute top-3.5 right-3.5 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
-                <Brain className="h-3 w-3" aria-hidden="true" />
-                Recall · 3 min left
+        <motion.div
+          key="echo-prompt"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="echo-prompt-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
+          className="fixed inset-0 z-62"
+        >
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55 backdrop-blur-[28px]" />
+          <div aria-hidden="true" className="echo-halo" />
+          <div className="relative h-full w-full overflow-y-auto">
+            <div className="flex min-h-full flex-col items-center justify-center gap-8 px-6 py-14 sm:gap-10">
+              <div className="flex items-center gap-2.5">
+                <Brain aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+                  Recall · 3 min left
+                </span>
               </div>
-              <h2 id="echo-prompt-title" className="mt-3 text-xl font-semibold leading-snug text-foreground">
-                What&rsquo;s one thing you want to remember tomorrow?
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                Write a self-quiz question about today&rsquo;s session. We&rsquo;ll surface it when your next window opens — try to answer from memory.
-              </p>
 
-              <div className="mt-5">
+              <div className="max-w-xl text-center">
+                <h2
+                  id="echo-prompt-title"
+                  className="text-3xl font-medium leading-tight text-white sm:text-[2.5rem]"
+                  style={{ letterSpacing: '-0.01em' }}
+                >
+                  What&rsquo;s one thing you want to remember tomorrow?
+                </h2>
+                <p className="mt-4 text-sm leading-relaxed text-white/55 sm:text-base">
+                  Write a self-quiz question about today&rsquo;s session. We&rsquo;ll surface it when your next window opens — try to answer from memory.
+                </p>
+              </div>
+
+              <div className="w-full max-w-xl">
                 <textarea
                   ref={textareaRef}
                   value={question}
@@ -141,12 +133,12 @@ export default function EchoPromptOverlay({
                   maxLength={MAX}
                   placeholder="e.g. What causes DNS propagation delay?"
                   aria-label="Your question"
-                  className="w-full resize-none rounded-lg bg-background border border-border px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
                   rows={4}
+                  className="w-full resize-none rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-base text-white placeholder:text-white/30 backdrop-blur-md transition-colors focus:border-white/30 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-white/20"
                 />
                 <div
-                  className={`mt-1.5 text-xs ${
-                    trimmed.length > MAX - 20 ? 'text-amber-500' : 'text-muted-foreground'
+                  className={`mt-2 text-xs tabular-nums ${
+                    trimmed.length > MAX - 20 ? 'text-amber-400' : 'text-white/40'
                   }`}
                 >
                   {trimmed.length} / {MAX}
@@ -154,16 +146,16 @@ export default function EchoPromptOverlay({
               </div>
 
               {error && (
-                <p role="alert" className="mt-2.5 text-xs text-red-400">
+                <p role="alert" className="text-xs text-red-300">
                   {error}
                 </p>
               )}
 
-              <div className="mt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1.5"
+                  className="cursor-pointer rounded-full border border-white/15 bg-white/5 px-6 py-2.5 text-sm text-white/70 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 >
                   Skip
                 </button>
@@ -171,14 +163,51 @@ export default function EchoPromptOverlay({
                   type="button"
                   onClick={handleSave}
                   disabled={disabled}
-                  className="inline-flex items-center rounded-md bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="cursor-pointer rounded-full border border-white/30 bg-white/15 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? 'Saving…' : 'Save'}
                 </button>
               </div>
+
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/30">
+                Press Esc to skip
+              </p>
             </div>
-          </motion.div>
-        </>
+          </div>
+
+          <style jsx>{`
+            .echo-halo {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              width: 720px;
+              height: 720px;
+              max-width: 90vw;
+              max-height: 90vh;
+              transform: translate(-50%, -50%);
+              pointer-events: none;
+              background: radial-gradient(
+                circle,
+                color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+                color-mix(in srgb, var(--accent) 8%, transparent) 40%,
+                transparent 68%
+              );
+              filter: blur(48px);
+              opacity: 0.6;
+              animation: ${reduceMotion ? 'none' : 'echo-halo-breathe 8s ease-in-out infinite'};
+            }
+            @keyframes echo-halo-breathe {
+              0%, 100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.96);
+              }
+              50% {
+                opacity: 0.75;
+                transform: translate(-50%, -50%) scale(1.04);
+              }
+            }
+          `}</style>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Target, X } from 'lucide-react';
+import { Target } from 'lucide-react';
 import { CLARITY_MODE } from '@/lib/limits';
 
 interface PromisePromptOverlayProps {
@@ -100,52 +100,48 @@ export default function PromisePromptOverlay({
   return (
     <AnimatePresence>
       {open && (
-        <>
-          <motion.div
-            key="promise-prompt-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm"
-            aria-hidden="true"
-          />
-          <motion.div
-            ref={dialogRef}
-            key="promise-prompt"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="promise-prompt-title"
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: reduceMotion ? 0 : 0.28, ease: 'easeOut' }}
-            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(32rem,calc(100vw-2rem))] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card-bg shadow-2xl"
-          >
-            <form onSubmit={handleSubmit} className="relative px-5 pt-5 pb-5 sm:px-7 sm:pt-7 sm:pb-6">
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Skip"
-                className="absolute top-3.5 right-3.5 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
-                <Target className="h-3 w-3" aria-hidden="true" />
-                Promise · tomorrow
+        <motion.div
+          key="promise-prompt"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="promise-prompt-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
+          className="fixed inset-0 z-62"
+        >
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55 backdrop-blur-[28px]" />
+          <div aria-hidden="true" className="promise-halo" />
+          <form onSubmit={handleSubmit} className="relative h-full w-full overflow-y-auto">
+            <div className="flex min-h-full flex-col items-center justify-center gap-8 px-6 py-14 sm:gap-10">
+              <div className="flex flex-col items-center gap-3.5">
+                <p className="text-sm italic leading-relaxed text-white/50 sm:text-[15px]">
+                  Take a breath — your window&rsquo;s done.
+                </p>
+                <div className="flex items-center gap-2.5">
+                  <Target aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+                    Promise · tomorrow
+                  </span>
+                </div>
               </div>
-              <h2
-                id="promise-prompt-title"
-                className="mt-3 text-xl font-semibold leading-snug text-foreground"
-              >
-                How will you show up tomorrow?
-              </h2>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                A short rule for yourself — about <em>how</em> you&rsquo;ll work, not what you&rsquo;ll finish. We&rsquo;ll ask if you kept it when your next window opens.
-              </p>
 
-              <div className="mt-5">
+              <div className="max-w-xl text-center">
+                <h2
+                  id="promise-prompt-title"
+                  className="text-3xl font-medium leading-tight text-white sm:text-[2.5rem]"
+                  style={{ letterSpacing: '-0.01em' }}
+                >
+                  How will you show up tomorrow?
+                </h2>
+                <p className="mt-4 text-sm leading-relaxed text-white/55 sm:text-base">
+                  A short rule for yourself — about <em>how</em> you&rsquo;ll work, not what you&rsquo;ll finish. We&rsquo;ll ask if you kept it when your next window opens.
+                </p>
+              </div>
+
+              <div className="w-full max-w-xl">
                 <input
                   ref={inputRef}
                   type="text"
@@ -154,45 +150,82 @@ export default function PromisePromptOverlay({
                   maxLength={MAX}
                   placeholder="One sentence."
                   aria-label="Your promise"
-                  className="w-full rounded-lg bg-background border border-border px-3.5 py-2.5 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
+                  className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-base text-white placeholder:text-white/30 backdrop-blur-md transition-colors focus:border-white/30 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-white/20"
                 />
                 <div
-                  className={`mt-1.5 flex items-center justify-between gap-3 text-xs ${
-                    trimmed.length > MAX - 20 ? 'text-amber-500' : 'text-muted-foreground'
+                  className={`mt-2 flex items-center justify-between gap-3 text-xs ${
+                    trimmed.length > MAX - 20 ? 'text-amber-400' : 'text-white/40'
                   }`}
                 >
                   <span className="italic">
                     e.g. &ldquo;start with the hard thing&rdquo; · &ldquo;no phone in the first 10&rdquo;
                   </span>
-                  <span className="tabular-nums shrink-0">{trimmed.length} / {MAX}</span>
+                  <span className="shrink-0 tabular-nums">{trimmed.length} / {MAX}</span>
                 </div>
               </div>
 
               {error && (
-                <p role="alert" className="mt-2.5 text-xs text-red-400">
+                <p role="alert" className="text-xs text-red-300">
                   {error}
                 </p>
               )}
 
-              <div className="mt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1.5"
+                  className="cursor-pointer rounded-full border border-white/15 bg-white/5 px-6 py-2.5 text-sm text-white/70 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 >
                   Skip
                 </button>
                 <button
                   type="submit"
                   disabled={disabled}
-                  className="inline-flex items-center rounded-md bg-accent px-5 py-2 text-sm font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="cursor-pointer rounded-full border border-white/30 bg-white/15 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? 'Saving…' : 'Save'}
                 </button>
               </div>
-            </form>
-          </motion.div>
-        </>
+
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/30">
+                Press Esc to skip
+              </p>
+            </div>
+          </form>
+
+          <style jsx>{`
+            .promise-halo {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              width: 720px;
+              height: 720px;
+              max-width: 90vw;
+              max-height: 90vh;
+              transform: translate(-50%, -50%);
+              pointer-events: none;
+              background: radial-gradient(
+                circle,
+                color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+                color-mix(in srgb, var(--accent) 8%, transparent) 40%,
+                transparent 68%
+              );
+              filter: blur(48px);
+              opacity: 0.6;
+              animation: ${reduceMotion ? 'none' : 'promise-halo-breathe 8s ease-in-out infinite'};
+            }
+            @keyframes promise-halo-breathe {
+              0%, 100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.96);
+              }
+              50% {
+                opacity: 0.75;
+                transform: translate(-50%, -50%) scale(1.04);
+              }
+            }
+          `}</style>
+        </motion.div>
       )}
     </AnimatePresence>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Brain, X } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import { CLARITY_MODE } from '@/lib/limits';
 
 interface EchoAnswerOverlayProps {
@@ -128,49 +128,43 @@ export default function EchoAnswerOverlay({ open, echo, onClose, onExited }: Ech
   return (
     <AnimatePresence onExitComplete={onExited}>
       {open && echo && (
-        <>
-          <motion.div
-            key="echo-answer-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm"
-            aria-hidden="true"
-          />
-          <motion.div
-            ref={dialogRef}
-            key="echo-answer"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="echo-answer-title"
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: reduceMotion ? 0 : 0.28, ease: 'easeOut' }}
-            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(23rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card-bg shadow-2xl overflow-hidden"
-          >
-            <div className="px-5 pt-5 pb-4 relative">
-              <button
-                type="button"
-                onClick={handleSkip}
-                aria-label="Skip"
-                className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
-                <Brain className="h-3 w-3" aria-hidden="true" />
-                Recall · yesterday
+        <motion.div
+          key="echo-answer"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="echo-answer-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
+          className="fixed inset-0 z-62"
+        >
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55 backdrop-blur-[28px]" />
+          <div aria-hidden="true" className="echo-answer-halo" />
+          <div className="relative h-full w-full overflow-y-auto">
+            <div className="flex min-h-full flex-col items-center justify-center gap-7 px-6 py-14 sm:gap-9">
+              <div className="flex items-center gap-2.5">
+                <Brain aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+                  Recall · yesterday
+                </span>
               </div>
-              <p className="mt-2 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
-                Yesterday you asked yourself this — take a shot:
-              </p>
-              <h2 id="echo-answer-title" className="mt-1 text-[15px] font-semibold leading-snug text-foreground">
-                {echo.question}
-              </h2>
 
-              <div className="mt-3">
+              <div className="max-w-xl text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                  Yesterday you asked yourself this — take a shot
+                </p>
+                <h2
+                  id="echo-answer-title"
+                  className="mt-3 text-2xl font-medium leading-snug text-white sm:text-3xl"
+                  style={{ letterSpacing: '-0.01em' }}
+                >
+                  {echo.question}
+                </h2>
+              </div>
+
+              <div className="w-full max-w-xl">
                 <textarea
                   ref={textareaRef}
                   value={answer}
@@ -178,17 +172,19 @@ export default function EchoAnswerOverlay({ open, echo, onClose, onExited }: Ech
                   maxLength={MAX}
                   placeholder="Take a shot — even a rough answer counts."
                   aria-label="Your answer"
-                  className="w-full resize-none rounded-lg bg-background border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/40"
                   rows={4}
+                  className="w-full resize-none rounded-2xl border border-white/15 bg-white/5 px-4 py-3.5 text-base text-white placeholder:text-white/30 backdrop-blur-md transition-colors focus:border-white/30 focus:bg-white/[0.07] focus:outline-none focus:ring-1 focus:ring-white/20"
                 />
-                <div className="mt-1 text-[11px] text-muted-foreground">
+                <div className="mt-2 text-xs tabular-nums text-white/40">
                   {trimmed.length} / {MAX}
                 </div>
               </div>
 
-              <div className="mt-3">
-                <div className="text-[11px] text-muted-foreground mb-1.5">How sure are you?</div>
-                <div role="radiogroup" aria-label="Self confidence" className="flex gap-1.5">
+              <div className="w-full max-w-xl">
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                  How sure are you?
+                </div>
+                <div role="radiogroup" aria-label="Self confidence" className="flex gap-2">
                   {CONFIDENCE.map((n) => {
                     const active = confidence === n;
                     return (
@@ -199,10 +195,10 @@ export default function EchoAnswerOverlay({ open, echo, onClose, onExited }: Ech
                         aria-checked={active}
                         aria-label={`${n} out of 5 — ${CONFIDENCE_LABEL[n]}`}
                         onClick={() => setConfidence(n)}
-                        className={`flex-1 rounded-lg py-2 text-xs font-medium border transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                        className={`flex-1 cursor-pointer rounded-xl border py-3 text-sm font-medium transition-colors backdrop-blur-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 ${
                           active
-                            ? 'border-accent/60 bg-accent/10 text-accent'
-                            : 'border-border bg-background text-muted-foreground hover:text-foreground'
+                            ? 'border-white/40 bg-white/15 text-white'
+                            : 'border-white/15 bg-white/5 text-white/60 hover:border-white/25 hover:text-white/90'
                         }`}
                       >
                         {n}
@@ -210,24 +206,24 @@ export default function EchoAnswerOverlay({ open, echo, onClose, onExited }: Ech
                     );
                   })}
                 </div>
-                <div className="mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground/80">
+                <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-white/35">
                   <span>1 — guessing</span>
                   <span>5 — certain</span>
                 </div>
               </div>
 
               {error && (
-                <p role="alert" className="mt-2 text-[11px] text-red-400">
+                <p role="alert" className="text-xs text-red-300">
                   {error}
                 </p>
               )}
 
-              <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={handleSkip}
                   disabled={submitting}
-                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded px-2 py-1"
+                  className="cursor-pointer rounded-full border border-white/15 bg-white/5 px-6 py-2.5 text-sm text-white/70 transition-colors hover:border-white/25 hover:bg-white/10 hover:text-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Skip
                 </button>
@@ -235,14 +231,51 @@ export default function EchoAnswerOverlay({ open, echo, onClose, onExited }: Ech
                   type="button"
                   onClick={handleSubmit}
                   disabled={disabled}
-                  className="inline-flex items-center rounded-md bg-accent px-3.5 py-1.5 text-xs font-semibold text-white hover:brightness-110 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="cursor-pointer rounded-full border border-white/30 bg-white/15 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:border-white/50 hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? 'Logging…' : 'Submit'}
                 </button>
               </div>
+
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/30">
+                Press Esc to skip
+              </p>
             </div>
-          </motion.div>
-        </>
+          </div>
+
+          <style jsx>{`
+            .echo-answer-halo {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              width: 720px;
+              height: 720px;
+              max-width: 90vw;
+              max-height: 90vh;
+              transform: translate(-50%, -50%);
+              pointer-events: none;
+              background: radial-gradient(
+                circle,
+                color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+                color-mix(in srgb, var(--accent) 8%, transparent) 40%,
+                transparent 68%
+              );
+              filter: blur(48px);
+              opacity: 0.6;
+              animation: ${reduceMotion ? 'none' : 'echo-answer-halo-breathe 8s ease-in-out infinite'};
+            }
+            @keyframes echo-answer-halo-breathe {
+              0%, 100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.96);
+              }
+              50% {
+                opacity: 0.75;
+                transform: translate(-50%, -50%) scale(1.04);
+              }
+            }
+          `}</style>
+        </motion.div>
       )}
     </AnimatePresence>
   );

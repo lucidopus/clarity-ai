@@ -774,6 +774,41 @@ export default function FocusModeShell() {
     };
   }, [justEntered]);
 
+  // Dev-only console triggers: lets you pop each Clarity Mode overlay
+  // manually from the browser console without waiting for actual session
+  // boundaries. Stripped from production bundles via the NODE_ENV guard.
+  // Submitting fake echo/promise rows hits 404 — use Esc or Skip to close.
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
+    if (typeof window === 'undefined') return;
+    const helpers = {
+      openRecallPrompt: () => setEchoPromptOpen(true),
+      openPromisePrompt: () => setPromisePromptOpen(true),
+      openRecallAnswer: (question = 'What causes DNS propagation delay?') => {
+        setPendingEcho({ id: 'dev-fake-echo', question });
+        setEchoAnswerOpen(true);
+      },
+      openPromiseReview: (text = 'Start with the hard thing.') => {
+        setPendingPromise({ id: 'dev-fake-promise', text });
+        setPromiseReviewOpen(true);
+      },
+      closeAll: () => {
+        setEchoPromptOpen(false);
+        setPromisePromptOpen(false);
+        setEchoAnswerOpen(false);
+        setPromiseReviewOpen(false);
+      },
+    };
+    const w = window as Window & { __clarityDev?: typeof helpers };
+    w.__clarityDev = helpers;
+    console.info(
+      '[clarity-dev] overlay triggers ready — try __clarityDev.openRecallPrompt() / openPromisePrompt() / openRecallAnswer(question?) / openPromiseReview(text?) / closeAll()',
+    );
+    return () => {
+      delete w.__clarityDev;
+    };
+  }, []);
+
   const handleEchoAnswerClose = useCallback(() => {
     setEchoAnswerOpen(false);
   }, []);

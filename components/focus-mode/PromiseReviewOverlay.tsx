@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Target, X } from 'lucide-react';
+import { Target } from 'lucide-react';
 
 type ReviewOutcome = 'kept' | 'broke' | 'skipped';
 
@@ -110,54 +110,44 @@ export default function PromiseReviewOverlay({
   return (
     <AnimatePresence onExitComplete={onExited}>
       {open && promise && (
-        <>
-          <motion.div
-            key="promise-review-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduceMotion ? 0 : 0.2 }}
-            className="fixed inset-0 z-[60] bg-background/60 backdrop-blur-sm"
-            aria-hidden="true"
-          />
-          <motion.div
-            ref={dialogRef}
-            key="promise-review"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="promise-review-title"
-            initial={{ opacity: 0, y: 8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: reduceMotion ? 0 : 0.28, ease: 'easeOut' }}
-            className="fixed z-[61] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(23rem,calc(100vw-2rem))] rounded-2xl border border-border bg-card-bg shadow-2xl overflow-hidden"
-          >
-            <div className="px-5 pt-5 pb-4 relative">
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                disabled={submitting}
-                className="absolute top-3 right-3 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-foreground/5 transition-colors cursor-pointer disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] uppercase text-accent bg-accent/10 rounded px-2.5 py-1">
-                <Target className="h-3 w-3" aria-hidden="true" />
-                Promise · yesterday
+        <motion.div
+          key="promise-review"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="promise-review-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' }}
+          className="fixed inset-0 z-62"
+        >
+          <div aria-hidden="true" className="absolute inset-0 bg-black/55 backdrop-blur-[28px]" />
+          <div aria-hidden="true" className="promise-review-halo" />
+          <div className="relative h-full w-full overflow-y-auto">
+            <div className="flex min-h-full flex-col items-center justify-center gap-7 px-6 py-14 sm:gap-9">
+              <div className="flex items-center gap-2.5">
+                <Target aria-hidden="true" className="h-3.5 w-3.5 text-accent" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-white/60">
+                  Promise · yesterday
+                </span>
               </div>
-              <p className="mt-2 text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
-                Yesterday you promised:
-              </p>
-              <h2
-                id="promise-review-title"
-                className="mt-1 text-[15px] font-semibold leading-snug text-foreground"
-              >
-                {promise.text}
-              </h2>
 
-              <div className="mt-4">
-                <div role="radiogroup" aria-label="Outcome" className="flex gap-2">
+              <div className="max-w-xl text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                  Yesterday you promised
+                </p>
+                <h2
+                  id="promise-review-title"
+                  className="mt-3 text-2xl font-medium leading-snug text-white sm:text-3xl"
+                  style={{ letterSpacing: '-0.01em' }}
+                >
+                  &ldquo;{promise.text}&rdquo;
+                </h2>
+              </div>
+
+              <div className="w-full max-w-xl">
+                <div role="radiogroup" aria-label="Outcome" className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                   {(['kept', 'broke', 'skipped'] as const).map((opt, idx) => {
                     const active = outcome === opt;
                     return (
@@ -170,10 +160,10 @@ export default function PromiseReviewOverlay({
                         aria-label={`${OUTCOME_LABEL[opt]} — ${OUTCOME_HINT[opt]}`}
                         onClick={() => submitOutcome(opt)}
                         disabled={submitting}
-                        className={`flex-1 min-h-11 rounded-lg py-2 text-sm font-medium border transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 disabled:cursor-not-allowed ${
+                        className={`min-h-12 flex-1 cursor-pointer rounded-xl border py-3.5 text-sm font-semibold transition-colors backdrop-blur-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-50 ${
                           active
-                            ? 'border-accent/60 bg-accent/10 text-accent'
-                            : 'border-border bg-background text-foreground hover:border-accent/40 hover:bg-accent/5'
+                            ? 'border-white/40 bg-white/15 text-white'
+                            : 'border-white/15 bg-white/5 text-white/75 hover:border-white/25 hover:bg-white/10 hover:text-white'
                         }`}
                       >
                         {submitting && active ? 'Saving…' : OUTCOME_LABEL[opt]}
@@ -181,19 +171,56 @@ export default function PromiseReviewOverlay({
                     );
                   })}
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+                <p className="mt-3 text-center text-[11px] leading-relaxed text-white/45">
                   Self-reported. No streak, no count — just a note for you.
                 </p>
               </div>
 
               {error && (
-                <p role="alert" className="mt-3 text-[11px] text-red-400">
+                <p role="alert" className="text-xs text-red-300">
                   {error}
                 </p>
               )}
+
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/30">
+                Press Esc to decide later
+              </p>
             </div>
-          </motion.div>
-        </>
+          </div>
+
+          <style jsx>{`
+            .promise-review-halo {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              width: 720px;
+              height: 720px;
+              max-width: 90vw;
+              max-height: 90vh;
+              transform: translate(-50%, -50%);
+              pointer-events: none;
+              background: radial-gradient(
+                circle,
+                color-mix(in srgb, var(--accent) 22%, transparent) 0%,
+                color-mix(in srgb, var(--accent) 8%, transparent) 40%,
+                transparent 68%
+              );
+              filter: blur(48px);
+              opacity: 0.6;
+              animation: ${reduceMotion ? 'none' : 'promise-review-halo-breathe 8s ease-in-out infinite'};
+            }
+            @keyframes promise-review-halo-breathe {
+              0%, 100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.96);
+              }
+              50% {
+                opacity: 0.75;
+                transform: translate(-50%, -50%) scale(1.04);
+              }
+            }
+          `}</style>
+        </motion.div>
       )}
     </AnimatePresence>
   );
