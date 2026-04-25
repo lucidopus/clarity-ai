@@ -12,6 +12,8 @@ import PauseButton from '@/components/focus-mode/PauseButton';
 import PauseOverlay from '@/components/focus-mode/PauseOverlay';
 import EchoPromptOverlay from '@/components/focus-mode/EchoPromptOverlay';
 import EchoAnswerOverlay from '@/components/focus-mode/EchoAnswerOverlay';
+import PromisePromptOverlay from '@/components/focus-mode/PromisePromptOverlay';
+import PromiseReviewOverlay from '@/components/focus-mode/PromiseReviewOverlay';
 import { STUDY_CONTRACT } from '@/lib/limits';
 
 function formatRemaining(mins: number): string {
@@ -650,6 +652,8 @@ export default function FocusModeShell() {
     contract,
     echoPromptDue,
     acknowledgeEchoPrompt,
+    promisePromptDue,
+    acknowledgePromisePrompt,
   } = useFocusMode();
   const reduceMotion = useReducedMotion() ?? false;
   const [ambientEnabled] = useAmbientEnabled();
@@ -684,6 +688,19 @@ export default function FocusModeShell() {
   const [echoAnswerOpen, setEchoAnswerOpen] = useState(false);
   const [entryFlashReady, setEntryFlashReady] = useState(false);
 
+  // Promise state machine (twin of Echo, but shifted in time):
+  //   1. Window close fires `promisePromptDue` (context). Open the prompt
+  //      overlay during `justExited` so it lands during the Horizon Dissolve
+  //      envelope. Acknowledge to clear the flag.
+  //   2. On next window open we chain Promise review AFTER Echo answer:
+  //      Echo's onExited triggers a Promise fetch; if pending, show
+  //      PromiseReviewOverlay; on its onExited, finally raise entryFlashReady.
+  //      Order is intentional — Echo is knowledge, Promise is identity, and
+  //      the spec calls for sequential overlays at next open.
+  const [promisePromptOpen, setPromisePromptOpen] = useState(false);
+  const [pendingPromise, setPendingPromise] = useState<{ id: string; text: string } | null>(null);
+  const [promiseReviewOpen, setPromiseReviewOpen] = useState(false);
+
   // Fire T-3 prompt (unless user is paused — we suppress silently).
   // We are syncing React state to an external event signal from the
   // FocusMode context, which is exactly what an effect is for here.
@@ -698,9 +715,21 @@ export default function FocusModeShell() {
     acknowledgeEchoPrompt();
   }, [echoPromptDue, pauseState.pauseActive, acknowledgeEchoPrompt]);
 
-  // When a new window opens, see if there's a pending Echo to surface.
-  // We start with the answer overlay hidden and the entry flash gated until
-  // either the overlay closes or we confirm there is nothing pending.
+  // Fire close prompt for the Promise. No pause check — this fires *after*
+  // the window closes, so the Pause Budget no longer applies.
+  useEffect(() => {
+    if (!promisePromptDue) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPromisePromptOpen(true);
+    acknowledgePromisePrompt();
+  }, [promisePromptDue, acknowledgePromisePrompt]);
+
+  // When a new window opens, check for pending Echo AND pending Promise.
+  // Echo shows first (knowledge), Promise second (identity) — the entry
+  // flash stays gated until both chains resolve. If there's no Echo, we
+  // still fetch the Promise directly (a user can have one without the
+  // other: e.g. skipped T-3 Echo but typed a close-time Promise, or the
+  // Echo aged out but Promise is still fresh).
   useEffect(() => {
     if (!justEntered) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -709,6 +738,7 @@ export default function FocusModeShell() {
     }
     let cancelled = false;
     (async () => {
+      let foundEcho = false;
       try {
         const res = await fetch('/api/echo');
         const data = await res.json().catch(() => null);
@@ -716,12 +746,28 @@ export default function FocusModeShell() {
         if (res.ok && data?.echo) {
           setPendingEcho({ id: data.echo.id, question: data.echo.question });
           setEchoAnswerOpen(true);
-        } else {
-          setEntryFlashReady(true);
+          foundEcho = true;
         }
       } catch {
-        if (!cancelled) setEntryFlashReady(true);
+        // Fallthrough — try the Promise fetch regardless.
       }
+      if (foundEcho || cancelled) return;
+
+      // No Echo to chain from — fetch the Promise directly. If neither
+      // exists, release the entry flash.
+      try {
+        const res = await fetch('/api/promise');
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (res.ok && data?.promise) {
+          setPendingPromise({ id: data.promise.id, text: data.promise.text });
+          setPromiseReviewOpen(true);
+          return;
+        }
+      } catch {
+        // Fallthrough — release the flash so the user isn't stuck.
+      }
+      if (!cancelled) setEntryFlashReady(true);
     })();
     return () => {
       cancelled = true;
@@ -733,10 +779,38 @@ export default function FocusModeShell() {
   }, []);
 
   // AnimatePresence's onExitComplete is the only frame-accurate signal that
-  // the overlay has finished unmounting. Gate the entry flash on THAT rather
-  // than a racy setTimeout — reduced-motion users also get it right.
+  // the overlay has finished unmounting. Use that signal to chain into the
+  // Promise review fetch (or release the entry flash if neither overlay is
+  // pending).
   const handleEchoAnswerExited = useCallback(() => {
     setPendingEcho(null);
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/promise');
+        const data = await res.json().catch(() => null);
+        if (cancelled) return;
+        if (res.ok && data?.promise) {
+          setPendingPromise({ id: data.promise.id, text: data.promise.text });
+          setPromiseReviewOpen(true);
+          return;
+        }
+      } catch {
+        // Fallthrough — release the entry flash so the user isn't stuck.
+      }
+      if (!cancelled) setEntryFlashReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handlePromiseReviewClose = useCallback(() => {
+    setPromiseReviewOpen(false);
+  }, []);
+
+  const handlePromiseReviewExited = useCallback(() => {
+    setPendingPromise(null);
     setEntryFlashReady(true);
   }, []);
 
@@ -794,7 +868,7 @@ export default function FocusModeShell() {
         </div>
       )}
       <FocusEntryFlash
-        show={justEntered && entryFlashReady && !echoAnswerOpen}
+        show={justEntered && entryFlashReady && !echoAnswerOpen && !promiseReviewOpen}
         windowDurationLabel={windowDurationLabel}
         windowEndLabel={windowEndLabel}
       />
@@ -813,6 +887,20 @@ export default function FocusModeShell() {
         echo={pendingEcho}
         onClose={handleEchoAnswerClose}
         onExited={handleEchoAnswerExited}
+      />
+      <PromisePromptOverlay
+        open={promisePromptOpen}
+        onClose={() => setPromisePromptOpen(false)}
+        onSaved={() => setPromisePromptOpen(false)}
+      />
+      <PromiseReviewOverlay
+        // Remount per promise so local state (outcome, error) resets
+        // cleanly without setState-in-effect.
+        key={pendingPromise?.id ?? 'promise-review-empty'}
+        open={promiseReviewOpen}
+        promise={pendingPromise}
+        onClose={handlePromiseReviewClose}
+        onExited={handlePromiseReviewExited}
       />
     </>
   );

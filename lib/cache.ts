@@ -9,7 +9,15 @@ export const CacheKeys = {
   dashStats: (userId: string)                   => `dash:stats:${userId}`,
   claraGreeting: (userId: string)               => `clara-greeting:${userId}`,
   progressNarrative: (userId: string)           => `progress-narrative:${userId}`,
+  /** Weekly Promise summary — keyed on timezone so DST transitions don't
+   *  bleed a stale week boundary into the next day's read. */
+  promiseWeekly: (userId: string, timezone: string) => `promise-weekly:${userId}:${timezone}`,
 };
+
+/** Bust the weekly-Promise summary cache after a Promise create or review. */
+export async function invalidatePromiseWeekly(userId: string, timezone: string): Promise<void> {
+  try { await getRedis().del(CacheKeys.promiseWeekly(userId, timezone)); } catch { /* silent */ }
+}
 
 // ── Core helper ────────────────────────────────────────────────────────────────
 

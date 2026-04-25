@@ -65,6 +65,16 @@ export const CLARITY_MODE = {
     phaseOpeningCutoff: 0.25,
     phaseClosingCutoff: 0.75,
   },
+  promise: {
+    maxTextChars: 120,
+    pendingTtlHours: 48,
+    /** Rolling window for the dashboard "X of Y kept this week" ratio. */
+    weeklySummaryDays: 7,
+    /** Grace window after windowEnd during which Promise create is still
+     *  accepted, so a user typing through the Horizon Dissolve doesn't lose
+     *  their entry. */
+    closeGraceMinutes: 10,
+  },
 } as const;
 
 // ── Study Contract (edit budget + extensions + grace) ────────────────────────

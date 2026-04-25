@@ -56,6 +56,12 @@ interface FocusModeState {
    *  is mid-pause). */
   echoPromptDue: boolean;
   acknowledgeEchoPrompt: () => void;
+  /** True once per window when the window closes. The Promise prompt
+   *  consumer (FocusModeShell) opens its overlay and clears this flag via
+   *  `acknowledgePromisePrompt`. Sequenced after Echo at next-open by the
+   *  shell, not the context. */
+  promisePromptDue: boolean;
+  acknowledgePromisePrompt: () => void;
 }
 
 const defaultState: FocusModeState = {
@@ -72,6 +78,8 @@ const defaultState: FocusModeState = {
   nextWindowStartAt: null,
   echoPromptDue: false,
   acknowledgeEchoPrompt: () => {},
+  promisePromptDue: false,
+  acknowledgePromisePrompt: () => {},
 };
 
 const PRE_WINDOW_LEAD_MIN = 15;
@@ -139,6 +147,8 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
   const armedRef = useRef(false);
   const [echoPromptDue, setEchoPromptDue] = useState(false);
   const echoFiredForWindowRef = useRef(false);
+  const [promisePromptDue, setPromisePromptDue] = useState(false);
+  const promiseFiredForWindowRef = useRef(false);
 
   const loadContract = useCallback(async () => {
     try {
@@ -230,12 +240,21 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
         // Fresh window — reset the Echo prompt one-shot so the next T-3
         // transition inside this window can fire it.
         echoFiredForWindowRef.current = false;
+        // Promise prompt is per-close, not per-open — but reset its
+        // one-shot too so the next close-edge can fire cleanly.
+        promiseFiredForWindowRef.current = false;
       } else {
         // Window closed — flag dissolve in the same render so the ambient
         // player stays mounted and its wrapper fade + audio fade can run.
         setJustExited(true);
         echoFiredForWindowRef.current = false;
         setEchoPromptDue(false);
+        // One-shot the Promise prompt for this close. The shell opens its
+        // overlay and acknowledges via `acknowledgePromisePrompt`.
+        if (!promiseFiredForWindowRef.current) {
+          promiseFiredForWindowRef.current = true;
+          setPromisePromptDue(true);
+        }
       }
     }
   }
@@ -313,6 +332,10 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
     setEchoPromptDue(false);
   }, []);
 
+  const acknowledgePromisePrompt = useCallback(() => {
+    setPromisePromptDue(false);
+  }, []);
+
   const value = useMemo<FocusModeState>(
     () => ({
       contract,
@@ -328,6 +351,8 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
       nextWindowStartAt,
       echoPromptDue,
       acknowledgeEchoPrompt,
+      promisePromptDue,
+      acknowledgePromisePrompt,
     }),
     [
       contract,
@@ -343,6 +368,8 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
       nextWindowStartAt,
       echoPromptDue,
       acknowledgeEchoPrompt,
+      promisePromptDue,
+      acknowledgePromisePrompt,
     ],
   );
 

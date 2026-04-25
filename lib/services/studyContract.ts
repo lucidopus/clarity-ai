@@ -212,6 +212,59 @@ export function isNowInContractWindow(
   return effectiveWindowAt(contract, at) !== null;
 }
 
+/**
+ * True when `at` is within `graceMs` after the most recent contract window
+ * closed. Returns `false` if currently inside the window (use
+ * `isNowInContractWindow` for that) or if no recent window matches.
+ *
+ * Used by the Promise close-prompt: the Promise is captured *after* the
+ * window closes, so its API has to accept writes during the Horizon Dissolve
+ * envelope and a brief slack period after.
+ */
+export function isNowInContractCloseGrace(
+  contract: ContractLike | null | undefined,
+  at: Date = new Date(),
+  graceMs: number = 10 * 60 * 1000,
+): boolean {
+  if (!contract) return false;
+  if (effectiveWindowAt(contract, at) !== null) return false;
+
+  // Probe the candidate days for a session whose closeAt sits within
+  // [at - graceMs, at]. Reuses the same yesterday/today logic as the
+  // in-window check so overnight + DST + extension cases inherit correctness.
+  let todayYmd: { year: number; month: number; day: number };
+  try {
+    todayYmd = zonedYmd(at, contract.timezone);
+  } catch {
+    return false;
+  }
+  const todayNoonUtc = zonedWallClockToUtc(
+    todayYmd.year, todayYmd.month, todayYmd.day, 12, 0, contract.timezone,
+  );
+  const yesterdayAnchor = new Date(todayNoonUtc.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayYmd = zonedYmd(yesterdayAnchor, contract.timezone);
+
+  const start = parseHHMM(contract.windowStart);
+  const end = parseHHMM(contract.windowEnd);
+  if (start === null || end === null) return false;
+  const rawDuration = end > start ? end - start : end - start + 1440;
+
+  for (const ymd of [todayYmd, yesterdayYmd]) {
+    const sessionDateKey = `${ymd.year}-${String(ymd.month).padStart(2, '0')}-${String(ymd.day).padStart(2, '0')}`;
+    const extMinutes =
+      contract.todayExtensions && contract.todayExtensions.date === sessionDateKey
+        ? contract.todayExtensions.totalMinutesAdded
+        : 0;
+    const startUtc = zonedWallClockToUtc(
+      ymd.year, ymd.month, ymd.day, Math.floor(start / 60), start % 60, contract.timezone,
+    );
+    const closeAt = new Date(startUtc.getTime() + (rawDuration + extMinutes) * 60_000);
+    const elapsed = at.getTime() - closeAt.getTime();
+    if (elapsed >= 0 && elapsed <= graceMs) return true;
+  }
+  return false;
+}
+
 /** Minutes until the window opens (positive) or negative if past start / no contract. */
 export function minutesUntilWindowStart(
   contract: Pick<StudyContract, 'windowStart' | 'windowEnd' | 'timezone'> | null | undefined,

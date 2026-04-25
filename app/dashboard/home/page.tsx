@@ -27,6 +27,7 @@ const WeekdayConsistencyBars = dynamic(() => import('@/components/WeekdayConsist
 import DailyChallengesCard from '@/components/DailyChallengesCard';
 import ClarityScoreWidget from '@/components/dashboard/ReadinessWidget';
 import ClarityInsightsPanel from '@/components/dashboard/ClarityInsightsPanel';
+import ClarityModePromiseCard from '@/components/dashboard/ClarityModePromiseCard';
 import EmptyDashboard from '@/components/dashboard/EmptyDashboard';
 import TodaysMixCard from '@/components/TodaysMixCard';
 import { getErrorConfig } from '@/lib/errorMessages';
@@ -482,6 +483,7 @@ export default function DashboardHomePage() {
                 <StreakWidget />
                 <CardsDueWidget />
                 <DailyChallengesCard />
+                <ClarityModePromiseCard />
               </div>
             </div>
           </div>
