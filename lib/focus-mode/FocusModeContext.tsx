@@ -222,6 +222,25 @@ export function FocusModeProvider({ children }: { children: React.ReactNode }) {
     msUntilWindowStart > 0 &&
     msUntilWindowStart <= 5 * 60 * 1000;
 
+  // Land the warm-up (T-5:00) and window-open (T-0) flips precisely on their
+  // boundaries instead of waiting up to 30s for the next heartbeat. The 30s
+  // interval above is the steady-state heartbeat; these one-shot timers ride
+  // alongside it so consumers (PreSessionNudge, FocusModeShell) see the
+  // transition without lag.
+  const nextWindowStartTimeMs = nextWindowStartAt?.getTime() ?? null;
+  useEffect(() => {
+    if (nextWindowStartTimeMs === null) return;
+    const targets = [
+      nextWindowStartTimeMs - 5 * 60 * 1000,
+      nextWindowStartTimeMs,
+    ];
+    const timers = targets
+      .map((t) => t - Date.now() + 50) // +50ms bias so the boundary inequality is satisfied
+      .filter((delay) => delay > 0)
+      .map((delay) => setTimeout(() => setNow(new Date()), delay));
+    return () => timers.forEach(clearTimeout);
+  }, [nextWindowStartTimeMs]);
+
   // Synchronous transition detection: set `justEntered` / `justExited` during
   // the same render that flips `isInWindow`. See `prevIsInWindow` comment.
   if (contractLoaded && prevIsInWindow !== isInWindow) {

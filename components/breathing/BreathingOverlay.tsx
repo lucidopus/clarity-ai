@@ -18,7 +18,7 @@ interface BreathingOverlayProps {
   onClose: () => void;
 }
 
-type Phase = 'inhale' | 'hold1' | 'exhale' | 'hold2';
+type Phase = 'inhale' | 'exhale';
 
 interface PhaseFrame {
   key: Phase;
@@ -28,11 +28,13 @@ interface PhaseFrame {
   to: number;
 }
 
+// 4-in / 6-out resonance cadence (~6 BPM). Extended exhale tilts vagal
+// without the hypercapnic discomfort of breath retentions; the smooth
+// two-phase oscillation keeps RSA continuous instead of stepped.
+// See docs/research.md → "Breathing duration".
 const PHASES: readonly PhaseFrame[] = [
   { key: 'inhale', name: 'Breathe in',  dur: 4000, from: 0, to: 1 },
-  { key: 'hold1',  name: 'Hold',        dur: 4000, from: 1, to: 1 },
-  { key: 'exhale', name: 'Breathe out', dur: 4000, from: 1, to: 0 },
-  { key: 'hold2',  name: 'Hold',        dur: 4000, from: 0, to: 0 },
+  { key: 'exhale', name: 'Breathe out', dur: 6000, from: 1, to: 0 },
 ];
 const CYCLE_MS = PHASES.reduce((sum, p) => sum + p.dur, 0);
 
@@ -110,9 +112,11 @@ export default function BreathingOverlay({
     };
 
     if (reducedMotion) {
-      // Reduced-motion path: step phases on a plain interval, no scale/rotation.
+      // Reduced-motion path: chained timeouts since phase durations differ
+      // (4s inhale / 6s exhale).
       initClock(performance.now());
       let idx = 0;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       const tick = () => {
         const elapsed = performance.now() - (startAtRef.current ?? 0);
         const progress = Math.min(1, elapsed / durationMs);
@@ -123,13 +127,15 @@ export default function BreathingOverlay({
           return;
         }
         idx = (idx + 1) % PHASES.length;
-        const next = PHASES[idx].key;
-        currentPhaseRef.current = next;
-        setPhase(next);
+        const next = PHASES[idx];
+        currentPhaseRef.current = next.key;
+        setPhase(next.key);
+        timeoutId = setTimeout(tick, next.dur);
       };
-      tick();
-      const interval = setInterval(tick, 4000);
-      return () => clearInterval(interval);
+      timeoutId = setTimeout(tick, PHASES[0].dur);
+      return () => {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+      };
     }
 
     const loop = (ts: number) => {
@@ -352,9 +358,7 @@ function PhaseLabel({ phase, completing }: { phase: Phase; completing: boolean }
     ? "You're ready."
     : phase === 'inhale'
     ? 'Breathe in'
-    : phase === 'exhale'
-    ? 'Breathe out'
-    : 'Hold';
+    : 'Breathe out';
   const key = completing ? 'done' : phase;
   return (
     <div className="relative h-8 text-center">
