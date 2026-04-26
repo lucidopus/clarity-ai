@@ -37,9 +37,12 @@ Include some easy (warm-up / confidence-building), most medium, and a few hard. 
 
 ## Explanation requirements
 
-Each item's \`explanation\` field must contain TWO things:
+Each item's \`explanation\` field must contain:
 1. **Why the correct answer is correct**, grounded in a specific claim from the source.
-2. **For each distractor, why a learner might pick it AND why it's wrong.** This is the "ah-ha" moment — don't skip it. Keep the whole explanation tight; aim for 3–6 sentences total.
+2. **For each distractor, why a learner might pick it AND why it's wrong.** This is the "ah-ha" moment — don't skip it.
+3. **When applicable, surface the "right answer for the wrong reason" trap — woven into the explanation, not appended.** Some questions can be answered correctly via a flawed path: landing on the right number from wrong setup, picking the right concept by matching a surface keyword from the stem, choosing the option phrased most like a source quote. When *and only when* you can name a specific concrete wrong path for this item, weave a brief note about it into the flow of the correct-answer explanation — a clause or short sentence, varied phrasing across items, integrated with the rest of the reasoning. Avoid a fixed template ("you might land here by X") repeated across a deck of 15; make each warning sound like a tutor noticing it for this question, not a checkbox. If you cannot name a concrete wrong path, omit this entirely. Generic filler like "you might have guessed" or "you could have arrived at this by chance" is worse than nothing.
+
+Keep the whole explanation tight; aim for 3–6 sentences total.
 
 ## Source attribution
 
