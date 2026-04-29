@@ -7,7 +7,6 @@ export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
-  isVisualize?: boolean;
   /** Tool activity events that occurred before this message's text content. */
   toolEvents?: ToolEvent[];
 }
@@ -124,14 +123,7 @@ export function useChatBot(
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading || isStreaming) return;
 
-    // Handle /visualize command
-    let actualMessage = content.trim();
-    let forceVisualize = false;
-    if (actualMessage.toLowerCase().startsWith('/visualize ')) {
-      forceVisualize = true;
-      actualMessage = actualMessage.slice('/visualize '.length).trim();
-      if (!actualMessage) return;
-    }
+    const actualMessage = content.trim();
 
     setError(null);
     setIsLoading(true);
@@ -143,7 +135,6 @@ export function useChatBot(
       role: 'user',
       content: actualMessage,
       timestamp: new Date(),
-      ...(forceVisualize ? { isVisualize: true } : {}),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -186,7 +177,6 @@ export function useChatBot(
         timezoneOffsetMinutes,
         timeZone,
         ...(activeSourceId && activeSourceId !== videoId ? { activeSourceId } : {}),
-        ...(forceVisualize ? { forceVisualize: true } : {}),
       };
 
       const requestBody = transformRequestBody
@@ -291,17 +281,6 @@ export function useChatBot(
                   const tokenText = typeof event.content === 'string' ? event.content : '';
                   if (!tokenText) break;
                   accumulatedContent += tokenText;
-                  setMessages(prev => prev.map(msg =>
-                    msg.id === assistantMessageId
-                      ? { ...msg, content: accumulatedContent }
-                      : msg
-                  ));
-                  break;
-                }
-
-                case 'animation': {
-                  const animationBlock = `\n\n\`\`\`animation\n${JSON.stringify(event.spec)}\n\`\`\``;
-                  accumulatedContent += animationBlock;
                   setMessages(prev => prev.map(msg =>
                     msg.id === assistantMessageId
                       ? { ...msg, content: accumulatedContent }

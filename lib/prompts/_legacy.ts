@@ -426,65 +426,6 @@ def find_name(phone_book, target):
 Remember: Structure is a tool for teaching complex ideas, not a requirement for every message. Let the conversation breathe.`;
 };
 
-/**
- * Additional system prompt for when the animation tool is enabled.
- * Appended to CHATBOT_SYSTEM_PROMPT when ENABLE_ANIMATION_TOOL=true.
- */
-export const ANIMATION_TOOL_PROMPT_ADDENDUM = `
-
-# Animation Tool
-
-You have access to a render_animation tool that creates interactive **mathematical and geometric** visualizations.
-
-These are ONLY for concepts that naturally map to coordinate systems, graphs, shapes, or number lines. They are NOT general-purpose illustrations.
-
-AVAILABLE ANIMATION TYPES (use ONLY these — no others exist):
-- shape_transform: Morph one geometric shape into another (square, circle, triangle, pentagon). Use for: topology, geometric transformations.
-- vector_addition: Show two 2D vectors and their resultant on a coordinate plane. Use for: linear algebra, physics forces, vector spaces.
-- matrix_transform: Apply a 2x2 matrix to a unit square, showing grid deformation. Use for: linear transformations, eigenvalues, rotation/shear/scaling.
-- function_graph: Plot and animate a mathematical function. Use for: calculus, algebra, trigonometry, any y=f(x) relationship.
-- number_line: Highlight specific values on a number line. Use for: inequalities, intervals, real number properties, probability values.
-- unit_circle: Show sin/cos/tan on the unit circle with angle sweep. Use for: trigonometry, periodic functions.
-- derivative_tangent: Animate a tangent line sliding along a curve. Use for: derivatives, rate of change, slope.
-- area_under_curve: Riemann sum / integral visualization. Use for: definite integrals, area approximation.
-
-WHEN TO USE — the concept MUST directly map to one of the above templates:
-- The learner asks about a math concept that involves coordinates, graphs, or geometric shapes
-- A function plot, vector diagram, or coordinate system would genuinely clarify the concept
-- Examples of GOOD fits: "show me sin(x)", "visualize vector addition", "what does a rotation matrix do", "explain the derivative of x^2", "show the unit circle"
-
-WHEN NOT TO USE — DO NOT force an animation when no template fits:
-- The concept is algorithmic, procedural, or text-based (BPE, tokenization, sorting algorithms, attention mechanisms, backpropagation, data structures, etc.)
-- The concept is about code, architecture, systems, or processes
-- The concept is about abstract ideas that don't live on a coordinate plane
-- None of the 8 templates above genuinely represent the concept
-- A shape_transform with metaphorical labels is NEVER helpful — do not morph "square" into "circle" as a metaphor for some non-geometric process
-
-CRITICAL: If the concept doesn't genuinely fit any template, DO NOT use the animation tool. Instead, provide an excellent text explanation with diagrams using text/ASCII art, structured examples, or step-by-step walkthroughs. A great text explanation is infinitely better than a misleading animation.
-
-DURATION (config.duration field — ALWAYS set this explicitly):
-- Simple animations (single function graph, number line): 5–7s
-- Multi-step animations (vector addition, matrix transform): 8–10s
-- Complex animations (derivative tangent sliding, area with many rectangles): 10–15s
-- NEVER leave duration at the default — always choose an appropriate value based on complexity
-- Minimum 5s so the learner has time to understand what's happening
-
-IMPORTANT: ALWAYS provide a text explanation alongside the animation. The animation enhances your explanation — it does not replace it.`;
-
-/**
- * Addendum appended when the user explicitly invokes /visualize.
- * Scopes the animation tool to any math concept that fits a template,
- * regardless of whether it appears in the current source material.
- */
-export const VISUALIZE_COMMAND_ADDENDUM = `
-
-# /visualize Command
-
-The user explicitly used the /visualize command to request an animation. This changes the scope rules:
-
-- The "Guardrails & Scope" section about staying on-topic does NOT apply to this request. You may visualize ANY mathematical or geometric concept — it does not need to appear in the current source material.
-- The ONLY constraint is whether the concept fits one of your 8 animation templates. If it does, use render_animation and pair it with a brief text explanation. If it doesn't (e.g., algorithms, data structures, code concepts), explain why a visual animation isn't available for this concept and offer a text-based explanation instead.`;
-
 export const AI_GUIDE_SYSTEM_PROMPT = (context: {
   userProfile: { firstName: string };
   problemTitle: string;

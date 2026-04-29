@@ -4,7 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import { chatbotLlm, CHATBOT_MODEL_NAME } from '@/lib/sdk';
 import { getChatbotContext } from '@/lib/chatbot-context';
 import { checkChatbotRateLimit } from '@/lib/rate-limit';
-import { buildClaraSystemPrompt, ANIMATION_TOOL_PROMPT_ADDENDUM, VISUALIZE_COMMAND_ADDENDUM } from '@/lib/prompts';
+import { buildClaraSystemPrompt } from '@/lib/prompts';
 import ActivityLog from '@/lib/models/ActivityLog';
 import { saveChatMessage } from '@/lib/chat-db';
 import { generateSessionId, generateMessageId } from '@/lib/types/chat';
@@ -17,15 +17,11 @@ import type { IServiceUsage } from '@/lib/models/Cost';
 import { HumanMessage, SystemMessage, AIMessage, ToolMessage, BaseMessage } from '@langchain/core/messages';
 import type { AIMessageChunk } from '@langchain/core/messages';
 import { ToolCallAccumulator } from '@/lib/tools';
-import { renderAnimationTool } from '@/lib/tools/render-animation';
 import { createClaraTools, TOOL_LABELS } from '@/lib/tools/clara-tools';
 import { INPUT_LIMITS } from '@/lib/limits';
-import { AnimationSpecSchema } from '@/lib/types/animation';
 import { apiErrorResponse } from '@/lib/errors/apiResponse';
 import User from '@/lib/models/User';
 import { buildClarityModeContextBlock } from '@/lib/chatbot/clarityModeContext';
-
-const ANIMATION_TOOL_ENABLED = process.env.ENABLE_ANIMATION_TOOL === 'true';
 
 interface IChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -101,7 +97,6 @@ export async function POST(request: NextRequest) {
       clientTimestamp?: string;
       timezoneOffsetMinutes?: number;
       timeZone?: string;
-      forceVisualize?: boolean;
     }>(request, 512_000);
     if (isErrorResponse(bodyOrError)) return bodyOrError;
     const {
@@ -112,7 +107,6 @@ export async function POST(request: NextRequest) {
       clientTimestamp,
       timezoneOffsetMinutes,
       timeZone,
-      forceVisualize,
     } = bodyOrError;
     if (!videoId || !message) {
       return NextResponse.json({ error: 'videoId and message are required' }, { status: 400 });
@@ -121,8 +115,6 @@ export async function POST(request: NextRequest) {
     if (typeof message !== 'string' || message.length > INPUT_LIMITS.chatMessageLength) {
       return NextResponse.json({ error: `Message must be a string under ${INPUT_LIMITS.chatMessageLength} characters` }, { status: 400 });
     }
-
-    const useAnimationTool = ANIMATION_TOOL_ENABLED || forceVisualize === true;
 
     await dbConnect();
 
@@ -172,21 +164,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Build system prompt
-    let systemPrompt = buildClaraSystemPrompt(context);
-    if (useAnimationTool) {
-      systemPrompt += ANIMATION_TOOL_PROMPT_ADDENDUM;
-      if (forceVisualize) {
-        systemPrompt += VISUALIZE_COMMAND_ADDENDUM;
-      }
-    }
+    const systemPrompt = buildClaraSystemPrompt(context);
 
-    // 8. Bind tools to model — Clara's lookup tool + optional animation tool
+    // 8. Bind tools to model — Clara's lookup/contract/search tools.
     const claraTools = createClaraTools(decoded.userId, videoId, activeSourceId);
-    const allTools = useAnimationTool
-      ? [...claraTools, renderAnimationTool]
-      : claraTools;
-
-    const model = chatbotLlm.bindTools(allTools);
+    const model = chatbotLlm.bindTools(claraTools);
 
     // 9. Prepare messages
     const langchainMessages = [
@@ -204,7 +186,6 @@ export async function POST(request: NextRequest) {
     let totalPromptTokens = 0;
     let totalCompletionTokens = 0;
     let assistantResponse = '';
-    let animationEmitted = false;
     const toolsUsed: string[] = [];
 
     const tokenCallback = {
@@ -254,28 +235,7 @@ export async function POST(request: NextRequest) {
 
           // ── Handle tool calls (if any) ──
           if (toolAccumulator.hasToolCalls()) {
-            const toolCalls = toolAccumulator.getToolCalls();
-
-            // Separate animation tool calls from data-lookup tool calls
-            const lookupCalls = toolCalls.filter(tc => tc.name !== 'render_animation');
-            const animationCall = toolCalls.find(tc => tc.name === 'render_animation');
-
-            // Handle animation tool — append code block directly (no second LLM call needed)
-            if (animationCall) {
-              const parsed = AnimationSpecSchema.safeParse(animationCall.args);
-              if (parsed.success) {
-                const animationBlock = `\n\n\`\`\`animation\n${JSON.stringify(parsed.data)}\n\`\`\``;
-                firstCallText += animationBlock;
-                emitSSE(controller, encoder, { type: 'token', content: animationBlock });
-                animationEmitted = true;
-              } else {
-                console.warn('[CHATBOT] Invalid AnimationSpec from LLM:', parsed.error.message);
-                const fallbackNote = '\n\n> *Animation could not be generated for this explanation.*';
-                firstCallText += fallbackNote;
-                emitSSE(controller, encoder, { type: 'token', content: fallbackNote });
-              }
-              toolsUsed.push('render_animation');
-            }
+            const lookupCalls = toolAccumulator.getToolCalls();
 
             // Handle data-lookup tools — execute, then make second LLM call for the answer
             if (lookupCalls.length > 0) {
@@ -344,7 +304,7 @@ export async function POST(request: NextRequest) {
 
               console.log(`⏱️ [CLARA] Second call (answer) done in ${Date.now() - secondStart}ms | ${assistantResponse.length} chars`);
             } else {
-              // Animation-only — first call text + animation block is the full response
+              // No lookup calls — first call text is the full response
               assistantResponse = firstCallText;
             }
           } else {
@@ -367,22 +327,6 @@ export async function POST(request: NextRequest) {
             );
           } catch (saveError) {
             console.error('Failed to save assistant message:', saveError);
-          }
-
-          if (animationEmitted) {
-            try {
-              const { now, startOfDay } = resolveClientDay({ clientTimestamp, timezoneOffsetMinutes });
-              await ActivityLog.create({
-                userId: decoded.userId,
-                activityType: 'animation_rendered',
-                sourceId: videoId,
-                date: startOfDay,
-                timestamp: now,
-                metadata: { source: 'tool_call' },
-              });
-            } catch (logError) {
-              console.error('Failed to log animation activity:', logError);
-            }
           }
 
           try {
@@ -413,7 +357,6 @@ export async function POST(request: NextRequest) {
                       messageLength: message.length,
                       responseLength: assistantResponse.length,
                       estimated: isEstimated,
-                      animationToolUsed: animationEmitted,
                       toolsUsed,
                       llmCalls,
                     },
@@ -421,22 +364,6 @@ export async function POST(request: NextRequest) {
                 },
                 status: 'success',
               }];
-
-              if (animationEmitted) {
-                services.push({
-                  service: ServiceType.ANIMATION_TOOL,
-                  usage: {
-                    cost: 0,
-                    unitDetails: {
-                      metadata: {
-                        invoker: 'chatbot_ask',
-                        tool: 'render_animation',
-                      },
-                    },
-                  },
-                  status: 'success',
-                });
-              }
 
               await logGenerationCost({
                 userId: decoded.userId,
@@ -479,7 +406,6 @@ export async function POST(request: NextRequest) {
         metadata: {
           messageLength: message.length,
           remainingMessages: rateLimit.remaining - 1,
-          animationToolEnabled: ANIMATION_TOOL_ENABLED,
           ...(timeZone ? { clientTimeZone: timeZone } : {}),
           ...(typeof timezoneOffsetMinutes === 'number' ? { clientTimezoneOffsetMinutes: timezoneOffsetMinutes } : {}),
         },

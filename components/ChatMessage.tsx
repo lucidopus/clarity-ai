@@ -9,44 +9,27 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Bot, User } from 'lucide-react';
-import { AnimationSpecSchema } from '@/lib/types/animation';
-import type { AnimationSpec } from '@/lib/types/animation';
 import type { ToolEvent } from '@/hooks/useChatBot';
 import ThinkingIndicator from '@/components/ThinkingIndicator';
+import {
+  tryParseCalloutSpec,
+  tryParseComparisonSpec,
+} from '@/lib/types/visualization';
 
-// Lazy-load AnimationRenderer — three.js and manim-web must NOT be in the main bundle
-const AnimationRenderer = dynamic(
-  () => import('@/components/animations/AnimationRenderer'),
-  { ssr: false, loading: () => <AnimationLoadingInline /> }
+// Lazy-load visualization renderers — Mermaid alone is ~200kb, no point
+// shipping it (or the card primitives) until a chat actually contains a
+// fenced visualization block.
+const MermaidRenderer = dynamic(
+  () => import('@/components/chat/MermaidRenderer'),
+  { ssr: false },
 );
-
-const AnimationLoading = dynamic(
-  () => import('@/components/animations/AnimationLoading'),
-  { ssr: false }
+const Callout = dynamic(() => import('@/components/chat/Callout'), {
+  ssr: false,
+});
+const ComparisonCard = dynamic(
+  () => import('@/components/chat/ComparisonCard'),
+  { ssr: false },
 );
-
-const AnimationFallback = dynamic(
-  () => import('@/components/animations/AnimationFallback'),
-  { ssr: false }
-);
-
-/** Lightweight inline loading placeholder (no dynamic import needed) */
-function AnimationLoadingInline() {
-  return (
-    <div className="my-3 rounded-lg border border-border/50 bg-muted/20 p-6 flex flex-col items-center justify-center min-h-[200px] gap-3">
-      <div className="flex gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="h-2 w-2 rounded-full bg-accent animate-pulse"
-            style={{ animationDelay: `${i * 200}ms` }}
-          />
-        ))}
-      </div>
-      <p className="text-xs text-secondary">Loading animation...</p>
-    </div>
-  );
-}
 
 /** Pulsing dots — reused by both the Thinking indicator and timeline items. */
 function PulsingDots({ className = 'bg-secondary' }: { className?: string }) {
@@ -117,43 +100,9 @@ interface ChatMessageProps {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
-    isVisualize?: boolean;
     toolEvents?: ToolEvent[];
   };
   isStreaming?: boolean;
-}
-
-/**
- * Try to parse an animation JSON spec from a code block.
- * Returns the parsed spec or null if invalid.
- */
-/**
- * Sanitize LLM-generated JSON: strip comments, trailing commas, etc.
- * LLMs frequently produce "relaxed" JSON regardless of model.
- */
-function sanitizeJson(str: string): string {
-  return str
-    .replace(/\/\/[^\n]*/g, '')           // single-line comments
-    .replace(/\/\*[\s\S]*?\*\//g, '')     // multi-line comments
-    .replace(/,\s*([}\]])/g, '$1');       // trailing commas
-}
-
-/**
- * Attempt to parse a string as a valid AnimationSpec.
- * Uses the Zod schema (single source of truth) for validation.
- */
-function tryParseAnimationSpec(jsonStr: string): AnimationSpec | null {
-  // Try raw first, then sanitized
-  for (const str of [jsonStr, sanitizeJson(jsonStr)]) {
-    try {
-      const parsed = JSON.parse(str);
-      const result = AnimationSpecSchema.safeParse(parsed);
-      if (result.success) return result.data;
-    } catch {
-      // Not valid JSON, try next
-    }
-  }
-  return null;
 }
 
 export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
@@ -218,15 +167,12 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
       <div className={`flex flex-col max-w-[75%] ${isUser ? 'items-end' : 'items-start'}`}>
         <div className={`rounded-lg px-4 py-3 ${
           isUser
-            ? message.isVisualize
-              ? 'bg-linear-to-br from-accent to-purple-500/70 text-white'
-              : 'bg-accent text-white'
+            ? 'bg-accent text-white'
             : 'bg-card-bg border border-border'
         }`}>
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">
               {message.content}
-              {message.isVisualize && <span className="text-white/40 text-xs ml-1.5">&#10022;</span>}
             </p>
           ) : (
             <>
@@ -264,33 +210,59 @@ export function ChatMessage({ message, isStreaming }: ChatMessageProps) {
                     <li className="leading-relaxed pl-1">{children}</li>
                   ),
 
-                  // Code blocks with syntax highlighting + animation detection
+                  // Code blocks: visualization fences first, then syntax highlighting
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
                   code: ({ node, inline, className, children, ...props }: any) => {
                     const match = /language-(\w+)/.exec(className || '');
                     const language = match ? match[1] : '';
 
-                    // Detect animation specs in ANY code block (model-agnostic)
-                    if (!inline) {
-                      const jsonStr = String(children).replace(/\n$/, '');
+                    // While streaming, show a "composing" placeholder for the
+                    // JSON-payload primitives so the user never sees raw JSON
+                    // flash before snap-replacing with a polished card. Mermaid
+                    // is exempt — its diagram source is human-readable mid-stream
+                    // and gives useful "Clara is drafting a diagram" feedback.
+                    if (!inline && isStreaming && (language === 'callout' || language === 'compare')) {
+                      const composingLabel = language === 'callout' ? 'callout' : 'comparison';
+                      return (
+                        <div
+                          className="my-3 rounded-md border border-border/40 bg-muted/20 px-3.5 py-3 flex items-center gap-2"
+                          role="status"
+                          aria-busy="true"
+                        >
+                          <div className="flex gap-1">
+                            {[0, 1, 2].map((i) => (
+                              <div
+                                key={i}
+                                className="h-1 w-1 rounded-full bg-secondary animate-pulse"
+                                style={{ animationDelay: `${i * 200}ms` }}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-xs text-secondary">Composing {composingLabel}…</span>
+                        </div>
+                      );
+                    }
 
-                      // During streaming, show loading if the incomplete block looks like an animation spec
-                      if (isStreaming && !jsonStr.endsWith('}') && jsonStr.includes('"type"')) {
-                        const spec = tryParseAnimationSpec(jsonStr + '"}');
-                        // If even a partial parse hints at animation, show loading
-                        if (spec || language === 'animation') {
-                          return <AnimationLoading />;
-                        }
+                    // Visualization fences — only on completed (non-streaming) blocks.
+                    // During streaming, fall through to the syntax highlighter so the
+                    // user sees text accumulating (Mermaid) or a placeholder (above)
+                    // instead of a flickering empty card.
+                    if (!inline && !isStreaming) {
+                      const raw = String(children).replace(/\n$/, '');
+
+                      if (language === 'mermaid') {
+                        return <MermaidRenderer source={raw} />;
                       }
 
-                      const spec = tryParseAnimationSpec(jsonStr);
-                      if (spec) {
-                        return <AnimationRenderer spec={spec} />;
+                      if (language === 'callout') {
+                        const spec = tryParseCalloutSpec(raw);
+                        if (spec) return <Callout {...spec} />;
+                        // Fall through to default code-block render on parse failure.
                       }
 
-                      // Explicit `animation` lang with unparseable data → fallback
-                      if (language === 'animation') {
-                        return <AnimationFallback description="Animation data could not be parsed." />;
+                      if (language === 'compare') {
+                        const spec = tryParseComparisonSpec(raw);
+                        if (spec) return <ComparisonCard {...spec} />;
                       }
                     }
 

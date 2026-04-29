@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Send, Loader2, Sparkles } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Send, Loader2 } from 'lucide-react';
 
 interface SlashCommand {
   id: string;
@@ -9,15 +9,8 @@ interface SlashCommand {
   prefix: string;
 }
 
-const SLASH_COMMANDS: SlashCommand[] = [
-  {
-    id: 'visualize',
-    label: '/visualize',
-    description: 'Generate an interactive math animation',
-    icon: <Sparkles className="h-3.5 w-3.5" />,
-    prefix: '/visualize ',
-  },
-];
+// Slash-menu infrastructure is retained for future commands. Empty for now.
+const SLASH_COMMANDS: SlashCommand[] = [];
 
 interface ChatInputProps {
   onSend: (message: string) => Promise<void>;
@@ -32,15 +25,10 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const isVisualizeMode = useMemo(
-    () => message.trimStart().toLowerCase().startsWith('/visualize'),
-    [message]
-  );
-
   const handleMessageChange = (value: string) => {
     setMessage(value);
     const trimmed = value.trimStart();
-    if (trimmed === '/') {
+    if (trimmed === '/' && SLASH_COMMANDS.length > 0) {
       setShowSlashMenu(true);
       setSelectedIndex(0);
     } else if (!trimmed.startsWith('/') || trimmed.includes(' ')) {
@@ -124,24 +112,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      {/* Muted /visualize tip — only when input is empty */}
-      {!message && !disabled && (
-        <p className="text-[11px] text-secondary/40 pl-1 pb-0.5">
-          Type <span className="font-mono text-purple-400/50">/visualize</span> to generate an interactive animation
-        </p>
-      )}
-
-      {/* Visualize mode indicator */}
-      {isVisualizeMode && (
-        <div className="flex items-center gap-1.5 pl-1 pb-0.5 text-xs text-purple-500 dark:text-purple-400">
-          <Sparkles className="h-3 w-3" />
-          <span>Visualize mode — Clara will generate an animation</span>
-        </div>
-      )}
-
       <div className="relative">
         {/* Slash command menu */}
-        {showSlashMenu && (
+        {showSlashMenu && SLASH_COMMANDS.length > 0 && (
           <div
             ref={menuRef}
             className="absolute bottom-full left-0 mb-1.5 w-[min(calc(100vw-2rem),18rem)] rounded-lg border border-border bg-background shadow-lg overflow-hidden z-50"
@@ -188,37 +161,19 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
               value={message}
               onChange={(e) => handleMessageChange(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isVisualizeMode ? 'Describe what to visualize...' : 'Ask a question...'}
+              placeholder="Ask a question..."
               disabled={disabled}
-              className={`w-full resize-none rounded-lg border bg-background pl-4 pr-16 py-3 text-sm focus:outline-none focus:ring-2 disabled:opacity-50 scrollbar-hidden transition-colors ${
-                isVisualizeMode
-                  ? 'border-purple-400 focus:border-purple-500 focus:ring-purple-500/20 dark:border-purple-500 dark:focus:border-purple-400'
-                  : 'border-border focus:border-accent focus:ring-accent/20'
-              }`}
+              className="w-full resize-none rounded-lg border border-border bg-background pl-4 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:border-accent focus:ring-accent/20 disabled:opacity-50 scrollbar-hidden transition-colors"
               rows={1}
             />
-            {/* Subtle "/" hint inside the input */}
-            {!message && !disabled && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <kbd className="inline-flex h-5 items-center rounded border border-border/60 bg-card-bg px-1.5 font-mono text-[10px] text-secondary/40">
-                  /
-                </kbd>
-              </div>
-            )}
           </div>
           <button
             onClick={handleSubmit}
             disabled={!message.trim() || isSubmitting || disabled}
-            className={`rounded-lg px-4 py-3 font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 ${
-              isVisualizeMode
-                ? 'bg-purple-500 hover:bg-purple-600'
-                : 'bg-accent hover:bg-accent-hover'
-            }`}
+            className="rounded-lg px-4 py-3 font-medium text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 bg-accent hover:bg-accent-hover"
           >
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isVisualizeMode ? (
-              <Sparkles className="h-4 w-4" />
             ) : (
               <Send className="h-4 w-4" />
             )}

@@ -40,7 +40,6 @@ const EXACT_MATCHES: Record<string, { label: string; icon: 'llm' | 'transcript' 
   gemini_llm: { label: 'Gemini LLM', icon: 'llm' },
   groq_llm: { label: 'Groq LLM', icon: 'llm' },
   content_validation: { label: 'Content Validation', icon: 'llm' },
-  animation_tool: { label: 'Animation Tool', icon: 'chat' },
 };
 
 /**

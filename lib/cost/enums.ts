@@ -14,7 +14,6 @@ export enum ServiceType {
   GEMINI_VISION = 'gemini_vision',
   GEMINI_EMBEDDING = 'gemini_embedding',
   ELEVENLABS_SCRIBE = 'elevenlabs_scribe',
-  ANIMATION_TOOL = 'animation_tool',
 }
 
 export enum CostSource {

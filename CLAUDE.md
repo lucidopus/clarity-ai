@@ -60,7 +60,8 @@ Distinct architecture from the async pipeline; finalized as a 3-layer storage ch
 
 ### Clara (AI tutor)
 
-- LangChain agent with tool calling. Tools are defined under `lib/tools/` and bound in the chatbot endpoint. The current notable tool is `render-animation.ts` (the `AnimationSpec` discriminated union is in `lib/types/animation.ts`; client renders pick a fallback chain via `lib/utils/webgl-detect.ts`).
+- LangChain agent with tool calling. Tools are defined under `lib/tools/` and bound in the chatbot endpoint (`lookup_study_materials`, `set_study_contract`, `search_transcript`).
+- Visualizations are inline code-fence languages, not tools — Clara writes ` ```mermaid ` (diagrams), ` ```callout ` (info / insight / warn JSON), or ` ```compare ` (two-column JSON), and `components/ChatMessage.tsx` maps them to the components in `components/chat/`. KaTeX math (`$x$` / `$$x$$`) is auto-rendered via `remark-math` + `rehype-katex`. Schemas + parse helpers live in `lib/types/visualization.ts`.
 - Conversation persistence: `lib/chat-db.ts`. System-prompt context (user profile + per-source materials) is assembled by `lib/chatbot-context.ts`.
 - Endpoint: `app/api/chatbot/ask`. Greeting/Feynman flows are in `lib/services/claraGreeting.ts`.
 

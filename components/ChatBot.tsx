@@ -358,9 +358,6 @@ export function ChatBot({ videoId, activeSourceId }: ChatBotProps) {
                    <div className="text-center text-secondary py-8">
                      <p className="mb-2">Hi! I&apos;m {CHATBOT_NAME}.</p>
                      <p className="text-sm">Ask me about prerequisites or anything in this video!</p>
-                     <p className="text-xs text-secondary/60 mt-3">
-                       Tip: Use <span className="font-mono text-purple-500 dark:text-purple-400">/visualize</span> to generate interactive animations
-                     </p>
                    </div>
                  )}
 
