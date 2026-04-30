@@ -14,6 +14,7 @@ import { Edit2, Save, X, Info, Clock, Volume2, Wind, AlertTriangle, Timer } from
 import { MAX_LEARNING_PROFILE_UPDATES_PER_MONTH } from '@/lib/config';
 import { useAmbientEnabled } from '@/lib/focus-mode/use-ambient-enabled';
 import { useBreathing } from '@/lib/breathing/useBreathing';
+import BreathingOverlay from '@/components/breathing/BreathingOverlay';
 
 function timeToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(':').map(Number);
@@ -236,6 +237,7 @@ export default function SettingsPage() {
   // Pre-session breathing warm-up preference — client-side only.
   const breathing = useBreathing(user?.id ?? null);
   const [breathingInfoOpen, setBreathingInfoOpen] = useState(false);
+  const [breathingPreviewOpen, setBreathingPreviewOpen] = useState(false);
 
   // Learning profile update limit state
   const [updatesRemaining, setUpdatesRemaining] = useState<number>(MAX_LEARNING_PROFILE_UPDATES_PER_MONTH);
@@ -1490,6 +1492,14 @@ export default function SettingsPage() {
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Shows a 5-minute breathing exercise 5 minutes before Clarity Mode starts. Skip or dismiss anytime — never interrupts your session.
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => setBreathingPreviewOpen(true)}
+                      className="mt-2 inline-flex items-center gap-1 cursor-pointer rounded-md py-1 -my-1 text-xs font-medium text-accent hover:text-accent-hover transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      Try it now
+                      <span aria-hidden="true">→</span>
+                    </button>
                   </div>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -1672,6 +1682,12 @@ export default function SettingsPage() {
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+
+      <BreathingOverlay
+        open={breathingPreviewOpen}
+        sessionStartAt={null}
+        onClose={() => setBreathingPreviewOpen(false)}
+      />
     </div>
   );
 }
