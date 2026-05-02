@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Forgot Password (OTP)**: End-to-end password-reset flow replacing the prior URL-token design.
+- **Forgot Password (OTP)**: E2E password-reset flow replacing the prior URL-token design.
   - `POST /api/auth/forgot-password` — generates a 6-digit OTP, stores a bcrypt-hashed `password_reset` `VerificationToken` (10-min expiry), and emails it. 5/15-min IP rate limit, 60-second resend throttle, and a constant-shape response to prevent email enumeration.
   - `POST /api/auth/verify-reset-otp` (new) — verifies the OTP (max 5 attempts / token, 10/15-min IP ceiling), deletes the token on success, and issues a short-lived HS256 reset-ticket JWT (`purpose: 'password_reset'`, 10-min expiry).
   - `POST /api/auth/reset-password` — accepts `{resetTicket, newPassword, confirmPassword}`, validates the ticket and password strength (`passwordSchema`), updates the user's hash, and issues a session JWT cookie so the user is signed in immediately.
